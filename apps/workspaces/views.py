@@ -51,7 +51,7 @@ class ReadyView(viewsets.ViewSet):
 
 class WorkspaceView(viewsets.ViewSet):
     """
-    NetSuite Workspace
+    Xero Workspace
     """
 
     permission_classes = [IsAuthenticated]
@@ -127,7 +127,7 @@ class ConnectFyleView(viewsets.ViewSet):
     """
     def post(self, request, **kwargs):
         """
-        Post of QBO Credentials
+        Post of Fyle Credentials
         """
         try:
             authorization_code = request.data.get('code')

@@ -15,6 +15,7 @@ test.py
 
 # Cache
 demo_cache.sqlite
+__pycache__
 
 # Setup File
 setup.sh
