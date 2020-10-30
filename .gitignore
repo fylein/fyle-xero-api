@@ -6,6 +6,19 @@ __pycache__/
 # C extensions
 *.so
 
+# IDEs
+.idea
+.vscode
+
+# Test files
+test.py
+
+# Cache
+demo_cache.sqlite
+
+# Setup File
+setup.sh
+
 # Distribution / packaging
 .Python
 build/
