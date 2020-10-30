@@ -15,7 +15,6 @@ class Workspace(models.Model):
     name = models.CharField(max_length=255, help_text='Name of the workspace')
     user = models.ManyToManyField(User, help_text='Reference to users table')
     fyle_org_id = models.CharField(max_length=255, help_text='org id', unique=True)
-    xero_tenant_id = models.CharField(max_length=255, help_text='Xero Tenant ID', unique=True)
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
@@ -30,7 +29,6 @@ class XeroCredentials(models.Model):
     """
     id = models.AutoField(primary_key=True)
     refresh_token = models.TextField(help_text='Stores Xero refresh token')
-    tenant_id = models.TextField(help_text='Stores Xero Tenant ID')
     workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')

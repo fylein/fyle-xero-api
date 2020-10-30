@@ -20,7 +20,6 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(help_text='Unique Id to identify a workspace', primary_key=True, serialize=False)),
                 ('name', models.CharField(help_text='Name of the workspace', max_length=255)),
                 ('fyle_org_id', models.CharField(help_text='Xero Tenant ID', max_length=255, unique=True)),
-                ('xero_tenant_id', models.CharField(help_text='org id', max_length=255, unique=True)),
                 ('last_synced_at', models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True, help_text='Created at datetime')),
                 ('updated_at', models.DateTimeField(auto_now=True, help_text='Updated at datetime')),
@@ -35,7 +34,6 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('refresh_token', models.TextField(help_text='Stores Xero refresh token')),
-                ('tenant_id', models.TextField(help_text='Stores Xero Tenant ID')),
                 ('created_at', models.DateTimeField(auto_now_add=True, help_text='Created at datetime')),
                 ('updated_at', models.DateTimeField(auto_now=True, help_text='Updated at datetime')),
                 ('workspace', models.OneToOneField(help_text='Reference to Workspace model', on_delete=django.db.models.deletion.PROTECT, to='workspaces.Workspace')),
