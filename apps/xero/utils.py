@@ -1,3 +1,4 @@
+import base64
 import os
 
 from django.conf import settings
@@ -218,3 +219,26 @@ class XeroConnector:
         bills_payload = self.__construct_bill(bill, bill_lineitems)
         created_bill = self.connection.invoices.post(bills_payload)
         return created_bill
+
+    def post_attachments(self, ref_id: str, ref_type: str, attachments: List[Dict]) -> List:
+        """
+        Link attachments to objects Xero
+        :param prep_id: prep id for export
+        :param ref_id: object id
+        :param ref_type: type of object
+        :param attachments: attachment[dict()]
+        """
+
+        if len(attachments):
+            responses = []
+            for attachment in attachments:                
+                response = self.connection.attachments.post_attachment(
+                    endpoint=ref_type,
+                    filename=attachment['filename'],
+                    data=base64.b64decode(attachment['content']),
+                    guid=ref_id
+                )
+                
+                responses.append(response)
+            return responses
+        return []

@@ -254,13 +254,18 @@ class FyleConnector:
 
         return expense_custom_field_attributes
 
-    def get_attachment(self, expense_id: str):
+    def get_attachments(self, expense_ids: List[str]):
         """
         Get attachments against expense_ids
         """
-        attachment = self.connection.Expenses.get_attachments(expense_id)
+        attachments = []
+        if expense_ids:
+            for expense_id in expense_ids:
+                attachment = self.connection.Expenses.get_attachments(expense_id)
+                if attachment['data']:
+                    attachment = attachment['data'][0]
+                    attachment['expense_id'] = expense_id
+                    attachments.append(attachment)
+            return attachments
 
-        if attachment['data']:
-            attachment = attachment['data'][0]
-            attachment['expense_id'] = expense_id
-            return attachment
+        return []

@@ -143,7 +143,7 @@ class BillLineItem(models.Model):
         db_table = 'bill_lineitems'
 
     @staticmethod
-    def create_bill_line_item(expense_group: ExpenseGroup):
+    def create_bill_lineitems(expense_group: ExpenseGroup):
         expenses = expense_group.expenses.all()
         bill = Bill.objects.get(expense_group=expense_group)
 
