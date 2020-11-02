@@ -8,7 +8,7 @@ urlpatterns = [
     path('bank_accounts/', BankAccountView.as_view()),
     path('tracking_categories/', TrackingCategoryView.as_view()),
     path('contacts/', ContactView.as_view()),
-    path('/items', ItemView.as_view()),
+    path('items/', ItemView.as_view()),
     path('tenants/', TenantView.as_view()),
     path('xero_fields/', XeroFieldsView.as_view()),
 ]
