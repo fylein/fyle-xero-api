@@ -5,6 +5,7 @@ from django.db import models
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, MappingSetting
 
 from apps.fyle.models import ExpenseGroup, Expense
+from apps.mappings.models import GeneralMapping
 
 
 def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
@@ -179,3 +180,109 @@ class BillLineItem(models.Model):
             bill_lineitem_objects.append(lineitem_object)
 
         return bill_lineitem_objects
+
+
+class BankTransaction(models.Model):
+    """
+    Xero Bank Transaction
+    """
+    id = models.AutoField(primary_key=True)
+    expense_group = models.OneToOneField(ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
+    contact_id = models.CharField(max_length=255, help_text='Xero Contact ID')
+    bank_account_code = models.CharField(max_length=255, help_text='Xero Bank Account code')
+    currency = models.CharField(max_length=255, help_text='Bank Transaction Currency')
+    reference = models.CharField(max_length=255, help_text='Bank Transaction ID')
+    transaction_date = models.DateField(help_text='Bank transaction date')
+    created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
+    updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
+
+    @staticmethod
+    def create_bank_transaction(expense_group: ExpenseGroup):
+        """
+        Create bank transaction
+        :param expense_group: expense group
+        :return: bank transaction object
+        """
+        description = expense_group.description
+
+        expense: Expense = expense_group.expenses.first()
+
+        contact_id = Mapping.objects.get(
+            source_type='EMPLOYEE',
+            destination_type='CONTACT',
+            source__value=description.get('employee_email'),
+            workspace_id=expense_group.workspace_id
+        ).destination.destination_id
+
+        general_mappings = GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
+        bank_transaction_object, _ = BankTransaction.objects.update_or_create(
+            expense_group=expense_group,
+            defaults={
+                'contact_id': contact_id,
+                'bank_account_code': general_mappings.bank_account_id,
+                'currency': expense.currency,
+                'reference': '{} - {}'.format(expense_group.id, expense.employee_email),
+                'transaction_date': get_transaction_date(expense_group),
+            }
+        )
+        return bank_transaction_object
+
+
+class BankTransactionLineItem(models.Model):
+    """
+    Xero Bank Transaction Lineitem
+    """
+    id = models.AutoField(primary_key=True)
+    expense = models.OneToOneField(Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
+    bank_transaction = models.ForeignKey(BankTransaction, on_delete=models.PROTECT,
+                                         help_text='Reference to bank transaction')
+    account_id = models.CharField(max_length=255, help_text='Xero AccountCode')
+    item_code = models.CharField(max_length=255, help_text='Xero ItemCode')
+    tracking_categories = JSONField(null=True, help_text='Save Tracking options')
+    amount = models.FloatField(help_text='Bank Transaction LineAmount')
+    description = models.CharField(max_length=255, help_text='Xero Bank Transaction LineItem description', null=True)
+    created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
+    updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
+
+    @staticmethod
+    def create_bank_transaction_lineitems(expense_group: ExpenseGroup):
+        """
+        Create bank transaction lineitems
+        :param expense_group: expense group
+        :return: lineitems objects
+        """
+        expenses = expense_group.expenses.all()
+        bank_transaction = BankTransaction.objects.get(expense_group=expense_group)
+
+        bank_transaction_lineitem_objects = []
+
+        for lineitem in expenses:
+            category = lineitem.category if lineitem.category == lineitem.sub_category else '{0} / {1}'.format(
+                lineitem.category, lineitem.sub_category)
+
+            account: Mapping = Mapping.objects.filter(
+                source_type='CATEGORY',
+                destination_type='ACCOUNT',
+                source__value=category,
+                workspace_id=expense_group.workspace_id
+            ).first()
+
+            item_code = get_item_code_or_none(expense_group, lineitem)
+
+            tracking_categories = get_tracking_category(expense_group, lineitem)
+
+            bank_transaction_lineitem_object, _ = BankTransactionLineItem.objects.update_or_create(
+                bank_transaction=bank_transaction,
+                expense_id=lineitem.id,
+                defaults={
+                    'account_code': account.destination.destination_id if account else None,
+                    'item_code': item_code,
+                    'tracking_categories': tracking_categories,
+                    'amount': lineitem.amount,
+                    'description': get_expense_purpose(lineitem, category)
+                }
+            )
+
+            bank_transaction_lineitem_objects.append(bank_transaction_lineitem_object)
+
+        return bank_transaction_lineitem_objects

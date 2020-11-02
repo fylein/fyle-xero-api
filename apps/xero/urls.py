@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import TenantView, AccountView, BankAccountView, TrackingCategoryView, ContactView, \
-    ItemView, XeroFieldsView
+    ItemView, XeroFieldsView, BankTransactionView
 
 urlpatterns = [
     path('accounts/', AccountView.as_view()),
@@ -11,4 +11,5 @@ urlpatterns = [
     path('items/', ItemView.as_view()),
     path('tenants/', TenantView.as_view()),
     path('xero_fields/', XeroFieldsView.as_view()),
+    path('bank_transactions/', BankTransactionView.as_view())
 ]
