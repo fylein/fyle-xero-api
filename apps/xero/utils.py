@@ -29,10 +29,6 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
-        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)  # Have a bug here will fix this
-
-        self.connection.set_tenant_id(tenant_mapping.tenant_id)
-
     def sync_tenants(self):
         """
         sync xero tenants
@@ -53,11 +49,15 @@ class XeroConnector:
             tenant_attributes, self.workspace_id)
         return tenant_attributes
 
-    def sync_accounts(self, account_type: str):
+    def sync_accounts(self, account_type: str):  # have a fix here - will fix this too in sometime - this won't work :P
         """
         Get accounts
         """
-        accounts = self.connection.accounts.get_all()
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        accounts = self.connection.accounts.get_all()['Accounts']
 
         accounts = list(filter(lambda current_account: current_account['Type'] == account_type, accounts))
 
@@ -86,6 +86,10 @@ class XeroConnector:
         """
         Get contacts
         """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
         contacts = self.connection.contacts.get_all()['Contacts']
 
         contact_attributes = []
@@ -106,7 +110,11 @@ class XeroConnector:
         """
         Get Tracking Categories
         """
-        tracking_categories = self.connection.tracking_categories.get_all()
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        tracking_categories = self.connection.tracking_categories.get_all()['TrackingCategories']
 
         tracking_category_attributes = []
 
@@ -117,7 +125,7 @@ class XeroConnector:
                     'attribute_type': tracking_category['Name'].upper().replace(' ', '_'),
                     'display_name': tracking_category['Name'],
                     'value': option,
-                    'source_id': 'tracking_category.{}.{}'.format(tracking_category['Name'].lower(), count)
+                    'destination_id': tracking_category['TrackingCategoryID']
                 })
                 count = count + 1
 
