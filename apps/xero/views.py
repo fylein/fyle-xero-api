@@ -106,6 +106,41 @@ class ContactView(generics.ListCreateAPIView):
             )
 
 
+class ItemView(generics.ListCreateAPIView):
+    """
+    Item view
+    """
+    serializer_class = DestinationAttributeSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return DestinationAttribute.objects.filter(
+            attribute_type='ITEM', workspace_id=self.kwargs['workspace_id']).order_by('value')
+
+    def post(self, request, *args, **kwargs):
+        """
+        Get items from Xero
+        """
+        try:
+            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+
+            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+
+            items = xero_connector.sync_items()
+
+            return Response(
+                data=self.serializer_class(items, many=True).data,
+                status=status.HTTP_200_OK
+            )
+        except XeroCredentials.DoesNotExist:
+            return Response(
+                data={
+                    'message': 'Xero credentials not found in workspace'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
 class TrackingCategoryView(generics.ListCreateAPIView):
     """
     Tracking Category view

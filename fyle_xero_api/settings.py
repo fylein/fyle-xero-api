@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'apps.fyle',
     'apps.tasks',
     'apps.mappings',
-    'apps.xero'
+    'apps.xero',
+    'django_q'
 ]
 
 MIDDLEWARE = [
@@ -108,6 +109,13 @@ REST_FRAMEWORK = {
 WSGI_APPLICATION = 'fyle_xero_api.wsgi.application'
 
 SERVICE_NAME = os.environ.get('SERVICE_NAME')
+
+Q_CLUSTER = {
+    'name': 'fyle_xero_api',
+    'compress': True,
+    'save_limit': 0,
+    'orm': 'default'
+}
 
 LOGGING = {
     'version': 1,
