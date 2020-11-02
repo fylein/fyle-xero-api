@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, MappingSetting
 
@@ -40,6 +41,42 @@ from apps.fyle.models import ExpenseGroup, Expense
 '''
 
 
+def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
+    mapping_settings = MappingSetting.objects.filter(workspace_id=expense_group.workspace_id).all()
+
+    tracking_categories = []
+    default_expense_attributes = ['CATEGORY', 'EMPLOYEE']
+    default_destination_attributes = ['ITEM']
+
+    for setting in mapping_settings:
+        if setting.source_field not in default_expense_attributes and \
+                setting.destination_field not in default_destination_attributes:
+            if setting.source_field == 'PROJECT':
+                source_value = lineitem.project
+            elif setting.source_field == 'COST_CENTER':
+                source_value = lineitem.cost_center
+            else:
+                attribute = ExpenseAttribute.objects.filter(
+                    attribute_type=setting.source_field,
+                    workspace_id=expense_group.workspace_id
+                ).first()
+                source_value = lineitem.custom_properties.get(attribute.display_name, None)
+
+            mapping: Mapping = Mapping.objects.filter(
+                source_type=setting.source_field,
+                destination_type=setting.destination_field,
+                source__value=source_value,
+                workspace_id=expense_group.workspace_id
+            ).first()
+            if mapping:
+                tracking_categories.append({
+                    'Name': mapping.destination.display_name,
+                    'Option': mapping.destination.value
+                })
+
+    return tracking_categories
+
+
 def get_transaction_date(expense_group: ExpenseGroup) -> str:
     if 'spent_at' in expense_group.description and expense_group.description['spent_at']:
         return expense_group.description['spent_at']
@@ -57,7 +94,7 @@ def get_item_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
         destination_field='ITEM'
     ).first()
 
-    item_id = None
+    item_code = None
 
     if item_setting:
         if item_setting.source_field == 'PROJECT':
@@ -76,8 +113,8 @@ def get_item_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
         ).first()
 
         if mapping:
-            item_id = mapping.destination.destination_id
-    return item_id
+            item_code = mapping.destination.value
+    return item_code
 
 
 class Bill(models.Model):
@@ -114,3 +151,10 @@ class Bill(models.Model):
         )
 
         return bill_object
+
+
+class BillLineItems:
+    id = models.AutoField(primary_key=True)
+    expense = models.OneToOneField(Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
+    bill = models.ForeignKey(Bill, on_delete=models.PROTECT, help_text='Reference to Bill')
+    tracking_categories = JSONField(null=True, help_text='Save Tracking options')

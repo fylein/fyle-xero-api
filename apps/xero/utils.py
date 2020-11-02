@@ -119,15 +119,13 @@ class XeroConnector:
         tracking_category_attributes = []
 
         for tracking_category in tracking_categories:
-            count = 1
             for option in tracking_category['Options']:
                 tracking_category_attributes.append({
                     'attribute_type': tracking_category['Name'].upper().replace(' ', '_'),
                     'display_name': tracking_category['Name'],
-                    'value': option,
-                    'destination_id': tracking_category['TrackingCategoryID']
+                    'value': option['Name'],
+                    'destination_id': option['TrackingOptionID']
                 })
-                count = count + 1
 
         tracking_category_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
             tracking_category_attributes, self.workspace_id)
@@ -148,9 +146,9 @@ class XeroConnector:
 
         for item in items:
             item_attributes.append({
-                'attribute_type': 'CONTACT',
-                'display_name': 'Contact',
-                'value': items['Name'],
+                'attribute_type': 'ITEM',
+                'display_name': 'Item',
+                'value': items['Code'],
                 'destination_id': item['ItemId']
             })
 
