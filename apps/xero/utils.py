@@ -1,10 +1,15 @@
+import os
+
 from django.conf import settings
+from typing import List, Dict
 
 from xerosdk import XeroSDK
 
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import XeroCredentials
 from fyle_accounting_mappings.models import DestinationAttribute
+
+from apps.xero.models import Bill, BillLineItem
 
 
 class XeroConnector:
@@ -75,7 +80,7 @@ class XeroConnector:
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',
                     'value': account['Name'],
-                    'destination_id': account['AccountID']
+                    'destination_id': account['Code']
                 })
 
         account_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
@@ -155,3 +160,61 @@ class XeroConnector:
         item_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
             item_attributes, self.workspace_id)
         return item_attributes
+
+    @staticmethod
+    def __construct_bill_lineitems(bill_lineitems: List[BillLineItem]) -> List[Dict]:
+        """
+        Create bill line items
+        :return: constructed line items
+        """
+        lines = []
+
+        for line in bill_lineitems:
+            line = {
+                'Description': line.description,
+                'Quantity': '1',
+                'UnitAmount': line.amount,
+                'AccountCode': line.account_id,
+                'ItemCode': line.item_code,
+                'Tracking': line.tracking_categories if line.tracking_categories else None
+            }
+            lines.append(line)
+
+        return lines
+
+    @staticmethod
+    def __construct_bill(bill: Bill, bill_lineitems: List[BillLineItem]) -> Dict:
+        """
+        Create a bill
+        :return: constructed bill
+        """
+        app_url = os.environ.get('APP_URL')
+
+        url = '{}/workspaces/{}/expense_groups/{}/view/info'.format(
+            app_url, 
+            bill.expense_group.workspace_id, 
+            bill.expense_group.id
+        )
+
+        bill_payload = {
+            'Type': 'ACCPAY',
+            'Contact': {
+                'ContactID': bill.contact_id
+            },
+            'LineAmountTypes': 'NoTax',
+            'Reference': bill.reference,
+            'Date': bill.date,
+            'CurrencyCode': bill.currency,
+            'Url': url,
+            'Status': 'AUTHORISED',
+            'LineItems': bill_lineitems
+        }
+        return bill_payload
+
+    def post_bill(self, bill: Bill, bill_lineitems: List[BillLineItem]):
+        """
+        Post vendor bills to Xero
+        """
+        bills_payload = self.__construct_bill(bill, bill_lineitems)
+        created_bill = self.connection.invoices.post(bills_payload)
+        return created_bill

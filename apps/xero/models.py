@@ -6,40 +6,6 @@ from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, MappingSe
 
 from apps.fyle.models import ExpenseGroup, Expense
 
-'''
-  data = {
-        "Type": "ACCREC",
-        "Contact": {
-            "ContactID": "fee2fb2a-97d5-4443-82df-796bc7758eb2"
-        },
-        "DueDateString": "2020-10-30T00:00:00",
-        "LineAmountTypes": "NoTax",
-        "Reference": "Reference TrackingCategoryID",
-        "Url": "https://staging.fyle.tech/app/main/#/enterprise/view_expense/txOZD70Ue0AV",
-        "Status": "AUTHORISED",
-        "LineItems": [
-            {
-                "Description": "line item desc",
-                "Quantity": "1",
-                "UnitAmount": "321",
-                "AccountCode": "260",
-                "ItemCode": "BOOK",
-                "Tracking": [
-                    {
-                        "TrackingCategoryID": "fa437cfd-f005-4538-ae84-943857da5c8c",
-                        "Name": "Region",
-                        "Option": "West Coast"
-                    },
-                    {
-                        "TrackingCategoryID": "a955d51c-700b-4e26-8136-209a367ab12c",
-                        "Option": "Ashwin"
-                    },
-                ]
-            }
-        ]
-    }
-'''
-
 
 def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
     mapping_settings = MappingSetting.objects.filter(workspace_id=expense_group.workspace_id).all()
