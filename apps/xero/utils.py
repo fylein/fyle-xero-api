@@ -134,3 +134,26 @@ class XeroConnector:
 
         return tracking_category_attributes
 
+    def sync_items(self):
+        """
+        Get Items
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        items = self.connection.items.get_all()
+
+        item_attributes = []
+
+        for item in items:
+            item_attributes.append({
+                'attribute_type': 'CONTACT',
+                'display_name': 'Contact',
+                'value': items['Name'],
+                'destination_id': item['ItemId']
+            })
+
+        item_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
+            item_attributes, self.workspace_id)
+        return item_attributes
