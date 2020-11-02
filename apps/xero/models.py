@@ -88,7 +88,7 @@ def get_transaction_date(expense_group: ExpenseGroup) -> str:
     return datetime.now().strftime("%Y-%m-%d")
 
 
-def get_item_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
+def get_item_code_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     item_setting: MappingSetting = MappingSetting.objects.filter(
         workspace_id=expense_group.workspace_id,
         destination_field='ITEM'
@@ -160,11 +160,15 @@ class Bill(models.Model):
         return bill_object
 
 
-class BillLineItems:
+class BillLineItem:
     id = models.AutoField(primary_key=True)
     expense = models.OneToOneField(Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
     bill = models.ForeignKey(Bill, on_delete=models.PROTECT, help_text='Reference to Bill')
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
+    item_code = models.CharField(max_length=255, null=True, help_text='Item code')
+    account_id = models.CharField(max_length=255, help_text='NetSuite account id')
+    description = models.TextField(help_text='Lineitem purpose')
+    amount = models.FloatField(help_text='Bill amount')
 
     @staticmethod
     def create_bill_line_item(expense_group: ExpenseGroup):
@@ -172,5 +176,34 @@ class BillLineItems:
         bill = Bill.objects.get(expense_group=expense_group)
 
         bill_lineitem_objects = []
+
         for lineitem in expenses:
-            tracking_cateogries = get_tracking_category(expense_group, lineitem)
+            category = lineitem.category if lineitem.category == lineitem.sub_category else '{0} / {1}'.format(
+                lineitem.category, lineitem.sub_category)
+
+            account = Mapping.objects.filter(
+                source_type='CATEGORY',
+                source__value=category,
+                destination_type='ACCOUNT',
+                workspace_id=expense_group.workspace_id
+            ).first()
+
+            item_code = get_item_code_or_none(expense_group, lineitem)
+            description = get_expense_purpose(lineitem, category)
+
+            tracking_categories = get_tracking_category(expense_group, lineitem)
+
+            lineitem_object, _ = BillLineItem.objects.update_or_create(
+                bill=bill,
+                expense_id=lineitem.id,
+                default={
+                    'tracking_categories': tracking_categories,
+                    'item_code': item_code,
+                    'account_id': account.destination.destination_id,
+                    'description': description,
+                    'amount': lineitem.amount
+                }
+            )
+            bill_lineitem_objects.append(lineitem_object)
+
+        return bill_lineitem_objects
