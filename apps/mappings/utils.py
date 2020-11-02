@@ -1,8 +1,12 @@
 from typing import Dict
 
+from django.db.models import Q
+from fyle_accounting_mappings.models import MappingSetting
+
+from apps.workspaces.models import WorkspaceGeneralSettings
 from fyle_xero_api.utils import assert_valid
 
-from .models import TenantMapping
+from .models import TenantMapping, GeneralMapping
 
 
 class MappingUtils:
@@ -30,3 +34,33 @@ class MappingUtils:
         )
 
         return tenant_mapping_object
+
+    def create_or_update_general_mapping(self, general_mapping: Dict):
+        """
+        Create or update General mappings
+        :param general_mapping: general mapping payload
+        :return: general mappings objects
+        """
+
+        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.__workspace_id)
+
+        params = {
+            'bank_account_name': None,
+            'bank_account_id': None,
+        }
+
+        if general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
+            assert_valid('bank_account_name' in general_mapping and general_mapping['bank_account_name'],
+                         'bank account name field is blank')
+            assert_valid('bank_account_id' in general_mapping and general_mapping['default_ccc_account_id'],
+                         'bank account id field is blank')
+
+            params['bank_account_name'] = general_mapping.get('bank_account_name')
+            params['bank_account_id'] = general_mapping.get('bank_account_id')
+
+        general_mapping_object, _ = GeneralMapping.objects.update_or_create(
+            workspace_id=self.__workspace_id,
+            defaults=params
+        )
+
+        return general_mapping_object
