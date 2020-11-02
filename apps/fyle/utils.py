@@ -26,7 +26,6 @@ class FyleConnector:
             client_id=client_id,
             client_secret=client_secret,
             refresh_token=refresh_token,
-            jobs_url=settings.FYLE_JOBS_URL
         )
 
     def _post_request(self, url, body):

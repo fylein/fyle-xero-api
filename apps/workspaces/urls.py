@@ -15,6 +15,6 @@ urlpatterns = [
     path('<int:workspace_id>/settings/general/', GeneralSettingsView.as_view({'post': 'post', 'get': 'get'})),
     path('<int:workspace_id>/fyle/', include('apps.fyle.urls')),
     path('<int:workspace_id>/tasks/', include('apps.tasks.urls')),
+    path('<int:workspace_id>/xero/', include('apps.xero.urls')),
+    path('<int:workspace_id>/mappings/', include('apps.mappings.urls')),
 ]
-
-# Add Xero and Mapping URL's once finished
