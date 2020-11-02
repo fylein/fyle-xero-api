@@ -117,6 +117,13 @@ def get_item_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     return item_code
 
 
+def get_expense_purpose(lineitem, category) -> str:
+    expense_purpose = ', purpose - {0}'.format(lineitem.purpose) if lineitem.purpose else ''
+    spent_at = ' spent on {0} '.format(lineitem.spent_at.date()) if lineitem.spent_at else ''
+    return 'Expense by {0} against category {1}{2}with claim number - {3}{4}'.format(
+        lineitem.employee_email, category, spent_at, lineitem.claim_number, expense_purpose)
+
+
 class Bill(models.Model):
     id = models.AutoField(primary_key=True)
     expense_group = models.OneToOneField(ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
