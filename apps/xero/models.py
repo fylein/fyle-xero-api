@@ -134,6 +134,9 @@ class Bill(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
+    class Meta:
+        db_table = 'bills'
+
     @staticmethod
     def create_bill(expense_group: ExpenseGroup):
         description = expense_group.description
@@ -160,7 +163,7 @@ class Bill(models.Model):
         return bill_object
 
 
-class BillLineItem:
+class BillLineItem(models.Model):
     id = models.AutoField(primary_key=True)
     expense = models.OneToOneField(Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
     bill = models.ForeignKey(Bill, on_delete=models.PROTECT, help_text='Reference to Bill')
@@ -169,6 +172,9 @@ class BillLineItem:
     account_id = models.CharField(max_length=255, help_text='NetSuite account id')
     description = models.TextField(help_text='Lineitem purpose')
     amount = models.FloatField(help_text='Bill amount')
+
+    class Meta:
+        db_table = 'bill_lineitems'
 
     @staticmethod
     def create_bill_line_item(expense_group: ExpenseGroup):
