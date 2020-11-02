@@ -232,6 +232,7 @@ FYLE_CLIENT_SECRET = os.environ.get('FYLE_CLIENT_SECRET')
 FYLE_BASE_URL = os.environ.get('FYLE_BASE_URL')
 
 # XERO Settings
+XERO_BASE_URL = os.environ.get('XERO_BASE_URL')
 XERO_CLIENT_ID = os.environ.get('XERO_CLIENT_ID')
 XERO_CLIENT_SECRET = os.environ.get('XERO_CLIENT_SECRET')
 XERO_REDIRECT_URI = os.environ.get('XERO_REDIRECT_URI')

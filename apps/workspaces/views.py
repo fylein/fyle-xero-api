@@ -222,7 +222,86 @@ class ConnectXeroView(viewsets.ViewSet):
     """
     Xero Connect Oauth View
     """
-    pass  # Need to add xero authentication here
+    def post(self, request, **kwargs):
+        """
+        Post of Xero Credentials
+        """
+        try:
+            authorization_code = request.data.get('code')
+
+            refresh_token = generate_xero_refresh_token(authorization_code)
+
+            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
+
+            xero_credentials = XeroCredentials.objects.filter(workspace=workspace).first()
+
+            if not xero_credentials:
+                xero_credentials = XeroCredentials.objects.create(
+                    refresh_token=refresh_token,
+                    workspace=workspace
+                )
+            else:
+                xero_credentials.refresh_token = refresh_token
+                xero_credentials.save()
+
+            return Response(
+                data=XeroCredentialSerializer(xero_credentials).data,
+                status=status.HTTP_200_OK
+            )
+        except xero_exc.InvalidClientError as e:
+            return Response(
+                json.loads(e.response),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except xero_exc.InvalidGrant as e:
+            return Response(
+                json.loads(e.response),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except xero_exc.InvalidTokenError:
+            return Response(
+                {
+                    'message': 'Invalid Authorization Code'
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        except xero_exc.InternalServerError:
+            return Response(
+                {
+                    'message': 'Internal server error'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def delete(self, request, **kwargs):
+        """Delete credentials"""
+        workspace_id = kwargs['workspace_id']
+        XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+
+        return Response(data={
+            'workspace_id': workspace_id,
+            'message': 'Xero credentials deleted'
+        })
+
+    def get(self, request, **kwargs):
+        """
+        Get QBO Credentials in Workspace
+        """
+        try:
+            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.objects.get(workspace=workspace)
+
+            return Response(
+                data=XeroCredentialSerializer(xero_credentials).data,
+                status=status.HTTP_200_OK
+            )
+        except XeroCredentials.DoesNotExist:
+            return Response(
+                data={
+                    'message': 'Xero Credentials not found in this workspace'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class GeneralSettingsView(viewsets.ViewSet):
