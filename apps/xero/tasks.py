@@ -4,6 +4,7 @@ import traceback
 from datetime import datetime
 
 from django.db import transaction
+from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping
 
 from xerosdk.exceptions import XeroSDKError
@@ -11,6 +12,7 @@ from xerosdk.exceptions import XeroSDKError
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.utils import FyleConnector
 from apps.mappings.models import GeneralMapping
+from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential
 from apps.xero.models import Bill, BillLineItem
 from apps.xero.utils import XeroConnector
@@ -106,6 +108,42 @@ def create_bill(expense_group, task_log):
         task_log.status = 'FATAL'
         task_log.save(update_fields=['detail', 'status'])
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
+
+
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
+    """
+    Schedule bills creation
+    :param expense_group_ids: List of expense group ids
+    :param workspace_id: workspace id
+    :param user: user email
+    :return: None
+    """
+    if expense_group_ids:
+        expense_groups = ExpenseGroup.objects.filter(
+            workspace_id=workspace_id, id__in=expense_group_ids, bill__id__isnull=True
+        ).all()
+    else:
+        expense_groups = ExpenseGroup.objects.filter(
+            workspace_id=workspace_id, bill__id__isnull=True
+        ).all()
+
+    chain = Chain(cached=True)
+
+    for expense_group in expense_groups:
+        task_log, _ = TaskLog.objects.update_or_create(
+            workspace_id=expense_group.workspace_id,
+            expense_group=expense_group,
+            defaults={
+                'status': 'IN_PROGRESS',
+                'type': 'CREATING_BILL'
+            }
+        )
+
+        chain.append('apps.xero.tasks.create_bill', expense_group, task_log)
+
+        task_log.save()
+
+    chain.run()
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):
