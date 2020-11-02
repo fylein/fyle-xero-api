@@ -17,4 +17,5 @@ urlpatterns = [
     path('<int:workspace_id>/tasks/', include('apps.tasks.urls')),
     path('<int:workspace_id>/xero/', include('apps.xero.urls')),
     path('<int:workspace_id>/mappings/', include('apps.mappings.urls')),
+    path('<int:workspace_id>/mappings/', include('fyle_accounting_mappings.urls')),
 ]
