@@ -52,7 +52,7 @@ class MappingUtils:
         if general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
             assert_valid('bank_account_name' in general_mapping and general_mapping['bank_account_name'],
                          'bank account name field is blank')
-            assert_valid('bank_account_id' in general_mapping and general_mapping['default_ccc_account_id'],
+            assert_valid('bank_account_id' in general_mapping and general_mapping['bank_account_id'],
                          'bank account id field is blank')
 
             params['bank_account_name'] = general_mapping.get('bank_account_name')
