@@ -158,3 +158,12 @@ class BillLineItems:
     expense = models.OneToOneField(Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
     bill = models.ForeignKey(Bill, on_delete=models.PROTECT, help_text='Reference to Bill')
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
+
+    @staticmethod
+    def create_bill_line_item(expense_group: ExpenseGroup):
+        expenses = expense_group.expenses.all()
+        bill = Bill.objects.get(expense_group=expense_group)
+
+        bill_lineitem_objects = []
+        for lineitem in expenses:
+            tracking_cateogries = get_tracking_category(expense_group, lineitem)
