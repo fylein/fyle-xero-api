@@ -27,14 +27,14 @@ class AccountView(generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         """
-        Get accounts from NetSuite
+        Get accounts from Xero
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            ns_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
 
-            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+            ns_connector = XeroConnector(ns_credentials, workspace_id=kwargs['workspace_id'])
 
-            accounts = xero_connector.sync_accounts(account_type='ACCOUNT')
+            accounts = ns_connector.sync_accounts()
 
             return Response(
                 data=self.serializer_class(accounts, many=True).data,

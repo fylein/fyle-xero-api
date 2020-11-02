@@ -49,7 +49,7 @@ class XeroConnector:
             tenant_attributes, self.workspace_id)
         return tenant_attributes
 
-    def sync_accounts(self, account_type: str):  # have a fix here - will fix this too in sometime - this won't work :P
+    def sync_accounts(self):
         """
         Get accounts
         """
@@ -59,24 +59,24 @@ class XeroConnector:
 
         accounts = self.connection.accounts.get_all()['Accounts']
 
-        accounts = list(filter(lambda current_account: current_account['Type'] == account_type, accounts))
-
         account_attributes = []
 
-        if account_type == 'BANK':
-            attribute_type = 'BANK_ACCOUNT'
-            display_name = 'Bank Account'
-        else:
-            attribute_type = 'ACCOUNT'
-            display_name = 'Account'
-
         for account in accounts:
-            account_attributes.append({
-                'attribute_type': attribute_type,
-                'display_name': display_name,
-                'value': account['Name'],
-                'destination_id': account['Id']
-            })
+            if account['Type'] == 'BANK':
+                account_attributes.append({
+                    'attribute_type': 'BANK_ACCOUNT',
+                    'display_name': 'Bank Account',
+                    'value': account['Name'],
+                    'destination_id': account['AccountID']
+                })
+
+            else:
+                account_attributes.append({
+                    'attribute_type': 'ACCOUNT',
+                    'display_name': 'Account',
+                    'value': account['Name'],
+                    'destination_id': account['AccountID']
+                })
 
         account_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
             account_attributes, self.workspace_id)
