@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Q
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import status
@@ -10,6 +11,7 @@ from fyle_accounting_mappings.serializers import DestinationAttributeSerializer
 from apps.workspaces.models import XeroCredentials
 
 from .utils import XeroConnector
+from .serializers import XeroFieldSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -174,3 +176,17 @@ class TenantView(generics.ListCreateAPIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class XeroFieldsView(generics.ListAPIView):
+    pagination_class = None
+    serializer_class = XeroFieldSerializer
+
+    def get_queryset(self):
+        attributes = DestinationAttribute.objects.filter(
+            ~Q(attribute_type='CONTACT') & ~Q(attribute_type='ACCOUNT') &
+            ~Q(attribute_type='TENANT') & ~Q(attribute_type='BANK_ACCOUNT'),
+            workspace_id=self.kwargs['workspace_id']
+        ).values('attribute_type', 'display_name').distinct()
+
+        return attributes
