@@ -73,7 +73,7 @@ class XeroConnector:
                     'attribute_type': 'BANK_ACCOUNT',
                     'display_name': 'Bank Account',
                     'value': account['Name'],
-                    'destination_id': account['Code']
+                    'destination_id': account['AccountID']
                 })
 
             else:
@@ -261,7 +261,7 @@ class XeroConnector:
                 'ContactID': bank_transaction.contact_id
             },
             'BankAccount': {
-                'Code': bank_transaction.bank_account_code
+                'AccountID': bank_transaction.bank_account_code
             },
             'LineAmountTypes': 'NoTax',
             'Reference': bank_transaction.reference,
