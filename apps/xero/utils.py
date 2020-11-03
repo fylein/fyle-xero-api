@@ -154,7 +154,7 @@ class XeroConnector:
             item_attributes.append({
                 'attribute_type': 'ITEM',
                 'display_name': 'Item',
-                'value': items['Code'],
+                'value': item['Code'],
                 'destination_id': item['ItemID']
             })
 
