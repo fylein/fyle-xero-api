@@ -15,7 +15,7 @@ from apps.xero.models import BankTransaction
 from fyle_xero_api.utils import assert_valid
 
 from .utils import XeroConnector
-from .serializers import XeroFieldSerializer, BankTransactionSerializer, BankTransactionLineitemsSerializer
+from .serializers import XeroFieldSerializer, BankTransactionSerializer
 from .tasks import create_bank_transaction, schedule_bank_transaction_creation
 
 logger = logging.getLogger(__name__)

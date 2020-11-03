@@ -166,9 +166,8 @@ def create_bank_transaction(expense_group, task_log):
                 bank_transaction_object, bank_transaction_lineitems_objects
             )
 
-            load_attachments(
-                xero_connection, created_bank_transaction['BankTransactionID'], 'banktransactions', expense_group
-            )
+            load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
+                             'banktransactions', expense_group)
 
             task_log.detail = created_bank_transaction
             task_log.bank_transaction = bank_transaction_object
@@ -258,6 +257,17 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
 def __validate_expense_group(expense_group: ExpenseGroup):
     bulk_errors = []
     row = 0
+
+    try:
+        GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
+    except GeneralMapping.DoesNotExist:
+        bulk_errors.append({
+            'row': None,
+            'expense_group_id': expense_group.id,
+            'value': 'general mappings',
+            'type': 'General Mappings',
+            'message': 'General mapping not found'
+        })
 
     general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(
         workspace_id=expense_group.workspace_id)

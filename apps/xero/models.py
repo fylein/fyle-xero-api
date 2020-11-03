@@ -215,6 +215,7 @@ class BankTransaction(models.Model):
         ).destination.destination_id
 
         general_mappings = GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
+
         bank_transaction_object, _ = BankTransaction.objects.update_or_create(
             expense_group=expense_group,
             defaults={
@@ -237,7 +238,7 @@ class BankTransactionLineItem(models.Model):
     bank_transaction = models.ForeignKey(BankTransaction, on_delete=models.PROTECT,
                                          help_text='Reference to bank transaction')
     account_id = models.CharField(max_length=255, help_text='Xero AccountCode')
-    item_code = models.CharField(max_length=255, help_text='Xero ItemCode')
+    item_code = models.CharField(max_length=255, help_text='Xero ItemCode', null=True)
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
     amount = models.FloatField(help_text='Bank Transaction LineAmount')
     description = models.CharField(max_length=255, help_text='Xero Bank Transaction LineItem description', null=True)
@@ -269,17 +270,19 @@ class BankTransactionLineItem(models.Model):
 
             item_code = get_item_code_or_none(expense_group, lineitem)
 
+            description = get_expense_purpose(lineitem, category)
+
             tracking_categories = get_tracking_category(expense_group, lineitem)
 
             bank_transaction_lineitem_object, _ = BankTransactionLineItem.objects.update_or_create(
                 bank_transaction=bank_transaction,
                 expense_id=lineitem.id,
                 defaults={
-                    'account_code': account.destination.destination_id if account else None,
-                    'item_code': item_code,
-                    'tracking_categories': tracking_categories,
+                    'account_id': account.destination.destination_id if account else None,
+                    'item_code': item_code if item_code else None,
+                    'tracking_categories': tracking_categories if tracking_categories else None,
                     'amount': lineitem.amount,
-                    'description': get_expense_purpose(lineitem, category)
+                    'description': description
                 }
             )
 

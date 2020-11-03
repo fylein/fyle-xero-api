@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('account_id', models.CharField(help_text='Xero AccountCode', max_length=255)),
-                ('item_code', models.CharField(help_text='Xero ItemCode', max_length=255)),
+                ('item_code', models.CharField(help_text='Xero ItemCode', max_length=255, null=True)),
                 ('tracking_categories', django.contrib.postgres.fields.jsonb.JSONField(help_text='Save Tracking options', null=True)),
                 ('amount', models.FloatField(help_text='Bank Transaction LineAmount')),
                 ('description', models.CharField(help_text='Xero Bank Transaction LineItem description', max_length=255, null=True)),

@@ -146,7 +146,7 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        items = self.connection.items.get_all()
+        items = self.connection.items.get_all()['Items']
 
         item_attributes = []
 
@@ -154,8 +154,8 @@ class XeroConnector:
             item_attributes.append({
                 'attribute_type': 'ITEM',
                 'display_name': 'Item',
-                'value': items['Code'],
-                'destination_id': item['ItemId']
+                'value': item['Code'],
+                'destination_id': item['ItemID']
             })
 
         item_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
@@ -192,8 +192,8 @@ class XeroConnector:
         app_url = os.environ.get('APP_URL')
 
         url = '{}/workspaces/{}/expense_groups/{}/view/info'.format(
-            app_url, 
-            bill.expense_group.workspace_id, 
+            app_url,
+            bill.expense_group.workspace_id,
             bill.expense_group.id
         )
 
@@ -234,15 +234,14 @@ class XeroConnector:
                 'Quantity': '1',
                 'UnitAmount': line.amount,
                 'AccountCode': line.account_id,
-                'ItemCode': line.item_code,
+                'ItemCode': line.item_code if line.item_code else None,
                 'Tracking': line.tracking_categories if line.tracking_categories else None
             }
             lines.append(line)
 
         return lines
 
-    @staticmethod
-    def __construct_bank_transaction(bank_transaction: BankTransaction,
+    def __construct_bank_transaction(self, bank_transaction: BankTransaction,
                                      bank_transaction_lineitems: List[BankTransactionLineItem]) -> Dict:
         """
         Create a bank transaction
@@ -261,22 +260,29 @@ class XeroConnector:
             'Contact': {
                 'ContactID': bank_transaction.contact_id
             },
+            'BankAccount': {
+                'Code': bank_transaction.bank_account_code
+            },
             'LineAmountTypes': 'NoTax',
             'Reference': bank_transaction.reference,
             'Date': bank_transaction.transaction_date,
             'CurrencyCode': bank_transaction.currency,
             'Url': url,
             'Status': 'AUTHORISED',
-            'LineItems': bank_transaction_lineitems
+            'LineItems': self.__construct_bank_transaction_lineitems(
+                bank_transaction_lineitems=bank_transaction_lineitems)
         }
         return bank_transaction_payload
 
-    def post_bank_transaction(self, bank_transaction: BankTransaction, bank_transaction_lineitems: List[BankTransactionLineItem]):
+    def post_bank_transaction(self, bank_transaction: BankTransaction,
+                              bank_transaction_lineitems: List[BankTransactionLineItem]):
         """
         Post bank transactions to Xero
         """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
         bank_transaction_payload = self.__construct_bank_transaction(bank_transaction, bank_transaction_lineitems)
-        print(bank_transaction_payload)
         created_bank_transaction = self.connection.bank_transactions.post(bank_transaction_payload)
         return created_bank_transaction
 
@@ -291,7 +297,7 @@ class XeroConnector:
 
         if len(attachments):
             responses = []
-            for attachment in attachments:                
+            for attachment in attachments:
                 response = self.connection.attachments.post_attachment(
                     endpoint=ref_type,
                     filename=attachment['filename'],

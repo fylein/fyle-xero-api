@@ -3,7 +3,6 @@ from typing import List
 import traceback
 from datetime import datetime
 
-from django.conf import settings
 from django.db import transaction
 from django_q.tasks import async_task
 
@@ -21,7 +20,6 @@ def schedule_expense_group_creation(workspace_id: int):
     """
     Schedule Expense group creation
     :param workspace_id: Workspace id
-    :param user: User email
     :return: None
     """
     task_log = TaskLog.objects.create(
