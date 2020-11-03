@@ -196,6 +196,9 @@ class BankTransaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
+    class Meta:
+        db_table = 'bank_transactions'
+
     @staticmethod
     def create_bank_transaction(expense_group: ExpenseGroup):
         """
@@ -244,6 +247,9 @@ class BankTransactionLineItem(models.Model):
     description = models.CharField(max_length=255, help_text='Xero Bank Transaction LineItem description', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
+
+    class Meta:
+        db_table = 'bank_transaction_lineitems'
 
     @staticmethod
     def create_bank_transaction_lineitems(expense_group: ExpenseGroup):

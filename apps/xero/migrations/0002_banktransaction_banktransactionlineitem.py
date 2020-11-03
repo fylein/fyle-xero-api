@@ -26,6 +26,9 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True, help_text='Updated at')),
                 ('expense_group', models.OneToOneField(help_text='Expense group reference', on_delete=django.db.models.deletion.PROTECT, to='fyle.ExpenseGroup')),
             ],
+            options={
+                'db_table': 'bank_transactions',
+            },
         ),
         migrations.CreateModel(
             name='BankTransactionLineItem',
@@ -41,5 +44,8 @@ class Migration(migrations.Migration):
                 ('bank_transaction', models.ForeignKey(help_text='Reference to bank transaction', on_delete=django.db.models.deletion.PROTECT, to='xero.BankTransaction')),
                 ('expense', models.OneToOneField(help_text='Reference to Expense', on_delete=django.db.models.deletion.PROTECT, to='fyle.Expense')),
             ],
+            options={
+                'db_table': 'bank_transaction_lineitems',
+            },
         ),
     ]
