@@ -73,7 +73,7 @@ class XeroConnector:
                     'attribute_type': 'BANK_ACCOUNT',
                     'display_name': 'Bank Account',
                     'value': account['Name'],
-                    'destination_id': account['AccountID']
+                    'destination_id': account['Code']
                 })
 
             else:
