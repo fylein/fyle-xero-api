@@ -73,7 +73,7 @@ class XeroConnector:
                     'attribute_type': 'BANK_ACCOUNT',
                     'display_name': 'Bank Account',
                     'value': account['Name'],
-                    'destination_id': account['AccountID']
+                    'destination_id': account['Code']
                 })
 
             else:
@@ -146,7 +146,7 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        items = self.connection.items.get_all()
+        items = self.connection.items.get_all()['Items']
 
         item_attributes = []
 
@@ -155,7 +155,7 @@ class XeroConnector:
                 'attribute_type': 'ITEM',
                 'display_name': 'Item',
                 'value': items['Code'],
-                'destination_id': item['ItemId']
+                'destination_id': item['ItemID']
             })
 
         item_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
@@ -192,8 +192,8 @@ class XeroConnector:
         app_url = os.environ.get('APP_URL')
 
         url = '{}/workspaces/{}/expense_groups/{}/view/info'.format(
-            app_url, 
-            bill.expense_group.workspace_id, 
+            app_url,
+            bill.expense_group.workspace_id,
             bill.expense_group.id
         )
 
@@ -231,7 +231,7 @@ class XeroConnector:
 
         if len(attachments):
             responses = []
-            for attachment in attachments:                
+            for attachment in attachments:
                 response = self.connection.attachments.post_attachment(
                     endpoint=ref_type,
                     filename=attachment['filename'],
