@@ -59,7 +59,7 @@ def create_bill(expense_group, task_log):
 
             created_bill = xero_connection.post_bill(bill_object, bill_lineitems_objects)
 
-            load_attachments(xero_connection, created_bill['InvoiceId'], 'invoices', expense_group)
+            load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
 
             task_log.detail = created_bill
             task_log.bill = bill_object
@@ -78,7 +78,7 @@ def create_bill(expense_group, task_log):
         )
         detail = {
             'expense_group_id': expense_group.id,
-            'message': 'QBO Account not connected'
+            'message': 'Xero Account not connected'
         }
         task_log.status = 'FAILED'
         task_log.detail = detail
@@ -116,7 +116,6 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
     :param workspace_id: workspace id
-    :param user: user email
     :return: None
     """
     if expense_group_ids:

@@ -176,15 +176,14 @@ class XeroConnector:
                 'Quantity': '1',
                 'UnitAmount': line.amount,
                 'AccountCode': line.account_id,
-                'ItemCode': line.item_code,
+                'ItemCode': line.item_code if line.item_code else None,
                 'Tracking': line.tracking_categories if line.tracking_categories else None
             }
             lines.append(line)
 
         return lines
 
-    @staticmethod
-    def __construct_bill(bill: Bill, bill_lineitems: List[BillLineItem]) -> Dict:
+    def __construct_bill(self, bill: Bill, bill_lineitems: List[BillLineItem]) -> Dict:
         """
         Create a bill
         :return: constructed bill
@@ -205,10 +204,11 @@ class XeroConnector:
             'LineAmountTypes': 'NoTax',
             'Reference': bill.reference,
             'Date': bill.date,
+            'DueDate': bill.date,
             'CurrencyCode': bill.currency,
             'Url': url,
             'Status': 'AUTHORISED',
-            'LineItems': bill_lineitems
+            'LineItems': self.__construct_bill_lineitems(bill_lineitems)
         }
         return bill_payload
 
@@ -216,6 +216,9 @@ class XeroConnector:
         """
         Post vendor bills to Xero
         """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
         bills_payload = self.__construct_bill(bill, bill_lineitems)
         created_bill = self.connection.invoices.post(bills_payload)
         return created_bill

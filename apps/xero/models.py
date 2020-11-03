@@ -111,7 +111,7 @@ class Bill(models.Model):
         expense: Expense = expense_group.expenses.first()
 
         contact: Mapping = Mapping.objects.get(
-            destination_type='EMPLOYEE',
+            destination_type='CONTACT',
             source_type='EMPLOYEE',
             source__value=description.get('employee_email'),
             workspace_id=expense_group.workspace_id
@@ -162,6 +162,7 @@ class BillLineItem(models.Model):
             ).first()
 
             item_code = get_item_code_or_none(expense_group, lineitem)
+
             description = get_expense_purpose(lineitem, category)
 
             tracking_categories = get_tracking_category(expense_group, lineitem)
@@ -169,9 +170,9 @@ class BillLineItem(models.Model):
             lineitem_object, _ = BillLineItem.objects.update_or_create(
                 bill=bill,
                 expense_id=lineitem.id,
-                default={
-                    'tracking_categories': tracking_categories,
-                    'item_code': item_code,
+                defaults={
+                    'tracking_categories': tracking_categories if tracking_categories else None,
+                    'item_code': item_code if item_code else None,
                     'account_id': account.destination.destination_id,
                     'description': description,
                     'amount': lineitem.amount
