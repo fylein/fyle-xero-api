@@ -1,5 +1,6 @@
 import base64
 import os
+from datetime import timedelta, datetime
 
 from django.conf import settings
 from typing import List, Dict
@@ -204,7 +205,7 @@ class XeroConnector:
             'LineAmountTypes': 'NoTax',
             'Reference': bill.reference,
             'Date': bill.date,
-            'DueDate': bill.date,
+            'DueDate': (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d'),
             'CurrencyCode': bill.currency,
             'Url': url,
             'Status': 'AUTHORISED',
