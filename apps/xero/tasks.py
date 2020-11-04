@@ -46,16 +46,16 @@ def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str,
 
 def create_bill(expense_group, task_log):
     try:
+        xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
+
+        xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
+
         with transaction.atomic():
             __validate_expense_group(expense_group)
 
             bill_object = Bill.create_bill(expense_group)
 
             bill_lineitems_objects = BillLineItem.create_bill_lineitems(expense_group)
-
-            xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
-
-            xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
 
             created_bill = xero_connection.post_bill(bill_object, bill_lineitems_objects)
 
@@ -163,6 +163,10 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
 
 def create_bank_transaction(expense_group, task_log):
     try:
+        xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
+
+        xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
+
         with transaction.atomic():
             __validate_expense_group(expense_group)
 
@@ -171,10 +175,6 @@ def create_bank_transaction(expense_group, task_log):
             bank_transaction_lineitems_objects = BankTransactionLineItem.create_bank_transaction_lineitems(
                 expense_group
             )
-
-            xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
-
-            xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
 
             created_bank_transaction = xero_connection.post_bank_transaction(
                 bank_transaction_object, bank_transaction_lineitems_objects
