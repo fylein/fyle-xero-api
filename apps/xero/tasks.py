@@ -8,7 +8,7 @@ from django.db import transaction
 from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping
 
-from xerosdk.exceptions import XeroSDKError
+from xerosdk.exceptions import XeroSDKError, WrongParamsError
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.utils import FyleConnector
@@ -91,7 +91,22 @@ def create_bill(expense_group, task_log):
         task_log.status = 'FAILED'
         task_log.detail = detail
 
-        task_log.save(update_fields=['detail', 'status'])
+    except WrongParamsError as exception:
+        all_details = []
+        logger.exception(exception)
+        detail = json.dumps(exception.__dict__)
+        detail = json.loads(detail)
+
+        all_details.append({
+            'expense_group_id': expense_group.id,
+            'message': detail['message']['Message'],
+            'error': detail['message']
+        })
+        task_log.xero_errors = all_details
+        task_log.detail = None
+        task_log.status = 'FAILED'
+
+        task_log.save(update_fields=['detail', 'status', 'xero_errors'])
 
     except XeroSDKError as exception:
         logger.exception(exception.response)
@@ -199,6 +214,23 @@ def create_bank_transaction(expense_group, task_log):
         task_log.detail = detail
 
         task_log.save(update_fields=['detail', 'status'])
+
+    except WrongParamsError as exception:
+        all_details = []
+        logger.exception(exception)
+        detail = json.dumps(exception.__dict__)
+        detail = json.loads(detail)
+
+        all_details.append({
+            'expense_group_id': expense_group.id,
+            'message': detail['message']['Message'],
+            'error': detail['message']
+        })
+        task_log.xero_errors = all_details
+        task_log.detail = None
+        task_log.status = 'FAILED'
+
+        task_log.save(update_fields=['detail', 'status', 'xero_errors'])
 
     except XeroSDKError as exception:
         logger.exception(exception.response)

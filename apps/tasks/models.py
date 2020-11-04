@@ -27,6 +27,7 @@ class TaskLog(models.Model):
                                          help_text='Reference to Bank Transaction', null=True)
     status = models.CharField(max_length=255, help_text='Task Status')
     detail = JSONField(help_text='Task response', null=True, default=get_default)
+    xero_errors = JSONField(help_text='Xero Errors', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
 
