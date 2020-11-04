@@ -189,14 +189,6 @@ class XeroConnector:
         Create a bill
         :return: constructed bill
         """
-        app_url = os.environ.get('APP_URL')
-
-        url = '{}/workspaces/{}/expense_groups/{}/view/info'.format(
-            app_url,
-            bill.expense_group.workspace_id,
-            bill.expense_group.id
-        )
-
         bill_payload = {
             'Type': 'ACCPAY',
             'Contact': {
@@ -207,7 +199,6 @@ class XeroConnector:
             'Date': bill.date,
             'DueDate': (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d'),
             'CurrencyCode': bill.currency,
-            'Url': url,
             'Status': 'AUTHORISED',
             'LineItems': self.__construct_bill_lineitems(bill_lineitems)
         }
@@ -251,14 +242,6 @@ class XeroConnector:
         Create a bank transaction
         :return: constructed bank transaction
         """
-        app_url = os.environ.get('APP_URL')
-
-        url = '{}/workspaces/{}/expense_groups/{}/view/info'.format(
-            app_url,
-            bank_transaction.expense_group.workspace_id,
-            bank_transaction.expense_group.id
-        )
-
         bank_transaction_payload = {
             'Type': 'SPEND',
             'Contact': {
@@ -271,7 +254,6 @@ class XeroConnector:
             'Reference': bank_transaction.reference,
             'Date': bank_transaction.transaction_date,
             'CurrencyCode': bank_transaction.currency,
-            'Url': url,
             'Status': 'AUTHORISED',
             'LineItems': self.__construct_bank_transaction_lineitems(
                 bank_transaction_lineitems=bank_transaction_lineitems)
