@@ -20,12 +20,14 @@ def schedule_sync(workspace_id: int, schedule_enabled: bool, hours: int, next_ru
         ws_schedule.start_datetime = start_datetime
         ws_schedule.interval_hours = hours
 
-        schedule = Schedule.objects.create(
+        schedule, _ = Schedule.objects.update_or_create(
             func='apps.workspaces.tasks.run_sync_schedule',
             args='{}'.format(workspace_id),
-            schedule_type=Schedule.MINUTES,
-            minutes=hours * 60,
-            next_run=start_datetime
+            defaults={
+                'schedule_type': Schedule.MINUTES,
+                'minutes': hours * 60,
+                'next_run': start_datetime
+            }
         )
 
         ws_schedule.schedule = schedule
