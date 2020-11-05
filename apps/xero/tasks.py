@@ -160,7 +160,8 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
 
         task_log.save()
 
-    chain.run()
+    if chain.length():
+        chain.run()
 
 
 def create_bank_transaction(expense_group, task_log):
@@ -284,7 +285,8 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
 
         task_log.save()
 
-    chain.run()
+    if chain.length():
+        chain.run()
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):

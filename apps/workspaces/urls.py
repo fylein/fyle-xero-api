@@ -1,6 +1,6 @@
 from django.urls import path, include
 
-from .views import WorkspaceView, ReadyView, ConnectFyleView, ConnectXeroView, GeneralSettingsView
+from .views import WorkspaceView, ReadyView, ConnectFyleView, ConnectXeroView, GeneralSettingsView, ScheduleView
 
 urlpatterns = [
     path('', WorkspaceView.as_view({'get': 'get', 'post': 'post'})),
@@ -17,4 +17,5 @@ urlpatterns = [
     path('<int:workspace_id>/tasks/', include('apps.tasks.urls')),
     path('<int:workspace_id>/xero/', include('apps.xero.urls')),
     path('<int:workspace_id>/mappings/', include('apps.mappings.urls')),
+    path('<int:workspace_id>/schedule/', ScheduleView.as_view({'post': 'post', 'get': 'get'}))
 ]

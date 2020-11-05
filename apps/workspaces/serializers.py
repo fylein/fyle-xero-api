@@ -3,7 +3,7 @@ Workspace Serializers
 """
 from rest_framework import serializers
 
-from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings
+from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
@@ -42,4 +42,13 @@ class WorkSpaceGeneralSettingsSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = WorkspaceGeneralSettings
+        fields = '__all__'
+
+
+class WorkspaceScheduleSerializer(serializers.ModelSerializer):
+    """
+    Workspace Schedule Serializer
+    """
+    class Meta:
+        model = WorkspaceSchedule
         fields = '__all__'
