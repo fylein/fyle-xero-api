@@ -2,19 +2,20 @@ import json
 import logging
 import traceback
 from datetime import datetime
+from typing import List
 
 from django.db import transaction
 from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping
 
-from xerosdk.exceptions import XeroSDKError
+from xerosdk.exceptions import XeroSDKError, WrongParamsError
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.utils import FyleConnector
 from apps.mappings.models import GeneralMapping
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential
-from apps.xero.models import Bill, BillLineItem
+from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 
@@ -45,6 +46,10 @@ def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str,
 
 def create_bill(expense_group, task_log):
     try:
+        xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
+
+        xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
+
         with transaction.atomic():
             __validate_expense_group(expense_group)
 
@@ -52,13 +57,9 @@ def create_bill(expense_group, task_log):
 
             bill_lineitems_objects = BillLineItem.create_bill_lineitems(expense_group)
 
-            xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
-
-            xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
-
             created_bill = xero_connection.post_bill(bill_object, bill_lineitems_objects)
 
-            load_attachments(xero_connection, created_bill['InvoiceId'], 'invoices', expense_group)
+            load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
 
             task_log.detail = created_bill
             task_log.bill = bill_object
@@ -77,7 +78,7 @@ def create_bill(expense_group, task_log):
         )
         detail = {
             'expense_group_id': expense_group.id,
-            'message': 'QBO Account not connected'
+            'message': 'Xero Account not connected'
         }
         task_log.status = 'FAILED'
         task_log.detail = detail
@@ -91,6 +92,23 @@ def create_bill(expense_group, task_log):
         task_log.detail = detail
 
         task_log.save(update_fields=['detail', 'status'])
+
+    except WrongParamsError as exception:
+        all_details = []
+        logger.exception(exception)
+        detail = json.dumps(exception.__dict__)
+        detail = json.loads(detail)
+
+        all_details.append({
+            'expense_group_id': expense_group.id,
+            'message': detail['message']['Message'],
+            'error': detail['message']
+        })
+        task_log.xero_errors = all_details
+        task_log.detail = None
+        task_log.status = 'FAILED'
+
+        task_log.save(update_fields=['detail', 'status', 'xero_errors'])
 
     except XeroSDKError as exception:
         logger.exception(exception.response)
@@ -115,7 +133,6 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
     :param workspace_id: workspace id
-    :param user: user email
     :return: None
     """
     if expense_group_ids:
@@ -146,9 +163,144 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
     chain.run()
 
 
+def create_bank_transaction(expense_group, task_log):
+    try:
+        xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
+
+        xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
+
+        with transaction.atomic():
+            __validate_expense_group(expense_group)
+
+            bank_transaction_object = BankTransaction.create_bank_transaction(expense_group)
+
+            bank_transaction_lineitems_objects = BankTransactionLineItem.create_bank_transaction_lineitems(
+                expense_group
+            )
+
+            created_bank_transaction = xero_connection.post_bank_transaction(
+                bank_transaction_object, bank_transaction_lineitems_objects
+            )
+
+            load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
+                             'banktransactions', expense_group)
+
+            task_log.detail = created_bank_transaction
+            task_log.bank_transaction = bank_transaction_object
+            task_log.status = 'COMPLETE'
+
+            task_log.save(update_fields=['detail', 'bank_transaction', 'status'])
+
+            expense_group.exported_at = datetime.now()
+            expense_group.save()
+
+    except XeroCredentials.DoesNotExist:
+        logger.exception(
+            'Xero Credentials not found for workspace_id %s / expense group %s',
+            expense_group.workspace_id,
+            expense_group.id
+        )
+        detail = {
+            'expense_group_id': expense_group.id,
+            'message': 'Xero Account not connected'
+        }
+        task_log.status = 'FAILED'
+        task_log.detail = detail
+
+        task_log.save(update_fields=['detail', 'status'])
+
+    except BulkError as exception:
+        logger.exception(exception.response)
+        detail = exception.response
+        task_log.status = 'FAILED'
+        task_log.detail = detail
+
+        task_log.save(update_fields=['detail', 'status'])
+
+    except WrongParamsError as exception:
+        all_details = []
+        logger.exception(exception)
+        detail = json.dumps(exception.__dict__)
+        detail = json.loads(detail)
+
+        all_details.append({
+            'expense_group_id': expense_group.id,
+            'message': detail['message']['Message'],
+            'error': detail['message']
+        })
+        task_log.xero_errors = all_details
+        task_log.detail = None
+        task_log.status = 'FAILED'
+
+        task_log.save(update_fields=['detail', 'status', 'xero_errors'])
+
+    except XeroSDKError as exception:
+        logger.exception(exception.response)
+        detail = json.loads(exception.response)
+        task_log.status = 'FAILED'
+        task_log.detail = detail
+
+        task_log.save(update_fields=['detail', 'status'])
+
+    except Exception:
+        error = traceback.format_exc()
+        task_log.detail = {
+            'error': error
+        }
+        task_log.status = 'FATAL'
+        task_log.save(update_fields=['detail', 'status'])
+        logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
+
+
+def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: List[str]):
+    """
+    Schedule bank transaction creation
+    :param expense_group_ids: List of expense group ids
+    :param workspace_id: workspace id
+    :return: None
+    """
+    if expense_group_ids:
+        expense_groups = ExpenseGroup.objects.filter(
+            workspace_id=workspace_id, id__in=expense_group_ids, banktransaction__id__isnull=True
+        ).all()
+    else:
+        expense_groups = ExpenseGroup.objects.filter(
+            workspace_id=workspace_id, banktransaction__id__isnull=True
+        ).all()
+
+    chain = Chain(cached=True)
+
+    for expense_group in expense_groups:
+        task_log, _ = TaskLog.objects.update_or_create(
+            workspace_id=expense_group.workspace_id,
+            expense_group=expense_group,
+            defaults={
+                'status': 'IN_PROGRESS',
+                'type': 'CREATING_BANK_TRANSACTION'
+            }
+        )
+
+        chain.append('apps.xero.tasks.create_bank_transaction', expense_group, task_log)
+
+        task_log.save()
+
+    chain.run()
+
+
 def __validate_expense_group(expense_group: ExpenseGroup):
     bulk_errors = []
     row = 0
+
+    try:
+        GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
+    except GeneralMapping.DoesNotExist:
+        bulk_errors.append({
+            'row': None,
+            'expense_group_id': expense_group.id,
+            'value': 'general mappings',
+            'type': 'General Mappings',
+            'message': 'General mapping not found'
+        })
 
     general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(
         workspace_id=expense_group.workspace_id)

@@ -20,6 +20,7 @@ __pycache__
 
 # Setup File
 setup.sh
+local_run.sh
 
 # Distribution / packaging
 .Python

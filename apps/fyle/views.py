@@ -40,7 +40,8 @@ class ExpenseGroupView(generics.ListCreateAPIView):
         elif state == 'READY':
             return ExpenseGroup.objects.filter(
                 workspace_id=self.kwargs['workspace_id'],
-                bill__id__isnull=True
+                bill__id__isnull=True,
+                banktransaction__id__isnull=True
             ).order_by('-updated_at')
 
     def post(self, request, *args, **kwargs):
@@ -150,7 +151,7 @@ class ExpenseGroupScheduleView(generics.CreateAPIView):
         """
         Post expense schedule
         """
-        schedule_expense_group_creation(kwargs['workspace_id'], request.user)
+        schedule_expense_group_creation(kwargs['workspace_id'])
 
         return Response(
             status=status.HTTP_200_OK
