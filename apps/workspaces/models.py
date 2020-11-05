@@ -3,6 +3,7 @@ Workspace Models
 """
 from django.db import models
 from django.contrib.auth import get_user_model
+from django_q.models import Schedule
 
 User = get_user_model()
 
@@ -62,3 +63,15 @@ class WorkspaceGeneralSettings(models.Model):
                                                              help_text='Non Reimbursable Expenses type', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
+
+
+class WorkspaceSchedule(models.Model):
+    """
+    Workspace Schedule
+    """
+    id = models.AutoField(primary_key=True, help_text='Unique Id to identify a schedule')
+    workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
+    enabled = models.BooleanField(default=False)
+    start_datetime = models.DateTimeField(help_text='Datetime for start of schedule', null=True)
+    interval_hours = models.IntegerField(null=True)
+    schedule = models.OneToOneField(Schedule, on_delete=models.PROTECT, null=True)

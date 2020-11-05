@@ -13,15 +13,15 @@ from xerosdk import exceptions as xero_exc
 from fyle_rest_auth.utils import AuthUtils
 from fyle_rest_auth.models import AuthToken
 
+from apps.workspaces.tasks import schedule_sync
 from fyle_xero_api.utils import assert_valid
 
 from apps.fyle.models import ExpenseGroupSettings
 
-from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings
+from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule
 from .utils import generate_xero_refresh_token, create_or_update_general_settings
 from .serializers import WorkspaceSerializer, FyleCredentialSerializer, XeroCredentialSerializer, \
-    WorkSpaceGeneralSettingsSerializer
-
+    WorkSpaceGeneralSettingsSerializer, WorkspaceScheduleSerializer
 
 User = get_user_model()
 auth_utils = AuthUtils()
@@ -299,6 +299,52 @@ class ConnectXeroView(viewsets.ViewSet):
             return Response(
                 data={
                     'message': 'Xero Credentials not found in this workspace'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class ScheduleView(viewsets.ViewSet):
+    """
+    Schedule View
+    """
+    def post(self, request, **kwargs):
+        """
+        Post Settings
+        """
+        schedule_enabled = request.data.get('schedule_enabled')
+        assert_valid(schedule_enabled is not None, 'Schedule enabled cannot be null')
+
+        hours = request.data.get('hours')
+        assert_valid(hours is not None, 'Hours cannot be left empty')
+
+        next_run = request.data.get('next_run')
+        assert_valid(next_run is not None, 'next_run value cannot be empty')
+
+        settings = schedule_sync(
+            workspace_id=kwargs['workspace_id'],
+            schedule_enabled=schedule_enabled,
+            hours=hours,
+            next_run=next_run
+        )
+
+        return Response(
+            data=WorkspaceScheduleSerializer(settings).data,
+            status=status.HTTP_200_OK
+        )
+
+    def get(self, *args, **kwargs):
+        try:
+            ns_credentials = WorkspaceSchedule.objects.get(workspace_id=kwargs['workspace_id'])
+
+            return Response(
+                data=WorkspaceScheduleSerializer(ns_credentials).data,
+                status=status.HTTP_200_OK
+            )
+        except WorkspaceSchedule.DoesNotExist:
+            return Response(
+                data={
+                    'message': 'Schedule settings does not exist in workspace'
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
