@@ -56,3 +56,9 @@ Django Rest Framework API for Fyle Xero Integration
     ```
     bash run.sh
     ```
+
+* Run the Django Q Worker
+
+    ```
+    bash start_qcluster.sh
+    ```
