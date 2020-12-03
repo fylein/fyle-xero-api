@@ -114,6 +114,8 @@ Q_CLUSTER = {
     'name': 'fyle_xero_api',
     'compress': True,
     'save_limit': 0,
+    'workers': 1,
+    'queue_limit': 50,
     'orm': 'default',
     'ack_failures': True
 }
