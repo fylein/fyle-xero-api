@@ -293,21 +293,10 @@ def __validate_expense_group(expense_group: ExpenseGroup):
     bulk_errors = []
     row = 0
 
-    try:
-        GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
-    except GeneralMapping.DoesNotExist:
-        bulk_errors.append({
-            'row': None,
-            'expense_group_id': expense_group.id,
-            'value': 'general mappings',
-            'type': 'General Mappings',
-            'message': 'General mapping not found'
-        })
-
     general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(
         workspace_id=expense_group.workspace_id)
 
-    if not general_settings.corporate_credit_card_expenses_object:
+    if general_settings.corporate_credit_card_expenses_object:
         general_mapping = GeneralMapping.objects.filter(workspace_id=expense_group.workspace_id).first()
 
         if not general_mapping:
