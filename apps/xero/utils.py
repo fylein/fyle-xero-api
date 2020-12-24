@@ -289,8 +289,24 @@ class XeroConnector:
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         bank_transaction_payload = self.__construct_bank_transaction(bank_transaction, bank_transaction_lineitems)
-        created_bank_transaction = self.connection.bank_transactions.post(bank_transaction_payload)
-        return created_bank_transaction
+
+        try:
+            created_bank_transaction = self.connection.bank_transactions.post(bank_transaction_payload)
+            return created_bank_transaction
+
+        except WrongParamsError as exception:
+            logger.exception({'error': exception.response})
+            detail = json.dumps(exception.__dict__)
+            detail = json.loads(detail)
+
+            error_message = detail['message']['Elements'][0]['ValidationErrors'][0]['Message'].split(',')[0]
+
+            if 'The document date cannot be before the end of year lock date' == error_message or \
+                    'The document date cannot be before the period lock date' == error_message:
+                bank_transaction_payload['Date'] = datetime.now().strftime("%Y-%m-%d")
+
+                created_bank_transaction = self.connection.bank_transactions.post(bank_transaction_payload)
+                return created_bank_transaction
 
     def post_attachments(self, ref_id: str, ref_type: str, attachments: List[Dict]) -> List:
         """
