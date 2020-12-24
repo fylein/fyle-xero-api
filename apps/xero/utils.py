@@ -7,7 +7,7 @@ from django.conf import settings
 from typing import List, Dict
 
 from xerosdk import XeroSDK
-from xerosdk.exceptions import InvalidGrant, WrongParamsError
+from xerosdk.exceptions import WrongParamsError
 
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import XeroCredentials
@@ -16,6 +16,7 @@ from fyle_accounting_mappings.models import DestinationAttribute
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
 
 logger = logging.getLogger(__name__)
+
 
 class XeroConnector:
     """
@@ -224,17 +225,15 @@ class XeroConnector:
             logger.exception(exception)
             detail = json.dumps(exception.__dict__)
             detail = json.loads(detail)
-            print('detail',detail)
 
-            error_message = detail['message']['ValidationErrors'][0]['Message'].split(',')[0]
+            error_message = detail['message']['Elements'][0]['ValidationErrors'][0]['Message'].split(',')[0]
 
-            if 'The document date cannot be before the end of year lock date' == error_message:
+            if 'The document date cannot be before the end of year lock date' == error_message or \
+                    'The document date cannot be before the period lock date' == error_message:
                 bills_payload['Date'] = datetime.now().strftime("%Y-%m-%d")
 
                 created_bill = self.connection.invoices.post(bills_payload)
                 return created_bill
-
-        return created_bill
 
     @staticmethod
     def __construct_bank_transaction_lineitems(bank_transaction_lineitems: List[BankTransactionLineItem]) -> List[Dict]:
