@@ -222,7 +222,7 @@ class XeroConnector:
             return created_bill
 
         except WrongParamsError as exception:
-            logger.exception(exception)
+            logger.exception({'error': exception.response})
             detail = json.dumps(exception.__dict__)
             detail = json.loads(detail)
 

@@ -86,7 +86,7 @@ def create_bill(expense_group, task_log):
         task_log.save(update_fields=['detail', 'status'])
 
     except BulkError as exception:
-        logger.exception(exception.response)
+        logger.exception({'error': exception.response})
         detail = exception.response
         task_log.status = 'FAILED'
         task_log.detail = detail
@@ -95,7 +95,7 @@ def create_bill(expense_group, task_log):
 
     except WrongParamsError as exception:
         all_details = []
-        logger.exception(exception)
+        logger.exception({'error': exception.response})
         detail = json.dumps(exception.__dict__)
         detail = json.loads(detail)
 
@@ -111,7 +111,7 @@ def create_bill(expense_group, task_log):
         task_log.save(update_fields=['detail', 'status', 'xero_errors'])
 
     except XeroSDKError as exception:
-        logger.exception(exception.response)
+        logger.exception({'error': exception.response})
         detail = json.loads(exception.response)
         task_log.status = 'FAILED'
         task_log.detail = detail
@@ -211,7 +211,7 @@ def create_bank_transaction(expense_group, task_log):
         task_log.save(update_fields=['detail', 'status'])
 
     except BulkError as exception:
-        logger.exception(exception.response)
+        logger.exception({'error': exception.response})
         detail = exception.response
         task_log.status = 'FAILED'
         task_log.detail = detail
@@ -220,7 +220,7 @@ def create_bank_transaction(expense_group, task_log):
 
     except WrongParamsError as exception:
         all_details = []
-        logger.exception(exception)
+        logger.exception({'error': exception.response})
         detail = json.dumps(exception.__dict__)
         detail = json.loads(detail)
 
@@ -236,7 +236,7 @@ def create_bank_transaction(expense_group, task_log):
         task_log.save(update_fields=['detail', 'status', 'xero_errors'])
 
     except XeroSDKError as exception:
-        logger.exception(exception.response)
+        logger.exception({'error': exception.response})
         detail = json.loads(exception.response)
         task_log.status = 'FAILED'
         task_log.detail = detail
