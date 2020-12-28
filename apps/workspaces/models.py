@@ -65,7 +65,7 @@ class WorkspaceGeneralSettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
     class Meta:
-        db_table = 'general_settings'
+        db_table = 'workspace_general_settings'
 
 class WorkspaceSchedule(models.Model):
     """
