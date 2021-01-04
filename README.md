@@ -49,7 +49,7 @@ Django Rest Framework API for Fyle Xero Integration
 * The database can be accessed by this command, on password prompt type `postgres`
 
     ```
-    docker-compose psql -h localhost -U postgres xero_db
+    docker-compose run db psql -h db -U postgres xero_db
     ```
 
 * To tail the logs a service you can do
