@@ -43,7 +43,7 @@ Django Rest Framework API for Fyle Xero Integration
 * Run docker containers
 
     ```
-    docker-compose up  -d db api qcluster
+    docker-compose up -d db api qcluster
     ```
 
 * The database can be accessed by this command, on password prompt type `postgres`
