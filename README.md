@@ -3,6 +3,10 @@ Django Rest Framework API for Fyle Xero Integration
 
 ### Setup
 
+* Download and install Docker desktop for Mac from [here.](https://www.docker.com/products/docker-desktop)
+
+* If you're using a linux machine, please download docker according to the distrubution you're on.
+
 * Rename docker-compose.yml.template to docker-compose.yml
 
     ```
@@ -39,17 +43,29 @@ Django Rest Framework API for Fyle Xero Integration
 * Run docker containers
 
     ```
-    docker-compose up db api qcluster
+    docker-compose up  -d db api qcluster
     ```
 
-* The database will be available on port 5432 and can be accessed by this command
+* The database can be accessed by this command, on password prompt type `postgres`
 
     ```
-    PGPASSWORD=postgres psql -h localhost -U postgres xero_db
+    docker-compose psql -h localhost -U postgres xero_db
     ```
 
 * To tail the logs a service you can do
     
     ```
     docker-compose logs -f <api / qcluster>
+    ```
+
+* To stop the containers
+
+    ```
+    docker-compose stop api qcluster
+    ```
+
+* To restart any containers - `would usually be needed with qcluster after you make any code changes`
+
+    ```
+    docker-compose restart qcluster
     ```
