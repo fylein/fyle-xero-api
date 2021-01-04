@@ -1,0 +1,68 @@
+version: '3.7'
+
+services:
+  api:
+    build: ./
+    entrypoint: bash run.sh
+    restart: always
+    volumes:
+    - ./:/fyle-xero-api
+    ports:
+    - 8000:8000
+    depends_on:
+    - db
+    environment: 
+      SECRET_KEY: thisisthedjangosecretkey
+      ALLOWED_HOSTS: "*"
+      DEBUG: "False"
+      APP_URL: http://localhost:4200
+      API_URL: http://localhost:8000/api
+      DATABASE_URL: postgres://postgres:postgres@db:5432/xero_db
+      FYLE_BASE_URL:
+      FYLE_CLIENT_ID:
+      FYLE_CLIENT_SECRET:
+      FYLE_TOKEN_URI:
+      XERO_BASE_URL: https://api.xero.com
+      XERO_CLIENT_ID:
+      XERO_CLIENT_SECRET:
+      XERO_REDIRECT_URI: http://localhost:4200/workspaces/xero/callback
+      XERO_TOKEN_URI: https://identity.xero.com/connect/token
+
+
+  qcluster:
+    build: ./
+    entrypoint: python manage.py qcluster
+    restart: always
+    volumes:
+    - ./:/fyle-xero-api
+    depends_on:
+    - db
+    - api
+    environment: 
+      SECRET_KEY: thisisthedjangosecretkey
+      ALLOWED_HOSTS: "*"
+      DEBUG: "False"
+      APP_URL: http://localhost:4200
+      API_URL: http://localhost:8000/api
+      DATABASE_URL: postgres://postgres:postgres@db:5432/xero_db
+      FYLE_BASE_URL:
+      FYLE_CLIENT_ID:
+      FYLE_CLIENT_SECRET:
+      FYLE_TOKEN_URI:
+      XERO_BASE_URL: https://api.xero.com
+      XERO_CLIENT_ID:
+      XERO_CLIENT_SECRET:
+      XERO_REDIRECT_URI: http://localhost:4200/workspaces/xero/callback
+      XERO_TOKEN_URI: https://identity.xero.com/connect/token
+
+  db:
+    image: "postgres:latest"
+    environment: 
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - data:/var/lib/postgresql/data/
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  api:
+  data:

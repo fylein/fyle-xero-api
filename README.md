@@ -3,62 +3,75 @@ Django Rest Framework API for Fyle Xero Integration
 
 ### Setup
 
-* Rename setup_template.sh to setup.sh
+* Download and install Docker desktop for Mac from [here.](https://www.docker.com/products/docker-desktop)
+
+* If you're using a linux machine, please download docker according to the distrubution you're on.
+
+* Rename docker-compose.yml.template to docker-compose.yml
 
     ```
-    $ mv setup_template.sh setup.sh
+    $ mv docker-compose.yml.template docker-compose.yml
     ```
   
-* Setup environment variables in setup.sh
+* Setup environment variables in docker_compose.yml
 
-    ```bash
-    # Django Settings
-    export SECRET_KEY=YOUR DJANGO SECRET KEY
-    export ALLOWED_HOSTS=HOSTS SEPARATED BY COMMAS
-    export DEBUG=True
-    
-    # Database Settings
-    export DB_NAME=POSTGRES DB NAME
-    export DB_USER=POSTGRES DB USER
-    export DB_PASSWORD=POSTGRES DB PASSWORD
-    export DB_HOST=POSTGRES DB
-    export DB_PORT=POSTGRES DB PORT
-    
-    # Fyle Settings
-    export API_URL=YOUR API URL
-    export FYLE_BASE_URL=FYLE BASE URL
-    export FYLE_CLIENT_ID=FYLE CLIENT ID
-    export FYLE_CLIENT_SECRET=FYLE CLIENT SECRET
-    export FYLE_TOKEN_URI=FYLE TOKEN URI
-  
-    # Xero Settings
-    export XERO_BASE_URL=XERO BASE URL
-    export XERO_CLIENT_ID=XERO CLIENT ID
-    export XERO_CLIENT_SECRET=XERO CLIENT SECRET
-    export XERO_REDIRECT_URI=XERO REDIRECT URI
-    export XERO_TOKEN_URI=XERO TOKEN URI
+    ```yaml
+    environment:
+      SECRET_KEY: thisisthedjangosecretkey
+      ALLOWED_HOSTS: "*"
+      DEBUG: "False"
+      APP_URL: http://localhost:4200
+      API_URL: http://localhost:8000/api
+      DATABASE_URL: postgres://postgres:postgres@db:5432/xero_db
+      FYLE_BASE_URL:
+      FYLE_CLIENT_ID:
+      FYLE_CLIENT_SECRET:
+      FYLE_TOKEN_URI:
+      XERO_BASE_URL: https://api.xero.com
+      XERO_CLIENT_ID:
+      XERO_CLIENT_SECRET:
+      XERO_REDIRECT_URI: http://localhost:4200/workspaces/xero/callback
+      XERO_TOKEN_URI: https://identity.xero.com/connect/token
    ```
   
-* Install the requirements
+* Build docker images
 
     ```
-    pip install -r requirements.txt
+    docker-compose build api qcluster
     ```
 
-* Run the migrations
+* Run docker containers
 
     ```
-    python manage.py migrate
+    docker-compose up -d db api qcluster
     ```
 
-* Run the development server
+* The database can be accessed by this command, on password prompt type `postgres`
 
     ```
-    bash run.sh
+    docker-compose run db psql -h db -U postgres xero_db
     ```
 
-* Run the Django Q Worker
+* To tail the logs a service you can do
+    
+    ```
+    docker-compose logs -f <api / qcluster>
+    ```
+
+* To stop the containers
 
     ```
-    bash start_qcluster.sh
+    docker-compose stop api qcluster
+    ```
+
+* To restart any containers - `would usually be needed with qcluster after you make any code changes`
+
+    ```
+    docker-compose restart qcluster
+    ```
+
+* To run bash inside any container for purpose of debugging do
+
+    ```
+    docker-compose exec api /bin/bash
     ```
