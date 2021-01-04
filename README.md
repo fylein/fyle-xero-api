@@ -69,3 +69,9 @@ Django Rest Framework API for Fyle Xero Integration
     ```
     docker-compose restart qcluster
     ```
+
+* To run bash inside any container for purpose of debugging do
+
+    ```
+    docker-compose exec api /bin/bash
+    ```
