@@ -64,6 +64,8 @@ class WorkspaceGeneralSettings(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
+    class Meta:
+        db_table = 'workspace_general_settings'
 
 class WorkspaceSchedule(models.Model):
     """
@@ -75,3 +77,6 @@ class WorkspaceSchedule(models.Model):
     start_datetime = models.DateTimeField(help_text='Datetime for start of schedule', null=True)
     interval_hours = models.IntegerField(null=True)
     schedule = models.OneToOneField(Schedule, on_delete=models.PROTECT, null=True)
+
+    class Meta:
+        db_table = 'workspace_schedules'
