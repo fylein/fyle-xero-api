@@ -8,12 +8,11 @@ from apps.fyle.models import ExpenseGroup, Expense
 from apps.mappings.models import GeneralMapping
 
 from apps.fyle.utils import FyleConnector
-from apps.workspaces.models import FyleCredential
+from apps.workspaces.models import FyleCredential, Workspace
 
 
 def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
-    mapping_settings = MappingSetting.objects.filter(
-        workspace_id=expense_group.workspace_id).all()
+    mapping_settings = MappingSetting.objects.filter(workspace_id=expense_group.workspace_id).all()
 
     tracking_categories = []
     default_expense_attributes = ['CATEGORY', 'EMPLOYEE']
@@ -31,8 +30,7 @@ def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
                     attribute_type=setting.source_field,
                     workspace_id=expense_group.workspace_id
                 ).first()
-                source_value = lineitem.custom_properties.get(
-                    attribute.display_name, None)
+                source_value = lineitem.custom_properties.get(attribute.display_name, None)
 
             mapping: Mapping = Mapping.objects.filter(
                 source_type=setting.source_field,
@@ -74,10 +72,8 @@ def get_item_code_or_none(expense_group: ExpenseGroup, lineitem: Expense):
         elif item_setting.source_field == 'COST_CENTER':
             source_value = lineitem.cost_center
         else:
-            attribute = ExpenseAttribute.objects.filter(
-                attribute_type=item_setting.source_field).first()
-            source_value = lineitem.custom_properties.get(
-                attribute.display_name, None)
+            attribute = ExpenseAttribute.objects.filter(attribute_type=item_setting.source_field).first()
+            source_value = lineitem.custom_properties.get(attribute.display_name, None)
 
         mapping: Mapping = Mapping.objects.filter(
             source_type=item_setting.source_field,
@@ -98,28 +94,26 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
 
     cluster_domain = fyle_connector.get_cluster_domain()
 
-    expense_link = '{0}/app/main/#/enterprise/view_expense/{1}'.format(
-        cluster_domain['cluster_domain'], lineitem.expense_id
+    org_id = Workspace.objects.get(id=workspace_id).fyle_org_id
+
+    expense_link = '{0}/app/main/#/enterprise/view_expense/{1}?org_id={2}'.format(
+        cluster_domain['cluster_domain'], lineitem.expense_id, org_id
     )
 
-    expense_purpose = ', purpose - {0}'.format(
-        lineitem.purpose) if lineitem.purpose else ''
-    spent_at = ' spent on {0} '.format(
-        lineitem.spent_at.date()) if lineitem.spent_at else ''
+    expense_purpose = ', purpose - {0}'.format(lineitem.purpose) if lineitem.purpose else ''
+    spent_at = ' spent on {0} '.format(lineitem.spent_at.date()) if lineitem.spent_at else ''
     return 'Expense by {0} against category {1}{2}with claim number - {3}{4} - {5}'.format(
         lineitem.employee_email, category, spent_at, lineitem.claim_number, expense_purpose, expense_link)
 
 
 class Bill(models.Model):
     id = models.AutoField(primary_key=True)
-    expense_group = models.OneToOneField(
-        ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
+    expense_group = models.OneToOneField(ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
     currency = models.CharField(max_length=255, help_text='Bill Currency')
     contact_id = models.CharField(max_length=255, help_text='Xero Contact')
     reference = models.CharField(max_length=255, help_text='Bill ID')
     date = models.DateTimeField(help_text='Bill date')
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text='Created at')
+    created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
     class Meta:
@@ -153,16 +147,11 @@ class Bill(models.Model):
 
 class BillLineItem(models.Model):
     id = models.AutoField(primary_key=True)
-    expense = models.OneToOneField(
-        Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
-    bill = models.ForeignKey(
-        Bill, on_delete=models.PROTECT, help_text='Reference to Bill')
-    tracking_categories = JSONField(
-        null=True, help_text='Save Tracking options')
-    item_code = models.CharField(
-        max_length=255, null=True, help_text='Item code')
-    account_id = models.CharField(
-        max_length=255, help_text='NetSuite account id')
+    expense = models.OneToOneField(Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
+    bill = models.ForeignKey(Bill, on_delete=models.PROTECT, help_text='Reference to Bill')
+    tracking_categories = JSONField(null=True, help_text='Save Tracking options')
+    item_code = models.CharField(max_length=255, null=True, help_text='Item code')
+    account_id = models.CharField(max_length=255, help_text='NetSuite account id')
     description = models.TextField(help_text='Lineitem purpose')
     amount = models.FloatField(help_text='Bill amount')
 
@@ -189,11 +178,9 @@ class BillLineItem(models.Model):
 
             item_code = get_item_code_or_none(expense_group, lineitem)
 
-            description = get_expense_purpose(
-                expense_group.workspace_id, lineitem, category)
+            description = get_expense_purpose(expense_group.workspace_id, lineitem, category)
 
-            tracking_categories = get_tracking_category(
-                expense_group, lineitem)
+            tracking_categories = get_tracking_category(expense_group, lineitem)
 
             lineitem_object, _ = BillLineItem.objects.update_or_create(
                 bill=bill,
@@ -216,18 +203,13 @@ class BankTransaction(models.Model):
     Xero Bank Transaction
     """
     id = models.AutoField(primary_key=True)
-    expense_group = models.OneToOneField(
-        ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
+    expense_group = models.OneToOneField(ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
     contact_id = models.CharField(max_length=255, help_text='Xero Contact ID')
-    bank_account_code = models.CharField(
-        max_length=255, help_text='Xero Bank Account code')
-    currency = models.CharField(
-        max_length=255, help_text='Bank Transaction Currency')
-    reference = models.CharField(
-        max_length=255, help_text='Bank Transaction ID')
+    bank_account_code = models.CharField(max_length=255, help_text='Xero Bank Account code')
+    currency = models.CharField(max_length=255, help_text='Bank Transaction Currency')
+    reference = models.CharField(max_length=255, help_text='Bank Transaction ID')
     transaction_date = models.DateField(help_text='Bank transaction date')
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text='Created at')
+    created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
     class Meta:
@@ -251,8 +233,7 @@ class BankTransaction(models.Model):
             workspace_id=expense_group.workspace_id
         ).destination.destination_id
 
-        general_mappings = GeneralMapping.objects.get(
-            workspace_id=expense_group.workspace_id)
+        general_mappings = GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
 
         bank_transaction_object, _ = BankTransaction.objects.update_or_create(
             expense_group=expense_group,
@@ -272,20 +253,15 @@ class BankTransactionLineItem(models.Model):
     Xero Bank Transaction Lineitem
     """
     id = models.AutoField(primary_key=True)
-    expense = models.OneToOneField(
-        Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
+    expense = models.OneToOneField(Expense, on_delete=models.PROTECT, help_text='Reference to Expense')
     bank_transaction = models.ForeignKey(BankTransaction, on_delete=models.PROTECT,
                                          help_text='Reference to bank transaction')
     account_id = models.CharField(max_length=255, help_text='Xero AccountCode')
-    item_code = models.CharField(
-        max_length=255, help_text='Xero ItemCode', null=True)
-    tracking_categories = JSONField(
-        null=True, help_text='Save Tracking options')
+    item_code = models.CharField(max_length=255, help_text='Xero ItemCode', null=True)
+    tracking_categories = JSONField(null=True, help_text='Save Tracking options')
     amount = models.FloatField(help_text='Bank Transaction LineAmount')
-    description = models.CharField(
-        max_length=255, help_text='Xero Bank Transaction LineItem description', null=True)
-    created_at = models.DateTimeField(
-        auto_now_add=True, help_text='Created at')
+    description = models.CharField(max_length=255, help_text='Xero Bank Transaction LineItem description', null=True)
+    created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
     class Meta:
@@ -299,8 +275,7 @@ class BankTransactionLineItem(models.Model):
         :return: lineitems objects
         """
         expenses = expense_group.expenses.all()
-        bank_transaction = BankTransaction.objects.get(
-            expense_group=expense_group)
+        bank_transaction = BankTransaction.objects.get(expense_group=expense_group)
 
         bank_transaction_lineitem_objects = []
 
@@ -317,11 +292,9 @@ class BankTransactionLineItem(models.Model):
 
             item_code = get_item_code_or_none(expense_group, lineitem)
 
-            description = get_expense_purpose(
-                expense_group.workspace_id, lineitem, category)
+            description = get_expense_purpose(expense_group.workspace_id, lineitem, category)
 
-            tracking_categories = get_tracking_category(
-                expense_group, lineitem)
+            tracking_categories = get_tracking_category(expense_group, lineitem)
 
             bank_transaction_lineitem_object, _ = BankTransactionLineItem.objects.update_or_create(
                 bank_transaction=bank_transaction,
@@ -335,7 +308,6 @@ class BankTransactionLineItem(models.Model):
                 }
             )
 
-            bank_transaction_lineitem_objects.append(
-                bank_transaction_lineitem_object)
+            bank_transaction_lineitem_objects.append(bank_transaction_lineitem_object)
 
         return bank_transaction_lineitem_objects
