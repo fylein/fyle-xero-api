@@ -7,6 +7,9 @@ from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, MappingSe
 from apps.fyle.models import ExpenseGroup, Expense
 from apps.mappings.models import GeneralMapping
 
+from apps.fyle.utils import FyleConnector
+from apps.workspaces.models import FyleCredential, Workspace
+
 
 def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
     mapping_settings = MappingSetting.objects.filter(workspace_id=expense_group.workspace_id).all()
@@ -84,11 +87,23 @@ def get_item_code_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     return item_code
 
 
-def get_expense_purpose(lineitem, category) -> str:
+def get_expense_purpose(workspace_id, lineitem, category) -> str:
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_connector = FyleConnector(
+        refresh_token=fyle_credentials.refresh_token, workspace_id=workspace_id)
+
+    cluster_domain = fyle_connector.get_cluster_domain()
+
+    org_id = Workspace.objects.get(id=workspace_id).fyle_org_id
+
+    expense_link = '{0}/app/main/#/enterprise/view_expense/{1}?org_id={2}'.format(
+        cluster_domain['cluster_domain'], lineitem.expense_id, org_id
+    )
+
     expense_purpose = ', purpose - {0}'.format(lineitem.purpose) if lineitem.purpose else ''
     spent_at = ' spent on {0} '.format(lineitem.spent_at.date()) if lineitem.spent_at else ''
-    return 'Expense by {0} against category {1}{2}with claim number - {3}{4}'.format(
-        lineitem.employee_email, category, spent_at, lineitem.claim_number, expense_purpose)
+    return 'Expense by {0} against category {1}{2}with claim number - {3}{4} - {5}'.format(
+        lineitem.employee_email, category, spent_at, lineitem.claim_number, expense_purpose, expense_link)
 
 
 class Bill(models.Model):
@@ -163,7 +178,7 @@ class BillLineItem(models.Model):
 
             item_code = get_item_code_or_none(expense_group, lineitem)
 
-            description = get_expense_purpose(lineitem, category)
+            description = get_expense_purpose(expense_group.workspace_id, lineitem, category)
 
             tracking_categories = get_tracking_category(expense_group, lineitem)
 
@@ -277,7 +292,7 @@ class BankTransactionLineItem(models.Model):
 
             item_code = get_item_code_or_none(expense_group, lineitem)
 
-            description = get_expense_purpose(lineitem, category)
+            description = get_expense_purpose(expense_group.workspace_id, lineitem, category)
 
             tracking_categories = get_tracking_category(expense_group, lineitem)
 
