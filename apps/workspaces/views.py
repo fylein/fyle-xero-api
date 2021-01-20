@@ -276,7 +276,8 @@ class ConnectXeroView(viewsets.ViewSet):
     def delete(self, request, **kwargs):
         """Delete credentials"""
         workspace_id = kwargs['workspace_id']
-        XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+        print('delete xero credsssss')
+        # XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
 
         return Response(data={
             'workspace_id': workspace_id,
