@@ -4,7 +4,7 @@ services:
   api:
     build: ./
     entrypoint: bash run.sh
-    restart: always
+    restart: unless-stopped
     volumes:
     - ./:/fyle-xero-api
     ports:
@@ -32,7 +32,7 @@ services:
   qcluster:
     build: ./
     entrypoint: python manage.py qcluster
-    restart: always
+    restart: unless-stopped
     volumes:
     - ./:/fyle-xero-api
     depends_on:
