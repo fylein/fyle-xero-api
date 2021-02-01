@@ -42,7 +42,8 @@ class MappingUtils:
         :return: general mappings objects
         """
 
-        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.__workspace_id)
+        general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(
+            workspace_id=self.__workspace_id)
 
         params = {
             'bank_account_name': None,
@@ -59,6 +60,15 @@ class MappingUtils:
 
             params['bank_account_name'] = general_mapping.get('bank_account_name')
             params['bank_account_id'] = general_mapping.get('bank_account_id')
+
+        if general_settings.sync_fyle_to_xero_payments:
+            assert_valid('payment_account_name' in general_mapping and general_mapping['payment_account_name'],
+                         'payment account name field is blank')
+            assert_valid('payment_account_id' in general_mapping and general_mapping['payment_account_id'],
+                         'payment account id field is blank')
+
+            params['payment_account_name'] = general_mapping.get('payment_account_name')
+            params['payment_account_id'] = general_mapping.get('payment_account_id')
 
         general_mapping_object, _ = GeneralMapping.objects.update_or_create(
             workspace_id=self.__workspace_id,
