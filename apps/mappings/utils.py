@@ -47,6 +47,8 @@ class MappingUtils:
         params = {
             'bank_account_name': None,
             'bank_account_id': None,
+            'payment_account_name': None,
+            'payment_account_id': None
         }
 
         if general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
