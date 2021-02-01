@@ -11,7 +11,7 @@ from apps.mappings.models import TenantMapping
 from apps.workspaces.models import XeroCredentials
 from fyle_accounting_mappings.models import DestinationAttribute
 
-from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
+from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
 
 class XeroConnector:
@@ -294,3 +294,34 @@ class XeroConnector:
                 responses.append(response)
             return responses
         return []
+
+    @staticmethod
+    def __construct_bill_payment(payment: Payment) -> Dict:
+        """
+        Create a bill payment
+        :param payment: bill_payment object extracted from database
+        :return: constructed bill payment
+        """
+        payment_payload = {
+            'Payments': [
+                {
+                    'Invoice': {
+                        'InvoiceId': payment.invoice_id
+                    },
+                    'Account': {
+                        'AccountId': payment.account_id
+                    },
+                    'Amount': payment.amount
+                }
+            ]
+        }
+
+        return payment_payload
+
+    def post_payment(self, payment: Payment):
+        """
+        Post payment to QBO
+        """
+        payment_payload = self.__construct_bill_payment(payment)
+        created_payment = self.connection.payments.post(payment_payload)
+        return created_payment
