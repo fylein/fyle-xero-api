@@ -36,7 +36,7 @@ class OrganisationView(generics.RetrieveAPIView):
             organisations = xero_connector.get_organisations()
 
             return Response(
-                data=self.serializer_class(organisations, many=True).data,
+                data=organisations,
                 status=status.HTTP_200_OK
             )
 
