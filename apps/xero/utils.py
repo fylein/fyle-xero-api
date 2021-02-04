@@ -36,6 +36,15 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
+    def get_organisations(self):
+        """
+        Get xero organisations
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        return self.connection.organisations.get_all()
+
     def sync_tenants(self):
         """
         sync xero tenants
