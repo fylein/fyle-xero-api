@@ -8,6 +8,8 @@ from rest_framework.views import status
 from fyle_accounting_mappings.models import DestinationAttribute
 from fyle_accounting_mappings.serializers import DestinationAttributeSerializer
 
+from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuthentication
+
 from apps.fyle.models import ExpenseGroup
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import XeroCredentials
@@ -21,6 +23,57 @@ from .tasks import create_bank_transaction, schedule_bank_transaction_creation, 
 logger = logging.getLogger(__name__)
 
 
+class OrganisationView(generics.RetrieveAPIView):
+    """
+    Organisation View
+    """
+    def get(self, request, *args, **kwargs):
+        try:
+            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+
+            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+
+            organisations = xero_connector.get_organisations()
+
+            return Response(
+                data=organisations,
+                status=status.HTTP_200_OK
+            )
+
+        except XeroCredentials.DoesNotExist:
+            return Response(
+                data={
+                    'message': 'Xero credentials not found in workspace'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except InvalidGrant as e:
+            print('InvalidGrant',e)
+            return Response(
+                data={
+                    'message': 'Xero connection expired'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except InvalidTokenError as e:
+            print('InvalidTokenError',e)
+            return Response(
+                data={
+                    'message': 'Xero connection expired'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except UnsuccessfulAuthentication as e:
+            print('UnsuccessfulAuthentication',e)
+            return Response(
+                data={
+                    'message': 'Xero connection expired'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 class AccountView(generics.ListCreateAPIView):
     """
     Account view
