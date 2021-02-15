@@ -322,7 +322,7 @@ class Payment(models.Model):
     """
     id = models.AutoField(primary_key=True)
     expense_group = models.OneToOneField(ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
-    amount = models.FloatField(help_text='Amount'),
+    amount = models.FloatField(help_text='Amount')
     workspace = models.ForeignKey(Workspace, on_delete=models.PROTECT, help_text='Workspace reference')
     invoice_id = models.CharField(max_length=255, help_text='Linked Transaction ID ( Invoice ID )')
     account_id = models.CharField(max_length=255, help_text='Payment Account')
@@ -335,6 +335,8 @@ class Payment(models.Model):
     @staticmethod
     def create_payment(expense_group: ExpenseGroup, invoice_id: str, account_id: str):
         expenses: List[Expense] = expense_group.expenses.all()
+
+        print(invoice_id, account_id)
 
         total_amount = 0
         for expense in expenses:

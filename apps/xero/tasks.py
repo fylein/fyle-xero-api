@@ -376,6 +376,8 @@ def create_payment(workspace_id):
 
     general_mappings: GeneralMapping = GeneralMapping.objects.get(workspace_id=workspace_id)
 
+    print(bills)
+
     for bill in bills:
         expense_group_reimbursement_status = check_expenses_reimbursement_status(bill.expense_group.expenses.all())
 
@@ -392,7 +394,7 @@ def create_payment(workspace_id):
                 with transaction.atomic():
                     xero_object_task_log = TaskLog.objects.get(expense_group=bill.expense_group)
 
-                    invoice_id = xero_object_task_log.detail['Id']
+                    invoice_id = xero_object_task_log.detail['Invoices'][0]['InvoiceID']
 
                     payment_object = Payment.create_payment(
                         expense_group=bill.expense_group,

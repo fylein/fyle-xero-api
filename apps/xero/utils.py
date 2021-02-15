@@ -1,5 +1,4 @@
 import base64
-import os
 from datetime import timedelta, datetime
 
 from django.conf import settings
@@ -329,7 +328,7 @@ class XeroConnector:
 
     def post_payment(self, payment: Payment):
         """
-        Post payment to QBO
+        Post payment to Xero
         """
         payment_payload = self.__construct_bill_payment(payment)
         created_payment = self.connection.payments.post(payment_payload)

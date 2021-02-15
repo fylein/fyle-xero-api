@@ -18,7 +18,8 @@ from fyle_xero_api.utils import assert_valid
 
 from .utils import XeroConnector
 from .serializers import XeroFieldSerializer, BankTransactionSerializer, BillSerializer
-from .tasks import create_bank_transaction, schedule_bank_transaction_creation, create_bill, schedule_bills_creation
+from .tasks import create_bank_transaction, schedule_bank_transaction_creation, create_bill, schedule_bills_creation, \
+    create_payment
 
 logger = logging.getLogger(__name__)
 
@@ -378,3 +379,19 @@ class XeroFieldsView(generics.ListAPIView):
         ).values('attribute_type', 'display_name').distinct()
 
         return attributes
+
+
+class PaymentView(generics.CreateAPIView):
+    """
+    Create Payment View
+    """
+    def post(self, request, *args, **kwargs):
+        """
+        Create payment
+        """
+        create_payment(workspace_id=self.kwargs['workspace_id'])
+
+        return Response(
+            data={},
+            status=status.HTTP_200_OK
+        )
