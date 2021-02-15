@@ -1,12 +1,10 @@
 from typing import Dict
 
-from django.db.models import Q
-from fyle_accounting_mappings.models import MappingSetting
-
 from apps.workspaces.models import WorkspaceGeneralSettings
 from fyle_xero_api.utils import assert_valid
 
 from .models import TenantMapping, GeneralMapping
+from ..xero.tasks import schedule_payment_creation
 
 
 class MappingUtils:
@@ -42,11 +40,14 @@ class MappingUtils:
         :return: general mappings objects
         """
 
-        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.__workspace_id)
+        general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(
+            workspace_id=self.__workspace_id)
 
         params = {
             'bank_account_name': None,
             'bank_account_id': None,
+            'payment_account_name': None,
+            'payment_account_id': None
         }
 
         if general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
@@ -58,9 +59,23 @@ class MappingUtils:
             params['bank_account_name'] = general_mapping.get('bank_account_name')
             params['bank_account_id'] = general_mapping.get('bank_account_id')
 
+        if general_settings.sync_fyle_to_xero_payments:
+            assert_valid('payment_account_name' in general_mapping and general_mapping['payment_account_name'],
+                         'payment account name field is blank')
+            assert_valid('payment_account_id' in general_mapping and general_mapping['payment_account_id'],
+                         'payment account id field is blank')
+
+            params['payment_account_name'] = general_mapping.get('payment_account_name')
+            params['payment_account_id'] = general_mapping.get('payment_account_id')
+
         general_mapping_object, _ = GeneralMapping.objects.update_or_create(
             workspace_id=self.__workspace_id,
             defaults=params
+        )
+
+        schedule_payment_creation(
+            sync_fyle_to_xero_payments=general_settings.sync_fyle_to_xero_payments,
+            workspace_id=self.__workspace_id
         )
 
         return general_mapping_object

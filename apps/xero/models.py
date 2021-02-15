@@ -3,6 +3,7 @@ from datetime import datetime
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, MappingSetting
+from typing import List
 
 from apps.fyle.models import ExpenseGroup, Expense
 from apps.mappings.models import GeneralMapping
@@ -113,6 +114,8 @@ class Bill(models.Model):
     contact_id = models.CharField(max_length=255, help_text='Xero Contact')
     reference = models.CharField(max_length=255, help_text='Bill ID')
     date = models.DateTimeField(help_text='Bill date')
+    payment_synced = models.BooleanField(help_text='Payment synced status', default=False)
+    paid_on_xero = models.BooleanField(help_text='Payment status in Xero', default=False)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
@@ -151,7 +154,7 @@ class BillLineItem(models.Model):
     bill = models.ForeignKey(Bill, on_delete=models.PROTECT, help_text='Reference to Bill')
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
     item_code = models.CharField(max_length=255, null=True, help_text='Item code')
-    account_id = models.CharField(max_length=255, help_text='NetSuite account id')
+    account_id = models.CharField(max_length=255, help_text='Xero account id')
     description = models.TextField(help_text='Lineitem purpose')
     amount = models.FloatField(help_text='Bill amount')
 
@@ -311,3 +314,40 @@ class BankTransactionLineItem(models.Model):
             bank_transaction_lineitem_objects.append(bank_transaction_lineitem_object)
 
         return bank_transaction_lineitem_objects
+
+
+class Payment(models.Model):
+    """
+    Xero Payments
+    """
+    id = models.AutoField(primary_key=True)
+    expense_group = models.OneToOneField(ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
+    amount = models.FloatField(help_text='Amount')
+    workspace = models.ForeignKey(Workspace, on_delete=models.PROTECT, help_text='Workspace reference')
+    invoice_id = models.CharField(max_length=255, help_text='Linked Transaction ID ( Invoice ID )')
+    account_id = models.CharField(max_length=255, help_text='Payment Account')
+    created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
+    updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
+
+    class Meta:
+        db_table = 'payments'
+
+    @staticmethod
+    def create_payment(expense_group: ExpenseGroup, invoice_id: str, account_id: str):
+        expenses: List[Expense] = expense_group.expenses.all()
+
+        total_amount = 0
+        for expense in expenses:
+            total_amount = total_amount + expense.amount
+
+        payment_object, _ = Payment.objects.update_or_create(
+            expense_group=expense_group,
+            workspace=expense_group.workspace,
+            defaults={
+                'amount': total_amount,
+                'invoice_id': invoice_id,
+                'account_id': account_id
+            }
+        )
+
+        return payment_object

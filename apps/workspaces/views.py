@@ -285,7 +285,7 @@ class ConnectXeroView(viewsets.ViewSet):
 
     def get(self, request, **kwargs):
         """
-        Get QBO Credentials in Workspace
+        Get Xero Credentials in Workspace
         """
         try:
             workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
