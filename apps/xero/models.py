@@ -154,7 +154,7 @@ class BillLineItem(models.Model):
     bill = models.ForeignKey(Bill, on_delete=models.PROTECT, help_text='Reference to Bill')
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
     item_code = models.CharField(max_length=255, null=True, help_text='Item code')
-    account_id = models.CharField(max_length=255, help_text='NetSuite account id')
+    account_id = models.CharField(max_length=255, help_text='Xero account id')
     description = models.TextField(help_text='Lineitem purpose')
     amount = models.FloatField(help_text='Bill amount')
 
@@ -335,8 +335,6 @@ class Payment(models.Model):
     @staticmethod
     def create_payment(expense_group: ExpenseGroup, invoice_id: str, account_id: str):
         expenses: List[Expense] = expense_group.expenses.all()
-
-        print(invoice_id, account_id)
 
         total_amount = 0
         for expense in expenses:

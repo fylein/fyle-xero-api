@@ -330,6 +330,21 @@ class XeroConnector:
         """
         Post payment to Xero
         """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
         payment_payload = self.__construct_bill_payment(payment)
         created_payment = self.connection.payments.post(payment_payload)
         return created_payment
+
+    def get_bill(self, bill_id: str):
+        """
+        Get Bill by id from Xero
+        :param bill_id:
+        :return:
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        bill = self.connection.invoices.get_by_id(invoice_id=bill_id)
+        return bill

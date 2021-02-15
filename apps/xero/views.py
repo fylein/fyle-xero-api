@@ -19,7 +19,7 @@ from fyle_xero_api.utils import assert_valid
 from .utils import XeroConnector
 from .serializers import XeroFieldSerializer, BankTransactionSerializer, BillSerializer
 from .tasks import create_bank_transaction, schedule_bank_transaction_creation, create_bill, schedule_bills_creation, \
-    create_payment
+    create_payment, check_xero_object_status, process_reimbursements
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,6 @@ class OrganisationView(generics.RetrieveAPIView):
             )
 
         except InvalidGrant as e:
-            print('InvalidGrant',e)
             return Response(
                 data={
                     'message': 'Xero connection expired'
@@ -59,7 +58,6 @@ class OrganisationView(generics.RetrieveAPIView):
             )
 
         except InvalidTokenError as e:
-            print('InvalidTokenError',e)
             return Response(
                 data={
                     'message': 'Xero connection expired'
@@ -68,13 +66,14 @@ class OrganisationView(generics.RetrieveAPIView):
             )
 
         except UnsuccessfulAuthentication as e:
-            print('UnsuccessfulAuthentication',e)
             return Response(
                 data={
                     'message': 'Xero connection expired'
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
 class AccountView(generics.ListCreateAPIView):
     """
     Account view
@@ -390,6 +389,23 @@ class PaymentView(generics.CreateAPIView):
         Create payment
         """
         create_payment(workspace_id=self.kwargs['workspace_id'])
+
+        return Response(
+            data={},
+            status=status.HTTP_200_OK
+        )
+
+
+class ReimburseXeroPaymentsView(generics.CreateAPIView):
+    """
+    Reimburse Xero Payments View
+    """
+    def post(self, request, *args, **kwargs):
+        """
+        Process Reimbursements in Fyle
+        """
+        check_xero_object_status(workspace_id=self.kwargs['workspace_id'])
+        process_reimbursements(workspace_id=self.kwargs['workspace_id'])
 
         return Response(
             data={},
