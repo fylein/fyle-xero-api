@@ -1,12 +1,10 @@
 from typing import Dict
 
-from django.db.models import Q
-from fyle_accounting_mappings.models import MappingSetting
-
 from apps.workspaces.models import WorkspaceGeneralSettings
 from fyle_xero_api.utils import assert_valid
 
 from .models import TenantMapping, GeneralMapping
+from ..xero.tasks import schedule_payment_creation
 
 
 class MappingUtils:
@@ -73,6 +71,11 @@ class MappingUtils:
         general_mapping_object, _ = GeneralMapping.objects.update_or_create(
             workspace_id=self.__workspace_id,
             defaults=params
+        )
+
+        schedule_payment_creation(
+            sync_fyle_to_xero_payments=general_settings.sync_fyle_to_xero_payments,
+            workspace_id=self.__workspace_id
         )
 
         return general_mapping_object
