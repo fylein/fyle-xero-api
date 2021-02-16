@@ -2,9 +2,9 @@ rollback;
 begin;
 
 -- change expense_state from PAYMENT_PENDING to PAYMENT_PROCESSING
-update fyle_expensegroupsettings
+update expense_group_settings
 set expense_state = 'PAYMENT_PROCESSING'
-where fyle_expensegroupsettings.expense_state = 'PAYMENT_PENDING';
+where expense_group_settings.expense_state = 'PAYMENT_PENDING';
 
 -- bills
 update bills
