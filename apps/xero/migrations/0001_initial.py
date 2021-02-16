@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('tracking_categories', django.contrib.postgres.fields.jsonb.JSONField(help_text='Save Tracking options', null=True)),
                 ('item_code', models.CharField(help_text='Item code', max_length=255, null=True)),
-                ('account_id', models.CharField(help_text='NetSuite account id', max_length=255)),
+                ('account_id', models.CharField(help_text='Xero account id', max_length=255)),
                 ('description', models.TextField(help_text='Lineitem purpose')),
                 ('amount', models.FloatField(help_text='Bill amount')),
                 ('bill', models.ForeignKey(help_text='Reference to Bill', on_delete=django.db.models.deletion.PROTECT, to='xero.Bill')),

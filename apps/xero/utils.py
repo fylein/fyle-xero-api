@@ -1,5 +1,4 @@
 import base64
-import os
 from datetime import timedelta, datetime
 
 from django.conf import settings
@@ -11,7 +10,7 @@ from apps.mappings.models import TenantMapping
 from apps.workspaces.models import XeroCredentials
 from fyle_accounting_mappings.models import DestinationAttribute
 
-from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
+from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
 
 class XeroConnector:
@@ -303,3 +302,49 @@ class XeroConnector:
                 responses.append(response)
             return responses
         return []
+
+    @staticmethod
+    def __construct_bill_payment(payment: Payment) -> Dict:
+        """
+        Create a bill payment
+        :param payment: bill_payment object extracted from database
+        :return: constructed bill payment
+        """
+        payment_payload = {
+            'Payments': [
+                {
+                    'Invoice': {
+                        'InvoiceId': payment.invoice_id
+                    },
+                    'Account': {
+                        'AccountId': payment.account_id
+                    },
+                    'Amount': payment.amount
+                }
+            ]
+        }
+
+        return payment_payload
+
+    def post_payment(self, payment: Payment):
+        """
+        Post payment to Xero
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        payment_payload = self.__construct_bill_payment(payment)
+        created_payment = self.connection.payments.post(payment_payload)
+        return created_payment
+
+    def get_bill(self, bill_id: str):
+        """
+        Get Bill by id from Xero
+        :param bill_id:
+        :return:
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        bill = self.connection.invoices.get_by_id(invoice_id=bill_id)
+        return bill

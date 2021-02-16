@@ -1,21 +1,22 @@
 import json
 import logging
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from django.db import transaction
+from django_q.models import Schedule
 from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping
 
 from xerosdk.exceptions import XeroSDKError, WrongParamsError
 
-from apps.fyle.models import ExpenseGroup
+from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.fyle.utils import FyleConnector
 from apps.mappings.models import GeneralMapping
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential
-from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
+from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 
@@ -348,3 +349,253 @@ def __validate_expense_group(expense_group: ExpenseGroup):
 
     if bulk_errors:
         raise BulkError('Mappings are missing', bulk_errors)
+
+
+def check_expenses_reimbursement_status(expenses):
+    all_expenses_paid = True
+
+    for expense in expenses:
+        reimbursement = Reimbursement.objects.filter(settlement_id=expense.settlement_id).first()
+
+        if reimbursement.state != 'COMPLETE':
+            all_expenses_paid = False
+
+    return all_expenses_paid
+
+
+def create_payment(workspace_id):
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+
+    fyle_connector = FyleConnector(fyle_credentials.refresh_token, workspace_id)
+
+    fyle_connector.sync_reimbursements()
+
+    bills: List[Bill] = Bill.objects.filter(
+        payment_synced=False, expense_group__workspace_id=workspace_id,
+        expense_group__fund_source='PERSONAL').all()
+
+    general_mappings: GeneralMapping = GeneralMapping.objects.get(workspace_id=workspace_id)
+
+    for bill in bills:
+        expense_group_reimbursement_status = check_expenses_reimbursement_status(bill.expense_group.expenses.all())
+
+        if expense_group_reimbursement_status:
+            task_log, _ = TaskLog.objects.update_or_create(
+                workspace_id=workspace_id,
+                task_id='PAYMENT_{}'.format(bill.expense_group.id),
+                defaults={
+                    'status': 'IN_PROGRESS',
+                    'type': 'CREATING_PAYMENT'
+                }
+            )
+            try:
+                with transaction.atomic():
+                    xero_object_task_log = TaskLog.objects.get(expense_group=bill.expense_group)
+
+                    invoice_id = xero_object_task_log.detail['Invoices'][0]['InvoiceID']
+
+                    payment_object = Payment.create_payment(
+                        expense_group=bill.expense_group,
+                        invoice_id=invoice_id,
+                        account_id=general_mappings.payment_account_id
+                    )
+
+                    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+
+                    xero_connection = XeroConnector(xero_credentials, workspace_id)
+
+                    created_payment = xero_connection.post_payment(
+                        payment_object
+                    )
+
+                    bill.payment_synced = True
+                    bill.paid_on_xero = True
+                    bill.save(update_fields=['payment_synced', 'paid_on_xero'])
+
+                    task_log.detail = created_payment
+                    task_log.payment = payment_object
+                    task_log.status = 'COMPLETE'
+
+                    task_log.save(update_fields=['detail', 'payment', 'status'])
+
+            except XeroCredentials.DoesNotExist:
+                logger.error(
+                    'Xero Credentials not found for workspace_id %s / expense group %s',
+                    workspace_id,
+                    bill.expense_group
+                )
+                detail = {
+                    'expense_group_id': bill.expense_group,
+                    'message': 'Xero Account not connected'
+                }
+                task_log.status = 'FAILED'
+                task_log.detail = detail
+
+                task_log.save(update_fields=['detail', 'status'])
+
+            except BulkError as exception:
+                logger.error(exception.response)
+                detail = exception.response
+                task_log.status = 'FAILED'
+                task_log.detail = detail
+
+                task_log.save(update_fields=['detail', 'status'])
+
+            except WrongParamsError as exception:
+                logger.error(exception.response)
+                detail = json.loads(exception.response)
+                task_log.status = 'FAILED'
+                task_log.detail = detail
+
+                task_log.save(update_fields=['detail', 'status'])
+
+            except Exception:
+                error = traceback.format_exc()
+                task_log.detail = {
+                    'error': error
+                }
+                task_log.status = 'FATAL'
+                task_log.save(update_fields=['detail', 'status'])
+                logger.error('Something unexpected happened workspace_id: %s %s',
+                             task_log.workspace_id, task_log.detail)
+
+
+def schedule_payment_creation(sync_fyle_to_xero_payments, workspace_id):
+    general_mappings: GeneralMapping = GeneralMapping.objects.filter(workspace_id=workspace_id).first()
+    if general_mappings:
+        if sync_fyle_to_xero_payments and general_mappings.payment_account_id:
+            start_datetime = datetime.now()
+            schedule, _ = Schedule.objects.update_or_create(
+                func='apps.xero.tasks.create_payment',
+                args='{}'.format(workspace_id),
+                defaults={
+                    'schedule_type': Schedule.MINUTES,
+                    'minutes': 24 * 60,
+                    'next_run': start_datetime
+                }
+            )
+    if not sync_fyle_to_xero_payments:
+        schedule: Schedule = Schedule.objects.filter(
+            func='apps.xero.tasks.create_payment',
+            args='{}'.format(workspace_id)
+        ).first()
+
+        if schedule:
+            schedule.delete()
+
+
+def get_all_xero_bill_ids(xero_objects):
+    xero_objects_details = {}
+
+    expense_group_ids = [xero_object.expense_group_id for xero_object in xero_objects]
+
+    task_logs = TaskLog.objects.filter(expense_group_id__in=expense_group_ids).all()
+
+    for task_log in task_logs:
+        xero_objects_details[task_log.expense_group.id] = {
+            'expense_group': task_log.expense_group,
+            'bill_id': task_log.detail['Invoices'][0]['InvoiceID']
+        }
+
+    return xero_objects_details
+
+
+def check_xero_object_status(workspace_id):
+    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+
+    xero_connection = XeroConnector(xero_credentials, workspace_id)
+
+    bills = Bill.objects.filter(
+        expense_group__workspace_id=workspace_id,
+        paid_on_xero=False,
+        expense_group__fund_source='PERSONAL'
+    ).all()
+
+    if bills:
+        bill_id_map = get_all_xero_bill_ids(bills)
+
+        for bill in bills:
+            bill_object = xero_connection.get_bill(bill_id_map[bill.expense_group.id]['bill_id'])
+
+            if bill_object['Invoices'][0]['Status'] == 'PAID':
+                line_items = BillLineItem.objects.filter(bill_id=bill.id)
+                for line_item in line_items:
+                    expense = line_item.expense
+                    expense.paid_on_xero = True
+                    expense.save(update_fields=['paid_on_xero'])
+
+                bill.paid_on_xero = True
+                bill.payment_synced = True
+                bill.save(update_fields=['paid_on_xero', 'payment_synced'])
+
+
+def schedule_xero_objects_status_sync(sync_xero_to_fyle_payments, workspace_id):
+    if sync_xero_to_fyle_payments:
+        start_datetime = datetime.now()
+        schedule, _ = Schedule.objects.update_or_create(
+            func='apps.xero.tasks.check_xero_object_status',
+            args='{}'.format(workspace_id),
+            defaults={
+                'schedule_type': Schedule.MINUTES,
+                'minutes': 24 * 60,
+                'next_run': start_datetime
+            }
+        )
+    else:
+        schedule: Schedule = Schedule.objects.filter(
+            func='apps.xero.tasks.check_xero_object_status',
+            args='{}'.format(workspace_id)
+        ).first()
+
+        if schedule:
+            schedule.delete()
+
+
+def process_reimbursements(workspace_id):
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+
+    fyle_connector = FyleConnector(fyle_credentials.refresh_token, workspace_id)
+
+    fyle_connector.sync_reimbursements()
+
+    reimbursements = Reimbursement.objects.filter(state='PENDING', workspace_id=workspace_id).all()
+
+    reimbursement_ids = []
+
+    if reimbursements:
+        for reimbursement in reimbursements:
+            expenses = Expense.objects.filter(settlement_id=reimbursement.settlement_id, fund_source='PERSONAL').all()
+            paid_expenses = expenses.filter(paid_on_xero=True)
+
+            all_expense_paid = False
+            if len(expenses):
+                all_expense_paid = len(expenses) == len(paid_expenses)
+
+            if all_expense_paid:
+                reimbursement_ids.append(reimbursement.reimbursement_id)
+
+    if reimbursement_ids:
+        fyle_connector.post_reimbursement(reimbursement_ids)
+        fyle_connector.sync_reimbursements()
+
+
+def schedule_reimbursements_sync(sync_xero_to_fyle_payments, workspace_id):
+    if sync_xero_to_fyle_payments:
+        start_datetime = datetime.now() + timedelta(hours=12)
+        schedule, _ = Schedule.objects.update_or_create(
+            func='apps.xero.tasks.process_reimbursements',
+            args='{}'.format(workspace_id),
+            defaults={
+                'schedule_type': Schedule.MINUTES,
+                'minutes': 24 * 60,
+                'next_run': start_datetime
+            }
+        )
+    else:
+        schedule: Schedule = Schedule.objects.filter(
+            func='apps.xero.tasks.process_reimbursements',
+            args='{}'.format(workspace_id)
+        ).first()
+
+        if schedule:
+            schedule.delete()

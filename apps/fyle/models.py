@@ -67,6 +67,7 @@ class Expense(models.Model):
     fund_source = models.CharField(max_length=255, help_text='Expense fund source')
     verified_at = models.DateTimeField(help_text='Report verified at', null=True)
     custom_properties = JSONField(null=True)
+    paid_on_xero = models.BooleanField(help_text='Expense Payment status on Xero', default=False)
 
     class Meta:
         db_table = 'expenses'
@@ -235,8 +236,8 @@ def _group_expenses(expenses, group_fields, workspace_id):
     for field in group_fields:
         if field.lower() not in ALLOWED_FIELDS:
             group_fields.pop(group_fields.index(field))
-            # field = ExpenseAttribute.objects.filter(workspace_id=workspace_id,
-            #                                         attribute_type=field.upper()).first()
+            field = ExpenseAttribute.objects.filter(workspace_id=workspace_id,
+                                                    attribute_type=field.upper()).first()
             custom_fields[field.attribute_type.lower()] = KeyTextTransform(field.display_name,
                                                                            'custom_properties')
 
@@ -304,3 +305,39 @@ class ExpenseGroup(models.Model):
             expense_group_objects.append(expense_group_object)
 
         return expense_group_objects
+
+
+class Reimbursement(models.Model):
+    """
+    Reimbursements
+    """
+    id = models.AutoField(primary_key=True)
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.PROTECT, help_text='To which workspace this reimbursement belongs to'
+    )
+    settlement_id = models.CharField(max_length=255, help_text='Fyle Settlement ID')
+    reimbursement_id = models.CharField(max_length=255, help_text='Fyle Reimbursement ID')
+    state = models.CharField(max_length=255, help_text='Fyle Reimbursement State')
+    created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
+    updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
+
+    class Meta:
+        db_table = 'reimbursements'
+
+    @staticmethod
+    def create_reimbursement_objects(attributes: List[Dict], workspace_id):
+        """
+        Get or create reimbursement attributes
+        """
+        reimbursement_attributes = []
+
+        for attribute in attributes:
+            reimbursement_attribute, _ = Reimbursement.objects.update_or_create(
+                workspace_id=workspace_id,
+                settlement_id=attribute['settlement_id'],
+                defaults={
+                    'reimbursement_id': attribute['reimbursement_id'],
+                    'state': attribute['state']
+                })
+            reimbursement_attributes.append(reimbursement_attribute)
+        return reimbursement_attributes

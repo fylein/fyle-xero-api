@@ -61,11 +61,14 @@ class WorkspaceGeneralSettings(models.Model):
     reimbursable_expenses_object = models.CharField(max_length=50, help_text='Reimbursable Expenses type')
     corporate_credit_card_expenses_object = models.CharField(max_length=50,
                                                              help_text='Non Reimbursable Expenses type', null=True)
+    sync_fyle_to_xero_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Fyle to Xero')
+    sync_xero_to_fyle_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Xero to Fyle')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
     class Meta:
         db_table = 'workspace_general_settings'
+
 
 class WorkspaceSchedule(models.Model):
     """

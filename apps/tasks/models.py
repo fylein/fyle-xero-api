@@ -3,7 +3,7 @@ from django.contrib.postgres.fields import JSONField
 
 from apps.workspaces.models import Workspace
 from apps.fyle.models import ExpenseGroup
-from apps.xero.models import Bill, BankTransaction
+from apps.xero.models import Bill, BankTransaction, Payment
 
 
 def get_default():
@@ -22,6 +22,7 @@ class TaskLog(models.Model):
     task_id = models.CharField(max_length=255, null=True, help_text='Django Q task reference')
     expense_group = models.ForeignKey(ExpenseGroup, on_delete=models.PROTECT,
                                       null=True, help_text='Reference to Expense group')
+    payment = models.ForeignKey(Payment, on_delete=models.PROTECT, help_text='Reference to Payment', null=True)
     bill = models.ForeignKey(Bill, on_delete=models.PROTECT, help_text='Reference to Bill', null=True)
     bank_transaction = models.ForeignKey(BankTransaction, on_delete=models.PROTECT,
                                          help_text='Reference to Bank Transaction', null=True)
