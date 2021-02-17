@@ -4,6 +4,8 @@ from datetime import timedelta, datetime
 from django.conf import settings
 from typing import List, Dict
 
+import unidecode
+
 from xerosdk import XeroSDK
 
 from apps.mappings.models import TenantMapping
@@ -81,15 +83,15 @@ class XeroConnector:
                 account_attributes.append({
                     'attribute_type': 'BANK_ACCOUNT',
                     'display_name': 'Bank Account',
-                    'value': account['Name'],
+                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])),
                     'destination_id': account['AccountID']
                 })
 
-            else:
+            if account['Type'] == 'EXPENSE':
                 account_attributes.append({
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',
-                    'value': account['Name'],
+                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])),
                     'destination_id': account['Code']
                 })
 

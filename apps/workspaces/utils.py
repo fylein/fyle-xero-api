@@ -10,6 +10,7 @@ from future.moves.urllib.parse import urlencode
 
 from xerosdk import InvalidTokenError, InternalServerError
 
+from apps.mappings.tasks import schedule_categories_creation
 from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
 from fyle_xero_api.utils import assert_valid
 from .models import WorkspaceGeneralSettings
@@ -69,7 +70,8 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
                 if 'corporate_credit_card_expenses_object' in general_settings_payload
                 and general_settings_payload['corporate_credit_card_expenses_object'] else None,
             'sync_fyle_to_xero_payments': general_settings_payload['sync_fyle_to_xero_payments'],
-            'sync_xero_to_fyle_payments': general_settings_payload['sync_xero_to_fyle_payments']
+            'sync_xero_to_fyle_payments': general_settings_payload['sync_xero_to_fyle_payments'],
+            'import_categories': general_settings_payload['import_categories']
         }
     )
 
@@ -84,5 +86,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
         sync_xero_to_fyle_payments=general_settings.sync_xero_to_fyle_payments,
         workspace_id=workspace_id
     )
+
+    schedule_categories_creation(import_categories=general_settings.import_categories, workspace_id=workspace_id)
     
     return general_settings
