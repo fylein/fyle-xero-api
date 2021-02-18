@@ -79,20 +79,31 @@ class XeroConnector:
         account_attributes = []
 
         for account in accounts:
+
+            detail = {
+                'account_name': account['Name'],
+                'account_type': account['Type'],
+                'description': account['Description']
+            }
+
             if account['Type'] == 'BANK':
                 account_attributes.append({
                     'attribute_type': 'BANK_ACCOUNT',
                     'display_name': 'Bank Account',
-                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])),
-                    'destination_id': account['AccountID']
+                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
+                    'destination_id': account['AccountID'],
+                    'active': True if account['Status'] == 'ACTIVE' else False,
+                    'detail': detail
                 })
 
             if account['Type'] == 'EXPENSE':
                 account_attributes.append({
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',
-                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])),
-                    'destination_id': account['Code']
+                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
+                    'destination_id': account['Code'],
+                    'active': True if account['Status'] == 'ACTIVE' else False,
+                    'detail': detail
                 })
 
         account_attributes = DestinationAttribute.bulk_upsert_destination_attributes(

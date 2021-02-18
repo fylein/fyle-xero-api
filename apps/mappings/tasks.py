@@ -9,10 +9,23 @@ from django_q.models import Schedule
 from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import XeroCredentials, FyleCredential
-from fyle_accounting_mappings.models import MappingSetting, Mapping, DestinationAttribute, ExpenseAttribute
+from fyle_accounting_mappings.models import Mapping, DestinationAttribute, ExpenseAttribute
 from fylesdk import WrongParamsError
 
 logger = logging.getLogger(__name__)
+
+
+def remove_duplicates(xero_attributes: List[DestinationAttribute]):
+    unique_attributes = []
+
+    attribute_values = []
+
+    for attribute in xero_attributes:
+        if attribute.value not in attribute_values:
+            unique_attributes.append(attribute)
+            attribute_values.append(attribute.value)
+
+    return unique_attributes
 
 
 def create_fyle_categories_payload(categories: List[DestinationAttribute], workspace_id: int):
@@ -57,8 +70,9 @@ def upload_categories_to_fyle(workspace_id):
     fyle_connection.sync_categories(False)
     xero_connection.sync_accounts()
 
-    xero_attributes = DestinationAttribute.objects.filter(
-        attribute_type='ACCOUNT', workspace_id=workspace_id)
+    xero_attributes = DestinationAttribute.objects.filter(attribute_type='ACCOUNT', workspace_id=workspace_id)
+
+    xero_attributes = remove_duplicates(xero_attributes)
 
     fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id)
 
@@ -74,11 +88,6 @@ def auto_create_category_mappings(workspace_id):
     Create Category Mappings
     :return: mappings
     """
-    MappingSetting.bulk_upsert_mapping_setting([{
-        'source_field': 'CATEGORY',
-        'destination_field': 'ACCOUNT'
-    }], workspace_id=workspace_id)
-
     fyle_categories = upload_categories_to_fyle(workspace_id=workspace_id)
 
     category_mappings = []
