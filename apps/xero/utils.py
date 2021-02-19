@@ -83,7 +83,6 @@ class XeroConnector:
             detail = {
                 'account_name': account['Name'],
                 'account_type': account['Type'],
-                'description': account['Description']
             }
 
             if account['Type'] == 'BANK':

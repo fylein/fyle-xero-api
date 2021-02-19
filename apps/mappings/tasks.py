@@ -88,11 +88,11 @@ def auto_create_category_mappings(workspace_id):
     Create Category Mappings
     :return: mappings
     """
-    fyle_categories = upload_categories_to_fyle(workspace_id=workspace_id)
-
     category_mappings = []
 
     try:
+        fyle_categories = upload_categories_to_fyle(workspace_id=workspace_id)
+
         for category in fyle_categories:
             try:
                 mapping = Mapping.create_or_update_mapping(
@@ -104,6 +104,9 @@ def auto_create_category_mappings(workspace_id):
                     workspace_id=workspace_id
                 )
                 category_mappings.append(mapping)
+
+                mapping.source.auto_mapped = True
+                mapping.source.save(update_fields=['auto_mapped'])
 
             except ExpenseAttribute.DoesNotExist:
                 detail = {
