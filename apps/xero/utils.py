@@ -122,11 +122,15 @@ class XeroConnector:
         contact_attributes = []
 
         for contact in contacts:
+            detail = {
+                'email': contact['EmailAddress'] if('EmailAddress' in contact) else None
+            }
             contact_attributes.append({
                 'attribute_type': 'CONTACT',
                 'display_name': 'Contact',
                 'value': contact['Name'],
-                'destination_id': contact['ContactID']
+                'destination_id': contact['ContactID'],
+                'detail': detail
             })
 
         contact_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
