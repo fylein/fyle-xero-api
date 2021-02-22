@@ -95,7 +95,7 @@ class XeroConnector:
                     'detail': detail
                 })
 
-            if account['Type'] == 'EXPENSE':
+            elif account['Type'] == 'EXPENSE':
                 account_attributes.append({
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',
