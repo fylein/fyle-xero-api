@@ -4,6 +4,8 @@ from datetime import timedelta, datetime
 from django.conf import settings
 from typing import List, Dict
 
+import unidecode
+
 from xerosdk import XeroSDK
 
 from apps.mappings.models import TenantMapping
@@ -77,20 +79,30 @@ class XeroConnector:
         account_attributes = []
 
         for account in accounts:
+
+            detail = {
+                'account_name': account['Name'],
+                'account_type': account['Type'],
+            }
+
             if account['Type'] == 'BANK':
                 account_attributes.append({
                     'attribute_type': 'BANK_ACCOUNT',
                     'display_name': 'Bank Account',
-                    'value': account['Name'],
-                    'destination_id': account['AccountID']
+                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
+                    'destination_id': account['AccountID'],
+                    'active': True if account['Status'] == 'ACTIVE' else False,
+                    'detail': detail
                 })
 
-            else:
+            elif account['Type'] == 'EXPENSE':
                 account_attributes.append({
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',
-                    'value': account['Name'],
-                    'destination_id': account['Code']
+                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
+                    'destination_id': account['Code'],
+                    'active': True if account['Status'] == 'ACTIVE' else False,
+                    'detail': detail
                 })
 
         account_attributes = DestinationAttribute.bulk_upsert_destination_attributes(

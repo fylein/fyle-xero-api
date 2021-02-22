@@ -63,6 +63,7 @@ class WorkspaceGeneralSettings(models.Model):
                                                              help_text='Non Reimbursable Expenses type', null=True)
     sync_fyle_to_xero_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Fyle to Xero')
     sync_xero_to_fyle_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Xero to Fyle')
+    import_categories = models.BooleanField(default=False, help_text='Auto import Categories to Fyle')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
