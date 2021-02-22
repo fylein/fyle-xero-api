@@ -209,14 +209,8 @@ def construct_filters_employee_mappings(employee: DestinationAttribute, employee
 
 
 def async_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
-    mapping_setting = MappingSetting.objects.filter(source_field='EMPLOYEE', workspace_id=workspace_id).first()
-
-    destination_type = None
-    if mapping_setting:
-        destination_type = mapping_setting.destination_field
-
     source_attributes = []
-    employee_attributes = DestinationAttribute.objects.filter(attribute_type=destination_type,
+    employee_attributes = DestinationAttribute.objects.filter(attribute_type='CONTACT',
                                                               workspace_id=workspace_id)
 
     for employee in employee_attributes:
@@ -227,7 +221,7 @@ def async_auto_map_employees(employee_mapping_preference: str, workspace_id: str
             source_attributes = filter_expense_attributes(workspace_id, **filters)
 
         mapping_attributes = {
-            'destination_type': destination_type,
+            'destination_type': 'CONTACT',
             'destination_value': employee.value,
             'destination_id': employee.destination_id,
             'workspace_id': workspace_id
