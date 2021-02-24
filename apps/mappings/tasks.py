@@ -1,6 +1,6 @@
 import logging
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from typing import List, Dict
 
@@ -9,7 +9,7 @@ from django_q.models import Schedule
 from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import XeroCredentials, FyleCredential
-from fyle_accounting_mappings.models import Mapping, DestinationAttribute, ExpenseAttribute
+from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
 from fylesdk import WrongParamsError
 
 logger = logging.getLogger(__name__)
@@ -158,3 +158,82 @@ def schedule_categories_creation(import_categories, workspace_id):
 
         if schedule:
             schedule.delete()
+
+
+def filter_expense_attributes(workspace_id: str, **filters):
+    return ExpenseAttribute.objects.filter(attribute_type='EMPLOYEE', workspace_id=workspace_id, **filters).all()
+
+
+def auto_create_employee_mappings(source_attributes: List[ExpenseAttribute], mapping_attributes: dict):
+    for source in source_attributes:
+        mapping = Mapping.objects.filter(
+            source_type='EMPLOYEE',
+            destination_type=mapping_attributes['destination_type'],
+            source__value=source.value,
+            workspace_id=mapping_attributes['workspace_id']
+        ).first()
+
+        if not mapping:
+            Mapping.create_or_update_mapping(
+                source_type='EMPLOYEE',
+                destination_type=mapping_attributes['destination_type'],
+                source_value=source.value,
+                destination_value=mapping_attributes['destination_value'],
+                destination_id=mapping_attributes['destination_id'],
+                workspace_id=mapping_attributes['workspace_id']
+            )
+
+            source.auto_mapped = True
+            source.save(update_fields=['auto_mapped'])
+
+
+def construct_filters_employee_mappings(employee: DestinationAttribute, employee_mapping_preference: str):
+    filters = {}
+    if employee_mapping_preference == 'EMAIL':
+        if employee.detail and employee.detail['email']:
+            filters = {
+                'value__iexact': employee.detail['email']
+            }
+
+    elif employee_mapping_preference == 'NAME':
+        filters = {
+            'detail__full_name__iexact': employee.value
+        }
+
+    elif employee_mapping_preference == 'EMPLOYEE_CODE':
+        filters = {
+            'detail__employee_code__iexact': employee.value
+        }
+
+    return filters
+
+
+def async_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
+    source_attributes = []
+    employee_attributes = DestinationAttribute.objects.filter(attribute_type='CONTACT',
+                                                              workspace_id=workspace_id)
+
+    for employee in employee_attributes:
+        filters = construct_filters_employee_mappings(employee, employee_mapping_preference)
+
+        if filters:
+            filters['auto_mapped'] = False
+            source_attributes = filter_expense_attributes(workspace_id, **filters)
+
+        mapping_attributes = {
+            'destination_type': 'CONTACT',
+            'destination_value': employee.value,
+            'destination_id': employee.destination_id,
+            'workspace_id': workspace_id
+        }
+
+        auto_create_employee_mappings(source_attributes, mapping_attributes)
+
+
+def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
+    Schedule.objects.create(
+        func='apps.mappings.tasks.async_auto_map_employees',
+        args='"{0}", {1}'.format(employee_mapping_preference, workspace_id),
+        schedule_type=Schedule.ONCE,
+        next_run=datetime.now() + timedelta(minutes=5)
+    )
