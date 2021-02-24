@@ -51,7 +51,7 @@ def run_sync_schedule(workspace_id):
     :param workspace_id: workspace id
     :return: None
     """
-    task_log, _ = TaskLog.object.update_or_create(
+    task_log, _ = TaskLog.objects.update_or_create(
         workspace_id=workspace_id,
         type='FETCHING_EXPENSES',
         defaults={
