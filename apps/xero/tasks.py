@@ -140,29 +140,25 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
         expense_groups = ExpenseGroup.objects.filter(
             workspace_id=workspace_id, id__in=expense_group_ids, bill__id__isnull=True, exported_at__isnull=True
         ).all()
-    else:
-        expense_groups = ExpenseGroup.objects.filter(
-            workspace_id=workspace_id, bill__id__isnull=True, exported_at__isnull=True
-        ).all()
 
-    chain = Chain(cached=True)
+        chain = Chain(cached=True)
 
-    for expense_group in expense_groups:
-        task_log, _ = TaskLog.objects.update_or_create(
-            workspace_id=expense_group.workspace_id,
-            expense_group=expense_group,
-            defaults={
-                'status': 'IN_PROGRESS',
-                'type': 'CREATING_BILL'
-            }
-        )
+        for expense_group in expense_groups:
+            task_log, _ = TaskLog.objects.update_or_create(
+                workspace_id=expense_group.workspace_id,
+                expense_group=expense_group,
+                defaults={
+                    'status': 'IN_PROGRESS',
+                    'type': 'CREATING_BILL'
+                }
+            )
 
-        chain.append('apps.xero.tasks.create_bill', expense_group, task_log)
+            chain.append('apps.xero.tasks.create_bill', expense_group, task_log)
 
-        task_log.save()
+            task_log.save()
 
-    if chain.length():
-        chain.run()
+        if chain.length():
+            chain.run()
 
 
 def create_bank_transaction(expense_group, task_log):
@@ -265,29 +261,25 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
         expense_groups = ExpenseGroup.objects.filter(
             workspace_id=workspace_id, id__in=expense_group_ids, banktransaction__id__isnull=True, exported_at__isnull=True
         ).all()
-    else:
-        expense_groups = ExpenseGroup.objects.filter(
-            workspace_id=workspace_id, banktransaction__id__isnull=True, exported_at__isnull=True
-        ).all()
 
-    chain = Chain(cached=True)
+        chain = Chain(cached=True)
 
-    for expense_group in expense_groups:
-        task_log, _ = TaskLog.objects.update_or_create(
-            workspace_id=expense_group.workspace_id,
-            expense_group=expense_group,
-            defaults={
-                'status': 'IN_PROGRESS',
-                'type': 'CREATING_BANK_TRANSACTION'
-            }
-        )
+        for expense_group in expense_groups:
+            task_log, _ = TaskLog.objects.update_or_create(
+                workspace_id=expense_group.workspace_id,
+                expense_group=expense_group,
+                defaults={
+                    'status': 'IN_PROGRESS',
+                    'type': 'CREATING_BANK_TRANSACTION'
+                }
+            )
 
-        chain.append('apps.xero.tasks.create_bank_transaction', expense_group, task_log)
+            chain.append('apps.xero.tasks.create_bank_transaction', expense_group, task_log)
 
-        task_log.save()
+            task_log.save()
 
-    if chain.length():
-        chain.run()
+        if chain.length():
+            chain.run()
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):
