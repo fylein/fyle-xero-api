@@ -18,7 +18,7 @@ from apps.workspaces.models import Workspace
 ALLOWED_FIELDS = [
     'employee_email', 'report_id', 'claim_number', 'settlement_id',
     'fund_source', 'vendor', 'category', 'project', 'cost_center',
-    'verified_at', 'approved_at', 'spent_at'
+    'verified_at', 'approved_at', 'spent_at', 'expense_id'
 ]
 
 
@@ -215,6 +215,8 @@ class ExpenseGroupSettings(models.Model):
         if 'claim_number' in reimbursable_grouped_by and corporate_credit_card_expenses_grouped_by:
             reimbursable_grouped_by.append('report_id')
             corporate_credit_card_expenses_grouped_by.append('report_id')
+
+        corporate_credit_card_expenses_grouped_by.append('expense_id')
 
         return ExpenseGroupSettings.objects.update_or_create(
             workspace_id=workspace_id,
