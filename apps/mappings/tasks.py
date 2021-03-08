@@ -106,7 +106,8 @@ def auto_create_category_mappings(workspace_id):
                 category_mappings.append(mapping)
 
                 mapping.source.auto_mapped = True
-                mapping.source.save(update_fields=['auto_mapped'])
+                mapping.source.auto_created = True
+                mapping.source.save(update_fields=['auto_mapped', 'auto_created'])
 
             except ExpenseAttribute.DoesNotExist:
                 detail = {
