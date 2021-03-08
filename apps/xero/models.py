@@ -263,7 +263,7 @@ class BankTransactionLineItem(models.Model):
     item_code = models.CharField(max_length=255, help_text='Xero ItemCode', null=True)
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
     amount = models.FloatField(help_text='Bank Transaction LineAmount')
-    description = models.CharField(max_length=255, help_text='Xero Bank Transaction LineItem description', null=True)
+    description = models.TextField(help_text='Xero Bank Transaction LineItem description', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
