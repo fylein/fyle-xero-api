@@ -10,7 +10,7 @@ from xerosdk import XeroSDK
 
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import XeroCredentials
-from fyle_accounting_mappings.models import DestinationAttribute
+from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute
 
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
@@ -186,6 +186,43 @@ class XeroConnector:
         item_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
             item_attributes, self.workspace_id)
         return item_attributes
+
+
+    def post_contact(self, contact: ExpenseAttribute, auto_map_employee_preference: str):
+        """
+        Post contact to Xero
+        :param auto_map_employee_preference: Preference while doing auto map of employees
+        :param vendor: contact attribute to be created
+        :return: Contact Desination Atribute
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        xero_display_name = contact.detail['employee_code'] if (
+                auto_map_employee_preference == 'EMPLOYEE_CODE' and contact.detail['employee_code']
+        ) else contact.detail['full_name']
+
+        contact = {
+            'Name': xero_display_name,
+            'FirstName': contact.detail['full_name'].split(' ')[0],
+            'LastName': contact.detail['full_name'].split(' ')[-1]
+            if len(contact.detail['full_name'].split(' ')) > 1 else '',
+            'EmailAddress': contact.value
+        }
+
+        created_contact = self.connection.contacts.post(contact)['Contacts'][0]
+
+        created_contact = DestinationAttribute.bulk_upsert_destination_attributes([{
+            'attribute_type': 'CONTACT',
+            'display_name': 'Contact',
+            'value': created_contact['Name'],
+            'destination_id': created_contact['ContactID'],
+            'detail': {
+                'email': created_contact['EmailAddress']
+            }
+        }], self.workspace_id)[0]
+
+        return created_contact
 
     @staticmethod
     def __construct_bill_lineitems(bill_lineitems: List[BillLineItem]) -> List[Dict]:

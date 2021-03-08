@@ -8,7 +8,7 @@ from django_q.models import Schedule
 
 from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
-from apps.workspaces.models import XeroCredentials, FyleCredential
+from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
 from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
 from fylesdk import WrongParamsError
 
@@ -160,7 +160,7 @@ def schedule_categories_creation(import_categories, workspace_id):
             schedule.delete()
 
 
-def filter_expense_attributes(workspace_id: str, **filters):
+def filter_expense_attributes(workspace_id: int, **filters):
     return ExpenseAttribute.objects.filter(attribute_type='EMPLOYEE', workspace_id=workspace_id, **filters).all()
 
 
@@ -208,10 +208,20 @@ def construct_filters_employee_mappings(employee: DestinationAttribute, employee
     return filters
 
 
-def async_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
+def async_auto_map_employees(workspace_id):
+    employee_mapping_preference = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id).auto_map_employees
     source_attributes = []
     employee_attributes = DestinationAttribute.objects.filter(attribute_type='CONTACT',
                                                               workspace_id=workspace_id)
+
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_connection = FyleConnector(refresh_token=fyle_credentials.refresh_token, workspace_id=workspace_id)
+
+    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
+
+    fyle_connection.sync_employees()
+    xero_connection.sync_contacts()
 
     for employee in employee_attributes:
         filters = construct_filters_employee_mappings(employee, employee_mapping_preference)
@@ -231,9 +241,21 @@ def async_auto_map_employees(employee_mapping_preference: str, workspace_id: str
 
 
 def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
-    Schedule.objects.create(
-        func='apps.mappings.tasks.async_auto_map_employees',
-        args='"{0}", {1}'.format(employee_mapping_preference, workspace_id),
-        schedule_type=Schedule.ONCE,
-        next_run=datetime.now() + timedelta(minutes=5)
-    )
+    if employee_mapping_preference:
+        Schedule.objects.update_or_create(
+            func='apps.mappings.tasks.async_auto_map_employees',
+            args='{}'.format(workspace_id),
+            defaults={
+                'schedule_type': Schedule.MINUTES,
+                'minutes': 24 * 60,
+                'next_run': datetime.now() + timedelta(minutes=5)
+            }
+        )
+    else:
+        schedule: Schedule = Schedule.objects.filter(
+            func='apps.mappings.tasks.async_auto_map_employees',
+            args='{}'.format(workspace_id)
+        ).first()
+
+        if schedule:
+            schedule.delete()
