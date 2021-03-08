@@ -191,9 +191,9 @@ class XeroConnector:
     def post_contact(self, contact: ExpenseAttribute, auto_map_employee_preference: str):
         """
         Post contact to Xero
+        :param contact: contact attribute to be created
         :param auto_map_employee_preference: Preference while doing auto map of employees
-        :param vendor: contact attribute to be created
-        :return: Contact Desination Atribute
+        :return: Contact Desination Attribute
         """
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
