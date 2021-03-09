@@ -198,15 +198,13 @@ class XeroConnector:
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        xero_display_name = contact.detail['employee_code'] if (
-                auto_map_employee_preference == 'EMPLOYEE_CODE' and contact.detail['employee_code']
-        ) else contact.detail['full_name']
+        xero_display_name = contact.detail['full_name']
 
         contact = {
             'Name': xero_display_name,
-            'FirstName': contact.detail['full_name'].split(' ')[0],
-            'LastName': contact.detail['full_name'].split(' ')[-1]
-            if len(contact.detail['full_name'].split(' ')) > 1 else '',
+            'FirstName': xero_display_name.split(' ')[0],
+            'LastName': xero_display_name.split(' ')[-1]
+            if len(xero_display_name.split(' ')) > 1 else '',
             'EmailAddress': contact.value
         }
 
