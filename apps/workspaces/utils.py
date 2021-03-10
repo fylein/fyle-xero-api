@@ -61,7 +61,9 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
         'reimbursable_expenses_object' in general_settings_payload and general_settings_payload[
             'reimbursable_expenses_object'], 'reimbursable_expenses_object field is blank')
 
-    if 'auto_map_employees' in general_settings_payload and general_settings_payload['auto_map_employees']:
+    assert_valid('auto_map_employees' in general_settings_payload, 'auto_map_employees field is missing')
+
+    if general_settings_payload['auto_map_employees']:
         assert_valid(general_settings_payload['auto_map_employees'] in ['EMAIL', 'NAME', 'EMPLOYEE_CODE'],
                      'auto_map_employees can have only EMAIL / NAME / EMPLOYEE_CODE')
 
@@ -76,7 +78,8 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             'sync_fyle_to_xero_payments': general_settings_payload['sync_fyle_to_xero_payments'],
             'sync_xero_to_fyle_payments': general_settings_payload['sync_xero_to_fyle_payments'],
             'import_categories': general_settings_payload['import_categories'],
-            'auto_map_employees': general_settings_payload['auto_map_employees']
+            'auto_map_employees': general_settings_payload['auto_map_employees'],
+            'auto_create_destination_entity': general_settings_payload['auto_create_destination_entity']
         }
     )
 
@@ -94,7 +97,6 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
 
     schedule_categories_creation(import_categories=general_settings.import_categories, workspace_id=workspace_id)
 
-    if general_settings_payload['auto_map_employees']:
-        schedule_auto_map_employees(general_settings_payload['auto_map_employees'], workspace_id)
+    schedule_auto_map_employees(general_settings_payload['auto_map_employees'], workspace_id)
     
     return general_settings

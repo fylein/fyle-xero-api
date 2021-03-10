@@ -7,7 +7,7 @@ from typing import List
 from django.db import transaction
 from django_q.models import Schedule
 from django_q.tasks import Chain
-from fyle_accounting_mappings.models import Mapping
+from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, DestinationAttribute
 
 from xerosdk.exceptions import XeroSDKError, WrongParamsError
 
@@ -45,11 +45,65 @@ def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str,
         )
 
 
+def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connection: XeroConnector,
+                                      auto_map_employees_preference: str):
+    try:
+        Mapping.objects.get(
+            destination_type='CONTACT',
+            source_type='EMPLOYEE',
+            source__value=expense_group.description.get('employee_email'),
+            workspace_id=expense_group.workspace_id
+        )
+
+    except Mapping.DoesNotExist:
+        source_employee = ExpenseAttribute.objects.get(
+            workspace_id=expense_group.workspace_id,
+            attribute_type='EMPLOYEE',
+            value=expense_group.description.get('employee_email')
+        )
+
+        try:
+            created_contact: DestinationAttribute = xero_connection.post_contact(
+                    source_employee, auto_map_employees_preference)
+
+            mapping = Mapping.create_or_update_mapping(
+                source_type='EMPLOYEE',
+                source_value=expense_group.description.get('employee_email'),
+                destination_type='CONTACT',
+                destination_id=created_contact.destination_id,
+                destination_value=created_contact.value,
+                workspace_id=int(expense_group.workspace_id)
+            )
+
+            mapping.source.auto_mapped = True
+            mapping.source.save(update_fields=['auto_mapped'])
+
+            mapping.destination.auto_created = True
+            mapping.destination.save(update_fields=['auto_created'])
+
+        except WrongParamsError as exception:
+            logger.error('Error while auto creating contact workspace_id - %s error: %s',
+                expense_group.workspace_id, {'error': exception.response})
+
+        except Exception:
+            error = traceback.format_exc()
+            error = {
+                'error': error
+            }
+            logger.error(
+                'Something unecpected has happened during auto creation of contact workspace_id - %s error: %s',
+                expense_group.workspace_id, error
+            )
+
+
 def create_bill(expense_group, task_log):
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
     try:
         xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
-
         xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
+
+        if general_settings.auto_map_employees and general_settings.auto_create_destination_entity:
+            create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
 
         with transaction.atomic():
             __validate_expense_group(expense_group)

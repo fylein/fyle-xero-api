@@ -119,7 +119,7 @@ class AutoMapEmployeeView(generics.CreateAPIView):
                 )
 
             chain.append(
-                'apps.mappings.tasks.async_auto_map_employees', general_settings.auto_map_employees, workspace_id)
+                'apps.mappings.tasks.async_auto_map_employees', workspace_id)
 
             chain.run()
 

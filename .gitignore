@@ -146,3 +146,4 @@ dmypy.json
 
 # docker compose
 docker-compose.yml
+docker_run.sh
