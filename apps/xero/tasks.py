@@ -216,10 +216,14 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
 
 
 def create_bank_transaction(expense_group, task_log):
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
     try:
         xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
 
         xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
+
+        if general_settings.auto_map_employees and general_settings.auto_create_destination_entity:
+            create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
 
         with transaction.atomic():
             __validate_expense_group(expense_group)
