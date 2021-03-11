@@ -63,15 +63,32 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
         )
 
         try:
-            created_contact: DestinationAttribute = xero_connection.post_contact(
-                    source_employee, auto_map_employees_preference)
+            if auto_map_employees_preference == 'EMAIL':
+                filters = {
+                    'detail__email__iexact': source_employee.value
+                }
+
+            elif auto_map_employees_preference == 'NAME':
+                filters = {
+                    'value__iexact': source_employee.detail['full_name']
+                }
+
+            contact = DestinationAttribute.objects.filter(
+                attribute_type='CONTACT',
+                workspace_id=expense_group.workspace_id,
+                **filters
+            ).first()
+
+            if contact is None:
+                contact: DestinationAttribute = xero_connection.post_contact(
+                        source_employee, auto_map_employees_preference)
 
             mapping = Mapping.create_or_update_mapping(
                 source_type='EMPLOYEE',
                 source_value=expense_group.description.get('employee_email'),
                 destination_type='CONTACT',
-                destination_id=created_contact.destination_id,
-                destination_value=created_contact.value,
+                destination_id=contact.destination_id,
+                destination_value=contact.value,
                 workspace_id=int(expense_group.workspace_id)
             )
 
