@@ -198,6 +198,13 @@ else:
     }
 
 
+DATABASES['cache_db'] = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': 'cache.db'
+}
+
+DATABASE_ROUTERS = ['fyle_xero_api.cache_router.CacheRouter']
+
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
