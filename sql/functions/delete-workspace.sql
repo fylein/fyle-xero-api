@@ -161,18 +161,18 @@ BEGIN
   RAISE NOTICE 'Deleted % auth_tokens' , rcount;
 
   DELETE
+  FROM workspaces_user wu
+  WHERE workspace_id = _workspace_id;
+  GET DIAGNOSTICS rcount = ROW_COUNT;
+  RAISE NOTICE 'Deleted % workspaces_user' , rcount;
+
+  DELETE
   FROM users u
   WHERE u.id IN (
       SELECT wu.user_id FROM workspaces_user wu WHERE workspace_id = _workspace_id
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
   RAISE NOTICE 'Deleted % users' , rcount;
-
-  DELETE
-  FROM workspaces_user wu
-  WHERE workspace_id = _workspace_id;
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % workspaces_user' , rcount;
 
   DELETE
   FROM workspaces w
