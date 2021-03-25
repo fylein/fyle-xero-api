@@ -180,9 +180,6 @@ BEGIN
   GET DIAGNOSTICS rcount = ROW_COUNT;
   RAISE NOTICE 'Deleted % workspaces' , rcount;
 
--- TODO: rm this
-ROLLBACK;
-
 RETURN;
 END
 $$ LANGUAGE plpgsql;
