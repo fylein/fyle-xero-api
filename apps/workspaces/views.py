@@ -144,7 +144,7 @@ class ConnectFyleView(viewsets.ViewSet):
 
             workspace.name = org_name
             workspace.fyle_org_id = org_id
-            workspace.save(update_fields=['name', 'fyle_org_id'])
+            workspace.save()
 
             fyle_credentials, _ = FyleCredential.objects.update_or_create(
                 workspace_id=kwargs['workspace_id'],
