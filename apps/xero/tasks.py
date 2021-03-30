@@ -221,7 +221,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
             workspace_id=workspace_id, id__in=expense_group_ids, bill__id__isnull=True, exported_at__isnull=True
         ).all()
 
-        chain = Chain(cached=True)
+        chain = Chain()
 
         for expense_group in expense_groups:
             task_log, _ = TaskLog.objects.get_or_create(
@@ -357,7 +357,7 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
             workspace_id=workspace_id, id__in=expense_group_ids, banktransaction__id__isnull=True, exported_at__isnull=True
         ).all()
 
-        chain = Chain(cached=True)
+        chain = Chain()
 
         for expense_group in expense_groups:
             task_log, _ = TaskLog.objects.get_or_create(
