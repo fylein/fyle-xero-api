@@ -45,6 +45,7 @@ class Expense(models.Model):
     sub_category = models.CharField(max_length=255, null=True, blank=True, help_text='Fyle Expense Sub-Category')
     project = models.CharField(max_length=255, null=True, blank=True, help_text='Project')
     expense_id = models.CharField(max_length=255, unique=True, help_text='Expense ID')
+    org_id = models.CharField(max_length=255, null=True, help_text='Organization ID')
     expense_number = models.CharField(max_length=255, help_text='Expense Number')
     claim_number = models.CharField(max_length=255, help_text='Claim Number', null=True)
     amount = models.FloatField(help_text='Home Amount')
@@ -99,6 +100,7 @@ class Expense(models.Model):
                     'sub_category': expense['sub_category'],
                     'project': expense['project_name'],
                     'expense_number': expense['expense_number'],
+                    'org_id': expense['org_id'],
                     'claim_number': expense['claim_number'],
                     'amount': expense['amount'],
                     'currency': expense['currency'],
