@@ -8,9 +8,9 @@ BEGIN
 
   DELETE
   FROM task_logs tl
-  WHERE tl.workspace_id = _workspace_id ;
+  WHERE tl.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % task_logs' , rcount;
+  RAISE NOTICE 'Deleted % task_logs', rcount;
 
   DELETE
   FROM bill_lineitems bl
@@ -20,7 +20,7 @@ BEGIN
       ) 
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % bill_lineitems' , rcount;
+  RAISE NOTICE 'Deleted % bill_lineitems', rcount;
 
   DELETE
   FROM bills b
@@ -28,7 +28,7 @@ BEGIN
       SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % bills' , rcount;
+  RAISE NOTICE 'Deleted % bills', rcount;
 
   DELETE
   FROM bank_transaction_lineitems btl
@@ -38,7 +38,7 @@ BEGIN
       )
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % bank_transaction_lineitems' , rcount;
+  RAISE NOTICE 'Deleted % bank_transaction_lineitems', rcount;
 
   DELETE
   FROM bank_transactions bt
@@ -46,19 +46,19 @@ BEGIN
       SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % bank_transactions' , rcount;
+  RAISE NOTICE 'Deleted % bank_transactions', rcount;
 
   DELETE
   FROM payments p
-  WHERE p.workspace_id = _workspace_id ;
+  WHERE p.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % payments' , rcount;
+  RAISE NOTICE 'Deleted % payments', rcount;
 
   DELETE
   FROM reimbursements r
-  WHERE r.workspace_id = _workspace_id ;
+  WHERE r.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % reimbursements' , rcount;
+  RAISE NOTICE 'Deleted % reimbursements', rcount;
 
   DELETE
   FROM expenses e
@@ -68,7 +68,7 @@ BEGIN
       )
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % expenses' , rcount;
+  RAISE NOTICE 'Deleted % expenses', rcount;
 
   DELETE
   FROM expense_groups_expenses ege
@@ -76,79 +76,85 @@ BEGIN
       SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % expense_groups_expenses' , rcount;
+  RAISE NOTICE 'Deleted % expense_groups_expenses', rcount;
 
   DELETE
   FROM expense_groups eg
-  WHERE eg.workspace_id = _workspace_id ;
+  WHERE eg.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % expense_groups' , rcount;
+  RAISE NOTICE 'Deleted % expense_groups', rcount;
 
   DELETE
   FROM tenant_mappings tm
-  WHERE tm.workspace_id = _workspace_id ;
+  WHERE tm.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % tenant_mappings' , rcount;
+  RAISE NOTICE 'Deleted % tenant_mappings', rcount;
 
   DELETE
   FROM mappings m
-  WHERE m.workspace_id = _workspace_id ;
+  WHERE m.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % mappings' , rcount;
+  RAISE NOTICE 'Deleted % mappings', rcount;
 
   DELETE
   FROM mapping_settings ms
-  WHERE ms.workspace_id = _workspace_id ;
+  WHERE ms.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % mapping_settings' , rcount;
+  RAISE NOTICE 'Deleted % mapping_settings', rcount;
 
   DELETE
   FROM general_mappings gm
-  WHERE gm.workspace_id = _workspace_id ;
+  WHERE gm.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % general_mappings' , rcount;
+  RAISE NOTICE 'Deleted % general_mappings', rcount;
 
   DELETE
   FROM workspace_general_settings wgs
-  WHERE wgs.workspace_id = _workspace_id ;
+  WHERE wgs.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % workspace_general_settings' , rcount;
+  RAISE NOTICE 'Deleted % workspace_general_settings', rcount;
 
   DELETE
   FROM expense_group_settings egs
-  WHERE egs.workspace_id = _workspace_id ;
+  WHERE egs.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % expense_group_settings' , rcount;
+  RAISE NOTICE 'Deleted % expense_group_settings', rcount;
 
   DELETE
   FROM fyle_credentials fc
-  WHERE fc.workspace_id = _workspace_id ;
+  WHERE fc.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % fyle_credentials' , rcount;
+  RAISE NOTICE 'Deleted % fyle_credentials', rcount;
 
   DELETE
   FROM xero_credentials xc
-  WHERE xc.workspace_id = _workspace_id ;
+  WHERE xc.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % xero_credentials' , rcount;
+  RAISE NOTICE 'Deleted % xero_credentials', rcount;
 
   DELETE
   FROM expense_attributes ea
-  WHERE ea.workspace_id = _workspace_id ;
+  WHERE ea.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % expense_attributes' , rcount;
+  RAISE NOTICE 'Deleted % expense_attributes', rcount;
 
   DELETE
   FROM destination_attributes da
-  WHERE da.workspace_id = _workspace_id ;
+  WHERE da.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % destination_attributes' , rcount;
+  RAISE NOTICE 'Deleted % destination_attributes', rcount;
+
+  DELETE
+  FROM workspace_schedules wsch
+  WHERE wsch.workspace_id = _workspace_id;
+  GET DIAGNOSTICS rcount = ROW_COUNT;
+  RAISE NOTICE 'Deleted % workspace_schedules', rcount;
 
   DELETE
   FROM django_q_schedule dqs
-  WHERE dqs.args = _workspace_id::varchar(255) ;
+  WHERE dqs.args = _workspace_id::varchar(255);
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % django_q_schedule' , rcount;
+  RAISE NOTICE 'Deleted % django_q_schedule', rcount;
 
   DELETE
   FROM auth_tokens aut
@@ -158,13 +164,13 @@ BEGIN
       )
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % auth_tokens' , rcount;
+  RAISE NOTICE 'Deleted % auth_tokens', rcount;
 
   DELETE
   FROM workspaces_user wu
   WHERE workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % workspaces_user' , rcount;
+  RAISE NOTICE 'Deleted % workspaces_user', rcount;
 
   DELETE
   FROM users u
@@ -172,13 +178,13 @@ BEGIN
       SELECT wu.user_id FROM workspaces_user wu WHERE workspace_id = _workspace_id
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % users' , rcount;
+  RAISE NOTICE 'Deleted % users', rcount;
 
   DELETE
   FROM workspaces w
-  WHERE w.id = _workspace_id ;
+  WHERE w.id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % workspaces' , rcount;
+  RAISE NOTICE 'Deleted % workspaces', rcount;
 
 RETURN;
 END
