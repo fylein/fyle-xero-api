@@ -299,9 +299,9 @@ class ExpenseGroup(models.Model):
             for key in expense_group:
                 if key in ALLOWED_FORM_INPUT['export_date_type']:
                     if expense_group[key]:
-                        expense_group[key] = expense_group[key].strftime('%Y-%m-%dT%H:%M:%S')
+                        expense_group[key] = expense_group[key].strftime('%Y-%m-%d')
                     else:
-                        expense_group[key] = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+                        expense_group[key] = datetime.now().strftime('%Y-%m-%d')
 
             expense_group_object = ExpenseGroup.objects.create(
                 workspace_id=workspace_id,
