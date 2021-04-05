@@ -50,13 +50,13 @@ def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
 
 def get_transaction_date(expense_group: ExpenseGroup) -> str:
     if 'spent_at' in expense_group.description and expense_group.description['spent_at']:
-        return expense_group.description['spent_at']
+        return expense_group.description['spent_at'].strftime('%Y-%m-%d')
     elif 'approved_at' in expense_group.description and expense_group.description['approved_at']:
-        return expense_group.description['approved_at']
+        return expense_group.description['approved_at'].strftime('%Y-%m-%d')
     elif 'verified_at' in expense_group.description and expense_group.description['verified_at']:
-        return expense_group.description['verified_at']
+        return expense_group.description['verified_at'].strftime('%Y-%m-%d')
     elif 'last_spent_at' in expense_group.description and expense_group.description['last_spent_at']:
-        return expense_group.description['last_spent_at']
+        return expense_group.description['last_spent_at'].strftime('%Y-%m-%d')
 
     return datetime.now().strftime("%Y-%m-%d")
 
