@@ -14,7 +14,7 @@ from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_
 from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
 from fyle_xero_api.utils import assert_valid
 from .models import WorkspaceGeneralSettings
-
+from ..fyle.models import ExpenseGroupSettings
 
 def generate_xero_refresh_token(authorization_code: str) -> str:
     """
@@ -67,6 +67,14 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
         assert_valid(general_settings_payload['auto_map_employees'] in ['EMAIL', 'NAME', 'EMPLOYEE_CODE'],
                      'auto_map_employees can have only EMAIL / NAME / EMPLOYEE_CODE')
 
+
+    workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
+
+    map_merchant_to_vendor = True
+
+    if workspace_general_settings:
+        map_merchant_to_vendor = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
+
     general_settings, _ = WorkspaceGeneralSettings.objects.update_or_create(
         workspace_id=workspace_id,
         defaults={
@@ -79,9 +87,21 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             'sync_xero_to_fyle_payments': general_settings_payload['sync_xero_to_fyle_payments'],
             'import_categories': general_settings_payload['import_categories'],
             'auto_map_employees': general_settings_payload['auto_map_employees'],
-            'auto_create_destination_entity': general_settings_payload['auto_create_destination_entity']
+            'auto_create_destination_entity': general_settings_payload['auto_create_destination_entity'],
+            'map_merchant_to_vendor': map_merchant_to_vendor
         }
     )
+
+    if general_settings.map_merchant_to_vendor and \
+            general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
+        expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
+
+        bank_transaction_expense_group_fields = expense_group_settings.corporate_credit_card_expense_group_fields
+        bank_transaction_expense_group_fields.append('expense_id')
+
+        expense_group_settings.corporate_credit_card_expense_group_fields = bank_transaction_expense_group_fields
+
+        expense_group_settings.save()
 
     schedule_payment_creation(general_settings.sync_fyle_to_xero_payments, workspace_id)
 
