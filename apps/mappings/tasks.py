@@ -107,7 +107,7 @@ def auto_create_category_mappings(workspace_id):
 
                 mapping.source.auto_mapped = True
                 mapping.source.auto_created = True
-                mapping.source.save(update_fields=['auto_mapped', 'auto_created'])
+                mapping.source.save()
 
             except ExpenseAttribute.DoesNotExist:
                 detail = {
@@ -185,7 +185,7 @@ def auto_create_employee_mappings(source_attributes: List[ExpenseAttribute], map
             )
 
             source.auto_mapped = True
-            source.save(update_fields=['auto_mapped'])
+            source.save()
 
 
 def construct_filters_employee_mappings(employee: DestinationAttribute, employee_mapping_preference: str):

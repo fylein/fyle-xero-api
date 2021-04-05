@@ -54,7 +54,7 @@ def create_expense_groups(workspace_id: int, fund_source: List[str], task_log: T
     task_log.detail = {
         'message': 'Creating expense groups'
     }
-    task_log.save(update_fields=['task_id', 'detail'])
+    task_log.save()
 
     return task_log
 
@@ -100,7 +100,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
 
             task_log.status = 'COMPLETE'
 
-            task_log.save(update_fields=['detail', 'status'])
+            task_log.save()
 
     except FyleCredential.DoesNotExist:
         logger.exception('Fyle credentials not found %s', workspace_id)
@@ -108,7 +108,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             'message': 'Fyle credentials do not exist in workspace'
         }
         task_log.status = 'FAILED'
-        task_log.save(update_fields=['detail', 'status'])
+        task_log.save()
 
     except Exception:
         error = traceback.format_exc()
@@ -116,5 +116,5 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             'error': error
         }
         task_log.status = 'FATAL'
-        task_log.save(update_fields=['detail', 'status'])
+        task_log.save()
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
