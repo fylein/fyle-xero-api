@@ -113,6 +113,9 @@ SERVICE_NAME = os.environ.get('SERVICE_NAME')
 Q_CLUSTER = {
     'name': 'fyle_xero_api',
     'save_limit': 0,
+    'retry': 14400,
+    'timeout': 3600,
+    'catch_up': False,
     'workers': 1,
     'queue_limit': 50,
     'cached': False,
