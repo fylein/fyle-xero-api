@@ -221,7 +221,7 @@ class BankTransaction(models.Model):
         db_table = 'bank_transactions'
 
     @staticmethod
-    def create_bank_transaction(expense_group: ExpenseGroup):
+    def create_bank_transaction(expense_group: ExpenseGroup, map_merchant_to_contact: bool):
         """
         Create bank transaction
         :param expense_group: expense group
@@ -231,12 +231,26 @@ class BankTransaction(models.Model):
 
         expense: Expense = expense_group.expenses.first()
 
-        contact_id = Mapping.objects.get(
-            source_type='EMPLOYEE',
-            destination_type='CONTACT',
-            source__value=description.get('employee_email'),
-            workspace_id=expense_group.workspace_id
-        ).destination.destination_id
+        if map_merchant_to_contact:
+            merchant = expense.vendor if expense.vendor else ''
+
+            contact_id = DestinationAttribute.objects.filter(
+                value__iexact=merchant, attribute_type='CONTACT', workspace_id=expense_group.workspace_id
+            ).first()
+
+            if not contact_id:
+                contact_id = DestinationAttribute.objects.filter(
+                    value='Credit Card Misc', workspace_id=expense_group.workspace_id).first().destination_id
+            else:
+                contact_id = contact_id.destination_id
+
+        else:
+            contact_id = Mapping.objects.get(
+                source_type='EMPLOYEE',
+                destination_type='CONTACT',
+                source__value=description.get('employee_email'),
+                workspace_id=expense_group.workspace_id
+            ).destination.destination_id
 
         general_mappings = GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
 

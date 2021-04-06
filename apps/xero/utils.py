@@ -37,6 +37,28 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
+    
+    def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
+        """
+        Call xero api to get or create contact
+        :param email: email for contact user
+        :param contact_name: Name of the contact
+        :param create: False to just Get and True to Get or Create if not exists
+        :return: Contact
+        """
+
+        contact = self.connection.contacts.search_contact_by_display_name(contact_name)
+
+        if not contact:
+            if create:
+                created_contact = self.post_contact(contact_name, email)
+                return self.create_contact_destination_attribute(created_contact)
+            else:
+                return 
+        
+        else:
+            return self.create_contact_destination_attribute(contact)
+
     def get_organisations(self):
         """
         Get xero organisations
@@ -187,29 +209,9 @@ class XeroConnector:
             item_attributes, self.workspace_id)
         return item_attributes
 
-
-    def post_contact(self, contact: ExpenseAttribute, auto_map_employee_preference: str):
-        """
-        Post contact to Xero
-        :param contact: contact attribute to be created
-        :param auto_map_employee_preference: Preference while doing auto map of employees
-        :return: Contact Desination Attribute
-        """
-        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
-        self.connection.set_tenant_id(tenant_mapping.tenant_id)
-
-        xero_display_name = contact.detail['full_name']
-
-        contact = {
-            'Name': xero_display_name,
-            'FirstName': xero_display_name.split(' ')[0],
-            'LastName': xero_display_name.split(' ')[-1]
-            if len(xero_display_name.split(' ')) > 1 else '',
-            'EmailAddress': contact.value
-        }
-
-        created_contact = self.connection.contacts.post(contact)['Contacts'][0]
-
+    
+    def create_contact_destination_attribute(self, contact):
+        
         created_contact = DestinationAttribute.bulk_upsert_destination_attributes([{
             'attribute_type': 'CONTACT',
             'display_name': 'Contact',
@@ -220,6 +222,29 @@ class XeroConnector:
             }
         }], self.workspace_id)[0]
 
+        return created_contact
+
+    def post_contact(self, contact_name: str, email: str):
+        """
+        Post contact to Xero
+        :param contact: contact attribute to be created
+        :param auto_map_employee_preference: Preference while doing auto map of employees
+        :return: Contact Desination Attribute
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        contact = {
+            'Name': contact_name,
+            'FirstName': contact_name.split(' ')[0],
+            'LastName': contact_name.split(' ')[-1]
+            if len(contact_name.split(' ')) > 1 else '',
+            'EmailAddress': email
+        }
+
+        created_contact = self.connection.contacts.post(contact)['Contacts'][0]
+
+    
         return created_contact
 
     @staticmethod
