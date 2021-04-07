@@ -233,10 +233,13 @@ class BankTransaction(models.Model):
 
         if map_merchant_to_contact:
             merchant = expense.vendor if expense.vendor else ''
-
+            
             contact_id = DestinationAttribute.objects.filter(
                 value__iexact=merchant, attribute_type='CONTACT', workspace_id=expense_group.workspace_id
             ).first()
+
+            expense_group.description['spent_at'] = expense.spent_at.strftime("%d-%m-%Y")
+            expense_group.save()
             
             if not contact_id:
                 contact_id = DestinationAttribute.objects.filter(
