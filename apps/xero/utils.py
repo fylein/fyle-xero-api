@@ -46,9 +46,11 @@ class XeroConnector:
         :param create: False to just Get and True to Get or Create if not exists
         :return: Contact
         """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         contact = self.connection.contacts.search_contact_by_display_name(contact_name)
-
+       
         if not contact:
             if create:
                 created_contact = self.post_contact(contact_name, email)
@@ -211,17 +213,18 @@ class XeroConnector:
 
     
     def create_contact_destination_attribute(self, contact):
-        
+            
         created_contact = DestinationAttribute.bulk_upsert_destination_attributes([{
             'attribute_type': 'CONTACT',
             'display_name': 'Contact',
-            'value': created_contact['Name'],
-            'destination_id': created_contact['ContactID'],
+            'value': contact['Name'],
+            'destination_id': contact['ContactID'],
             'detail': {
-                'email': created_contact['EmailAddress']
+                'email': contact['EmailAddress']
             }
         }], self.workspace_id)[0]
 
+        
         return created_contact
 
     def post_contact(self, contact_name: str, email: str):

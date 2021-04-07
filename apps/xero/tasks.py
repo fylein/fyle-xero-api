@@ -35,7 +35,7 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
     xero_credentials =  XeroCredentials.objects.get(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
     contact = None
-
+    
     if merchant:
         contact = xero_connection.get_or_create_contact(merchant, create=False)
 
@@ -77,7 +77,7 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             source__value=expense_group.description.get('employee_email'),
             workspace_id=expense_group.workspace_id
         )
-
+    
     except Mapping.DoesNotExist:
         source_employee = ExpenseAttribute.objects.get(
             workspace_id=expense_group.workspace_id,
@@ -295,7 +295,7 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
         with transaction.atomic():
             __validate_expense_group(expense_group)
 
-            bank_transaction_object = BankTransaction.create_bank_transaction(expense_group)
+            bank_transaction_object = BankTransaction.create_bank_transaction(expense_group, general_settings.map_merchant_to_contact)
 
             bank_transaction_lineitems_objects = BankTransactionLineItem.create_bank_transaction_lineitems(
                 expense_group

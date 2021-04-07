@@ -71,7 +71,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
     
     workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
 
-    map_merchant_to_contact =- True
+    map_merchant_to_contact = True
 
     if workspace_general_settings:
         map_merchant_to_contact = workspace_general_settings.map_merchant_to_contact

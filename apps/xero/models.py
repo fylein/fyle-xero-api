@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.contrib.postgres.fields import JSONField
 from django.db import models
-from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, MappingSetting
+from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, MappingSetting, DestinationAttribute
 from typing import List
 
 from apps.fyle.models import ExpenseGroup, Expense
@@ -237,7 +237,7 @@ class BankTransaction(models.Model):
             contact_id = DestinationAttribute.objects.filter(
                 value__iexact=merchant, attribute_type='CONTACT', workspace_id=expense_group.workspace_id
             ).first()
-
+            
             if not contact_id:
                 contact_id = DestinationAttribute.objects.filter(
                     value='Credit Card Misc', workspace_id=expense_group.workspace_id).first().destination_id
