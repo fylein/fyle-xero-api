@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
     """
-    Get or create car default vendor
+    Get or create credit card contact
     :param workspace_id: Workspace Id
     :param merchant: Fyle Expense Merchant
     :return: Contact

@@ -49,7 +49,7 @@ class XeroConnector:
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        contact = self.connection.contacts.search_contact_by_display_name(contact_name)
+        contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
        
         if not contact:
             if create:
@@ -230,9 +230,9 @@ class XeroConnector:
     def post_contact(self, contact_name: str, email: str):
         """
         Post contact to Xero
-        :param contact: contact attribute to be created
-        :param auto_map_employee_preference: Preference while doing auto map of employees
-        :return: Contact Desination Attribute
+        :param contact_name: name of the contact to be created
+        :param email: email of the contact
+        :return: Contact Destination Attribute
         """
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
@@ -247,7 +247,6 @@ class XeroConnector:
 
         created_contact = self.connection.contacts.post(contact)['Contacts'][0]
 
-    
         return created_contact
 
     @staticmethod
@@ -362,7 +361,6 @@ class XeroConnector:
     def post_attachments(self, ref_id: str, ref_type: str, attachments: List[Dict]) -> List:
         """
         Link attachments to objects Xero
-        :param prep_id: prep id for export
         :param ref_id: object id
         :param ref_type: type of object
         :param attachments: attachment[dict()]
