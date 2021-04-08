@@ -49,6 +49,8 @@ class XeroConnector:
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
+        contact_name = contact_name.replace('#', '%23')  # Replace '#' with %23
+
         contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
        
         if not contact:
