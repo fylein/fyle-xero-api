@@ -99,7 +99,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
 
         ccc_expense_group_field = expense_group_settings.corporate_credit_card_expense_group_fields
         ccc_expense_group_field.append('expense_id')
-        expense_group_settings.corporate_credit_card_expense_group_fields = ccc_expense_group_field
+        expense_group_settings.corporate_credit_card_expense_group_fields = list(set(ccc_expense_group_field))
 
         expense_group_settings.save()
 
