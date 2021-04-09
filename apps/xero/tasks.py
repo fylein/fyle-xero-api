@@ -81,6 +81,7 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             workspace_id=expense_group.workspace_id
         )
     
+    
     except Mapping.DoesNotExist:
         source_employee = ExpenseAttribute.objects.get(
             workspace_id=expense_group.workspace_id,
@@ -151,6 +152,7 @@ def create_bill(expense_group, task_log_id):
         return
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
+
     try:
         xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
         xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
@@ -433,25 +435,22 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                 'message': 'General mapping not found'
             })
     
-    else:
-        if not (general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION'
-                and general_settings.map_merchant_to_contact and expense_group.fund_source == 'CCC'):
+    try:
+        Mapping.objects.get(
+            destination_type='CONTACT',
+            source_type='EMPLOYEE',
+            source__value=expense_group.description.get('employee_email'),
+            workspace_id=expense_group.workspace_id
+        )
 
-            try:
-                Mapping.objects.get(
-                    destination_type='CONTACT',
-                    source_type='EMPLOYEE',
-                    source__value=expense_group.description.get('employee_email'),
-                    workspace_id=expense_group.workspace_id
-                )
-            except Mapping.DoesNotExist:
-                bulk_errors.append({
-                    'row': None,
-                    'expense_group_id': expense_group.id,
-                    'value': expense_group.description.get('employee_email'),
-                    'type': 'Employee Mapping',
-                    'message': 'Employee mapping not found'
-                })
+    except Mapping.DoesNotExist:
+        bulk_errors.append({
+            'row': None,
+            'expense_group_id': expense_group.id,
+            'value': expense_group.description.get('employee_email'),
+            'type': 'Employee Mapping',
+            'message': 'Employee mapping not found'
+        })
 
     expenses = expense_group.expenses.all()
 
