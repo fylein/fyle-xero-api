@@ -68,7 +68,6 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
         assert_valid(general_settings_payload['auto_map_employees'] in ['EMAIL', 'NAME', 'EMPLOYEE_CODE'],
                      'auto_map_employees can have only EMAIL / NAME / EMPLOYEE_CODE')
 
-    
     workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
 
     map_merchant_to_contact = True
@@ -97,9 +96,9 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
         expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
 
-        ccc_expense_group_field = expense_group_settings.corporate_credit_card_expense_group_fields
-        ccc_expense_group_field.append('expense_id')
-        expense_group_settings.corporate_credit_card_expense_group_fields = ccc_expense_group_field
+        ccc_expense_group_fields = expense_group_settings.corporate_credit_card_expense_group_fields
+        ccc_expense_group_fields.append('expense_id')
+        expense_group_settings.corporate_credit_card_expense_group_fields = ccc_expense_group_fields
 
         expense_group_settings.save()
 
