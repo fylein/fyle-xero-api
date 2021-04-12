@@ -131,17 +131,6 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             logger.error('Error while auto creating contact workspace_id - %s error: %s',
                 expense_group.workspace_id, {'error': exception.response})
 
-        except Exception:
-            error = traceback.format_exc()
-            error = {
-                'error': error
-            }
-            logger.error(
-                'Something unecpected has happened during auto creation of contact workspace_id - %s error: %s',
-                expense_group.workspace_id, error
-            )
-
-
 def create_bill(expense_group, task_log_id):
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
@@ -432,7 +421,6 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                 'type': 'General Mapping',
                 'message': 'General mapping not found'
             })
-    
     
     if not (general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION'
             and general_settings.map_merchant_to_contact and expense_group.fund_source == 'CCC'):
