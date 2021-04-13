@@ -24,6 +24,31 @@ from fyle_xero_api.exceptions import BulkError
 logger = logging.getLogger(__name__)
 
 
+def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
+    """
+    Get or create credit card contact
+    :param workspace_id: Workspace Id
+    :param merchant: Fyle Expense Merchant
+    :return: Contact
+    """
+
+    xero_credentials =  XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+    contact = None
+    
+    if merchant:
+        try:
+            contact = xero_connection.get_or_create_contact(merchant, create=False)
+        except WrongParamsError as bad_request:
+            logger.error(bad_request.response)
+
+    if not contact:
+        contact = xero_connection.get_or_create_contact('Credit Card Misc', create=True)
+
+    
+    return contact
+
+
 def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str, expense_group: ExpenseGroup):
     """
     Get attachments from fyle
@@ -55,7 +80,7 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             source__value=expense_group.description.get('employee_email'),
             workspace_id=expense_group.workspace_id
         )
-
+    
     except Mapping.DoesNotExist:
         source_employee = ExpenseAttribute.objects.get(
             workspace_id=expense_group.workspace_id,
@@ -81,8 +106,11 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             ).first()
 
             if contact is None:
-                contact: DestinationAttribute = xero_connection.post_contact(
-                        source_employee, auto_map_employees_preference)
+                contact: DestinationAttribute = xero_connection.get_or_create_contact(
+                    contact_name=source_employee.detail['full_name'],
+                    email=source_employee.value,
+                    create=True
+                )
 
             mapping = Mapping.create_or_update_mapping(
                 source_type='EMPLOYEE',
@@ -103,17 +131,6 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             logger.error('Error while auto creating contact workspace_id - %s error: %s',
                 expense_group.workspace_id, {'error': exception.response})
 
-        except Exception:
-            error = traceback.format_exc()
-            error = {
-                'error': error
-            }
-            logger.error(
-                'Something unecpected has happened during auto creation of contact workspace_id - %s error: %s',
-                expense_group.workspace_id, error
-            )
-
-
 def create_bill(expense_group, task_log_id):
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
@@ -127,7 +144,8 @@ def create_bill(expense_group, task_log_id):
         xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
         xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
 
-        if general_settings.auto_map_employees and general_settings.auto_create_destination_entity:
+        if general_settings.auto_map_employees and general_settings.auto_create_destination_entity \
+                and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
             create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
 
         with transaction.atomic():
@@ -244,7 +262,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
             chain.run()
 
 
-def create_bank_transaction(expense_group, task_log_id):
+def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
         task_log.status = 'IN_PROGRESS'
@@ -258,13 +276,18 @@ def create_bank_transaction(expense_group, task_log_id):
 
         xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
 
-        if general_settings.auto_map_employees and general_settings.auto_create_destination_entity:
-            create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
+        if not general_settings.map_merchant_to_contact:
+            if general_settings.auto_map_employees and general_settings.auto_create_destination_entity \
+                    and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
+                create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
+        else:
+            merchant = expense_group.expenses.first().vendor
+            get_or_create_credit_card_contact(expense_group.workspace_id, merchant)
 
         with transaction.atomic():
             __validate_expense_group(expense_group)
 
-            bank_transaction_object = BankTransaction.create_bank_transaction(expense_group)
+            bank_transaction_object = BankTransaction.create_bank_transaction(expense_group, general_settings.map_merchant_to_contact)
 
             bank_transaction_lineitems_objects = BankTransactionLineItem.create_bank_transaction_lineitems(
                 expense_group
@@ -398,22 +421,25 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                 'type': 'General Mapping',
                 'message': 'General mapping not found'
             })
+    
+    if not (general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION'
+            and general_settings.map_merchant_to_contact and expense_group.fund_source == 'CCC'):
 
-    try:
-        Mapping.objects.get(
-            destination_type='CONTACT',
-            source_type='EMPLOYEE',
-            source__value=expense_group.description.get('employee_email'),
-            workspace_id=expense_group.workspace_id
-        )
-    except Mapping.DoesNotExist:
-        bulk_errors.append({
-            'row': None,
-            'expense_group_id': expense_group.id,
-            'value': expense_group.description.get('employee_email'),
-            'type': 'Employee Mapping',
-            'message': 'Employee mapping not found'
-        })
+        try:
+            Mapping.objects.get(
+                destination_type='CONTACT',
+                source_type='EMPLOYEE',
+                source__value=expense_group.description.get('employee_email'),
+                workspace_id=expense_group.workspace_id
+            )
+        except Mapping.DoesNotExist:
+            bulk_errors.append({
+                'row': None,
+                'expense_group_id': expense_group.id,
+                'value': expense_group.description.get('employee_email'),
+                'type': 'Employee Mapping',
+                'message': 'Employee mapping not found'
+            })
 
     expenses = expense_group.expenses.all()
 

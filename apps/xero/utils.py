@@ -37,6 +37,33 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
+    
+    def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
+        """
+        Call xero api to get or create contact
+        :param email: email for contact user
+        :param contact_name: Name of the contact
+        :param create: False to just Get and True to Get or Create if not exists
+        :return: Contact
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        contact_name = contact_name.replace('#', '%23')  # Replace '#' with %23
+        contact_name = contact_name.replace('"', '') # remove double quotes from merchant name
+
+        contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
+       
+        if not contact:
+            if create:
+                created_contact = self.post_contact(contact_name, email)
+                return self.create_contact_destination_attribute(created_contact)
+            else:
+                return 
+        
+        else:
+            return self.create_contact_destination_attribute(contact)
+
     def get_organisations(self):
         """
         Get xero organisations
@@ -187,38 +214,41 @@ class XeroConnector:
             item_attributes, self.workspace_id)
         return item_attributes
 
+    
+    def create_contact_destination_attribute(self, contact):
+            
+        created_contact = DestinationAttribute.bulk_upsert_destination_attributes([{
+            'attribute_type': 'CONTACT',
+            'display_name': 'Contact',
+            'value': contact['Name'],
+            'destination_id': contact['ContactID'],
+            'detail': {
+                'email': contact['EmailAddress']
+            }
+        }], self.workspace_id)[0]
 
-    def post_contact(self, contact: ExpenseAttribute, auto_map_employee_preference: str):
+        
+        return created_contact
+
+    def post_contact(self, contact_name: str, email: str):
         """
         Post contact to Xero
-        :param contact: contact attribute to be created
-        :param auto_map_employee_preference: Preference while doing auto map of employees
-        :return: Contact Desination Attribute
+        :param contact_name: name of the contact to be created
+        :param email: email of the contact
+        :return: Contact Destination Attribute
         """
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        xero_display_name = contact.detail['full_name']
-
         contact = {
-            'Name': xero_display_name,
-            'FirstName': xero_display_name.split(' ')[0],
-            'LastName': xero_display_name.split(' ')[-1]
-            if len(xero_display_name.split(' ')) > 1 else '',
-            'EmailAddress': contact.value
+            'Name': contact_name,
+            'FirstName': contact_name.split(' ')[0],
+            'LastName': contact_name.split(' ')[-1]
+            if len(contact_name.split(' ')) > 1 else '',
+            'EmailAddress': email
         }
 
         created_contact = self.connection.contacts.post(contact)['Contacts'][0]
-
-        created_contact = DestinationAttribute.bulk_upsert_destination_attributes([{
-            'attribute_type': 'CONTACT',
-            'display_name': 'Contact',
-            'value': created_contact['Name'],
-            'destination_id': created_contact['ContactID'],
-            'detail': {
-                'email': created_contact['EmailAddress']
-            }
-        }], self.workspace_id)[0]
 
         return created_contact
 
@@ -334,7 +364,6 @@ class XeroConnector:
     def post_attachments(self, ref_id: str, ref_type: str, attachments: List[Dict]) -> List:
         """
         Link attachments to objects Xero
-        :param prep_id: prep id for export
         :param ref_id: object id
         :param ref_type: type of object
         :param attachments: attachment[dict()]
