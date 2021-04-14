@@ -301,6 +301,33 @@ class FyleConnector:
 
         return reimbursement_attributes
 
+    def sync_dimensions(self):
+
+        try:
+            self.sync_categories()
+        except Exception:
+            pass
+
+        try:
+            self.sync_projects()
+        except Exception:
+            pass
+
+        try:
+            self.sync_employees()
+        except Exception:
+            pass
+
+        try:
+            self.sync_cost_centers()
+        except Exception:
+            pass
+
+        try:
+            self.sync_expense_custom_fields(active_only=True)
+        except Exception:
+            pass
+
     def post_reimbursement(self, reimbursement_ids: list):
         """
         Process Reimbursements in bulk.

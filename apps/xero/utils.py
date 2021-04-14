@@ -37,7 +37,6 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
-    
     def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
         """
         Call xero api to get or create contact
@@ -50,17 +49,17 @@ class XeroConnector:
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         contact_name = contact_name.replace('#', '%23')  # Replace '#' with %23
-        contact_name = contact_name.replace('"', '') # remove double quotes from merchant name
+        contact_name = contact_name.replace('"', '')  # remove double quotes from merchant name
 
         contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
-       
+
         if not contact:
             if create:
                 created_contact = self.post_contact(contact_name, email)
                 return self.create_contact_destination_attribute(created_contact)
             else:
-                return 
-        
+                return
+
         else:
             return self.create_contact_destination_attribute(contact)
 
@@ -150,7 +149,7 @@ class XeroConnector:
 
         for contact in contacts:
             detail = {
-                'email': contact['EmailAddress'] if('EmailAddress' in contact) else None
+                'email': contact['EmailAddress'] if ('EmailAddress' in contact) else None
             }
             contact_attributes.append({
                 'attribute_type': 'CONTACT',
@@ -214,9 +213,8 @@ class XeroConnector:
             item_attributes, self.workspace_id)
         return item_attributes
 
-    
     def create_contact_destination_attribute(self, contact):
-            
+
         created_contact = DestinationAttribute.bulk_upsert_destination_attributes([{
             'attribute_type': 'CONTACT',
             'display_name': 'Contact',
@@ -227,8 +225,34 @@ class XeroConnector:
             }
         }], self.workspace_id)[0]
 
-        
         return created_contact
+
+    def sync_dimensions(self, workspace_id: str):
+
+        try:
+            self.sync_contacts()
+        except Exception:
+            pass
+
+        try:
+            self.sync_items()
+        except Exception:
+            pass
+
+        try:
+            self.sync_tenants()
+        except Exception:
+            pass
+
+        try:
+            self.sync_accounts()
+        except Exception:
+            pass
+
+        try:
+            self.sync_tracking_categories()
+        except Exception:
+            pass
 
     def post_contact(self, contact_name: str, email: str):
         """
