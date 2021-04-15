@@ -385,7 +385,7 @@ class XeroFieldsView(generics.ListAPIView):
 
 class SyncXeroDimensionView(generics.ListCreateAPIView):
     """
-    Sync Netsuite Dimensions View
+    Sync Xero Dimensions View
     """
 
     def post(self, request, *args, **kwargs):
@@ -420,12 +420,12 @@ class SyncXeroDimensionView(generics.ListCreateAPIView):
 
 class RefreshXeroDimensionView(generics.ListCreateAPIView):
     """
-    Refresh NetSuite Dimensions view
+    Refresh Xero Dimensions view
     """
 
     def post(self, request, *args, **kwargs):
         """
-        Sync data from NetSuite
+        Sync data from Xero
         """
         try:
             xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])

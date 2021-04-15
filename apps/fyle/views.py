@@ -343,6 +343,7 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
             workspace = Workspace.objects.get(id=kwargs['workspace_id'])
             if workspace.source_synced_at:
                 time_interval = datetime.now(timezone.utc) - workspace.source_synced_at
+
             if workspace.source_synced_at is None or time_interval.days > 0:
                 fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
                 fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
@@ -352,9 +353,10 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
                 workspace.source_synced_at = datetime.now()
                 workspace.save(update_fields=['source_synced_at'])
 
-                return Response(
-                    status=status.HTTP_200_OK
-                )
+            return Response(
+                status=status.HTTP_200_OK
+            )
+
         except FyleCredential.DoesNotExist:
             return Response(
                 data={
@@ -374,7 +376,7 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         Sync data from Fyle
         """
         try:
-            fyle_credentials = FyleCredential.object.get(workspace_id=kwargs['workspace_id'])
+            fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
             fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
 
             fyle_connector.sync_dimensions()
