@@ -1,4 +1,5 @@
 import base64
+import logging
 from datetime import timedelta, datetime
 
 from django.conf import settings
@@ -14,6 +15,7 @@ from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribu
 
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
+logger = logging.getLogger(__name__)
 
 class XeroConnector:
     """
@@ -230,29 +232,30 @@ class XeroConnector:
     def sync_dimensions(self, workspace_id: str):
 
         try:
+            self.sync_accounts()
+        except Exception as exception:
+            logger.exception(exception)
+
+        try:
             self.sync_contacts()
-        except Exception:
-            pass
+        except Exception as exception:
+            logger.exception(exception)
 
         try:
             self.sync_items()
-        except Exception:
-            pass
-
-        try:
-            self.sync_tenants()
-        except Exception:
-            pass
-
-        try:
-            self.sync_accounts()
-        except Exception:
-            pass
+        except Exception as exception:
+            logger.exception(exception)
 
         try:
             self.sync_tracking_categories()
-        except Exception:
-            pass
+        except Exception as exception:
+            logger.exception(exception)
+
+        try:
+            self.sync_tenants()
+        except Exception as exception:
+            logger.exception(exception.response)
+
 
     def post_contact(self, contact_name: str, email: str):
         """

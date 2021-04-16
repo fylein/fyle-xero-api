@@ -1,4 +1,5 @@
 from typing import List
+import logging
 import json
 
 from django.conf import settings
@@ -11,6 +12,7 @@ import requests
 
 from apps.fyle.models import Reimbursement
 
+logger = logging.getLogger(__name__)
 
 class FyleConnector:
     """
@@ -304,29 +306,29 @@ class FyleConnector:
     def sync_dimensions(self):
 
         try:
-            self.sync_categories()
-        except Exception:
-            pass
-
-        try:
-            self.sync_projects()
-        except Exception:
-            pass
-
-        try:
             self.sync_employees()
-        except Exception:
-            pass
+        except Exception as exception:
+            logger.exception(exception)
 
         try:
-            self.sync_cost_centers()
-        except Exception:
-            pass
+            self.sync_categories(active_only=True)
+        except Exception as exception:
+            logger.exception(exception)
+
+        try:
+            self.sync_cost_centers(active_only=True)
+        except Exception as exception:
+            logger.exception(exception)
+
+        try:
+            self.sync_projects(active_only=True)
+        except Exception as exception:
+            logger.exception(exception)
 
         try:
             self.sync_expense_custom_fields(active_only=True)
-        except Exception:
-            pass
+        except Exception as exception:
+            logger.exception(exception)
 
     def post_reimbursement(self, reimbursement_ids: list):
         """

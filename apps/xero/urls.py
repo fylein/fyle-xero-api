@@ -20,5 +20,5 @@ urlpatterns = [
     path('payments/', PaymentView.as_view()),
     path('reimburse_payments/', ReimburseXeroPaymentsView.as_view()),
     path('sync_dimensions/', SyncXeroDimensionView.as_view()),
-    path('refresh/', RefreshXeroDimensionView.as_view())
+    path('refresh_dimensions/', RefreshXeroDimensionView.as_view())
 ]
