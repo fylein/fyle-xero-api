@@ -151,7 +151,7 @@ class XeroConnector:
 
         for contact in contacts:
             detail = {
-                'email': contact['EmailAddress'] if ('EmailAddress' in contact) else None
+                'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
             }
             contact_attributes.append({
                 'attribute_type': 'CONTACT',
