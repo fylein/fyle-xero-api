@@ -406,9 +406,10 @@ class SyncXeroDimensionView(generics.ListCreateAPIView):
                 workspace.destination_synced_at = datetime.now()
                 workspace.save(update_fields=['destination_synced_at'])
 
-                return Response(
-                    status=status.HTTP_200_OK
-                )
+            return Response(
+                status=status.HTTP_200_OK
+            )
+
         except XeroCredentials.DoesNotExist:
             return Response(
                 data={
