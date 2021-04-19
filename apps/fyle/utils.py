@@ -170,7 +170,8 @@ class FyleConnector:
                 }
             })
 
-        ExpenseAttribute.bulk_create_or_update_expense_attributes(employee_attributes, 'EMPLOYEE', self.workspace_id)
+        ExpenseAttribute.bulk_create_or_update_expense_attributes(
+            employee_attributes, 'EMPLOYEE', self.workspace_id, True)
 
         return []
 
@@ -213,7 +214,7 @@ class FyleConnector:
                 'source_id': cost_center['id']
             })
 
-        ExpenseAttribute.bulk_upsert_expense_attributes(
+        ExpenseAttribute.bulk_create_or_update_expense_attributes(
             cost_center_attributes, 'COST_CENTER', self.workspace_id)
 
         return []
@@ -234,7 +235,7 @@ class FyleConnector:
                 'source_id': project['id']
             })
 
-        ExpenseAttribute.bulk_upsert_expense_attributes(project_attributes, 'PROJECT', self.workspace_id)
+        ExpenseAttribute.bulk_create_or_update_expense_attributes(project_attributes, 'PROJECT', self.workspace_id)
 
         return project_attributes
 
@@ -259,8 +260,8 @@ class FyleConnector:
                 })
                 count = count + 1
 
-        ExpenseAttribute.bulk_create_or_update_expense_attributes(
-            expense_custom_field_attributes, custom_field['name'].upper().replace(' ', '_'), self.workspace_id)
+            ExpenseAttribute.bulk_create_or_update_expense_attributes(
+                expense_custom_field_attributes, custom_field['name'].upper().replace(' ', '_'), self.workspace_id)
 
         return []
 

@@ -134,6 +134,9 @@ class XeroConnector:
                 })
 
         for attribute_type, account_attribute in account_attributes.items():
+            print(attribute_type)
+            print("Nilesh")
+            print(account_attribute)
             if account_attribute:
                 DestinationAttribute.bulk_create_or_update_destination_attributes(
                     account_attributes, attribute_type.upper(), self.workspace_id)
@@ -165,8 +168,9 @@ class XeroConnector:
             })
 
         DestinationAttribute.bulk_create_or_update_destination_attributes(
-            contact_attributes, 'CONTACT', self.workspace_id)
-        return contact_attributes
+            contact_attributes, 'CONTACT', self.workspace_id, True
+        )
+        return []
 
     def sync_tracking_categories(self):
         """
@@ -189,7 +193,7 @@ class XeroConnector:
                     'destination_id': option['TrackingOptionID']
                 })
 
-            DestinationAttribute.create_or_update_destination_attribute(
+            DestinationAttribute.bulk_create_or_update_destination_attributes(
                 tracking_category_attributes, tracking_category['Name'].upper().replace(' ', '_'), self.workspace_id)
 
         return []
