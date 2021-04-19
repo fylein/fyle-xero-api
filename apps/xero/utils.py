@@ -251,12 +251,6 @@ class XeroConnector:
         except Exception as exception:
             logger.exception(exception)
 
-        try:
-            self.sync_tenants()
-        except Exception as exception:
-            logger.exception(exception.response)
-
-
     def post_contact(self, contact_name: str, email: str):
         """
         Post contact to Xero
