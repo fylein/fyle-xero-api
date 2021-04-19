@@ -10,8 +10,7 @@ from xerosdk import XeroSDK
 
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import XeroCredentials
-from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute
-
+from fyle_accounting_mappings.models import DestinationAttribute
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
 
@@ -37,7 +36,6 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
-    
     def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
         """
         Call xero api to get or create contact
@@ -50,17 +48,17 @@ class XeroConnector:
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         contact_name = contact_name.replace('#', '%23')  # Replace '#' with %23
-        contact_name = contact_name.replace('"', '') # remove double quotes from merchant name
+        contact_name = contact_name.replace('"', '')  # remove double quotes from merchant name
 
         contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
-       
+
         if not contact:
             if create:
                 created_contact = self.post_contact(contact_name, email)
                 return self.create_contact_destination_attribute(created_contact)
             else:
-                return 
-        
+                return
+
         else:
             return self.create_contact_destination_attribute(contact)
 
@@ -89,8 +87,8 @@ class XeroConnector:
                 'destination_id': tenant['tenantId']
             })
 
-        tenant_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
-            tenant_attributes, self.workspace_id)
+        tenant_attributes = DestinationAttribute.bulk_create_or_update_destination_attributes(
+            tenant_attributes, 'TENANT', self.workspace_id)
         return tenant_attributes
 
     def sync_accounts(self):
@@ -103,7 +101,10 @@ class XeroConnector:
 
         accounts = self.connection.accounts.get_all()['Accounts']
 
-        account_attributes = []
+        account_attributes = {
+            'bank_account': [],
+            'account': []
+        }
 
         for account in accounts:
 
@@ -113,7 +114,7 @@ class XeroConnector:
             }
 
             if account['Type'] == 'BANK':
-                account_attributes.append({
+                account_attributes['bank_account'].append({
                     'attribute_type': 'BANK_ACCOUNT',
                     'display_name': 'Bank Account',
                     'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
@@ -123,7 +124,7 @@ class XeroConnector:
                 })
 
             elif account['Type'] == 'EXPENSE':
-                account_attributes.append({
+                account_attributes['account'].append({
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',
                     'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
@@ -132,9 +133,12 @@ class XeroConnector:
                     'detail': detail
                 })
 
-        account_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
-            account_attributes, self.workspace_id)
-        return account_attributes
+        for attribute_type, account_attribute in account_attributes.items():
+            if account_attribute:
+                DestinationAttribute.bulk_create_or_update_destination_attributes(
+                    account_attributes, attribute_type.upper(), self.workspace_id)
+
+        return []
 
     def sync_contacts(self):
         """
@@ -150,7 +154,7 @@ class XeroConnector:
 
         for contact in contacts:
             detail = {
-                'email': contact['EmailAddress'] if('EmailAddress' in contact) else None
+                'email': contact['EmailAddress'] if ('EmailAddress' in contact) else None
             }
             contact_attributes.append({
                 'attribute_type': 'CONTACT',
@@ -160,8 +164,8 @@ class XeroConnector:
                 'detail': detail
             })
 
-        contact_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
-            contact_attributes, self.workspace_id)
+        DestinationAttribute.bulk_create_or_update_destination_attributes(
+            contact_attributes, 'CONTACT', self.workspace_id)
         return contact_attributes
 
     def sync_tracking_categories(self):
@@ -174,9 +178,9 @@ class XeroConnector:
 
         tracking_categories = self.connection.tracking_categories.get_all()['TrackingCategories']
 
-        tracking_category_attributes = []
-
         for tracking_category in tracking_categories:
+            tracking_category_attributes = []
+
             for option in tracking_category['Options']:
                 tracking_category_attributes.append({
                     'attribute_type': tracking_category['Name'].upper().replace(' ', '_'),
@@ -185,10 +189,10 @@ class XeroConnector:
                     'destination_id': option['TrackingOptionID']
                 })
 
-        tracking_category_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
-            tracking_category_attributes, self.workspace_id)
+            DestinationAttribute.create_or_update_destination_attribute(
+                tracking_category_attributes, tracking_category['Name'].upper().replace(' ', '_'), self.workspace_id)
 
-        return tracking_category_attributes
+        return []
 
     def sync_items(self):
         """
@@ -210,14 +214,13 @@ class XeroConnector:
                 'destination_id': item['ItemID']
             })
 
-        item_attributes = DestinationAttribute.bulk_upsert_destination_attributes(
-            item_attributes, self.workspace_id)
-        return item_attributes
+        DestinationAttribute.bulk_create_or_update_destination_attributes(
+            item_attributes, 'ITEM', self.workspace_id)
+        return []
 
-    
     def create_contact_destination_attribute(self, contact):
-            
-        created_contact = DestinationAttribute.bulk_upsert_destination_attributes([{
+
+        created_contact = DestinationAttribute.bulk_create_or_update_destination_attributes({
             'attribute_type': 'CONTACT',
             'display_name': 'Contact',
             'value': contact['Name'],
@@ -225,9 +228,8 @@ class XeroConnector:
             'detail': {
                 'email': contact['EmailAddress']
             }
-        }], self.workspace_id)[0]
+        }, self.workspace_id)
 
-        
         return created_contact
 
     def post_contact(self, contact_name: str, email: str):
