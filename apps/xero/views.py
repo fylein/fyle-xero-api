@@ -28,6 +28,7 @@ class OrganisationView(generics.RetrieveAPIView):
     """
     Organisation View
     """
+
     def get(self, request, *args, **kwargs):
         try:
             xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
@@ -139,7 +140,6 @@ class ContactView(generics.ListCreateAPIView):
     def get_queryset(self):
         return DestinationAttribute.objects.filter(
             attribute_type='CONTACT', workspace_id=self.kwargs['workspace_id']).order_by('value')
-            
 
     def post(self, request, *args, **kwargs):
         """
@@ -151,6 +151,7 @@ class ContactView(generics.ListCreateAPIView):
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
             contacts = xero_connector.sync_contacts()
+
             return Response(
                 data=self.serializer_class(contacts, many=True).data,
                 status=status.HTTP_200_OK
@@ -384,6 +385,7 @@ class PaymentView(generics.CreateAPIView):
     """
     Create Payment View
     """
+
     def post(self, request, *args, **kwargs):
         """
         Create payment
@@ -400,6 +402,7 @@ class ReimburseXeroPaymentsView(generics.CreateAPIView):
     """
     Reimburse Xero Payments View
     """
+
     def post(self, request, *args, **kwargs):
         """
         Process Reimbursements in Fyle

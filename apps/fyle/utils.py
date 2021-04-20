@@ -238,7 +238,7 @@ class FyleConnector:
         ExpenseAttribute.bulk_create_or_update_expense_attributes(
             project_attributes, 'PROJECT', self.workspace_id)
         
-        return project_attributes
+        return []
 
     def sync_expense_custom_fields(self, active_only: bool):
         """

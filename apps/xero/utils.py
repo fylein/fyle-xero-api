@@ -167,7 +167,7 @@ class XeroConnector:
         DestinationAttribute.bulk_create_or_update_destination_attributes(
             contact_attributes, 'CONTACT', self.workspace_id)
 
-        return contact_attributes
+        return []
 
     def sync_tracking_categories(self):
         """
