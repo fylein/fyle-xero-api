@@ -136,7 +136,7 @@ class XeroConnector:
         for attribute_type, account_attribute in account_attributes.items():
             if account_attribute:
                 DestinationAttribute.bulk_create_or_update_destination_attributes(
-                    account_attribute, attribute_type.upper(), self.workspace_id)
+                    account_attribute, attribute_type.upper(), self.workspace_id, True)
 
         return []
 
@@ -165,7 +165,7 @@ class XeroConnector:
             })
             
         DestinationAttribute.bulk_create_or_update_destination_attributes(
-            contact_attributes, 'CONTACT', self.workspace_id)
+            contact_attributes, 'CONTACT', self.workspace_id, True)
 
         return []
 
@@ -191,7 +191,7 @@ class XeroConnector:
                 })
 
             DestinationAttribute.bulk_create_or_update_destination_attributes(
-                tracking_category_attributes, tracking_category['Name'].upper().replace(' ', '_'), self.workspace_id)
+                tracking_category_attributes, tracking_category['Name'].upper().replace(' ', '_'), self.workspace_id, True)
 
         return []
 
@@ -214,9 +214,8 @@ class XeroConnector:
                 'value': item['Code'],
                 'destination_id': item['ItemID']
             })
-
         DestinationAttribute.bulk_create_or_update_destination_attributes(
-            item_attributes, 'ITEM', self.workspace_id)
+            item_attributes, 'ITEM', self.workspace_id, True)
         return []
 
     def create_contact_destination_attribute(self, contact):
