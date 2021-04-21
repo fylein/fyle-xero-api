@@ -90,7 +90,7 @@ class XeroConnector:
             })
 
         tenant_attributes = DestinationAttribute.bulk_create_or_update_destination_attributes(
-            tenant_attributes, 'TENANT', self.workspace_id)
+            tenant_attributes, 'TENANT', self.workspace_id, True)
         return tenant_attributes
 
     def sync_accounts(self):
@@ -156,7 +156,7 @@ class XeroConnector:
 
         for contact in contacts:
             detail = {
-                'email': contact['EmailAddress'] if ('EmailAddress' in contact) else None
+                'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
             }
             contact_attributes.append({
                 'attribute_type': 'CONTACT',
