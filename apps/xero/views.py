@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 
 from django.db.models import Q
 from rest_framework import generics
@@ -12,7 +13,8 @@ from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuth
 
 from apps.fyle.models import ExpenseGroup
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import XeroCredentials
+from apps.workspaces.models import XeroCredentials, Workspace
+from apps.workspaces.serializers import WorkspaceSerializer
 from apps.xero.models import BankTransaction, Bill
 from fyle_xero_api.utils import assert_valid
 
@@ -28,6 +30,7 @@ class OrganisationView(generics.RetrieveAPIView):
     """
     Organisation View
     """
+
     def get(self, request, *args, **kwargs):
         try:
             xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
@@ -380,10 +383,78 @@ class XeroFieldsView(generics.ListAPIView):
         return attributes
 
 
+class SyncXeroDimensionView(generics.ListCreateAPIView):
+    """
+    Sync Xero Dimensions View
+    """
+
+    def post(self, request, *args, **kwargs):
+        """
+        Sync Data From Xero
+        """
+        try:
+            workspace = Workspace.objects.get(id=kwargs['workspace_id'])
+            if workspace.destination_synced_at:
+                time_interval = datetime.now(timezone.utc) - workspace.destination_synced_at
+
+            if workspace.destination_synced_at is None or time_interval.days > 0:
+                xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+                xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+
+                xero_connector.sync_dimensions(kwargs['workspace_id'])
+
+                workspace.destination_synced_at = datetime.now()
+                workspace.save(update_fields=['destination_synced_at'])
+
+            return Response(
+                status=status.HTTP_200_OK
+            )
+
+        except XeroCredentials.DoesNotExist:
+            return Response(
+                data={
+                    'message': 'Xero Credentials not found in workspace'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class RefreshXeroDimensionView(generics.ListCreateAPIView):
+    """
+    Refresh Xero Dimensions view
+    """
+
+    def post(self, request, *args, **kwargs):
+        """
+        Sync data from Xero
+        """
+        try:
+            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+
+            xero_connector.sync_dimensions(kwargs['workspace_id'])
+
+            workspace = Workspace.objects.get(id=kwargs['workspace_id'])
+            workspace.destination_synced_at = datetime.now()
+            workspace.save(update_fields=['destination_synced_at'])
+
+            return Response(
+                status=status.HTTP_200_OK
+            )
+        except XeroCredentials.DoesNotExist:
+            return Response(
+                data={
+                    'message': 'Xero credentials not found in workspace'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
 class PaymentView(generics.CreateAPIView):
     """
     Create Payment View
     """
+
     def post(self, request, *args, **kwargs):
         """
         Create payment
@@ -400,6 +471,7 @@ class ReimburseXeroPaymentsView(generics.CreateAPIView):
     """
     Reimburse Xero Payments View
     """
+
     def post(self, request, *args, **kwargs):
         """
         Process Reimbursements in Fyle

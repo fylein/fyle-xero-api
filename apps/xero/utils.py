@@ -1,4 +1,5 @@
 import base64
+import logging
 from datetime import timedelta, datetime
 
 from django.conf import settings
@@ -14,6 +15,7 @@ from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribu
 
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
+logger = logging.getLogger(__name__)
 
 class XeroConnector:
     """
@@ -37,7 +39,6 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
-    
     def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
         """
         Call xero api to get or create contact
@@ -53,14 +54,14 @@ class XeroConnector:
         contact_name = contact_name.replace('"', '') # remove double quotes from merchant name
 
         contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
-       
+
         if not contact:
             if create:
                 created_contact = self.post_contact(contact_name, email)
                 return self.create_contact_destination_attribute(created_contact)
             else:
-                return 
-        
+                return
+
         else:
             return self.create_contact_destination_attribute(contact)
 
@@ -150,7 +151,7 @@ class XeroConnector:
 
         for contact in contacts:
             detail = {
-                'email': contact['EmailAddress'] if('EmailAddress' in contact) else None
+                'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
             }
             contact_attributes.append({
                 'attribute_type': 'CONTACT',
@@ -214,9 +215,8 @@ class XeroConnector:
             item_attributes, self.workspace_id)
         return item_attributes
 
-    
     def create_contact_destination_attribute(self, contact):
-            
+
         created_contact = DestinationAttribute.bulk_upsert_destination_attributes([{
             'attribute_type': 'CONTACT',
             'display_name': 'Contact',
@@ -227,8 +227,29 @@ class XeroConnector:
             }
         }], self.workspace_id)[0]
 
-        
         return created_contact
+
+    def sync_dimensions(self, workspace_id: str):
+
+        try:
+            self.sync_accounts()
+        except Exception as exception:
+            logger.exception(exception)
+
+        try:
+            self.sync_contacts()
+        except Exception as exception:
+            logger.exception(exception)
+
+        try:
+            self.sync_items()
+        except Exception as exception:
+            logger.exception(exception)
+
+        try:
+            self.sync_tracking_categories()
+        except Exception as exception:
+            logger.exception(exception)
 
     def post_contact(self, contact_name: str, email: str):
         """
