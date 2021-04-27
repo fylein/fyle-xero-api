@@ -28,3 +28,4 @@ sqlparse==0.3.0
 urllib3==1.25.7
 wcwidth==0.1.8
 Unidecode==1.1.2
+pylint==2.7.4
