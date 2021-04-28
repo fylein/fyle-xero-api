@@ -420,7 +420,7 @@ class ProjectView(generics.ListCreateAPIView):
             fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
 
             project_attributes = fyle_connector.sync_projects(active_only=active_only)
-
+            
             return Response(
                 data=self.serializer_class(project_attributes, many=True).data,
                 status=status.HTTP_200_OK

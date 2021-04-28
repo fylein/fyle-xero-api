@@ -88,39 +88,13 @@ def auto_create_category_mappings(workspace_id):
     Create Category Mappings
     :return: mappings
     """
-    category_mappings = []
 
     try:
         fyle_categories = upload_categories_to_fyle(workspace_id=workspace_id)
 
-        for category in fyle_categories:
-            try:
-                mapping = Mapping.create_or_update_mapping(
-                    source_type='CATEGORY',
-                    destination_type='ACCOUNT',
-                    source_value=category.value,
-                    destination_value=category.value,
-                    destination_id=category.destination_id,
-                    workspace_id=workspace_id
-                )
-                category_mappings.append(mapping)
+        Mapping.bulk_create_mappings(fyle_categories, 'CATEGORY', 'ACCOUNT', workspace_id)
 
-                mapping.source.auto_mapped = True
-                mapping.source.auto_created = True
-                mapping.source.save()
-
-            except ExpenseAttribute.DoesNotExist:
-                detail = {
-                    'source_value': category.value,
-                    'destination_value': category.value
-                }
-                logger.error(
-                    'Error while creating categories auto mapping workspace_id - %s %s',
-                    workspace_id, {'payload': detail}
-                )
-                raise ExpenseAttribute.DoesNotExist
-
-        return category_mappings
+        return []
 
     except WrongParamsError as exception:
         logger.error(
@@ -173,7 +147,7 @@ def async_auto_map_employees(workspace_id: int):
     fyle_connection.sync_employees()
     xero_connection.sync_contacts()
 
-    Mapping.auto_map_employees('EMPLOYEE', 'CONTACT', employee_mapping_preference, workspace_id)
+    Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)
 
 
 def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
