@@ -275,11 +275,16 @@ class FyleConnector:
         attachments = []
         if expense_ids:
             for expense_id in expense_ids:
+                attachment_file_names = []
                 attachment = self.connection.Expenses.get_attachments(expense_id)
                 if attachment['data']:
-                    attachment = attachment['data'][0]
-                    attachment['expense_id'] = expense_id
-                    attachments.append(attachment)
+                    for attachment in attachment['data']:
+                        attachment_format = attachment['filename'].split('.')
+                        attachment_format = attachment_format[-1]
+                        if attachment_format != 'html' and attachment['filename'] not in attachment_file_names:
+                            attachment['expense_id'] = expense_id
+                            attachments.append(attachment)
+                            attachment_file_names.append(attachment['filename'])
             return attachments
 
         return []
