@@ -141,6 +141,7 @@ class FyleConnector:
         Get expenses from fyle
         """
         expenses = self.connection.Expenses.get_all(state=state, updated_at=updated_at, fund_source=fund_source)
+        print("expenses_new", expenses)
         expenses = list(filter(lambda expense: expense['amount'] > 0, expenses))
         expenses = list(
             filter(lambda expense: not (not expense['reimbursable'] and expense['fund_source'] == 'PERSONAL'),
