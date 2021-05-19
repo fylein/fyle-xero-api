@@ -80,7 +80,7 @@ class Expense(models.Model):
         Bulk create expense objects
         """
         expense_objects = []
-
+        
         custom_properties = ExpenseAttribute.objects.filter(
             ~Q(attribute_type='EMPLOYEE') & ~Q(attribute_type='CATEGORY'),
             ~Q(attribute_type='PROJECT') & ~Q(attribute_type='COST_CENTER'),
@@ -108,7 +108,6 @@ class Expense(models.Model):
 
         for expense in expenses:
             expense_custom_properties = {}
-
             if custom_property_keys and expense['custom_properties']:
                 for prop in expense['custom_properties']:
                     if prop['name'].lower() in custom_property_keys:
@@ -147,7 +146,7 @@ class Expense(models.Model):
                     )
                 )
             else:
-                if expense['state'] != primary_key_map[reimbursement['id']['state']]:
+                if expense['state'] != primary_key_map[expense['id']]['state']:
                     attributes_to_be_updated.append(
                         Expense(
                             id=primary_key_map[expense['id']]['id'],
@@ -157,15 +156,15 @@ class Expense(models.Model):
 
         if attributes_to_be_created:
             expense_object = Expense.objects.bulk_create(attributes_to_be_created, batch_size=50)
-            for expense_obj in expense_objects:
-                if not ExpenseGroup.objects.filter(expenses__id=expense_object.id).first():
+            for expense_obj in expense_object:
+                if not ExpenseGroup.objects.filter(expenses__id=expense_obj.id).first():
                     expense_objects.append(expense_obj)
         
 
         if attributes_to_be_updated:
             expense_object = Expense.objects.bulk_create(attributes_to_be_updated, fields=['state'], batch_size=50)
-            for expense_obj in expense_objects:
-                if not ExpenseGroup.objects.filter(expenses__id=expense_object.id).first():
+            for expense_obj in expense_object:
+                if not ExpenseGroup.objects.filter(expenses__id=expense_obj.id).first():
                     expense_objects.append(expense_obj)
 
         return expense_objects
@@ -320,11 +319,10 @@ class ExpenseGroup(models.Model):
 
         reimbursable_expense_group_fields = expense_group_settings.reimbursable_expense_group_fields
         reimbursable_expenses = list(filter(lambda expense: expense.fund_source == 'PERSONAL', expense_objects))
-        print("reimbursable_expenses", reimbursable_expenses)
+
+
 
         expense_groups = _group_expenses(reimbursable_expenses, reimbursable_expense_group_fields, workspace_id)
-
-        print("expense_groups", expense_groups)
 
         corporate_credit_card_expense_group_field = expense_group_settings.corporate_credit_card_expense_group_fields
         corporate_credit_card_expenses = list(filter(lambda expense: expense.fund_source == 'CCC', expense_objects))
