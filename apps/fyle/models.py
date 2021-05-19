@@ -162,7 +162,7 @@ class Expense(models.Model):
         
 
         if attributes_to_be_updated:
-            expense_object = Expense.objects.bulk_create(attributes_to_be_updated, fields=['state'], batch_size=50)
+            expense_object = Expense.objects.bulk_update(attributes_to_be_updated, fields=['state'], batch_size=50)
             for expense_obj in expense_object:
                 if not ExpenseGroup.objects.filter(expenses__id=expense_obj.id).first():
                     expense_objects.append(expense_obj)
