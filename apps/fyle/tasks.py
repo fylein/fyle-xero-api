@@ -87,7 +87,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             if expenses:
                 workspace.last_synced_at = datetime.now()
                 workspace.save()
-  
+ 
             expense_objects = Expense.create_expense_objects(expenses, workspace_id)
 
             expense_group_objects = ExpenseGroup.create_expense_groups_by_report_id_fund_source(
