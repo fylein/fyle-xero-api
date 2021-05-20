@@ -80,7 +80,7 @@ class Expense(models.Model):
         Bulk create expense objects
         """
         expense_objects = []
-        
+
         custom_properties = ExpenseAttribute.objects.filter(
             ~Q(attribute_type='EMPLOYEE') & ~Q(attribute_type='CATEGORY'),
             ~Q(attribute_type='PROJECT') & ~Q(attribute_type='COST_CENTER'),
@@ -88,7 +88,6 @@ class Expense(models.Model):
         ).values('display_name').distinct()
 
         custom_property_keys = list(set([prop['display_name'].lower() for prop in custom_properties]))
-
         attributes_to_be_created = []
 
         for expense in expenses:
@@ -97,8 +96,7 @@ class Expense(models.Model):
                 for prop in expense['custom_properties']:
                     if prop['name'].lower() in custom_property_keys:
                         expense_custom_properties[prop['name']] = prop['value']
-                        
-            
+
             attributes_to_be_created.append(
                 Expense(
                     expense_id=expense['id'],
@@ -130,14 +128,12 @@ class Expense(models.Model):
                     custom_properties=expense_custom_properties
                 )
             )
-    
 
         if attributes_to_be_created:
             expense_object = Expense.objects.bulk_create(attributes_to_be_created, batch_size=50)
             for expense_obj in expense_object:
                 if not ExpenseGroup.objects.filter(expenses__id=expense_obj.id).first():
                     expense_objects.append(expense_obj)
-
 
         return expense_objects
 
