@@ -288,8 +288,6 @@ class ExpenseGroup(models.Model):
         reimbursable_expense_group_fields = expense_group_settings.reimbursable_expense_group_fields
         reimbursable_expenses = list(filter(lambda expense: expense.fund_source == 'PERSONAL', expense_objects))
 
-
-
         expense_groups = _group_expenses(reimbursable_expenses, reimbursable_expense_group_fields, workspace_id)
 
         corporate_credit_card_expense_group_field = expense_group_settings.corporate_credit_card_expense_group_fields
