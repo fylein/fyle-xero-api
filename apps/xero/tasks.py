@@ -10,7 +10,7 @@ from django_q.models import Schedule
 from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, DestinationAttribute
 
-from xerosdk.exceptions import XeroSDKError, WrongParamsError
+from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.fyle.utils import FyleConnector
@@ -208,9 +208,18 @@ def create_bill(expense_group, task_log_id):
 
         task_log.save()
 
+    except InvalidGrant as exception:
+        logger.exception(exception.message)
+        task_log.status = 'FAILED'
+        task_log.detail = {
+            'error': exception.message
+        }
+
+        task_log.save()
+
     except XeroSDKError as exception:
-        logger.exception(exception.response)
-        detail = json.loads(exception.response)
+        logger.exception(exception.message)
+        detail = json.loads(exception.message)
         task_log.status = 'FAILED'
         task_log.detail = detail
 
@@ -349,9 +358,18 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
 
         task_log.save()
 
+    except InvalidGrant as exception:
+        logger.exception(exception.message)
+        task_log.status = 'FAILED'
+        task_log.detail = {
+            'error': exception.message
+        }
+
+        task_log.save()
+
     except XeroSDKError as exception:
-        logger.exception(exception.response)
-        detail = json.loads(exception.response)
+        logger.exception(exception.message)
+        detail = json.loads(exception.message)
         task_log.status = 'FAILED'
         task_log.detail = detail
 
