@@ -218,8 +218,8 @@ def create_bill(expense_group, task_log_id):
         task_log.save()
 
     except XeroSDKError as exception:
-        logger.exception(exception.message)
-        detail = json.loads(exception.message)
+        logger.exception(exception.response)
+        detail = json.loads(exception.response)
         task_log.status = 'FAILED'
         task_log.detail = detail
 
@@ -368,8 +368,8 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
         task_log.save()
 
     except XeroSDKError as exception:
-        logger.exception(exception.message)
-        detail = json.loads(exception.message)
+        logger.exception(exception.response)
+        detail = json.loads(exception.response)
         task_log.status = 'FAILED'
         task_log.detail = detail
 
