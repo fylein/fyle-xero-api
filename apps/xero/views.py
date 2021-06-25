@@ -26,21 +26,17 @@ from .tasks import create_bank_transaction, schedule_bank_transaction_creation, 
 logger = logging.getLogger(__name__)
 
 
-class OrganisationView(generics.RetrieveAPIView):
+class TokenHealthView(generics.RetrieveAPIView):
     """
-    Organisation View
+    Token Health View
     """
 
     def get(self, request, *args, **kwargs):
         try:
             xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
-
-            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
-
-            organisations = xero_connector.get_organisations()
+            XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
             return Response(
-                data=organisations,
                 status=status.HTTP_200_OK
             )
 
