@@ -556,10 +556,10 @@ def create_payment(workspace_id):
                 logger.error(
                     'Xero Credentials not found for workspace_id %s / expense group %s',
                     workspace_id,
-                    bill.expense_group
+                    bill.expense_group.id
                 )
                 detail = {
-                    'expense_group_id': bill.expense_group,
+                    'expense_group_id': bill.expense_group.id,
                     'message': 'Xero Account not connected'
                 }
                 task_log.status = 'FAILED'
@@ -577,7 +577,7 @@ def create_payment(workspace_id):
 
             except WrongParamsError as exception:
                 logger.error(exception.response)
-                detail = json.loads(exception.response)
+                detail = exception.response
                 task_log.status = 'FAILED'
                 task_log.detail = detail
 
