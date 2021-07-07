@@ -161,6 +161,7 @@ def create_bill(expense_group, task_log_id):
 
             task_log.detail = created_bill
             task_log.bill = bill_object
+            task_log.xero_errors = None
             task_log.status = 'COMPLETE'
 
             task_log.save()
@@ -311,6 +312,7 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
 
             task_log.detail = created_bank_transaction
             task_log.bank_transaction = bank_transaction_object
+            task_log.xero_errors = None
             task_log.status = 'COMPLETE'
 
             task_log.save()
@@ -548,6 +550,7 @@ def create_payment(workspace_id):
 
                     task_log.detail = created_payment
                     task_log.payment = payment_object
+                    task_log.xero_errors = None
                     task_log.status = 'COMPLETE'
 
                     task_log.save()
