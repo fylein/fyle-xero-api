@@ -40,7 +40,7 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
         try:
             contact = xero_connection.get_or_create_contact(merchant, create=False)
         except WrongParamsError as bad_request:
-            logger.error(bad_request.response)
+            logger.error(bad_request.message)
 
     if not contact:
         contact = xero_connection.get_or_create_contact('Credit Card Misc', create=True)
@@ -129,7 +129,7 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
 
         except WrongParamsError as exception:
             logger.error('Error while auto creating contact workspace_id - %s error: %s',
-                expense_group.workspace_id, {'error': exception.response})
+                expense_group.workspace_id, {'error': exception.message})
 
 def create_bill(expense_group, task_log_id):
     task_log = TaskLog.objects.get(id=task_log_id)
@@ -579,8 +579,8 @@ def create_payment(workspace_id):
                 task_log.save()
 
             except WrongParamsError as exception:
-                logger.error(exception.response)
-                detail = exception.response
+                logger.error(exception.message)
+                detail = exception.message
                 task_log.status = 'FAILED'
                 task_log.detail = detail
 
