@@ -283,7 +283,6 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
     try:
         xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
-
         xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
 
         if not general_settings.map_merchant_to_contact:
@@ -525,6 +524,8 @@ def create_payment(workspace_id):
                 }
             )
             try:
+                xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+                xero_connection = XeroConnector(xero_credentials, workspace_id)
                 with transaction.atomic():
                     xero_object_task_log = TaskLog.objects.get(expense_group=bill.expense_group)
 
@@ -535,10 +536,6 @@ def create_payment(workspace_id):
                         invoice_id=invoice_id,
                         account_id=general_mappings.payment_account_id
                     )
-
-                    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-
-                    xero_connection = XeroConnector(xero_credentials, workspace_id)
 
                     created_payment = xero_connection.post_payment(
                         payment_object
