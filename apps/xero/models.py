@@ -104,10 +104,11 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
     )
 
     expense_purpose = 'purpose - {0}'.format(lineitem.purpose) if lineitem.purpose else ''
-    spent_at = ' spent on {0} '.format(lineitem.spent_at.date()) if lineitem.spent_at else ''
-    vendor = 'vendor - {0}'.format(lineitem.vendor) if lineitem.vendor else ''
-    return 'Expense by {0} against {1}, category - {2}{3}with claim number - {4} - {5}'.format(
-        lineitem.employee_email, vendor, category, spent_at, lineitem.claim_number, expense_purpose, expense_link)
+    spent_at = 'spent on {0}'.format(lineitem.spent_at.date()) if lineitem.spent_at else ''
+    vendor = lineitem.vendor if lineitem.vendor else ''
+    return '{0} - {1}, category - {2} {3}, claim number - {4} {5} - {6}'.format(
+        vendor, lineitem.employee_email, category, spent_at, lineitem.claim_number, expense_purpose, expense_link
+    )
 
 
 class Bill(models.Model):
@@ -234,14 +235,14 @@ class BankTransaction(models.Model):
 
         if map_merchant_to_contact:
             merchant = expense.vendor if expense.vendor else ''
-            
+
             contact_id = DestinationAttribute.objects.filter(
                 value__iexact=merchant, attribute_type='CONTACT', workspace_id=expense_group.workspace_id
             ).first()
 
             expense_group.description['spent_at'] = expense.spent_at.strftime('%Y-%m-%d')
             expense_group.save()
-            
+
             if not contact_id:
                 contact_id = DestinationAttribute.objects.filter(
                     value='Credit Card Misc', workspace_id=expense_group.workspace_id).first().destination_id
