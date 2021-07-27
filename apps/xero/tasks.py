@@ -31,22 +31,27 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
     :param merchant: Fyle Expense Merchant
     :return: Contact
     """
+    try:
+        xero_credentials =  XeroCredentials.objects.get(workspace_id=workspace_id)
+        xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+        contact = None
 
-    xero_credentials =  XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
-    contact = None
-    
-    if merchant:
-        try:
-            contact = xero_connection.get_or_create_contact(merchant, create=False)
-        except WrongParamsError as bad_request:
-            logger.error(bad_request.message)
+        if merchant:
+            try:
+                contact = xero_connection.get_or_create_contact(merchant, create=False)
+            except WrongParamsError as bad_request:
+                logger.error(bad_request.message)
 
-    if not contact:
-        contact = xero_connection.get_or_create_contact('Credit Card Misc', create=True)
+        if not contact:
+            contact = xero_connection.get_or_create_contact('Credit Card Misc', create=True)
 
-    
-    return contact
+        return contact
+
+    except XeroCredentials.DoesNotExist:
+        logger.error(
+            'Xero Credentials not found for workspace_id %s',
+            workspace_id,
+        )
 
 
 def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str, expense_group: ExpenseGroup):
@@ -635,32 +640,39 @@ def get_all_xero_bill_ids(xero_objects):
 
 
 def check_xero_object_status(workspace_id):
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    try:
+        xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
 
-    xero_connection = XeroConnector(xero_credentials, workspace_id)
+        xero_connection = XeroConnector(xero_credentials, workspace_id)
 
-    bills = Bill.objects.filter(
-        expense_group__workspace_id=workspace_id,
-        paid_on_xero=False,
-        expense_group__fund_source='PERSONAL'
-    ).all()
+        bills = Bill.objects.filter(
+            expense_group__workspace_id=workspace_id,
+            paid_on_xero=False,
+            expense_group__fund_source='PERSONAL'
+        ).all()
 
-    if bills:
-        bill_id_map = get_all_xero_bill_ids(bills)
+        if bills:
+            bill_id_map = get_all_xero_bill_ids(bills)
 
-        for bill in bills:
-            bill_object = xero_connection.get_bill(bill_id_map[bill.expense_group.id]['bill_id'])
+            for bill in bills:
+                bill_object = xero_connection.get_bill(bill_id_map[bill.expense_group.id]['bill_id'])
 
-            if bill_object['Invoices'][0]['Status'] == 'PAID':
-                line_items = BillLineItem.objects.filter(bill_id=bill.id)
-                for line_item in line_items:
-                    expense = line_item.expense
-                    expense.paid_on_xero = True
-                    expense.save()
+                if bill_object['Invoices'][0]['Status'] == 'PAID':
+                    line_items = BillLineItem.objects.filter(bill_id=bill.id)
+                    for line_item in line_items:
+                        expense = line_item.expense
+                        expense.paid_on_xero = True
+                        expense.save()
 
-                bill.paid_on_xero = True
-                bill.payment_synced = True
-                bill.save()
+                    bill.paid_on_xero = True
+                    bill.payment_synced = True
+                    bill.save()
+
+    except XeroCredentials.DoesNotExist:
+        logger.error(
+            'Xero Credentials not found for workspace_id %s',
+            workspace_id,
+        )
 
 
 def schedule_xero_objects_status_sync(sync_xero_to_fyle_payments, workspace_id):
