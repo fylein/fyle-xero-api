@@ -55,32 +55,39 @@ def upload_categories_to_fyle(workspace_id):
     """
     Upload categories to Fyle
     """
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-    xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    try:
+        fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+        xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
 
-    fyle_connection = FyleConnector(
-        refresh_token=fyle_credentials.refresh_token,
-        workspace_id=workspace_id
-    )
+        fyle_connection = FyleConnector(
+            refresh_token=fyle_credentials.refresh_token,
+            workspace_id=workspace_id
+        )
 
-    xero_connection = XeroConnector(
-        credentials_object=xero_credentials,
-        workspace_id=workspace_id
-    )
-    fyle_connection.sync_categories(False)
-    xero_connection.sync_accounts()
-
-    xero_attributes = DestinationAttribute.objects.filter(attribute_type='ACCOUNT', workspace_id=workspace_id)
-
-    xero_attributes = remove_duplicates(xero_attributes)
-
-    fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id)
-
-    if fyle_payload:
-        fyle_connection.connection.Categories.post(fyle_payload)
+        xero_connection = XeroConnector(
+            credentials_object=xero_credentials,
+            workspace_id=workspace_id
+        )
         fyle_connection.sync_categories(False)
+        xero_connection.sync_accounts()
 
-    return xero_attributes
+        xero_attributes = DestinationAttribute.objects.filter(attribute_type='ACCOUNT', workspace_id=workspace_id)
+
+        xero_attributes = remove_duplicates(xero_attributes)
+
+        fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id)
+
+        if fyle_payload:
+            fyle_connection.connection.Categories.post(fyle_payload)
+            fyle_connection.sync_categories(False)
+
+        return xero_attributes
+        
+    except XeroCredentials.DoesNotExist:
+        logger.error(
+            'Xero Credentials not found for workspace_id %s',
+            workspace_id,
+        )
 
 
 def auto_create_category_mappings(workspace_id):
