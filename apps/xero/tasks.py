@@ -31,28 +31,21 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
     :param merchant: Fyle Expense Merchant
     :return: Contact
     """
-    try:
-        xero_credentials =  XeroCredentials.objects.get(workspace_id=workspace_id)
-        xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
-        contact = None
 
-        if merchant:
-            try:
-                contact = xero_connection.get_or_create_contact(merchant, create=False)
-            except WrongParamsError as bad_request:
-                logger.error(bad_request.message)
+    xero_credentials =  XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+    contact = None
 
-        if not contact:
-            contact = xero_connection.get_or_create_contact('Credit Card Misc', create=True)
+    if merchant:
+        try:
+            contact = xero_connection.get_or_create_contact(merchant, create=False)
+        except WrongParamsError as bad_request:
+            logger.error(bad_request.message)
 
-        return contact
+    if not contact:
+        contact = xero_connection.get_or_create_contact('Credit Card Misc', create=True)
 
-    except XeroCredentials.DoesNotExist:
-        logger.error(
-            'Xero Credentials not found for workspace_id %s',
-            workspace_id,
-        )
-
+    return contact
 
 def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str, expense_group: ExpenseGroup):
     """

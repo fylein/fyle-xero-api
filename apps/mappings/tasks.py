@@ -158,10 +158,10 @@ def async_auto_map_employees(workspace_id: int):
         Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)
 
     except XeroCredentials.DoesNotExist:
-            logger.error(
-                'Xero Credentials not found for workspace_id %s',
-                workspace_id,
-            )
+        logger.error(
+            'Xero Credentials not found for workspace_id %s',
+            workspace_id,
+        )
 
 def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
     if employee_mapping_preference:
