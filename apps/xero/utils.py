@@ -16,6 +16,7 @@ from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactio
 
 logger = logging.getLogger(__name__)
 
+
 class XeroConnector:
     """
     Xero utility functions
@@ -125,7 +126,7 @@ class XeroConnector:
                     'detail': detail
                 })
 
-            elif account['Type'] == 'EXPENSE':
+            elif account['Class'] == 'EXPENSE':
                 account_attributes['account'].append({
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',
