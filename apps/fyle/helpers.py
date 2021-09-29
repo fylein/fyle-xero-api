@@ -26,7 +26,7 @@ def get_or_store_cluster_domain(workspace_id: int) -> str:
     return workspace.cluster_domain
 
 
-def compare_tpa_and_platform_expenses(tpa_expenses: List[dict], platform_expenses: List[dict], workspace_id: int):
+def compare_tpa_and_platform_expenses(tpa_expenses: List[dict], platform_expenses: List[dict], workspace_id: int) -> None:
     """
     Compare TPA expenses and platform expenses.
     """
