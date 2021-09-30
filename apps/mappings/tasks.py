@@ -13,7 +13,7 @@ from fyle_accounting_mappings.models import Mapping, MappingSetting, Destination
 from fylesdk import WrongParamsError
 
 logger = logging.getLogger(__name__)
-
+logger.level = logging.INFO
 
 def remove_duplicates(xero_attributes: List[DestinationAttribute]):
     unique_attributes = []
@@ -114,7 +114,7 @@ def auto_create_category_mappings(workspace_id):
         error = {
             'error': error
         }
-        logger.error(
+        logger.exception(
             'Error while creating categories workspace_id - %s error: %s',
             workspace_id, error
         )

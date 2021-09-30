@@ -130,7 +130,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             task_log.save()
 
     except FyleCredential.DoesNotExist:
-        logger.exception('Fyle credentials not found %s', workspace_id)
+        logger.info('Fyle credentials not found %s', workspace_id)
         task_log.detail = {
             'message': 'Fyle credentials do not exist in workspace'
         }

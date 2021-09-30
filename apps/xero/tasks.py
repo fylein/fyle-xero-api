@@ -22,7 +22,7 @@ from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
-
+logger.level = logging.INFO
 
 def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
     """
@@ -126,7 +126,7 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             mapping.destination.save()
 
         except WrongParamsError as exception:
-            logger.error('Error while auto creating contact workspace_id - %s error: %s',
+            logger.info('Error while auto creating contact workspace_id - %s error: %s',
                 expense_group.workspace_id, {'error': exception.message})
 
 def create_bill(expense_group, task_log_id):
@@ -168,7 +168,7 @@ def create_bill(expense_group, task_log_id):
             expense_group.save()
 
     except XeroCredentials.DoesNotExist:
-        logger.exception(
+        logger.info(
             'Xero Credentials not found for workspace_id %s / expense group %s',
             expense_group.workspace_id,
             expense_group.id
@@ -183,7 +183,7 @@ def create_bill(expense_group, task_log_id):
         task_log.save()
 
     except BulkError as exception:
-        logger.exception(exception.response)
+        logger.info(exception.response)
         detail = exception.response
         task_log.status = 'FAILED'
         task_log.detail = detail
@@ -318,7 +318,7 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
             expense_group.save()
 
     except XeroCredentials.DoesNotExist:
-        logger.exception(
+        logger.info(
             'Xero Credentials not found for workspace_id %s / expense group %s',
             expense_group.workspace_id,
             expense_group.id
@@ -333,7 +333,7 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
         task_log.save()
 
     except BulkError as exception:
-        logger.exception(exception.response)
+        logger.info(exception.response)
         detail = exception.response
         task_log.status = 'FAILED'
         task_log.detail = detail
@@ -551,7 +551,7 @@ def create_payment(workspace_id):
                     task_log.save()
 
             except XeroCredentials.DoesNotExist:
-                logger.error(
+                logger.info(
                     'Xero Credentials not found for workspace_id %s / expense group %s',
                     workspace_id,
                     bill.expense_group.id
@@ -566,7 +566,7 @@ def create_payment(workspace_id):
                 task_log.save()
 
             except BulkError as exception:
-                logger.error(exception.response)
+                logger.info(exception.response)
                 detail = exception.response
                 task_log.status = 'FAILED'
                 task_log.detail = detail
@@ -574,7 +574,7 @@ def create_payment(workspace_id):
                 task_log.save()
 
             except WrongParamsError as exception:
-                logger.error(exception.message)
+                logger.info(exception.message)
                 detail = exception.message
                 task_log.status = 'FAILED'
                 task_log.detail = detail
@@ -662,7 +662,7 @@ def check_xero_object_status(workspace_id):
                     bill.save()
 
     except XeroCredentials.DoesNotExist:
-        logger.error(
+        logger.info(
             'Xero Credentials not found for workspace_id %s',
             workspace_id,
         )
