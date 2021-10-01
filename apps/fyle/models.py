@@ -65,6 +65,7 @@ class Expense(models.Model):
     cost_center = models.CharField(max_length=255, null=True, blank=True, help_text='Fyle Expense Cost Center')
     purpose = models.TextField(null=True, blank=True, help_text='Purpose')
     report_id = models.CharField(max_length=255, help_text='Report ID')
+    file_ids = ArrayField(base_field=models.CharField(max_length=255), null=True, help_text='File IDs')
     spent_at = models.DateTimeField(null=True, help_text='Expense spent at')
     approved_at = models.DateTimeField(null=True, help_text='Expense approved at')
     expense_created_at = models.DateTimeField(help_text='Expense created at')
@@ -106,7 +107,7 @@ class Expense(models.Model):
             expense_object, _ = Expense.objects.update_or_create(
                 expense_id=expense['id'],
                 defaults={
-                    'employee_email': expense['user']['email'],
+                    'employee_email': expense['employee']['user']['email'],
                     'category': expense['category']['name'],
                     'sub_category': expense['category']['sub_category'],
                     'project': expense['project']['name'] if expense['project'] else None,
@@ -124,6 +125,7 @@ class Expense(models.Model):
                     'cost_center': expense['cost_center']['name'] if expense['cost_center'] else None,
                     'purpose': expense['purpose'],
                     'report_id': expense['report_id'],
+                    'file_ids': expense['file_ids'],
                     'spent_at': _format_date(expense['spent_at']),
                     'approved_at': _format_date(expense['report']['last_approved_at']) if expense['report'] else None,
                     'expense_created_at': expense['created_at'],
