@@ -98,15 +98,25 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
                 source_account_type.append('PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT')
                 source_account_type = 'in.{}'.format(tuple(source_account_type)).replace("'", '"')
 
+            import_state = [expense_group_settings.expense_state]
+            if import_state[0] == 'PAYMENT_PROCESSING' and last_synced_at is not None:
+                import_state.append('PAID')
+                import_state = 'in.{}'.format(tuple(import_state)).replace("'", '"')
+            else:
+                import_state = 'eq.{}'.format(import_state[0])
+
             # Remove this later
+            tpa_import_state = [expense_group_settings.expense_state]
+            if tpa_import_state[0] == 'PAYMENT_PROCESSING' and last_synced_at is not None:
+                tpa_import_state.append('PAID')
             tpa_expenses = fyle_connector.get_expenses(
-                state=expense_group_settings.expense_state,
+                state=tpa_import_state,
                 updated_at=updated_at_fyle_tpa,
                 fund_source=fund_source
             )
 
             expenses = platform_connector.get_expenses(
-                state=expense_group_settings.expense_state,
+                state=import_state,
                 updated_at=updated_at,
                 fund_source=source_account_type
             )
