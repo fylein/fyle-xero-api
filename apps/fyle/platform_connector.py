@@ -37,7 +37,7 @@ class PlatformConnector:
         query_params = {
             'order': 'updated_at.desc',
             'source_account->type': fund_source,
-            'state': 'eq.{}'.format(state)
+            'state': state
         }
         # When last_synced_at is null (For new orgs)
         if updated_at:
