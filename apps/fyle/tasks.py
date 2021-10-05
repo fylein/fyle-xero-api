@@ -87,7 +87,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             # Remove this later
             fyle_connector = FyleConnector(fyle_credentials.refresh_token, workspace_id)
 
-            platform_connector = PlatformConnector(fyle_credentials.refresh_token, workspace_id)
+            platform_connector = PlatformConnector(fyle_credentials, workspace_id)
 
             expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
 
