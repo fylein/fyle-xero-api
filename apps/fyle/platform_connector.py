@@ -3,7 +3,9 @@ from django.conf import settings
 
 from fyle.platform import Platform
 
-from .helpers import get_or_store_cluster_domain
+from apps.workspaces.models import FyleCredential
+
+from .helpers import store_cluster_domain
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -13,12 +15,14 @@ class PlatformConnector:
     Platform connector
     """
 
-    def __init__(self, refresh_token, workspace_id=None):
+    def __init__(self, fyle_credentials: FyleCredential, workspace_id=None):
         """
         Initialize the Fyle platform connector
         """
-        cluster_domain = get_or_store_cluster_domain(workspace_id)
-        server_url = '{}/platform/v1'.format(cluster_domain)
+        if not fyle_credentials.cluster_domain:
+            fyle_credentials = store_cluster_domain(fyle_credentials)
+
+        server_url = '{}/platform/v1'.format(fyle_credentials.cluster_domain)
         self.workspace_id = workspace_id
 
         self.connection = Platform(
@@ -26,7 +30,7 @@ class PlatformConnector:
             token_url=settings.FYLE_TOKEN_URI,
             client_id=settings.FYLE_CLIENT_ID,
             client_secret=settings.FYLE_CLIENT_SECRET,
-            refresh_token=refresh_token
+            refresh_token=fyle_credentials.refresh_token
         )
 
     def get_expenses(self, state: str, updated_at: str, fund_source: str):
