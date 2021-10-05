@@ -16,7 +16,6 @@ class Workspace(models.Model):
     name = models.CharField(max_length=255, help_text='Name of the workspace')
     user = models.ManyToManyField(User, help_text='Reference to users table')
     fyle_org_id = models.CharField(max_length=255, help_text='org id', unique=True)
-    cluster_domain = models.CharField(max_length=255, help_text='Cluster domain', null=True)
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
     source_synced_at = models.DateTimeField(help_text='Datetime when source dimensions were pulled', null=True)
     destination_synced_at = models.DateTimeField(help_text='Datetime when destination dimensions were pulled', null=True)
@@ -47,6 +46,7 @@ class FyleCredential(models.Model):
     """
     id = models.AutoField(primary_key=True)
     refresh_token = models.TextField(help_text='Stores Fyle refresh token')
+    cluster_domain = models.CharField(max_length=255, help_text='Cluster domain', null=True)
     workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')

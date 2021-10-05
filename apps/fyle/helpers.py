@@ -15,15 +15,14 @@ def get_or_store_cluster_domain(workspace_id: int) -> str:
     """
     Get or store cluster domain.
     """
-    workspace = Workspace.objects.get(pk=workspace_id)
-    if not workspace.cluster_domain:
-        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    if not fyle_credentials.cluster_domain:
         fyle_connector = FyleConnector(fyle_credentials.refresh_token)
         cluster_domain = fyle_connector.get_cluster_domain()['cluster_domain']
-        workspace.cluster_domain = cluster_domain
-        workspace.save()
+        fyle_credentials.cluster_domain = cluster_domain
+        fyle_credentials.save()
 
-    return workspace.cluster_domain
+    return fyle_credentials.cluster_domain
 
 
 def compare_tpa_and_platform_expenses(tpa_expenses: List[dict], platform_expenses: List[dict], workspace_id: int) -> None:
