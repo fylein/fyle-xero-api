@@ -92,15 +92,11 @@ def get_item_code_or_none(expense_group: ExpenseGroup, lineitem: Expense):
 
 def get_expense_purpose(workspace_id, lineitem, category) -> str:
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    fyle_connector = FyleConnector(
-        refresh_token=fyle_credentials.refresh_token, workspace_id=workspace_id)
-
-    cluster_domain = fyle_connector.get_cluster_domain()
 
     org_id = Workspace.objects.get(id=workspace_id).fyle_org_id
 
     expense_link = '{0}/app/main/#/enterprise/view_expense/{1}?org_id={2}'.format(
-        cluster_domain['cluster_domain'], lineitem.expense_id, org_id
+        fyle_credentials.cluster_domain, lineitem.expense_id, org_id
     )
 
     expense_purpose = 'purpose - {0}'.format(lineitem.purpose) if lineitem.purpose else ''

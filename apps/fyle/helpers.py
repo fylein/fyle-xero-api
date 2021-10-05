@@ -3,7 +3,7 @@ from typing import List
 
 from sentry_sdk import capture_message
 
-from apps.workspaces.models import Workspace, FyleCredential
+from apps.workspaces.models import FyleCredential
 
 from .utils import FyleConnector
 
