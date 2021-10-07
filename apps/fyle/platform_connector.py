@@ -22,5 +22,5 @@ class PlatformIntegrationsConnector:
         self.connector = FyleIntegrationsPlatformConnector(
             cluster_domain=fyle_credentials.cluster_domain, token_url=settings.FYLE_TOKEN_URI,
             client_id=settings.FYLE_CLIENT_ID, client_secret=settings.FYLE_CLIENT_SECRET,
-            refresh_token=fyle_credentials.refresh_token, workspace_id=self.workspace_id
+            refresh_token=fyle_credentials.refresh_token, workspace_id=workspace_id
         )
