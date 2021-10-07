@@ -11,7 +11,7 @@ from apps.tasks.models import TaskLog
 
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
 from .utils import FyleConnector
-from .platform_connector import PlatformConnector
+from .platform_connector import PlatformIntegrationsConnector
 from .serializers import ExpenseGroupSerializer
 from .helpers import compare_tpa_and_platform_expenses
 
@@ -65,60 +65,34 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
     try:
         with transaction.atomic():
 
+            expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
             workspace = Workspace.objects.get(pk=workspace_id)
-
             last_synced_at = workspace.last_synced_at
+            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
             # Remove this later
             updated_at_fyle_tpa = []
-
-            updated_at = None
-
             if last_synced_at:
-                updated_at = 'gte.{}'.format(datetime.strftime(last_synced_at, '%Y-%m-%dT%H:%M:%S.000Z'))
-
-                # Remove this later
                 updated_at_fyle_tpa.append(
                     'gte:{0}'.format(datetime.strftime(last_synced_at, '%Y-%m-%dT%H:%M:%S.000Z'))
                 )
 
-            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-
-            # Remove this later
             fyle_connector = FyleConnector(fyle_credentials.refresh_token, workspace_id)
 
-            platform_connector = PlatformConnector(fyle_credentials, workspace_id)
-
-            expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
-
-            source_account_type = ['PERSONAL_CASH_ACCOUNT']
-            if len(fund_source) == 1:
-                source_account_type = 'eq.{}'.format(source_account_type[0])
-            elif len(fund_source) > 1 and 'CCC' in fund_source:
-                source_account_type.append('PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT')
-                source_account_type = 'in.{}'.format(tuple(source_account_type)).replace("'", '"')
-
-            import_state = [expense_group_settings.expense_state]
-            if import_state[0] == 'PAYMENT_PROCESSING' and last_synced_at is not None:
-                import_state.append('PAID')
-                import_state = 'in.{}'.format(tuple(import_state)).replace("'", '"')
-            else:
-                import_state = 'eq.{}'.format(import_state[0])
-
-            # Remove this later
             tpa_import_state = [expense_group_settings.expense_state]
             if tpa_import_state[0] == 'PAYMENT_PROCESSING' and last_synced_at is not None:
                 tpa_import_state.append('PAID')
+
             tpa_expenses = fyle_connector.get_expenses(
                 state=tpa_import_state,
                 updated_at=updated_at_fyle_tpa,
                 fund_source=fund_source
             )
 
-            expenses = platform_connector.get_expenses(
-                state=import_state,
-                updated_at=updated_at,
-                fund_source=source_account_type
+            platform = PlatformIntegrationsConnector(fyle_credentials, workspace_id)
+
+            expenses = platform.connector.expenses.get(
+                fund_source, expense_group_settings.expense_state, last_synced_at, True
             )
 
             compare_tpa_and_platform_expenses(tpa_expenses, expenses, workspace_id)

@@ -186,7 +186,6 @@ CACHES = {
     }
 }
 
-#sentry
 Sentry.init()
 
 # Database
