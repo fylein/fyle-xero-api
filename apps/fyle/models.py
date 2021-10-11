@@ -105,7 +105,7 @@ class Expense(models.Model):
                     'settlement_id': expense['settlement_id'],
                     'reimbursable': expense['reimbursable'],
                     'state': expense['state'],
-                    'vendor': expense['vendor'],
+                    'vendor': expense['vendor'][:255],
                     'cost_center': expense['cost_center'],
                     'purpose': expense['purpose'],
                     'report_id': expense['report_id'],
