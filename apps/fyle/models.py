@@ -121,7 +121,7 @@ class Expense(models.Model):
                     'settlement_id': expense['report']['settlement_id'] if expense['report'] else None,
                     'reimbursable': expense['is_reimbursable'],
                     'state': expense['state'],
-                    'vendor': expense['merchant'][:250],
+                    'vendor': expense['merchant'][:250] if expense['merchant'] else None,
                     'cost_center': expense['cost_center']['name'] if expense['cost_center'] else None,
                     'purpose': expense['purpose'],
                     'report_id': expense['report_id'],
