@@ -11,17 +11,6 @@ logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
 
-def store_cluster_domain(fyle_credentials: FyleCredential) -> FyleCredential:
-    """
-    Get or store cluster domain.
-    """
-    fyle_connector = FyleConnector(fyle_credentials.refresh_token)
-    cluster_domain = fyle_connector.get_cluster_domain()['cluster_domain']
-    fyle_credentials.cluster_domain = cluster_domain
-    fyle_credentials.save()
-
-    return fyle_credentials
-
 
 def compare_tpa_and_platform_expenses(tpa_expenses: List[dict], platform_expenses: List[dict], workspace_id: int) -> None:
     """
