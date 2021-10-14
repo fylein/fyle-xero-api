@@ -151,3 +151,8 @@ docker_run.sh
 # Cache db
 cache.db
 cache.db-journal
+
+# Dev files
+fyle/
+fyle_integrations_platform_connector/
+fylesdk/
