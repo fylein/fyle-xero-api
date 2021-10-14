@@ -18,6 +18,12 @@ from .helpers import compare_tpa_and_platform_expenses
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
+SOURCE_ACCOUNT_MAP = {
+    'PERSONAL': 'PERSONAL_CASH_ACCOUNT',
+    'CCC': 'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT'
+}
+
+
 def schedule_expense_group_creation(workspace_id: int):
     """
     Schedule Expense group creation
@@ -91,8 +97,12 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
 
             platform = PlatformConnector(fyle_credentials, workspace_id)
 
+            source_account_types = []
+            for source in fund_source:
+                source_account_types.append(SOURCE_ACCOUNT_MAP[source])
+
             expenses = platform.connector.expenses.get(
-                fund_source, expense_group_settings.expense_state, last_synced_at, True
+                source_account_types, expense_group_settings.expense_state, last_synced_at, True
             )
 
             compare_tpa_and_platform_expenses(tpa_expenses, expenses, workspace_id)

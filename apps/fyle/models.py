@@ -34,13 +34,6 @@ SOURCE_ACCOUNT_MAP = {
 }
 
 
-def _format_date(date_string: str) -> str:
-    if date_string:
-        # TODO: Include timezone
-        date_string = dateutil.parser.parse(date_string).strftime('%Y-%m-%dT00:00:00.000Z')
-    return date_string
-
-
 class Expense(models.Model):
     """
     Expense
@@ -105,7 +98,7 @@ class Expense(models.Model):
                     'settlement_id': expense['settlement_id'],
                     'reimbursable': expense['reimbursable'],
                     'state': expense['state'],
-                    'vendor': expense['vendor'][:255],
+                    'vendor': expense['merchant'][:250] if expense['merchant'] else None,
                     'cost_center': expense['cost_center'],
                     'purpose': expense['purpose'],
                     'report_id': expense['report_id'],
@@ -114,7 +107,7 @@ class Expense(models.Model):
                     'approved_at': expense['approved_at'],
                     'expense_created_at': expense['expense_created_at'],
                     'expense_updated_at': expense['expense_updated_at'],
-                    'fund_source': expense['fund_source'],
+                    'fund_source': SOURCE_ACCOUNT_MAP[expense['source_account_type']],
                     'verified_at': expense['verified_at'],
                     'custom_properties': expense['custom_properties']
                 }
