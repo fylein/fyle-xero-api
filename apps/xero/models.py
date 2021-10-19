@@ -101,8 +101,8 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
 
     expense_purpose = 'purpose - {0}'.format(lineitem.purpose) if lineitem.purpose else ''
     spent_at = 'spent on {0}'.format(lineitem.spent_at.date()) if lineitem.spent_at else ''
-    vendor = lineitem.vendor if lineitem.vendor else ''
-    return '{0} - {1}, category - {2} {3}, claim number - {4} {5} - {6}'.format(
+    vendor = '{} - '.format(lineitem.vendor) if lineitem.vendor else ''
+    return '{0}{1}, category - {2} {3}, claim number - {4} {5} - {6}'.format(
         vendor, lineitem.employee_email, category, spent_at, lineitem.claim_number, expense_purpose, expense_link
     )
 
