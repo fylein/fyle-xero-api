@@ -98,7 +98,7 @@ class Expense(models.Model):
                     'settlement_id': expense['settlement_id'],
                     'reimbursable': expense['reimbursable'],
                     'state': expense['state'],
-                    'vendor': expense['merchant'][:250] if expense['merchant'] else None,
+                    'vendor': expense['vendor'][:250] if expense['vendor'] else None,
                     'cost_center': expense['cost_center'],
                     'purpose': expense['purpose'],
                     'report_id': expense['report_id'],
