@@ -34,13 +34,6 @@ SOURCE_ACCOUNT_MAP = {
 }
 
 
-def _format_date(date_string: str) -> str:
-    if date_string:
-        # TODO: Include timezone
-        date_string = dateutil.parser.parse(date_string).strftime('%Y-%m-%dT00:00:00.000Z')
-    return date_string
-
-
 class Expense(models.Model):
     """
     Expense
@@ -87,52 +80,36 @@ class Expense(models.Model):
         """
         expense_objects = []
 
-        custom_properties = ExpenseAttribute.objects.filter(
-            ~Q(attribute_type='EMPLOYEE') & ~Q(attribute_type='CATEGORY'),
-            ~Q(attribute_type='PROJECT') & ~Q(attribute_type='COST_CENTER'),
-            workspace_id=workspace_id
-        ).values('display_name').distinct()
-
-        custom_property_keys = list(set([prop['display_name'].lower() for prop in custom_properties]))
-
         for expense in expenses:
-
-            expense_custom_properties = {}
-
-            if custom_property_keys and expense['custom_fields']:
-                for prop in expense['custom_fields']:
-                    if prop['name'].lower() in custom_property_keys:
-                        expense_custom_properties[prop['name']] = prop['value']
-
             expense_object, _ = Expense.objects.update_or_create(
                 expense_id=expense['id'],
                 defaults={
-                    'employee_email': expense['employee']['user']['email'],
-                    'category': expense['category']['name'],
-                    'sub_category': expense['category']['sub_category'],
-                    'project': expense['project']['name'] if expense['project'] else None,
-                    'expense_number': expense['seq_num'],
+                    'employee_email': expense['employee_email'],
+                    'category': expense['category'],
+                    'sub_category': expense['sub_category'],
+                    'project': expense['project'],
+                    'expense_number': expense['expense_number'],
                     'org_id': expense['org_id'],
-                    'claim_number': expense['report']['seq_num'] if expense['report'] else None,
+                    'claim_number': expense['claim_number'],
                     'amount': expense['amount'],
                     'currency': expense['currency'],
                     'foreign_amount': expense['foreign_amount'],
                     'foreign_currency': expense['foreign_currency'],
-                    'settlement_id': expense['report']['settlement_id'] if expense['report'] else None,
-                    'reimbursable': expense['is_reimbursable'],
+                    'settlement_id': expense['settlement_id'],
+                    'reimbursable': expense['reimbursable'],
                     'state': expense['state'],
                     'vendor': expense['merchant'][:250] if expense['merchant'] else None,
-                    'cost_center': expense['cost_center']['name'] if expense['cost_center'] else None,
+                    'cost_center': expense['cost_center'],
                     'purpose': expense['purpose'],
                     'report_id': expense['report_id'],
                     'file_ids': expense['file_ids'],
-                    'spent_at': _format_date(expense['spent_at']),
-                    'approved_at': _format_date(expense['report']['last_approved_at']) if expense['report'] else None,
-                    'expense_created_at': expense['created_at'],
-                    'expense_updated_at': expense['updated_at'],
-                    'fund_source': SOURCE_ACCOUNT_MAP[expense['source_account']['type']],
-                    'verified_at': _format_date(expense['last_verified_at']),
-                    'custom_properties': expense_custom_properties if expense_custom_properties else {}
+                    'spent_at': expense['spent_at'],
+                    'approved_at': expense['approved_at'],
+                    'expense_created_at': expense['expense_created_at'],
+                    'expense_updated_at': expense['expense_updated_at'],
+                    'fund_source': SOURCE_ACCOUNT_MAP[expense['source_account_type']],
+                    'verified_at': expense['verified_at'],
+                    'custom_properties': expense['custom_properties']
                 }
             )
 
