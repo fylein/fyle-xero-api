@@ -97,12 +97,12 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
 
             platform = PlatformConnector(fyle_credentials, workspace_id)
 
-            source_account_types = []
+            source_account_type = []
             for source in fund_source:
-                source_account_types.append(SOURCE_ACCOUNT_MAP[source])
+                source_account_type.append(SOURCE_ACCOUNT_MAP[source])
 
             expenses = platform.connector.expenses.get(
-                source_account_types, expense_group_settings.expense_state, last_synced_at, True
+                source_account_type, expense_group_settings.expense_state, last_synced_at, True
             )
 
             compare_tpa_and_platform_expenses(tpa_expenses, expenses, workspace_id)
