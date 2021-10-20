@@ -321,8 +321,6 @@ class CostCenterView(generics.ListCreateAPIView):
         Get categories from Fyle
         """
         try:
-            # should i remove this ?
-            active_only = request.GET.get('active_only', False)
             fyle_credentials = FyleCredential.objects.get(
                 workspace_id=kwargs['workspace_id'])
 
