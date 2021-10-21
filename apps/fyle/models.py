@@ -90,7 +90,9 @@ class Expense(models.Model):
         custom_property_keys = list(set([prop['display_name'].lower() for prop in custom_properties]))
 
         for expense in expenses:
-            if expense['created_at'] > '2021-08-01T00:00:00.000Z':
+            cutoff_date = _format_date('2021-08-01T00:00:00.000Z')
+            expense_created_at = _format_date(expense['created_at'])
+            if expense_created_at > cutoff_date:
                 expense_custom_properties = {}
 
                 if custom_property_keys and expense['custom_properties']:
