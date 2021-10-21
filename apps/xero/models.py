@@ -9,14 +9,14 @@ from apps.fyle.models import ExpenseGroup, Expense
 from apps.mappings.models import GeneralMapping
 
 from apps.fyle.utils import FyleConnector
-from apps.workspaces.models import FyleCredential, Workspace
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 
 
 def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
     mapping_settings = MappingSetting.objects.filter(workspace_id=expense_group.workspace_id).all()
 
     tracking_categories = []
-    default_expense_attributes = ['CATEGORY', 'EMPLOYEE']
+    default_expense_attributes = ['CATEGORY', 'EMPLOYEE', 'CORPORATE_CARD']
     default_destination_attributes = ['ITEM']
 
     for setting in mapping_settings:
@@ -253,13 +253,27 @@ class BankTransaction(models.Model):
                 workspace_id=expense_group.workspace_id
             ).destination.destination_id
 
-        general_mappings = GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
+        bank_account_id = None
+        workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
+
+        if workspace_general_settings.map_fyle_cards_xero_bank_account:
+            bank_account = Mapping.objects.filter(
+                source_type='CORPORATE_CARD',
+                destination_type='BANK_ACCOUNT',
+                source__source_id=expense.corporate_card_id,
+                workspace_id=expense_group.workspace_id
+            ).first()
+            if bank_account:
+                bank_account_id = bank_account.destination.destination_id
+
+        if not bank_account_id:
+            bank_account_id = GeneralMapping.objects.get(workspace_id=expense_group.workspace_id).bank_account_id
 
         bank_transaction_object, _ = BankTransaction.objects.update_or_create(
             expense_group=expense_group,
             defaults={
                 'contact_id': contact_id,
-                'bank_account_code': general_mappings.bank_account_id,
+                'bank_account_code': bank_account_id,
                 'currency': expense.currency,
                 'reference': '{} - {}'.format(expense_group.id, expense.employee_email),
                 'transaction_date': get_transaction_date(expense_group),

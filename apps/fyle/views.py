@@ -12,6 +12,7 @@ from apps.tasks.models import TaskLog
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, Workspace
 from apps.workspaces.serializers import WorkspaceSerializer
 
+from .platform_connector import PlatformConnector
 from .tasks import create_expense_groups, schedule_expense_group_creation
 from .utils import FyleConnector
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
@@ -137,7 +138,7 @@ class ExpenseFieldsView(generics.ListAPIView):
 
     def get_queryset(self):
         attributes = ExpenseAttribute.objects.filter(
-            ~Q(attribute_type='EMPLOYEE') & ~Q(attribute_type='CATEGORY'),
+            ~Q(attribute_type='EMPLOYEE') & ~Q(attribute_type='CATEGORY') & ~Q(attribute_type='CORPORATE_CARD'),
             workspace_id=self.kwargs['workspace_id']
         ).values('attribute_type', 'display_name').distinct()
 
@@ -346,9 +347,12 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
 
             if workspace.source_synced_at is None or time_interval.days > 0:
                 fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
-                fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
 
+                fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
                 fyle_connector.sync_dimensions()
+
+                platform = PlatformConnector(fyle_credentials, kwargs['workspace_id'])
+                platform.connector.corporate_cards.sync()
 
                 workspace.source_synced_at = datetime.now()
                 workspace.save(update_fields=['source_synced_at'])
@@ -377,9 +381,12 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         """
         try:
             fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
 
+            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
             fyle_connector.sync_dimensions()
+
+            platform = PlatformConnector(fyle_credentials, kwargs['workspace_id'])
+            platform.connector.corporate_cards.sync()
 
             workspace = Workspace.objects.get(id=kwargs['workspace_id'])
             workspace.source_synced_at = datetime.now()
