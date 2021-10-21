@@ -90,48 +90,48 @@ class Expense(models.Model):
         custom_property_keys = list(set([prop['display_name'].lower() for prop in custom_properties]))
 
         for expense in expenses:
+            if expense['created_at'] < '2021-08-01T00:00:00.000Z':
+                expense_custom_properties = {}
 
-            expense_custom_properties = {}
+                if custom_property_keys and expense['custom_properties']:
+                    for prop in expense['custom_properties']:
+                        if prop['name'].lower() in custom_property_keys:
+                            expense_custom_properties[prop['name']] = prop['value']
 
-            if custom_property_keys and expense['custom_properties']:
-                for prop in expense['custom_properties']:
-                    if prop['name'].lower() in custom_property_keys:
-                        expense_custom_properties[prop['name']] = prop['value']
+                expense_object, _ = Expense.objects.update_or_create(
+                    expense_id=expense['id'],
+                    defaults={
+                        'employee_email': expense['employee_email'],
+                        'category': expense['category_name'],
+                        'sub_category': expense['sub_category'],
+                        'project': expense['project_name'],
+                        'expense_number': expense['expense_number'],
+                        'org_id': expense['org_id'],
+                        'claim_number': expense['claim_number'],
+                        'amount': expense['amount'],
+                        'currency': expense['currency'],
+                        'foreign_amount': expense['foreign_amount'],
+                        'foreign_currency': expense['foreign_currency'],
+                        'settlement_id': expense['settlement_id'],
+                        'reimbursable': expense['reimbursable'],
+                        'exported': expense['exported'],
+                        'state': expense['state'],
+                        'vendor': expense['vendor'],
+                        'cost_center': expense['cost_center_name'],
+                        'purpose': expense['purpose'],
+                        'report_id': expense['report_id'],
+                        'spent_at': _format_date(expense['spent_at']),
+                        'approved_at': _format_date(expense['approved_at']),
+                        'expense_created_at': expense['created_at'],
+                        'expense_updated_at': expense['updated_at'],
+                        'fund_source': expense['fund_source'],
+                        'verified_at': _format_date(expense['verified_at']),
+                        'custom_properties': expense_custom_properties if expense_custom_properties else {}
+                    }
+                )
 
-            expense_object, _ = Expense.objects.update_or_create(
-                expense_id=expense['id'],
-                defaults={
-                    'employee_email': expense['employee_email'],
-                    'category': expense['category_name'],
-                    'sub_category': expense['sub_category'],
-                    'project': expense['project_name'],
-                    'expense_number': expense['expense_number'],
-                    'org_id': expense['org_id'],
-                    'claim_number': expense['claim_number'],
-                    'amount': expense['amount'],
-                    'currency': expense['currency'],
-                    'foreign_amount': expense['foreign_amount'],
-                    'foreign_currency': expense['foreign_currency'],
-                    'settlement_id': expense['settlement_id'],
-                    'reimbursable': expense['reimbursable'],
-                    'exported': expense['exported'],
-                    'state': expense['state'],
-                    'vendor': expense['vendor'],
-                    'cost_center': expense['cost_center_name'],
-                    'purpose': expense['purpose'],
-                    'report_id': expense['report_id'],
-                    'spent_at': _format_date(expense['spent_at']),
-                    'approved_at': _format_date(expense['approved_at']),
-                    'expense_created_at': expense['created_at'],
-                    'expense_updated_at': expense['updated_at'],
-                    'fund_source': expense['fund_source'],
-                    'verified_at': _format_date(expense['verified_at']),
-                    'custom_properties': expense_custom_properties if expense_custom_properties else {}
-                }
-            )
-
-            if not ExpenseGroup.objects.filter(expenses__id=expense_object.id).first():
-                expense_objects.append(expense_object)
+                if not ExpenseGroup.objects.filter(expenses__id=expense_object.id).first():
+                    expense_objects.append(expense_object)
 
         return expense_objects
 
