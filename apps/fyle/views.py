@@ -138,7 +138,7 @@ class ExpenseFieldsView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         default_attributes = ['EMPLOYEE', 'CATEGORY', 'PROJECT', 'COST_CENTER']
         attributes = ExpenseAttribute.objects.filter(
-            ~Q(attribute_type=default_attributes),
+            ~Q(attribute_type__in=default_attributes),
             workspace_id=self.kwargs['workspace_id']
         ).values('attribute_type', 'display_name').distinct()
 
