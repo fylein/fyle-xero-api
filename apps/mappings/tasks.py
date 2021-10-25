@@ -491,6 +491,10 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
 
 
 def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str):
+    """
+    Create Fyle Attributes Mappings
+    :return: mappings
+    """
     try:
         fyle_attributes = upload_attributes_to_fyle(workspace_id=workspace_id, xero_attribute_type=xero_attribute_type, fyle_attribute_type=fyle_attribute_type)
         if fyle_attributes:
