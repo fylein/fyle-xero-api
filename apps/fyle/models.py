@@ -1,7 +1,8 @@
 """
 Fyle Models
 """
-import dateutil.parser
+import logging
+from dateutil import parser
 from datetime import datetime
 from typing import List, Dict
 
@@ -14,6 +15,9 @@ from django.db.models import Count, Q
 from fyle_accounting_mappings.models import ExpenseAttribute
 
 from apps.workspaces.models import Workspace
+
+logger = logging.getLogger(__name__)
+logger.level = logging.INFO
 
 
 ALLOWED_FIELDS = [
@@ -32,6 +36,22 @@ SOURCE_ACCOUNT_MAP = {
     'PERSONAL_CASH_ACCOUNT': 'PERSONAL',
     'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT': 'CCC'
 }
+
+
+def _format_date(date_string) -> datetime:
+    """
+    Format date.
+
+    Args:
+        date_string (str): Date string.
+
+    Returns:
+        dateime: Formatted date.
+    """
+    if date_string:
+        date_string = parser.parse(date_string)
+
+    return date_string
 
 
 class Expense(models.Model):
@@ -80,8 +100,15 @@ class Expense(models.Model):
         Bulk create expense objects
         """
         expense_objects = []
+        eliminated_expenses = []
 
         for expense in expenses:
+            cutoff_date = _format_date('2021-08-01T00:00:00.000Z')
+            expense_created_at = expense['expense_created_at']
+
+            # TODO: implement cut off date, commented this for better testing
+            # if expense_created_at > cutoff_date:
+
             expense_object, _ = Expense.objects.update_or_create(
                 expense_id=expense['id'],
                 defaults={
@@ -117,6 +144,11 @@ class Expense(models.Model):
 
             if not ExpenseGroup.objects.filter(expenses__id=expense_object.id).first():
                 expense_objects.append(expense_object)
+        # else:
+        #     eliminated_expenses.append(expense['id'])
+
+        if eliminated_expenses:
+            logger.error('Expenses with ids {} are not eligible for import'.format(eliminated_expenses))
 
         return expense_objects
 
