@@ -38,7 +38,7 @@ SOURCE_ACCOUNT_MAP = {
 }
 
 
-def __format_date(date_string) -> datetime:
+def _format_date(date_string) -> datetime:
     """
     Format date.
 
@@ -102,7 +102,7 @@ class Expense(models.Model):
         eliminated_expenses = []
 
         for expense in expenses:
-            cutoff_date = __format_date('2021-08-01T00:00:00.000Z')
+            cutoff_date = _format_date('2021-08-01T00:00:00.000Z')
             expense_created_at = expense['expense_created_at']
 
             # TODO: implement cut off date, commented this for better testing
