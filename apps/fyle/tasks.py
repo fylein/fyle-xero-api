@@ -95,7 +95,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
                 fund_source=fund_source
             )
 
-            platform = PlatformConnector(fyle_credentials, workspace_id)
+            platform = PlatformConnector(fyle_credentials)
 
             source_account_type = []
             for source in fund_source:

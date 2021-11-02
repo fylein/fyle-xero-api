@@ -6,11 +6,16 @@ from typing import List, Dict
 
 from django_q.models import Schedule
 
+from fyle_integrations_platform_connector import PlatformConnector
+
+from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
+
+from fylesdk import WrongParamsError
+
 from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
-from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
-from fylesdk import WrongParamsError
+
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -64,11 +69,13 @@ def upload_categories_to_fyle(workspace_id):
             workspace_id=workspace_id
         )
 
+        platform = PlatformConnector(fyle_credentials)
+
         xero_connection = XeroConnector(
             credentials_object=xero_credentials,
             workspace_id=workspace_id
         )
-        fyle_connection.sync_categories(False)
+        platform.categories.sync()
         xero_connection.sync_accounts()
 
         xero_attributes = DestinationAttribute.objects.filter(attribute_type='ACCOUNT', workspace_id=workspace_id)
@@ -79,7 +86,7 @@ def upload_categories_to_fyle(workspace_id):
 
         if fyle_payload:
             fyle_connection.connection.Categories.post(fyle_payload)
-            fyle_connection.sync_categories(False)
+            platform.categories.sync()
 
         return xero_attributes
         
@@ -147,12 +154,12 @@ def async_auto_map_employees(workspace_id: int):
         employee_mapping_preference = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id).auto_map_employees
 
         fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-        fyle_connection = FyleConnector(refresh_token=fyle_credentials.refresh_token, workspace_id=workspace_id)
+        platform = PlatformConnector(fyle_credentials)
 
         xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
         xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
-        fyle_connection.sync_employees()
+        platform.employees.sync()
         xero_connection.sync_contacts()
 
         Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)

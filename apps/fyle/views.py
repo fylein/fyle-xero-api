@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_accounting_mappings.serializers import ExpenseAttributeSerializer
 
+from fyle_integrations_platform_connector import PlatformConnector
+
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, Workspace
 from apps.workspaces.serializers import WorkspaceSerializer
@@ -104,32 +106,6 @@ class ExpenseCustomFieldsView(generics.ListCreateAPIView):
 
         return ExpenseAttribute.objects.filter(
             attribute_type=attribute_type, workspace_id=self.kwargs['workspace_id']).order_by('value')
-
-    def post(self, request, *args, **kwargs):
-        """
-        Get Expense Custom Fields from Fyle
-        """
-        try:
-            active_only = request.GET.get('active_only', True)
-            fyle_credentials = FyleCredential.objects.get(
-                workspace_id=kwargs['workspace_id'])
-
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
-
-            expense_custom_field_attributes = fyle_connector.sync_expense_custom_fields(active_only=active_only)
-
-            return Response(
-                data=self.serializer_class(expense_custom_field_attributes, many=True).data,
-                status=status.HTTP_200_OK
-            )
-        except FyleCredential.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Fyle credentials not found in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
 
 class ExpenseFieldsView(generics.ListAPIView):
     pagination_class = None
@@ -229,30 +205,6 @@ class EmployeeView(generics.ListCreateAPIView):
         return ExpenseAttribute.objects.filter(
             attribute_type='EMPLOYEE', workspace_id=self.kwargs['workspace_id']).order_by('value')
 
-    def post(self, request, *args, **kwargs):
-        """
-        Get employees from Fyle
-        """
-        try:
-            fyle_credentials = FyleCredential.objects.get(
-                workspace_id=kwargs['workspace_id'])
-
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
-
-            employee_attributes = fyle_connector.sync_employees()
-
-            return Response(
-                data=self.serializer_class(employee_attributes, many=True).data,
-                status=status.HTTP_200_OK
-            )
-        except FyleCredential.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Fyle credentials not found in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
 
 class CategoryView(generics.ListCreateAPIView):
     """
@@ -266,31 +218,6 @@ class CategoryView(generics.ListCreateAPIView):
         return ExpenseAttribute.objects.filter(
             attribute_type='CATEGORY', workspace_id=self.kwargs['workspace_id']).order_by('value')
 
-    def post(self, request, *args, **kwargs):
-        """
-        Get categories from Fyle
-        """
-        try:
-            active_only = request.GET.get('active_only', False)
-            fyle_credentials = FyleCredential.objects.get(
-                workspace_id=kwargs['workspace_id'])
-
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
-
-            category_attributes = fyle_connector.sync_categories(active_only=active_only)
-
-            return Response(
-                data=self.serializer_class(category_attributes, many=True).data,
-                status=status.HTTP_200_OK
-            )
-        except FyleCredential.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Fyle credentials not found in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
 
 class CostCenterView(generics.ListCreateAPIView):
     """
@@ -303,31 +230,6 @@ class CostCenterView(generics.ListCreateAPIView):
     def get_queryset(self):
         return ExpenseAttribute.objects.filter(
             attribute_type='COST_CENTER', workspace_id=self.kwargs['workspace_id']).order_by('value')
-
-    def post(self, request, *args, **kwargs):
-        """
-        Get categories from Fyle
-        """
-        try:
-            active_only = request.GET.get('active_only', False)
-            fyle_credentials = FyleCredential.objects.get(
-                workspace_id=kwargs['workspace_id'])
-
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
-
-            cost_center_attributes = fyle_connector.sync_cost_centers(active_only=active_only)
-
-            return Response(
-                data=self.serializer_class(cost_center_attributes, many=True).data,
-                status=status.HTTP_200_OK
-            )
-        except FyleCredential.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Fyle credentials not found in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
 
 class SyncFyleDimensionView(generics.ListCreateAPIView):
@@ -346,9 +248,9 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
 
             if workspace.source_synced_at is None or time_interval.days > 0:
                 fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
-                fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
 
-                fyle_connector.sync_dimensions()
+                platform = PlatformConnector(fyle_credentials)
+                platform.import_fyle_dimensions()
 
                 workspace.source_synced_at = datetime.now()
                 workspace.save(update_fields=['source_synced_at'])
@@ -377,9 +279,9 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         """
         try:
             fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
 
-            fyle_connector.sync_dimensions()
+            platform = PlatformConnector(fyle_credentials)
+            platform.import_fyle_dimensions()
 
             workspace = Workspace.objects.get(id=kwargs['workspace_id'])
             workspace.source_synced_at = datetime.now()
@@ -407,28 +309,3 @@ class ProjectView(generics.ListCreateAPIView):
     def get_queryset(self):
         return ExpenseAttribute.objects.filter(
             attribute_type='PROJECT', workspace_id=self.kwargs['workspace_id']).order_by('value')
-
-    def post(self, request, *args, **kwargs):
-        """
-        Get categories from Fyle
-        """
-        try:
-            active_only = request.GET.get('active_only', False)
-            fyle_credentials = FyleCredential.objects.get(
-                workspace_id=kwargs['workspace_id'])
-
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
-
-            project_attributes = fyle_connector.sync_projects(active_only=active_only)
-            
-            return Response(
-                data=self.serializer_class(project_attributes, many=True).data,
-                status=status.HTTP_200_OK
-            )
-        except FyleCredential.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Fyle credentials not found in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
