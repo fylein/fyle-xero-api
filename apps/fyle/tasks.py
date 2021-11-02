@@ -11,7 +11,7 @@ from apps.tasks.models import TaskLog
 
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
 from .utils import FyleConnector
-from .platform_connector import PlatformConnector
+from fyle_integrations_platform_connector import PlatformConnector
 from .serializers import ExpenseGroupSerializer
 from .helpers import compare_tpa_and_platform_expenses
 
@@ -101,7 +101,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             for source in fund_source:
                 source_account_type.append(SOURCE_ACCOUNT_MAP[source])
 
-            expenses = platform.connector.expenses.get(
+            expenses = platform.expenses.get(
                 source_account_type, expense_group_settings.expense_state, last_synced_at, True
             )
 
