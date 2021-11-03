@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='workspace',
+            model_name='fylecredential',
             name='cluster_domain',
             field=models.CharField(help_text='Cluster domain', max_length=255, null=True),
         ),
