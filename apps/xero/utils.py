@@ -39,6 +39,18 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
+    def __format_updated_at(self, updated_at):
+        return datetime.strftime(updated_at, '%Y-%m-%dT%H:%M:%S')
+
+    def __get_last_synced_at(self, attribute_type: str):
+        latest_synced_record = DestinationAttribute.objects.filter(
+            workspace_id=self.workspace_id,
+            attribute_type=attribute_type
+        ).order_by('-updated_at').first()
+        updated_at = self.__format_updated_at(latest_synced_record.updated_at) if latest_synced_record else None
+
+        return updated_at
+
     def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
         """
         Call xero api to get or create contact
@@ -102,7 +114,9 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        accounts = self.connection.accounts.get_all()['Accounts']
+        updated_at = self.__get_last_synced_at('ACCOUNT')
+
+        accounts = self.connection.accounts.get_all(modified_after=updated_at)['Accounts']
 
         account_attributes = {
             'bank_account': [],
@@ -151,7 +165,9 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        contacts = self.connection.contacts.get_all()['Contacts']
+        updated_at = self.__get_last_synced_at('CONTACT')
+
+        contacts = self.connection.contacts.get_all(modified_after=updated_at)['Contacts']
 
         contact_attributes = []
 
@@ -206,7 +222,9 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        items = self.connection.items.get_all()['Items']
+        updated_at = self.__get_last_synced_at('CONTACT')
+
+        items = self.connection.items.get_all(modified_after=updated_at)['Items']
 
         item_attributes = []
 
