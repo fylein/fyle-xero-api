@@ -76,6 +76,7 @@ class Expense(models.Model):
     state = models.CharField(max_length=255, help_text='Expense state')
     vendor = models.CharField(max_length=255, null=True, blank=True, help_text='Vendor')
     cost_center = models.CharField(max_length=255, null=True, blank=True, help_text='Fyle Expense Cost Center')
+    corporate_card_id = models.CharField(max_length=255, null=True, blank=True, help_text='Corporate Card ID')
     purpose = models.TextField(null=True, blank=True, help_text='Purpose')
     report_id = models.CharField(max_length=255, help_text='Report ID')
     file_ids = ArrayField(base_field=models.CharField(max_length=255), null=True, help_text='File IDs')
@@ -127,6 +128,7 @@ class Expense(models.Model):
                     'state': expense['state'],
                     'vendor': expense['vendor'][:250] if expense['vendor'] else None,
                     'cost_center': expense['cost_center'],
+                    'corporate_card_id': expense['corporate_card_id'],
                     'purpose': expense['purpose'],
                     'report_id': expense['report_id'],
                     'file_ids': expense['file_ids'],
