@@ -12,7 +12,7 @@ from apps.tasks.models import TaskLog
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, Workspace
 from apps.workspaces.serializers import WorkspaceSerializer
 
-from .platform_connector import PlatformConnector
+from fyle_integrations_platform_connector import PlatformConnector
 from .tasks import create_expense_groups, schedule_expense_group_creation
 from .utils import FyleConnector
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
@@ -351,8 +351,8 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
                 fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
                 fyle_connector.sync_dimensions()
 
-                platform = PlatformConnector(fyle_credentials, kwargs['workspace_id'])
-                platform.connector.corporate_cards.sync()
+                platform = PlatformConnector(fyle_credentials)
+                platform.corporate_cards.sync()
 
                 workspace.source_synced_at = datetime.now()
                 workspace.save(update_fields=['source_synced_at'])
@@ -385,8 +385,8 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
             fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
             fyle_connector.sync_dimensions()
 
-            platform = PlatformConnector(fyle_credentials, kwargs['workspace_id'])
-            platform.connector.corporate_cards.sync()
+            platform = PlatformConnector(fyle_credentials)
+            platform.corporate_cards.sync()
 
             workspace = Workspace.objects.get(id=kwargs['workspace_id'])
             workspace.source_synced_at = datetime.now()
