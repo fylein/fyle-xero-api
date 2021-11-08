@@ -222,7 +222,7 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        updated_at = self.__get_last_synced_at('CONTACT')
+        updated_at = self.__get_last_synced_at('ITEM')
 
         items = self.connection.items.get_all(modified_after=updated_at)['Items']
 
