@@ -297,7 +297,6 @@ class FyleConnector:
         )
 
     def sync_dimensions(self):
-
         try:
             self.sync_employees()
         except Exception as exception:
