@@ -167,24 +167,25 @@ class XeroConnector:
 
         updated_at = self.__get_last_synced_at('CONTACT')
 
-        contacts = self.connection.contacts.get_all(modified_after=updated_at)['Contacts']
+        contacts_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)['Contacts']
 
-        contact_attributes = []
+        for contacts in contacts_generator:
+            contact_attributes = []
 
-        for contact in contacts:
-            detail = {
-                'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
-            }
-            contact_attributes.append({
-                'attribute_type': 'CONTACT',
-                'display_name': 'Contact',
-                'value': contact['Name'],
-                'destination_id': contact['ContactID'],
-                'detail': detail
-            })
-            
-        DestinationAttribute.bulk_create_or_update_destination_attributes(
-            contact_attributes, 'CONTACT', self.workspace_id, True)
+            for contact in contacts:
+                detail = {
+                    'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
+                }
+                contact_attributes.append({
+                    'attribute_type': 'CONTACT',
+                    'display_name': 'Contact',
+                    'value': contact['Name'],
+                    'destination_id': contact['ContactID'],
+                    'detail': detail
+                })
+
+            DestinationAttribute.bulk_create_or_update_destination_attributes(
+                contact_attributes, 'CONTACT', self.workspace_id, True)
 
         return []
 
