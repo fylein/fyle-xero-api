@@ -10,11 +10,17 @@ from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSe
 from apps.tasks.models import TaskLog
 
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
-from .utils import FyleConnector
-from .serializers import ExpenseGroupSerializer
+from fyle_integrations_platform_connector import PlatformConnector
+
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
+
+SOURCE_ACCOUNT_MAP = {
+    'PERSONAL': 'PERSONAL_CASH_ACCOUNT',
+    'CCC': 'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT'
+}
+
 
 def schedule_expense_group_creation(workspace_id: int):
     """
@@ -63,30 +69,19 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
     try:
         with transaction.atomic():
 
+            expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
             workspace = Workspace.objects.get(pk=workspace_id)
-
             last_synced_at = workspace.last_synced_at
-
-            updated_at = []
-
-            if last_synced_at:
-                updated_at.append('gte:{0}'.format(datetime.strftime(last_synced_at, '%Y-%m-%dT%H:%M:%S.000Z')))
-
             fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, workspace_id)
+            platform = PlatformConnector(fyle_credentials)
 
-            expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
+            source_account_type = []
+            for source in fund_source:
+                source_account_type.append(SOURCE_ACCOUNT_MAP[source])
 
-            import_state = [expense_group_settings.expense_state]
-
-            if import_state[0] == 'PAYMENT_PROCESSING' and last_synced_at is not None:
-                import_state.append('PAID')
-
-            expenses = fyle_connector.get_expenses(
-                state=import_state,
-                updated_at=updated_at,
-                fund_source=fund_source
+            expenses = platform.expenses.get(
+                source_account_type, expense_group_settings.expense_state, last_synced_at, True
             )
 
             if expenses:
@@ -95,11 +90,9 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
 
             expense_objects = Expense.create_expense_objects(expenses, workspace_id)
 
-            expense_group_objects = ExpenseGroup.create_expense_groups_by_report_id_fund_source(
+            ExpenseGroup.create_expense_groups_by_report_id_fund_source(
                 expense_objects, workspace_id
             )
-
-            task_log.detail = ExpenseGroupSerializer(expense_group_objects, many=True).data
 
             task_log.status = 'COMPLETE'
 

@@ -70,6 +70,7 @@ class WorkspaceGeneralSettings(models.Model):
     import_categories = models.BooleanField(default=False, help_text='Auto import Categories to Fyle')
     auto_map_employees = models.CharField(max_length=50, help_text='Auto Map Employees from Xero to Fyle', null=True)
     auto_create_destination_entity = models.BooleanField(default=False, help_text='Auto create contact')
+    map_fyle_cards_xero_bank_account = models.BooleanField(default=False, help_text='Map Fyle Cards to Xero Bank Account')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 

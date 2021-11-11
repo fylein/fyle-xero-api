@@ -18,6 +18,7 @@ from apps.workspaces.tasks import schedule_sync
 from fyle_xero_api.utils import assert_valid
 
 from apps.fyle.models import ExpenseGroupSettings
+from apps.fyle.utils import FyleConnector
 
 from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule
 from .utils import generate_xero_refresh_token, create_or_update_general_settings
@@ -63,7 +64,7 @@ class WorkspaceView(viewsets.ViewSet):
         """
 
         auth_tokens = AuthToken.objects.get(user__user_id=request.user)
-        fyle_user = auth_utils.get_fyle_user(auth_tokens.refresh_token)
+        fyle_user = auth_utils.get_fyle_user(auth_tokens.refresh_token, None)
         org_name = fyle_user['org_name']
         org_id = fyle_user['org_id']
 
@@ -79,9 +80,13 @@ class WorkspaceView(viewsets.ViewSet):
 
             workspace.user.add(User.objects.get(user_id=request.user))
 
+            fyle_connector = FyleConnector(auth_tokens.refresh_token)
+            cluster_domain = fyle_connector.get_cluster_domain()['cluster_domain']
+
             FyleCredential.objects.update_or_create(
                 refresh_token=auth_tokens.refresh_token,
-                workspace_id=workspace.id
+                workspace_id=workspace.id,
+                cluster_domain=cluster_domain
             )
 
         return Response(
@@ -137,7 +142,7 @@ class ConnectFyleView(viewsets.ViewSet):
             workspace = Workspace.objects.get(id=kwargs['workspace_id'])
 
             refresh_token = auth_utils.generate_fyle_refresh_token(authorization_code)['refresh_token']
-            fyle_user = auth_utils.get_fyle_user(refresh_token)
+            fyle_user = auth_utils.get_fyle_user(refresh_token, None)
             org_id = fyle_user['org_id']
             org_name = fyle_user['org_name']
 
@@ -148,10 +153,14 @@ class ConnectFyleView(viewsets.ViewSet):
             workspace.fyle_org_id = org_id
             workspace.save()
 
+            fyle_connector = FyleConnector(refresh_token)
+            cluster_domain = fyle_connector.get_cluster_domain()['cluster_domain']
+
             fyle_credentials, _ = FyleCredential.objects.update_or_create(
                 workspace_id=kwargs['workspace_id'],
                 defaults={
                     'refresh_token': refresh_token,
+                    'cluster_domain': cluster_domain
                 }
             )
 
