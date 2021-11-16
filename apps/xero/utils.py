@@ -167,12 +167,12 @@ class XeroConnector:
 
         updated_at = self.__get_last_synced_at('CONTACT')
 
-        contacts_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)['Contacts']
+        contacts_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)
 
         for contacts in contacts_generator:
             contact_attributes = []
 
-            for contact in contacts:
+            for contact in contacts['Contacts']:
                 detail = {
                     'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
                 }
