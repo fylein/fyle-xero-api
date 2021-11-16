@@ -332,6 +332,7 @@ class RevokeXeroConnectionView(viewsets.ViewSet):
         """
         Post of Xero Credentials
         """
+        # TODO: cleanup later - merge with ConnectXeroView
         xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
         tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
         if xero_credentials:
