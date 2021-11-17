@@ -2,13 +2,12 @@ import json
 import logging
 import traceback
 from datetime import datetime, timedelta
-from time import sleep
 from typing import List
 
 from django.db import transaction
 from django.db.models import Q
 from django_q.models import Schedule
-from django_q.tasks import Chain, async_task
+from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, DestinationAttribute
 
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant
@@ -130,8 +129,9 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             logger.info('Error while auto creating contact workspace_id - %s error: %s',
                 expense_group.workspace_id, {'error': exception.message})
 
-def create_bill(expense_group, task_log_id):
-    print('create_bill', task_log_id)
+def create_bill(expense_group_id, task_log_id):
+    expense_group = ExpenseGroup.objects.get(id=expense_group_id)
+    print('create_bill', expense_group.id)
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
         task_log.status = 'IN_PROGRESS'
@@ -236,28 +236,43 @@ def create_bill(expense_group, task_log_id):
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
 
 
+def chain_exports(splitted_groups: list, export_type: str):
+    """
+    This function is used to chain the exports.
+    :param splitted_groups:
+    :param export_type:
+    """
+    print('smoll batches', splitted_groups)
+    trigger_function = 'apps.xero.tasks.create_{}'.format(export_type)
+    chain = Chain()
+
+    for group in splitted_groups:
+        chain.append(trigger_function, group['expense_group_id'], group['task_log_id'])
+
+    if chain.length():
+        chain.run()
+
+
 def split_groups_and_export(chaining_attributes: list, export_type: str):
     """
     Split groups and export them
     :param chaining_attributes:
     :param export_type: 'bill' or 'bank_transaction'
     """
-    trigger_function = 'apps.xero.tasks.create_{}'.format(export_type)
     splitted_groups = list(split_expense_groups_in_chunks(chaining_attributes))
     print('splitted_groups', splitted_groups)
+    start_datetime = datetime.now()
 
     for groups in splitted_groups:
-        chain = Chain()
+        print('start_datetime', start_datetime)
+        Schedule.objects.create(
+            func='apps.xero.tasks.chain_exports',
+            args=(groups, export_type),
+            schedule_type=Schedule.ONCE,
+            next_run=start_datetime
+        )
+        start_datetime = start_datetime + timedelta(minutes=2)
 
-        for group in groups:
-            chain.append(trigger_function, group['expense_group'], group['task_log_id'])
-
-        if chain.length():
-            print('chain will start executing')
-            chain.run()
-            # TODO: change to 120s
-            print('sleeping for 10s')
-            sleep(10)
 
 def split_expense_groups_in_chunks(chaining_attributes: list):
     """
@@ -298,17 +313,17 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
                 task_log.save()
 
             chaining_attributes.append({
-                'expense_group': expense_group,
+                'expense_group_id': expense_group.id,
                 'task_log_id': task_log.id
             })
 
             task_log.save()
 
-        async_task('apps.xero.tasks.split_groups_and_export', chaining_attributes, 'bill')
+        split_groups_and_export(chaining_attributes, 'bill')
 
 
-def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
-    print('create_bank_transaction', task_log_id)
+def create_bank_transaction(expense_group_id: int, task_log_id: int):
+    expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
         task_log.status = 'IN_PROGRESS'
@@ -450,14 +465,13 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
                 task_log.save()
 
             chaining_attributes.append({
-                'expense_group': expense_group,
+                'expense_group_id': expense_group.id,
                 'task_log_id': task_log.id
             })
 
             task_log.save()
 
-        async_task('apps.xero.tasks.split_groups_and_export', chaining_attributes, 'bank_transaction')
-
+        split_groups_and_export(chaining_attributes, 'bank_transaction')
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):
