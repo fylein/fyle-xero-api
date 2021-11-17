@@ -24,6 +24,8 @@ from fyle_xero_api.exceptions import BulkError
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
+# TODO: rm loggers
+
 def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
     """
     Get or create credit card contact
@@ -253,7 +255,7 @@ def chain_exports(splitted_groups: list, export_type: str):
         chain.run()
 
 
-def split_groups_and_export(chaining_attributes: list, export_type: str):
+def split_groups_and_schedule_export(chaining_attributes: list, export_type: str):
     """
     Split groups and export them
     :param chaining_attributes:
@@ -319,11 +321,12 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
 
             task_log.save()
 
-        split_groups_and_export(chaining_attributes, 'bill')
+        split_groups_and_schedule_export(chaining_attributes, 'bill')
 
 
 def create_bank_transaction(expense_group_id: int, task_log_id: int):
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
+    print('create_bank_transaction', expense_group.id)
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
         task_log.status = 'IN_PROGRESS'
@@ -471,7 +474,7 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
 
             task_log.save()
 
-        split_groups_and_export(chaining_attributes, 'bank_transaction')
+        split_groups_and_schedule_export(chaining_attributes, 'bank_transaction')
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):
