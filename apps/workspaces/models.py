@@ -46,6 +46,7 @@ class FyleCredential(models.Model):
     """
     id = models.AutoField(primary_key=True)
     refresh_token = models.TextField(help_text='Stores Fyle refresh token')
+    cluster_domain = models.CharField(max_length=255, help_text='Cluster domain', null=True)
     workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
@@ -69,6 +70,7 @@ class WorkspaceGeneralSettings(models.Model):
     import_categories = models.BooleanField(default=False, help_text='Auto import Categories to Fyle')
     auto_map_employees = models.CharField(max_length=50, help_text='Auto Map Employees from Xero to Fyle', null=True)
     auto_create_destination_entity = models.BooleanField(default=False, help_text='Auto create contact')
+    map_fyle_cards_xero_bank_account = models.BooleanField(default=False, help_text='Map Fyle Cards to Xero Bank Account')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 

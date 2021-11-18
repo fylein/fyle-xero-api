@@ -18,6 +18,9 @@ from apps.workspaces.tasks import schedule_sync
 from fyle_xero_api.utils import assert_valid
 
 from apps.fyle.models import ExpenseGroupSettings
+from apps.fyle.utils import FyleConnector
+from apps.xero.utils import XeroConnector
+from apps.mappings.models import TenantMapping
 
 from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule
 from .utils import generate_xero_refresh_token, create_or_update_general_settings
@@ -63,7 +66,7 @@ class WorkspaceView(viewsets.ViewSet):
         """
 
         auth_tokens = AuthToken.objects.get(user__user_id=request.user)
-        fyle_user = auth_utils.get_fyle_user(auth_tokens.refresh_token)
+        fyle_user = auth_utils.get_fyle_user(auth_tokens.refresh_token, None)
         org_name = fyle_user['org_name']
         org_id = fyle_user['org_id']
 
@@ -79,9 +82,13 @@ class WorkspaceView(viewsets.ViewSet):
 
             workspace.user.add(User.objects.get(user_id=request.user))
 
+            fyle_connector = FyleConnector(auth_tokens.refresh_token)
+            cluster_domain = fyle_connector.get_cluster_domain()['cluster_domain']
+
             FyleCredential.objects.update_or_create(
                 refresh_token=auth_tokens.refresh_token,
-                workspace_id=workspace.id
+                workspace_id=workspace.id,
+                cluster_domain=cluster_domain
             )
 
         return Response(
@@ -137,7 +144,7 @@ class ConnectFyleView(viewsets.ViewSet):
             workspace = Workspace.objects.get(id=kwargs['workspace_id'])
 
             refresh_token = auth_utils.generate_fyle_refresh_token(authorization_code)['refresh_token']
-            fyle_user = auth_utils.get_fyle_user(refresh_token)
+            fyle_user = auth_utils.get_fyle_user(refresh_token, None)
             org_id = fyle_user['org_id']
             org_name = fyle_user['org_name']
 
@@ -148,10 +155,14 @@ class ConnectFyleView(viewsets.ViewSet):
             workspace.fyle_org_id = org_id
             workspace.save()
 
+            fyle_connector = FyleConnector(refresh_token)
+            cluster_domain = fyle_connector.get_cluster_domain()['cluster_domain']
+
             fyle_credentials, _ = FyleCredential.objects.update_or_create(
                 workspace_id=kwargs['workspace_id'],
                 defaults={
                     'refresh_token': refresh_token,
+                    'cluster_domain': cluster_domain
                 }
             )
 
@@ -233,18 +244,26 @@ class ConnectXeroView(viewsets.ViewSet):
 
             refresh_token = generate_xero_refresh_token(authorization_code)
 
-            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
-
-            xero_credentials = XeroCredentials.objects.filter(workspace=workspace).first()
+            xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
+            tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
 
             if not xero_credentials:
                 xero_credentials = XeroCredentials.objects.create(
                     refresh_token=refresh_token,
-                    workspace=workspace
+                    workspace_id=kwargs['workspace_id']
                 )
             else:
                 xero_credentials.refresh_token = refresh_token
                 xero_credentials.save()
+
+            if tenant_mapping and not tenant_mapping.connection_id:
+                xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+                connections = xero_connector.connection.connections.get_all()
+                connection = list(filter(lambda connection: connection['tenantId'] == tenant_mapping.tenant_id, connections))
+
+                if connection:
+                    tenant_mapping.connection_id = connection[0]['id']
+                    tenant_mapping.save()
 
             return Response(
                 data=XeroCredentialSerializer(xero_credentials).data,
@@ -290,8 +309,7 @@ class ConnectXeroView(viewsets.ViewSet):
         Get Xero Credentials in Workspace
         """
         try:
-            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
-            xero_credentials = XeroCredentials.objects.get(workspace=workspace)
+            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
 
             return Response(
                 data=XeroCredentialSerializer(xero_credentials).data,
@@ -305,6 +323,36 @@ class ConnectXeroView(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+
+class RevokeXeroConnectionView(viewsets.ViewSet):
+    """
+    Xero Revoke Xero Connection View
+    """
+    def post(self, request, **kwargs):
+        """
+        Post of Xero Credentials
+        """
+        # TODO: cleanup later - merge with ConnectXeroView
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
+        tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
+        if xero_credentials:
+            if tenant_mapping and tenant_mapping.connection_id:
+                try:
+                    xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+                    xero_connector.connection.connections.remove_connection(tenant_mapping.connection_id)
+                except (xero_exc.InvalidGrant, xero_exc.UnsupportedGrantType,
+                        xero_exc.InvalidTokenError, xero_exc.UnsuccessfulAuthentication,
+                        xero_exc.WrongParamsError, xero_exc.NoPrivilegeError,
+                        xero_exc.InternalServerError):
+                    pass
+            xero_credentials.delete()
+
+        return Response(
+            data={
+                'message': 'Revoked Xero connection'
+            },
+            status=status.HTTP_200_OK
+        )
 
 class ScheduleView(viewsets.ViewSet):
     """
