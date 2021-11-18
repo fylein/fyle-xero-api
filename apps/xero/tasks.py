@@ -755,7 +755,6 @@ def create_missing_currency(workspace_id: int):
         xero_connection.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         currencies = xero_connection.connection.currencies.get_all()['Currencies']
-        print('currenciescurrencies',currencies)
 
         fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
         platform = PlatformConnector(fyle_credentials)
@@ -767,7 +766,7 @@ def create_missing_currency(workspace_id: int):
         if not existing_currency:
             xero_connection.connection.currencies.post(data={
              'Code': fyle_currency,
-             'Description': fyle_currency # TODO: check with Shwetabh if we need to add description correctly - https://www.xe.com/iso4217.php
+             'Description': fyle_currency
             })
             logger.info('Created missing currency %s in Xero', fyle_currency)
 
