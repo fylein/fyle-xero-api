@@ -318,7 +318,7 @@ class ExportsTriggerView(generics.CreateAPIView):
 
         if chaining_attributes:
             print('chaining_attributes',chaining_attributes)
-            create_chain_and_export(chaining_attributes)
+            create_chain_and_export(chaining_attributes, workspace_id)
 
         return Response(
             status=status.HTTP_200_OK

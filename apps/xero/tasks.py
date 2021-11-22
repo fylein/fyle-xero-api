@@ -239,10 +239,11 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
 
 
-def create_chain_and_export(chaining_attributes: list) -> None:
+def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> None:
     """
     Create a chain of expense groups and export them to Xero
     :param chaining_attributes:
+    :param workspace_id:
     :return: None
     """
     xero_credentials = XeroCredentials.objects.get(workspace_id=1)

@@ -80,4 +80,4 @@ def run_sync_schedule(workspace_id):
 
         if chaining_attributes:
             print('chaining_attributes',chaining_attributes)
-            create_chain_and_export(chaining_attributes)
+            create_chain_and_export(chaining_attributes, workspace_id)
