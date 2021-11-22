@@ -13,6 +13,11 @@ from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute
 from apps.mappings.tasks import schedule_projects_creation, schedule_cost_centers_creation, schedule_fyle_attributes_creation,\
                         upload_attributes_to_fyle
 
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+from .models import TenantMapping
+
 @receiver(post_save, sender=MappingSetting)
 def run_post_mapping_settings_triggers(sender, instance: MappingSetting, **kwargs):
     """
@@ -54,3 +59,12 @@ def run_pre_mapping_settings_triggers(sender, instance: MappingSetting, **kwargs
             instance.destination_field,
             instance.source_field
         )
+
+@receiver(post_save, sender=TenantMapping)
+def run_post_tenant_mapping_trigger(sender, instance: TenantMapping, **kwargs):
+    """
+    :param sender: Sender Class
+    :param instance: Row Instance of Sender Class
+    :return: None
+    """
+    async_task('apps.xero.tasks.create_missing_currency', int(instance.workspace_id))

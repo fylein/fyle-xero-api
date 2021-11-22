@@ -8,13 +8,15 @@ from django.db import transaction
 from django.db.models import Q
 from django_q.models import Schedule
 from django_q.tasks import Chain
+
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, DestinationAttribute
+from fyle_integrations_platform_connector import PlatformConnector
 
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.fyle.utils import FyleConnector
-from apps.mappings.models import GeneralMapping
+from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
@@ -738,3 +740,35 @@ def schedule_reimbursements_sync(sync_xero_to_fyle_payments, workspace_id):
 
         if schedule:
             schedule.delete()
+
+
+def create_missing_currency(workspace_id: int):
+    """
+    Create missing currency in Xero
+    :param workspace_id:
+    :return:
+    """
+    try:
+        xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+        xero_connection = XeroConnector(xero_credentials, workspace_id)
+        tenant_mapping = TenantMapping.objects.get(workspace_id=workspace_id)
+        xero_connection.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        currencies = xero_connection.connection.currencies.get_all()['Currencies']
+
+        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+        platform = PlatformConnector(fyle_credentials)
+        my_profile = platform.connection.v1.fyler.my_profile.get()
+        fyle_currency = my_profile['data']['org']['currency']
+
+        existing_currency = list(filter(lambda currency: currency['Code'] == fyle_currency, currencies))
+
+        if not existing_currency:
+            xero_connection.connection.currencies.post(data={
+             'Code': fyle_currency,
+             'Description': fyle_currency
+            })
+            logger.info('Created missing currency %s in Xero', fyle_currency)
+
+    except Exception as exception:
+        logger.exception('Error creating currency in Xero', exception)
