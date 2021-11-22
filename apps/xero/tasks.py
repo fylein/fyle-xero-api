@@ -246,8 +246,8 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
     :param workspace_id:
     :return: None
     """
-    xero_credentials = XeroCredentials.objects.get(workspace_id=1)
-    xero_connection = XeroConnector(xero_credentials, 1)
+    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(xero_credentials, workspace_id)
     chain = Chain()
     for group in chaining_attributes:
         print('adding', group)
