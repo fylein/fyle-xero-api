@@ -21,7 +21,7 @@ from fyle_xero_api.utils import assert_valid
 from .utils import XeroConnector
 from .serializers import XeroFieldSerializer, BankTransactionSerializer, BillSerializer
 from .tasks import create_bank_transaction, schedule_bank_transaction_creation, create_bill, schedule_bills_creation, \
-    create_payment, check_xero_object_status, process_reimbursements
+    create_payment, check_xero_object_status, process_reimbursements, create_chain_and_export
 
 logger = logging.getLogger(__name__)
 
@@ -302,21 +302,27 @@ class BankTransactionView(generics.ListCreateAPIView):
         )
 
 
-class BankTransactionScheduleView(generics.CreateAPIView):
+class ExportsTriggerView(generics.CreateAPIView):
     """
-    Schedule BankTransaction creation
+    Schedule Exports creation
     """
 
     def post(self, request, *args, **kwargs):
         expense_group_ids = request.data.get('expense_group_ids', [])
+        chaining_attributes = []
 
-        schedule_bank_transaction_creation(
-            kwargs['workspace_id'], expense_group_ids)
+        if expense_group_ids['personal']:
+            chaining_attributes.extend(schedule_bills_creation(kwargs['workspace_id'], expense_group_ids['personal']))
+        if expense_group_ids['ccc']:
+            chaining_attributes.extend(schedule_bank_transaction_creation(kwargs['workspace_id'], expense_group_ids['ccc']))
+
+        if chaining_attributes:
+            print('chaining_attributes',chaining_attributes)
+            create_chain_and_export(chaining_attributes)
 
         return Response(
             status=status.HTTP_200_OK
         )
-
 
 class BillView(generics.ListCreateAPIView):
     """
@@ -346,21 +352,6 @@ class BillView(generics.ListCreateAPIView):
 
         return Response(
             data={},
-            status=status.HTTP_200_OK
-        )
-
-
-class BillScheduleView(generics.CreateAPIView):
-    """
-    Schedule Bill creation
-    """
-
-    def post(self, request, *args, **kwargs):
-        expense_group_ids = request.data.get('expense_group_ids', [])
-
-        schedule_bills_creation(kwargs['workspace_id'], expense_group_ids)
-
-        return Response(
             status=status.HTTP_200_OK
         )
 

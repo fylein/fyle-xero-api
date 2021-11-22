@@ -69,18 +69,11 @@ def run_sync_schedule(workspace_id):
         )
 
     if task_log.status == 'COMPLETE':
-
+        chaining_attributes = []
         if general_settings.reimbursable_expenses_object:
-
             expense_group_ids = ExpenseGroup.objects.filter(fund_source='PERSONAL').values_list('id', flat=True)
-
-            schedule_bills_creation(
-                workspace_id=workspace_id, expense_group_ids=expense_group_ids
-            )
+            chaining_attributes.append(schedule_bills_creation(workspace_id, expense_group_ids))
 
         if general_settings.corporate_credit_card_expenses_object:
             expense_group_ids = ExpenseGroup.objects.filter(fund_source='CCC').values_list('id', flat=True)
-
-            schedule_bank_transaction_creation(
-                workspace_id=workspace_id, expense_group_ids=expense_group_ids
-            )
+            chaining_attributes.append(schedule_bank_transaction_creation(workspace_id, expense_group_ids))

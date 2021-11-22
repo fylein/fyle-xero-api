@@ -2,6 +2,7 @@ import json
 import logging
 import traceback
 from datetime import datetime, timedelta
+from time import sleep
 from typing import List
 
 from django.db import transaction
@@ -131,7 +132,12 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             logger.info('Error while auto creating contact workspace_id - %s error: %s',
                 expense_group.workspace_id, {'error': exception.message})
 
-def create_bill(expense_group, task_log_id):
+def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector):
+    print('create_bill', expense_group_id)
+    print('xero_connection',xero_connection)
+    print('xero_connection', xero_connection.connection.refresh_token)
+    sleep(2)
+    expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
         task_log.status = 'IN_PROGRESS'
@@ -141,9 +147,6 @@ def create_bill(expense_group, task_log_id):
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
     try:
-        xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
-        xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
-
         if general_settings.auto_map_employees and general_settings.auto_create_destination_entity \
                 and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
             create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
@@ -236,20 +239,38 @@ def create_bill(expense_group, task_log_id):
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
 
 
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
+def create_chain_and_export(chaining_attributes: list) -> None:
+    """
+    Create a chain of expense groups and export them to Xero
+    :param chaining_attributes:
+    :return: None
+    """
+    xero_credentials = XeroCredentials.objects.get(workspace_id=1)
+    xero_connection = XeroConnector(xero_credentials, 1)
+    chain = Chain()
+    for group in chaining_attributes:
+        print('adding', group)
+        trigger_function = 'apps.xero.tasks.create_{}'.format(group['export_type'])
+        chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection)
+
+    if chain.length():
+        print('starting chain')
+        chain.run()
+
+
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> list:
     """
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
     :param workspace_id: workspace id
-    :return: None
+    :return: List of chaining attributes
     """
+    chaining_attributes = []
     if expense_group_ids:
         expense_groups = ExpenseGroup.objects.filter(
             Q(tasklog__id__isnull=True) | ~Q(tasklog__status__in=['IN_PROGRESS', 'COMPLETE']),
             workspace_id=workspace_id, id__in=expense_group_ids, bill__id__isnull=True, exported_at__isnull=True
         ).all()
-
-        chain = Chain()
 
         for expense_group in expense_groups:
             task_log, _ = TaskLog.objects.get_or_create(
@@ -264,15 +285,23 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]):
                 task_log.status = 'ENQUEUED'
                 task_log.save()
 
-            chain.append('apps.xero.tasks.create_bill', expense_group, task_log.id)
+            chaining_attributes.append({
+                'expense_group_id': expense_group.id,
+                'task_log_id': task_log.id,
+                'export_type': 'bill'
+            })
 
             task_log.save()
 
-        if chain.length():
-            chain.run()
+    return chaining_attributes
 
 
-def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
+def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector):
+    sleep(2)
+    print('create_bank_transaction', expense_group_id)
+    print('xero_connection',xero_connection)
+    print('xero_connection', xero_connection.connection.refresh_token)
+    expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
         task_log.status = 'IN_PROGRESS'
@@ -282,9 +311,6 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
     try:
-        xero_credentials = XeroCredentials.objects.get(workspace_id=expense_group.workspace_id)
-        xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
-
         if not general_settings.map_merchant_to_contact:
             if general_settings.auto_map_employees and general_settings.auto_create_destination_entity \
                     and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
@@ -386,20 +412,19 @@ def create_bank_transaction(expense_group: ExpenseGroup, task_log_id):
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
 
 
-def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: List[str]):
+def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: List[str]) -> list:
     """
     Schedule bank transaction creation
     :param expense_group_ids: List of expense group ids
     :param workspace_id: workspace id
-    :return: None
+    :return: List of chaining attributes
     """
+    chaining_attributes = []
     if expense_group_ids:
         expense_groups = ExpenseGroup.objects.filter(
             Q(tasklog__id__isnull=True) | ~Q(tasklog__status__in=['IN_PROGRESS', 'COMPLETE']),
             workspace_id=workspace_id, id__in=expense_group_ids, banktransaction__id__isnull=True, exported_at__isnull=True
         ).all()
-
-        chain = Chain()
 
         for expense_group in expense_groups:
             task_log, _ = TaskLog.objects.get_or_create(
@@ -414,12 +439,15 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
                 task_log.status = 'ENQUEUED'
                 task_log.save()
 
-            chain.append('apps.xero.tasks.create_bank_transaction', expense_group, task_log.id)
+            chaining_attributes.append({
+                'expense_group_id': expense_group.id,
+                'task_log_id': task_log.id,
+                'export_type': 'bank_transaction'
+            })
 
             task_log.save()
 
-        if chain.length():
-            chain.run()
+    return chaining_attributes
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):
