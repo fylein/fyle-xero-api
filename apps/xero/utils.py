@@ -128,6 +128,7 @@ class XeroConnector:
             detail = {
                 'account_name': account['Name'],
                 'account_type': account['Type'],
+                'enable_payments_to_account': account['EnablePaymentsToAccount']
             }
 
             if account['Type'] == 'BANK':
