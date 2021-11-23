@@ -225,9 +225,21 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
     except RateLimitError as exception:
         logger.error(exception.message)
         task_log.status = 'FAILED'
-        task_log.detail = {
-            'error': exception.response
-        }
+        task_log.detail = [
+            {
+                'error': {
+                    'Elements': [
+                        {
+                            'ValidationErrors': [
+                                {
+                                    'Message': 'Rate limit exceeded, integration will retry export in some time'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ]
 
         task_log.save()
 
@@ -412,9 +424,21 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
     except RateLimitError as exception:
         logger.error(exception.message)
         task_log.status = 'FAILED'
-        task_log.detail = {
-            'error': exception.response
-        }
+        task_log.detail = [
+            {
+                'error': {
+                    'Elements': [
+                        {
+                            'ValidationErrors': [
+                                {
+                                    'Message': 'Rate limit exceeded, integration will retry export in some time'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ]
 
         task_log.save()
 
