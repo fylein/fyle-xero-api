@@ -13,7 +13,7 @@ from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, DestinationAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 
-from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant
+from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.fyle.utils import FyleConnector
@@ -222,6 +222,15 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
 
         task_log.save()
 
+    except RateLimitError as exception:
+        logger.error(exception.message)
+        task_log.status = 'FAILED'
+        task_log.detail = {
+            'error': exception.response
+        }
+
+        task_log.save()
+
     except XeroSDKError as exception:
         logger.exception(exception.response)
         detail = json.loads(exception.response)
@@ -396,6 +405,15 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         task_log.status = 'FAILED'
         task_log.detail = {
             'error': exception.message
+        }
+
+        task_log.save()
+
+    except RateLimitError as exception:
+        logger.error(exception.message)
+        task_log.status = 'FAILED'
+        task_log.detail = {
+            'error': exception.response
         }
 
         task_log.save()
