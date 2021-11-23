@@ -106,7 +106,7 @@ class Expense(models.Model):
             cutoff_date = _format_date('2021-08-01T00:00:00.000Z')
             expense_created_at = _format_date(expense['expense_created_at'])
 
-            if expense_created_at > cutoff_date:
+            if True: # TODO: update after testing if expense_created_at > cutoff_date
                 expense_object, _ = Expense.objects.update_or_create(
                     expense_id=expense['id'],
                     defaults={
