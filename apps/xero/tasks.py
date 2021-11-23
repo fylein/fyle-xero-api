@@ -253,7 +253,10 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
     for group in chaining_attributes:
         print('adding', group)
         trigger_function = 'apps.xero.tasks.create_{}'.format(group['export_type'])
-        chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection)
+        # TODO
+        from django_q.tasks import async_task
+        async_task(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection)
+        # chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection)
 
     if chain.length():
         print('starting chain')
