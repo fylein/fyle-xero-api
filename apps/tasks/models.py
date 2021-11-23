@@ -7,7 +7,7 @@ from apps.xero.models import Bill, BankTransaction, Payment
 
 
 def get_default():
-    return {}
+    return dict
 
 
 class TaskLog(models.Model):
