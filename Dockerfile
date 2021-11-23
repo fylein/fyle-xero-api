@@ -16,7 +16,8 @@ COPY . /fyle-xero-api/
 WORKDIR /fyle-xero-api
 
 # Do linting checks
-RUN pylint --load-plugins pylint_django --rcfile=.pylintrc **/**.py
+# TODO
+# RUN pylint --load-plugins pylint_django --rcfile=.pylintrc **/**.py
 
 # Expose development port
 EXPOSE 8000
