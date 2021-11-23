@@ -137,7 +137,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
     print('xero_connection',xero_connection)
     print('xero_connection', xero_connection.connection.refresh_token)
     # TODO
-    # sleep(2)
+    sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
@@ -275,10 +275,7 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
     for group in chaining_attributes:
         print('adding', group)
         trigger_function = 'apps.xero.tasks.create_{}'.format(group['export_type'])
-        # TODO
-        from django_q.tasks import async_task
-        async_task(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection)
-        # chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection)
+        chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection)
 
     if chain.length():
         print('starting chain')
