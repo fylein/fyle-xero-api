@@ -317,7 +317,6 @@ class ExportsTriggerView(generics.CreateAPIView):
             chaining_attributes.extend(schedule_bank_transaction_creation(kwargs['workspace_id'], expense_group_ids['ccc']))
 
         if chaining_attributes:
-            print('chaining_attributes',chaining_attributes)
             create_chain_and_export(chaining_attributes, kwargs['workspace_id'])
 
         return Response(

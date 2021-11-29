@@ -79,5 +79,4 @@ def run_sync_schedule(workspace_id):
             chaining_attributes.extend(schedule_bank_transaction_creation(workspace_id, expense_group_ids))
 
         if chaining_attributes:
-            print('chaining_attributes',chaining_attributes)
             create_chain_and_export(chaining_attributes, workspace_id)
