@@ -133,10 +133,6 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
                 expense_group.workspace_id, {'error': exception.message})
 
 def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector):
-    print('create_bill', expense_group_id)
-    print('xero_connection',xero_connection)
-    print('xero_connection', xero_connection.connection.refresh_token)
-    # TODO
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
@@ -321,11 +317,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
 
 
 def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector):
-    # TODO
-    # sleep(2)
-    print('create_bank_transaction', expense_group_id)
-    print('xero_connection',xero_connection)
-    print('xero_connection', xero_connection.connection.refresh_token)
+    sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
     if task_log.status not in ['IN_PROGRESS', 'COMPLETE']:
