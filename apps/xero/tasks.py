@@ -18,7 +18,7 @@ from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.fyle.utils import FyleConnector
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential
+from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential, Workspace
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
@@ -772,3 +772,27 @@ def create_missing_currency(workspace_id: int):
 
     except Exception as exception:
         logger.exception('Error creating currency in Xero', exception)
+
+
+def update_xero_short_code(workspace_id: int):
+    """
+    Update Xero short code
+    :param workspace_id:
+    :return:
+    """
+    try:
+        xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+        xero_connection = XeroConnector(xero_credentials, workspace_id)
+
+        tenant_mapping = TenantMapping.objects.get(workspace_id=workspace_id)
+        xero_connection.connection.set_tenant_id(tenant_mapping.tenant_id)
+        short_code = xero_connection.connection.organisations.get_all()[0]['ShortCode']
+
+        workspace = Workspace.objects.get(pk=workspace_id)
+        workspace.xero_short_code = short_code
+        workspace.save()
+
+        logger.info('Updated Xero short code')
+
+    except Exception as exception:
+        logger.exception('Error updating Xero short code', exception)
