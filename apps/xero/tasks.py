@@ -758,7 +758,7 @@ def create_missing_currency(workspace_id: int):
 
         fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
         platform = PlatformConnector(fyle_credentials)
-        my_profile = platform.connection.v1.fyler.my_profile.get()
+        my_profile = platform.connection.v1beta.spender.my_profile.get()
         fyle_currency = my_profile['data']['org']['currency']
 
         existing_currency = list(filter(lambda currency: currency['Code'] == fyle_currency, currencies))
