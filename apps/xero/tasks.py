@@ -229,7 +229,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
                         {
                             'ValidationErrors': [
                                 {
-                                    'Message': 'Rate limit exceeded, integration will retry export in some time'
+                                    'Message': 'Rate limit exceeded, integration will retry exports in a while'
                                 }
                             ]
                         }
@@ -420,7 +420,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
                         {
                             'ValidationErrors': [
                                 {
-                                    'Message': 'Rate limit exceeded, integration will retry export in some time'
+                                    'Message': 'Rate limit exceeded, integration will retry exports in a while'
                                 }
                             ]
                         }
