@@ -1,8 +1,8 @@
 from django.urls import path
 
 from .views import TenantView, AccountView, BankAccountView, TrackingCategoryView, ContactView, \
-    ItemView, XeroFieldsView, BankTransactionView, BankTransactionScheduleView, BillView, BillScheduleView, \
-    TokenHealthView, PaymentView, ReimburseXeroPaymentsView, SyncXeroDimensionView, RefreshXeroDimensionView
+    ItemView, XeroFieldsView, BankTransactionView, BillView, TokenHealthView, PaymentView, \
+        ReimburseXeroPaymentsView, SyncXeroDimensionView, RefreshXeroDimensionView, ExportsTriggerView
 
 urlpatterns = [
     path('accounts/', AccountView.as_view()),
@@ -13,9 +13,8 @@ urlpatterns = [
     path('tenants/', TenantView.as_view()),
     path('xero_fields/', XeroFieldsView.as_view()),
     path('bank_transactions/', BankTransactionView.as_view()),
-    path('bank_transactions/trigger/', BankTransactionScheduleView.as_view()),
     path('bills/', BillView.as_view()),
-    path('bills/trigger/', BillScheduleView.as_view()),
+    path('exports/trigger/', ExportsTriggerView.as_view()),
     path('token_health/', TokenHealthView.as_view()),
     path('payments/', PaymentView.as_view()),
     path('reimburse_payments/', ReimburseXeroPaymentsView.as_view()),
