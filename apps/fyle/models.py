@@ -140,10 +140,11 @@ class Expense(models.Model):
                     }
                 )
 
+            else:
+                eliminated_expenses.append(expense['id'])
+
             if not ExpenseGroup.objects.filter(expenses__id=expense_object.id).first():
                 expense_objects.append(expense_object)
-        # else:
-        #     eliminated_expenses.append(expense['id'])
 
         if eliminated_expenses:
             logger.error('Expenses with ids {} are not eligible for import'.format(eliminated_expenses))

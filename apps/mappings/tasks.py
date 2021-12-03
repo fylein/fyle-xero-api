@@ -232,13 +232,14 @@ def create_fyle_cost_centers_payload(xero_attributes: List[DestinationAttribute]
     return fyle_cost_centers_payload
 
 
-def post_cost_centers_in_batches(fyle_connection:FyleConnector, workspace_id: int, xero_attribute_type: str):
+def post_cost_centers_in_batches(fyle_connection:FyleConnector, platform: PlatformConnector,
+    workspace_id: int, xero_attribute_type: str):
     existing_cost_center_names = ExpenseAttribute.objects.filter(
         attribute_type='COST_CENTER', workspace_id=workspace_id).values_list('value', flat=True)
 
     xero_attribute_count = DestinationAttribute.objects.filter(
         attribute_type=xero_attribute_type, workspace_id=workspace_id).count()
-    
+
     page_size = 200
 
     for offset in range(0,xero_attribute_count,page_size):
@@ -254,7 +255,7 @@ def post_cost_centers_in_batches(fyle_connection:FyleConnector, workspace_id: in
 
         if fyle_payload:
             fyle_connection.connection.CostCenters.post(fyle_payload)
-            fyle_connection.sync_cost_centers()
+            platform.cost_centers.sync()
         
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'COST_CENTER', xero_attribute_type, workspace_id)
 
@@ -265,21 +266,21 @@ def auto_create_cost_center_mappings(workspace_id: int):
     """
     try:
         fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-
         fyle_connection = FyleConnector(
             refresh_token= fyle_credentials.refresh_token,
             workspace_id= workspace_id
         )
+        platform = PlatformConnector(fyle_credentials)
 
         mapping_setting = MappingSetting.objects.get(
             source_field='COST_CENTER', import_to_fyle=True, workspace_id=workspace_id
         )
 
-        fyle_connection.sync_cost_centers()
+        platform.cost_centers.sync()
 
         sync_xero_attributes(mapping_setting.destination_field, workspace_id=workspace_id)
 
-        post_cost_centers_in_batches(fyle_connection, workspace_id, mapping_setting.destination_field)
+        post_cost_centers_in_batches(fyle_connection, platform, workspace_id, mapping_setting.destination_field)
     
     except WrongParamsError as exception:
         logger.error(
@@ -342,7 +343,8 @@ def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_
     return payload
 
 
-def post_projects_in_batches(fyle_connection: FyleConnector, workspace_id:int,  destination_field: str):
+def post_projects_in_batches(fyle_connection: FyleConnector, platform: PlatformConnector,
+    workspace_id:int,  destination_field: str):
     existing_project_names = ExpenseAttribute.objects.filter(
         attribute_type='PROJECT', workspace_id=workspace_id).values_list('value', flat=True)
     xero_attributes_count = DestinationAttribute.objects.filter(
@@ -361,7 +363,7 @@ def post_projects_in_batches(fyle_connection: FyleConnector, workspace_id:int,  
         
         if fyle_payload:
             fyle_connection.connection.Projects.post(fyle_payload)
-            fyle_connection.sync_projects()
+            platform.projects.sync()
 
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'PROJECT', destination_field, workspace_id)
 
@@ -373,13 +375,13 @@ def auto_create_project_mappings(workspace_id: int):
     """
     try:
         fyle_credentials:FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-
         fyle_connection = FyleConnector(
             refresh_token=fyle_credentials.refresh_token,
             workspace_id=workspace_id
         )
+        platform = PlatformConnector(fyle_credentials)
 
-        fyle_connection.sync_projects()
+        platform.projects.sync()
 
         mapping_setting= MappingSetting.objects.get(
             source_field='PROJECT', workspace_id=workspace_id
@@ -387,7 +389,7 @@ def auto_create_project_mappings(workspace_id: int):
 
         sync_xero_attributes(mapping_setting.destination_field, workspace_id)
 
-        post_projects_in_batches(fyle_connection, workspace_id, mapping_setting.destination_field)
+        post_projects_in_batches(fyle_connection, platform, workspace_id, mapping_setting.destination_field)
 
     except WrongParamsError as exception:
         logger.error(
@@ -469,13 +471,12 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     """
     Upload attributes to Fyle
     """
-
     fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-
     fyle_connection = FyleConnector(
         refresh_token=fyle_credentials.refresh_token,
         workspace_id=workspace_id
     )
+    platform = PlatformConnector(fyle_credentials)
 
     xero_attributes: List[DestinationAttribute] = DestinationAttribute.objects.filter(
         workspace_id=workspace_id, attribute_type=xero_attribute_type
@@ -491,7 +492,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
 
     if fyle_custom_field_payload:
         fyle_connection.connection.ExpensesCustomFields.post(fyle_custom_field_payload)
-        fyle_connection.sync_expense_custom_fields(active_only=True)
+        platform.expense_custom_fields.sync()
 
     return xero_attributes
 

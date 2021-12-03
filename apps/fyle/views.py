@@ -293,16 +293,8 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         try:
             fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
-<<<<<<< HEAD
             platform = PlatformConnector(fyle_credentials)
             platform.import_fyle_dimensions()
-=======
-            fyle_connector = FyleConnector(fyle_credentials.refresh_token, kwargs['workspace_id'])
-            fyle_connector.sync_dimensions()
->>>>>>> master
-
-            platform = PlatformConnector(fyle_credentials)
-            platform.corporate_cards.sync()
 
             workspace = Workspace.objects.get(id=kwargs['workspace_id'])
             workspace.source_synced_at = datetime.now()
