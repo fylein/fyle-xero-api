@@ -83,7 +83,7 @@ class WorkspaceView(viewsets.ViewSet):
             workspace.user.add(User.objects.get(user_id=request.user))
 
             fyle_connector = FyleConnector(auth_tokens.refresh_token)
-            cluster_domain = fyle_connector.get_cluster_domain()['cluster_domain']
+            cluster_domain = fyle_connector.get_cluster_domain(auth_tokens.refresh_token)
 
             FyleCredential.objects.update_or_create(
                 refresh_token=auth_tokens.refresh_token,
@@ -156,7 +156,7 @@ class ConnectFyleView(viewsets.ViewSet):
             workspace.save()
 
             fyle_connector = FyleConnector(refresh_token)
-            cluster_domain = fyle_connector.get_cluster_domain()['cluster_domain']
+            cluster_domain = fyle_connector.get_cluster_domain(refresh_token)
 
             fyle_credentials, _ = FyleCredential.objects.update_or_create(
                 workspace_id=kwargs['workspace_id'],
