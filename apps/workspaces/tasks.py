@@ -4,7 +4,7 @@ from django_q.models import Schedule
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
-from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation
+from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation, create_chain_and_export
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings
 
@@ -69,18 +69,14 @@ def run_sync_schedule(workspace_id):
         )
 
     if task_log.status == 'COMPLETE':
-
+        chaining_attributes = []
         if general_settings.reimbursable_expenses_object:
-
             expense_group_ids = ExpenseGroup.objects.filter(fund_source='PERSONAL').values_list('id', flat=True)
-
-            schedule_bills_creation(
-                workspace_id=workspace_id, expense_group_ids=expense_group_ids
-            )
+            chaining_attributes.extend(schedule_bills_creation(workspace_id, expense_group_ids))
 
         if general_settings.corporate_credit_card_expenses_object:
             expense_group_ids = ExpenseGroup.objects.filter(fund_source='CCC').values_list('id', flat=True)
+            chaining_attributes.extend(schedule_bank_transaction_creation(workspace_id, expense_group_ids))
 
-            schedule_bank_transaction_creation(
-                workspace_id=workspace_id, expense_group_ids=expense_group_ids
-            )
+        if chaining_attributes:
+            create_chain_and_export(chaining_attributes, workspace_id)

@@ -10,11 +10,10 @@ django-cors-headers==3.2.0
 django-picklefield==2.0
 django-request-logging==0.7.1
 fyle_accounting_mappings==1.6.0
-fyle-integrations-platform-connector==0.3.1
+fyle-integrations-platform-connector==1.0.0
 django-rest-framework==0.1.0
 djangorestframework==3.11.0
 future==0.18.2
-fyle==v0.16.0
 fyle-rest-auth==0.8.1
 fylesdk==2.3.1
 gunicorn==20.0.4
@@ -23,7 +22,7 @@ pylint==2.7.4
 psycopg2-binary==2.8.4
 python-dateutil==2.8.1
 pytz==2019.3
-xerosdk==0.8.3
+xerosdk==0.11.1
 six==1.13.0
 sqlparse==0.3.0
 urllib3==1.25.7

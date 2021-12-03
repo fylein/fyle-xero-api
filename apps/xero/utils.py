@@ -39,6 +39,18 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
+    def __format_updated_at(self, updated_at):
+        return datetime.strftime(updated_at, '%Y-%m-%dT%H:%M:%S')
+
+    def __get_last_synced_at(self, attribute_type: str):
+        latest_synced_record = DestinationAttribute.objects.filter(
+            workspace_id=self.workspace_id,
+            attribute_type=attribute_type
+        ).order_by('-updated_at').first()
+        updated_at = self.__format_updated_at(latest_synced_record.updated_at) if latest_synced_record else None
+
+        return updated_at
+
     def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
         """
         Call xero api to get or create contact
@@ -102,7 +114,9 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        accounts = self.connection.accounts.get_all()['Accounts']
+        updated_at = self.__get_last_synced_at('ACCOUNT')
+
+        accounts = self.connection.accounts.get_all(modified_after=updated_at)['Accounts']
 
         account_attributes = {
             'bank_account': [],
@@ -114,6 +128,7 @@ class XeroConnector:
             detail = {
                 'account_name': account['Name'],
                 'account_type': account['Type'],
+                'enable_payments_to_account': account['EnablePaymentsToAccount']
             }
 
             if account['Type'] == 'BANK':
@@ -151,24 +166,27 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        contacts = self.connection.contacts.get_all()['Contacts']
+        updated_at = self.__get_last_synced_at('CONTACT')
 
-        contact_attributes = []
+        contacts_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)
 
-        for contact in contacts:
-            detail = {
-                'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
-            }
-            contact_attributes.append({
-                'attribute_type': 'CONTACT',
-                'display_name': 'Contact',
-                'value': contact['Name'],
-                'destination_id': contact['ContactID'],
-                'detail': detail
-            })
-            
-        DestinationAttribute.bulk_create_or_update_destination_attributes(
-            contact_attributes, 'CONTACT', self.workspace_id, True)
+        for contacts in contacts_generator:
+            contact_attributes = []
+
+            for contact in contacts['Contacts']:
+                detail = {
+                    'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
+                }
+                contact_attributes.append({
+                    'attribute_type': 'CONTACT',
+                    'display_name': 'Contact',
+                    'value': contact['Name'],
+                    'destination_id': contact['ContactID'],
+                    'detail': detail
+                })
+
+            DestinationAttribute.bulk_create_or_update_destination_attributes(
+                contact_attributes, 'CONTACT', self.workspace_id, True)
 
         return []
 
@@ -206,7 +224,9 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        items = self.connection.items.get_all()['Items']
+        updated_at = self.__get_last_synced_at('ITEM')
+
+        items = self.connection.items.get_all(modified_after=updated_at)['Items']
 
         item_attributes = []
 

@@ -16,6 +16,7 @@ class Workspace(models.Model):
     name = models.CharField(max_length=255, help_text='Name of the workspace')
     user = models.ManyToManyField(User, help_text='Reference to users table')
     fyle_org_id = models.CharField(max_length=255, help_text='org id', unique=True)
+    xero_short_code = models.CharField(max_length=30, help_text='Xero short code', null=True, blank=True)
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
     source_synced_at = models.DateTimeField(help_text='Datetime when source dimensions were pulled', null=True)
     destination_synced_at = models.DateTimeField(help_text='Datetime when destination dimensions were pulled', null=True)
@@ -70,6 +71,7 @@ class WorkspaceGeneralSettings(models.Model):
     import_categories = models.BooleanField(default=False, help_text='Auto import Categories to Fyle')
     auto_map_employees = models.CharField(max_length=50, help_text='Auto Map Employees from Xero to Fyle', null=True)
     auto_create_destination_entity = models.BooleanField(default=False, help_text='Auto create contact')
+    map_fyle_cards_xero_bank_account = models.BooleanField(default=False, help_text='Map Fyle Cards to Xero Bank Account')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 

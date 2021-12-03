@@ -76,6 +76,7 @@ class Expense(models.Model):
     state = models.CharField(max_length=255, help_text='Expense state')
     vendor = models.CharField(max_length=255, null=True, blank=True, help_text='Vendor')
     cost_center = models.CharField(max_length=255, null=True, blank=True, help_text='Fyle Expense Cost Center')
+    corporate_card_id = models.CharField(max_length=255, null=True, blank=True, help_text='Corporate Card ID')
     purpose = models.TextField(null=True, blank=True, help_text='Purpose')
     report_id = models.CharField(max_length=255, help_text='Report ID')
     file_ids = ArrayField(base_field=models.CharField(max_length=255), null=True, help_text='File IDs')
@@ -103,42 +104,41 @@ class Expense(models.Model):
 
         for expense in expenses:
             cutoff_date = _format_date('2021-08-01T00:00:00.000Z')
-            expense_created_at = expense['expense_created_at']
+            expense_created_at = _format_date(expense['expense_created_at'])
 
-            # TODO: implement cut off date, commented this for better testing
-            # if expense_created_at > cutoff_date:
-
-            expense_object, _ = Expense.objects.update_or_create(
-                expense_id=expense['id'],
-                defaults={
-                    'employee_email': expense['employee_email'],
-                    'category': expense['category'],
-                    'sub_category': expense['sub_category'],
-                    'project': expense['project'],
-                    'expense_number': expense['expense_number'],
-                    'org_id': expense['org_id'],
-                    'claim_number': expense['claim_number'],
-                    'amount': expense['amount'],
-                    'currency': expense['currency'],
-                    'foreign_amount': expense['foreign_amount'],
-                    'foreign_currency': expense['foreign_currency'],
-                    'settlement_id': expense['settlement_id'],
-                    'reimbursable': expense['reimbursable'],
-                    'state': expense['state'],
-                    'vendor': expense['vendor'][:250] if expense['vendor'] else None,
-                    'cost_center': expense['cost_center'],
-                    'purpose': expense['purpose'],
-                    'report_id': expense['report_id'],
-                    'file_ids': expense['file_ids'],
-                    'spent_at': expense['spent_at'],
-                    'approved_at': expense['approved_at'],
-                    'expense_created_at': expense['expense_created_at'],
-                    'expense_updated_at': expense['expense_updated_at'],
-                    'fund_source': SOURCE_ACCOUNT_MAP[expense['source_account_type']],
-                    'verified_at': expense['verified_at'],
-                    'custom_properties': expense['custom_properties']
-                }
-            )
+            if expense_created_at > cutoff_date:
+                expense_object, _ = Expense.objects.update_or_create(
+                    expense_id=expense['id'],
+                    defaults={
+                        'employee_email': expense['employee_email'],
+                        'category': expense['category'],
+                        'sub_category': expense['sub_category'],
+                        'project': expense['project'],
+                        'expense_number': expense['expense_number'],
+                        'org_id': expense['org_id'],
+                        'claim_number': expense['claim_number'],
+                        'amount': expense['amount'],
+                        'currency': expense['currency'],
+                        'foreign_amount': expense['foreign_amount'],
+                        'foreign_currency': expense['foreign_currency'],
+                        'settlement_id': expense['settlement_id'],
+                        'reimbursable': expense['reimbursable'],
+                        'state': expense['state'],
+                        'vendor': expense['vendor'][:250] if expense['vendor'] else None,
+                        'cost_center': expense['cost_center'],
+                        'corporate_card_id': expense['corporate_card_id'],
+                        'purpose': expense['purpose'],
+                        'report_id': expense['report_id'],
+                        'file_ids': expense['file_ids'],
+                        'spent_at': expense['spent_at'],
+                        'approved_at': expense['approved_at'],
+                        'expense_created_at': expense['expense_created_at'],
+                        'expense_updated_at': expense['expense_updated_at'],
+                        'fund_source': SOURCE_ACCOUNT_MAP[expense['source_account_type']],
+                        'verified_at': expense['verified_at'],
+                        'custom_properties': expense['custom_properties']
+                    }
+                )
 
             if not ExpenseGroup.objects.filter(expenses__id=expense_object.id).first():
                 expense_objects.append(expense_object)
