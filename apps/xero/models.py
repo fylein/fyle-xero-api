@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.contrib.postgres.fields import JSONField
+from django.db.models import JSONField
 from django.db import models
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, MappingSetting, DestinationAttribute
 from typing import List
