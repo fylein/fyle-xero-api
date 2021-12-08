@@ -18,9 +18,7 @@ class UserProfileView(generics.RetrieveAPIView):
         """
         Get User Details
         """
-        print('request.user', request.user)
         fyle_credentials = FyleCredential.objects.filter(workspace__user=request.user).first()
-        print('fyle_credentials',fyle_credentials)
 
         if not fyle_credentials:
             refresh_token = AuthToken.objects.get(user__user_id=request.user).refresh_token
@@ -51,8 +49,13 @@ class FyleOrgsView(generics.ListCreateAPIView):
         """
         Get cluster domain from Fyle
         """
-        fyle_credentials = AuthToken.objects.get(user__user_id=request.user)
-        fyle_orgs = get_fyle_orgs(fyle_credentials.refresh_token)
+        user_credentials = AuthToken.objects.get(user__user_id=request.user)
+
+        fyle_credentials = FyleCredential.objects.filter(workspace__user=request.user).first()
+        cluster_domain = fyle_credentials.cluster_domain if fyle_credentials \
+            else get_cluster_domain(user_credentials.refresh_token)
+
+        fyle_orgs = get_fyle_orgs(user_credentials.refresh_token, cluster_domain)
 
         return Response(
             data=fyle_orgs,

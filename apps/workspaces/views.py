@@ -17,6 +17,7 @@ from fyle_rest_auth.models import AuthToken
 from apps.workspaces.tasks import schedule_sync
 from fyle_xero_api.utils import assert_valid
 
+from apps.fyle.helpers import get_cluster_domain
 from apps.fyle.models import ExpenseGroupSettings
 from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
@@ -83,7 +84,7 @@ class WorkspaceView(viewsets.ViewSet):
             workspace.user.add(User.objects.get(user_id=request.user))
 
             fyle_connector = FyleConnector(auth_tokens.refresh_token)
-            cluster_domain = fyle_connector.get_cluster_domain(auth_tokens.refresh_token)
+            cluster_domain = get_cluster_domain(auth_tokens.refresh_token)
 
             FyleCredential.objects.update_or_create(
                 refresh_token=auth_tokens.refresh_token,
@@ -156,7 +157,7 @@ class ConnectFyleView(viewsets.ViewSet):
             workspace.save()
 
             fyle_connector = FyleConnector(refresh_token)
-            cluster_domain = fyle_connector.get_cluster_domain(refresh_token)
+            cluster_domain = get_cluster_domain(refresh_token)
 
             fyle_credentials, _ = FyleCredential.objects.update_or_create(
                 workspace_id=kwargs['workspace_id'],
