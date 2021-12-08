@@ -50,16 +50,6 @@ class FyleConnector:
 
         return []
 
-    def sync_reimbursements(self):
-        """
-        Get reimbursements from fyle
-        """
-        reimbursements = self.connection.Reimbursements.get_all()
-
-        Reimbursement.create_or_update_reimbursement_objects(
-            reimbursements, self.workspace_id
-        )
-
     def post_reimbursement(self, reimbursement_ids: list):
         """
         Process Reimbursements in bulk.
