@@ -64,6 +64,7 @@ class XeroConnector:
 
         contact_name = contact_name.replace('#', '%23')  # Replace '#' with %23
         contact_name = contact_name.replace('"', '')  # remove double quotes from merchant name
+        contact_name = contact_name.replace('&', '')  # remove & merchant name
 
         contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
 
