@@ -212,7 +212,8 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
     except InvalidGrant as exception:
         logger.exception(exception.message)
         task_log.status = 'FAILED'
-        task_log.detail = {
+        task_log.detail = None
+        task_log.xero_errors = {
             'error': exception.message
         }
 
@@ -244,13 +245,15 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         logger.exception(exception.response)
         detail = json.loads(exception.response)
         task_log.status = 'FAILED'
-        task_log.detail = detail
+        task_log.detail = None
+        task_log.xero_errors = detail
 
         task_log.save()
 
     except Exception:
         error = traceback.format_exc()
-        task_log.detail = {
+        task_log.detail = None
+        task_log.xero_errors = {
             'error': error
         }
         task_log.status = 'FATAL'
@@ -403,7 +406,8 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
     except InvalidGrant as exception:
         logger.exception(exception.message)
         task_log.status = 'FAILED'
-        task_log.detail = {
+        task_log.detail = None
+        task_log.xero_errors = {
             'error': exception.message
         }
 
@@ -435,13 +439,14 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         logger.exception(exception.response)
         detail = json.loads(exception.response)
         task_log.status = 'FAILED'
-        task_log.detail = detail
+        task_log.detail = None
+        task_log.xero_errors = detail
 
         task_log.save()
 
     except Exception:
         error = traceback.format_exc()
-        task_log.detail = {
+        task_log.xero_errors = {
             'error': error
         }
         task_log.status = 'FATAL'
