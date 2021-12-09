@@ -446,6 +446,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
 
     except Exception:
         error = traceback.format_exc()
+        task_log.detail = None
         task_log.xero_errors = {
             'error': error
         }
