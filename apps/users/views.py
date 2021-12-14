@@ -7,8 +7,9 @@ from fyle_integrations_platform_connector import PlatformConnector
 
 from apps.workspaces.models import FyleCredential
 
-from apps.fyle.utils import FyleConnector
-from apps.fyle.helpers import get_cluster_domain, get_fyle_orgs
+from apps.fyle.helpers import get_fyle_orgs
+
+from apps.users.helpers import get_cluster_domain_and_refresh_token
 
 class UserProfileView(generics.RetrieveAPIView):
 
@@ -18,16 +19,13 @@ class UserProfileView(generics.RetrieveAPIView):
         """
         Get User Details
         """
+        cluster_domain, refresh_token = get_cluster_domain_and_refresh_token(request.user)
         fyle_credentials = FyleCredential.objects.filter(workspace__user=request.user).first()
 
-        if not fyle_credentials:
-            refresh_token = AuthToken.objects.get(user__user_id=request.user).refresh_token
-            cluster_domain = get_cluster_domain(refresh_token)
-
-            fyle_credentials = FyleCredential(
-                cluster_domain=cluster_domain,
-                refresh_token=refresh_token
-            )
+        fyle_credentials = FyleCredential(
+            cluster_domain=cluster_domain,
+            refresh_token=refresh_token
+        )
 
         platform = PlatformConnector(fyle_credentials)
         employee_profile = platform.connection.v1beta.spender.my_profile.get()
@@ -49,13 +47,9 @@ class FyleOrgsView(generics.ListCreateAPIView):
         """
         Get cluster domain from Fyle
         """
-        user_credentials = AuthToken.objects.get(user__user_id=request.user)
+        cluster_domain, refresh_token = get_cluster_domain_and_refresh_token(request.user)
 
-        fyle_credentials = FyleCredential.objects.filter(workspace__user=request.user).first()
-        cluster_domain = fyle_credentials.cluster_domain if fyle_credentials \
-            else get_cluster_domain(user_credentials.refresh_token)
-
-        fyle_orgs = get_fyle_orgs(user_credentials.refresh_token, cluster_domain)
+        fyle_orgs = get_fyle_orgs(refresh_token, cluster_domain)
 
         return Response(
             data=fyle_orgs,
