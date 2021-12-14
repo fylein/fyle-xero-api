@@ -6,11 +6,15 @@ from typing import List, Dict
 
 from django_q.models import Schedule
 
+from fyle_integrations_platform_connector import PlatformConnector
+
+from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
+
+from fylesdk import WrongParamsError
+
 from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
-from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
-from fylesdk import WrongParamsError
 from .constants import FYLE_EXPENSE_SYSTEM_FIELDS
 
 logger = logging.getLogger(__name__)
@@ -65,11 +69,13 @@ def upload_categories_to_fyle(workspace_id):
             workspace_id=workspace_id
         )
 
+        platform = PlatformConnector(fyle_credentials)
+
         xero_connection = XeroConnector(
             credentials_object=xero_credentials,
             workspace_id=workspace_id
         )
-        fyle_connection.sync_categories(False)
+        platform.categories.sync()
         xero_connection.sync_accounts()
 
         xero_attributes = DestinationAttribute.objects.filter(attribute_type='ACCOUNT', workspace_id=workspace_id)
@@ -80,7 +86,7 @@ def upload_categories_to_fyle(workspace_id):
 
         if fyle_payload:
             fyle_connection.connection.Categories.post(fyle_payload)
-            fyle_connection.sync_categories(False)
+            platform.categories.sync()
 
         return xero_attributes
         
@@ -148,12 +154,12 @@ def async_auto_map_employees(workspace_id: int):
         employee_mapping_preference = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id).auto_map_employees
 
         fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-        fyle_connection = FyleConnector(refresh_token=fyle_credentials.refresh_token, workspace_id=workspace_id)
+        platform = PlatformConnector(fyle_credentials)
 
         xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
         xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
-        fyle_connection.sync_employees()
+        platform.employees.sync()
         xero_connection.sync_contacts()
 
         Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)
@@ -187,17 +193,14 @@ def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: 
 
 
 def sync_xero_attributes(xero_attribute_type: str, workspace_id: int):
-
     xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-
     xero_connection = XeroConnector(
         credentials_object=xero_credentials,
         workspace_id=workspace_id
     )
 
-    if xero_attribute_type == 'ITEMS':
+    if xero_attribute_type == 'ITEM':
         xero_connection.sync_items()
-
     else:
         xero_connection.sync_tracking_categories()
 
@@ -226,13 +229,14 @@ def create_fyle_cost_centers_payload(xero_attributes: List[DestinationAttribute]
     return fyle_cost_centers_payload
 
 
-def post_cost_centers_in_batches(fyle_connection:FyleConnector, workspace_id: int, xero_attribute_type: str):
+def post_cost_centers_in_batches(fyle_connection:FyleConnector, platform: PlatformConnector,
+    workspace_id: int, xero_attribute_type: str):
     existing_cost_center_names = ExpenseAttribute.objects.filter(
         attribute_type='COST_CENTER', workspace_id=workspace_id).values_list('value', flat=True)
 
     xero_attribute_count = DestinationAttribute.objects.filter(
         attribute_type=xero_attribute_type, workspace_id=workspace_id).count()
-    
+
     page_size = 200
 
     for offset in range(0,xero_attribute_count,page_size):
@@ -248,7 +252,7 @@ def post_cost_centers_in_batches(fyle_connection:FyleConnector, workspace_id: in
 
         if fyle_payload:
             fyle_connection.connection.CostCenters.post(fyle_payload)
-            fyle_connection.sync_cost_centers()
+            platform.cost_centers.sync()
         
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'COST_CENTER', xero_attribute_type, workspace_id)
 
@@ -259,21 +263,21 @@ def auto_create_cost_center_mappings(workspace_id: int):
     """
     try:
         fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-
         fyle_connection = FyleConnector(
             refresh_token= fyle_credentials.refresh_token,
             workspace_id= workspace_id
         )
+        platform = PlatformConnector(fyle_credentials)
 
         mapping_setting = MappingSetting.objects.get(
             source_field='COST_CENTER', import_to_fyle=True, workspace_id=workspace_id
         )
 
-        fyle_connection.sync_cost_centers()
+        platform.cost_centers.sync()
 
         sync_xero_attributes(mapping_setting.destination_field, workspace_id=workspace_id)
 
-        post_cost_centers_in_batches(fyle_connection, workspace_id, mapping_setting.destination_field)
+        post_cost_centers_in_batches(fyle_connection, platform, workspace_id, mapping_setting.destination_field)
     
     except WrongParamsError as exception:
         logger.error(
@@ -336,7 +340,8 @@ def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_
     return payload
 
 
-def post_projects_in_batches(fyle_connection: FyleConnector, workspace_id:int,  destination_field: str):
+def post_projects_in_batches(fyle_connection: FyleConnector, platform: PlatformConnector,
+    workspace_id:int,  destination_field: str):
     existing_project_names = ExpenseAttribute.objects.filter(
         attribute_type='PROJECT', workspace_id=workspace_id).values_list('value', flat=True)
     xero_attributes_count = DestinationAttribute.objects.filter(
@@ -355,7 +360,7 @@ def post_projects_in_batches(fyle_connection: FyleConnector, workspace_id:int,  
         
         if fyle_payload:
             fyle_connection.connection.Projects.post(fyle_payload)
-            fyle_connection.sync_projects()
+            platform.projects.sync()
 
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'PROJECT', destination_field, workspace_id)
 
@@ -367,13 +372,13 @@ def auto_create_project_mappings(workspace_id: int):
     """
     try:
         fyle_credentials:FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-
         fyle_connection = FyleConnector(
             refresh_token=fyle_credentials.refresh_token,
             workspace_id=workspace_id
         )
+        platform = PlatformConnector(fyle_credentials)
 
-        fyle_connection.sync_projects()
+        platform.projects.sync()
 
         mapping_setting= MappingSetting.objects.get(
             source_field='PROJECT', workspace_id=workspace_id
@@ -381,7 +386,7 @@ def auto_create_project_mappings(workspace_id: int):
 
         sync_xero_attributes(mapping_setting.destination_field, workspace_id)
 
-        post_projects_in_batches(fyle_connection, workspace_id, mapping_setting.destination_field)
+        post_projects_in_batches(fyle_connection, platform, workspace_id, mapping_setting.destination_field)
 
     except WrongParamsError as exception:
         logger.error(
@@ -463,13 +468,12 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     """
     Upload attributes to Fyle
     """
-
     fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-
     fyle_connection = FyleConnector(
         refresh_token=fyle_credentials.refresh_token,
         workspace_id=workspace_id
     )
+    platform = PlatformConnector(fyle_credentials)
 
     xero_attributes: List[DestinationAttribute] = DestinationAttribute.objects.filter(
         workspace_id=workspace_id, attribute_type=xero_attribute_type
@@ -485,7 +489,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
 
     if fyle_custom_field_payload:
         fyle_connection.connection.ExpensesCustomFields.post(fyle_custom_field_payload)
-        fyle_connection.sync_expense_custom_fields(active_only=True)
+        platform.expense_custom_fields.sync()
 
     return xero_attributes
 

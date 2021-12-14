@@ -9,8 +9,9 @@ from django_q.tasks import async_task
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 from apps.tasks.models import TaskLog
 
-from .models import Expense, ExpenseGroup, ExpenseGroupSettings
 from fyle_integrations_platform_connector import PlatformConnector
+
+from .models import Expense, ExpenseGroup, ExpenseGroupSettings
 
 
 logger = logging.getLogger(__name__)

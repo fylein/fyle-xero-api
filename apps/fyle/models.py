@@ -143,6 +143,7 @@ class Expense(models.Model):
 
                 if not ExpenseGroup.objects.filter(expenses__id=expense_object.id).first():
                     expense_objects.append(expense_object)
+
             else:
                 eliminated_expenses.append(expense['id'])
 
