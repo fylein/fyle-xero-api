@@ -65,8 +65,7 @@ def upload_categories_to_fyle(workspace_id):
         xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
 
         fyle_connection = FyleConnector(
-            refresh_token=fyle_credentials.refresh_token,
-            workspace_id=workspace_id
+            refresh_token=fyle_credentials.refresh_token
         )
 
         platform = PlatformConnector(fyle_credentials)
@@ -193,17 +192,14 @@ def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: 
 
 
 def sync_xero_attributes(xero_attribute_type: str, workspace_id: int):
-
     xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-
     xero_connection = XeroConnector(
         credentials_object=xero_credentials,
         workspace_id=workspace_id
     )
 
-    if xero_attribute_type == 'ITEMS':
+    if xero_attribute_type == 'ITEM':
         xero_connection.sync_items()
-
     else:
         xero_connection.sync_tracking_categories()
 
@@ -267,8 +263,7 @@ def auto_create_cost_center_mappings(workspace_id: int):
     try:
         fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
         fyle_connection = FyleConnector(
-            refresh_token= fyle_credentials.refresh_token,
-            workspace_id= workspace_id
+            refresh_token= fyle_credentials.refresh_token
         )
         platform = PlatformConnector(fyle_credentials)
 
@@ -376,8 +371,7 @@ def auto_create_project_mappings(workspace_id: int):
     try:
         fyle_credentials:FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
         fyle_connection = FyleConnector(
-            refresh_token=fyle_credentials.refresh_token,
-            workspace_id=workspace_id
+            refresh_token=fyle_credentials.refresh_token
         )
         platform = PlatformConnector(fyle_credentials)
 
@@ -473,8 +467,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     """
     fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
     fyle_connection = FyleConnector(
-        refresh_token=fyle_credentials.refresh_token,
-        workspace_id=workspace_id
+        refresh_token=fyle_credentials.refresh_token
     )
     platform = PlatformConnector(fyle_credentials)
 

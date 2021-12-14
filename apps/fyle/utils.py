@@ -1,29 +1,19 @@
 from typing import List
-import logging
-import json
 
 from django.conf import settings
 
-from fylesdk import FyleSDK, UnauthorizedClientError, NotFoundClientError, InternalServerError, WrongParamsError
+from fylesdk import FyleSDK
 
-from fyle_accounting_mappings.models import ExpenseAttribute
-
-import requests
-
-from apps.fyle.models import Reimbursement
-
-logger = logging.getLogger(__name__)
 
 class FyleConnector:
     """
     Fyle utility functions
     """
 
-    def __init__(self, refresh_token, workspace_id=None):
+    def __init__(self, refresh_token):
         client_id = settings.FYLE_CLIENT_ID
         client_secret = settings.FYLE_CLIENT_SECRET
         base_url = settings.FYLE_BASE_URL
-        self.workspace_id = workspace_id
 
         self.connection = FyleSDK(
             base_url=base_url,
