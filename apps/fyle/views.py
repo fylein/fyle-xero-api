@@ -16,7 +16,6 @@ from apps.workspaces.serializers import WorkspaceSerializer
 
 from fyle_integrations_platform_connector import PlatformConnector
 from .tasks import create_expense_groups, schedule_expense_group_creation
-from .utils import FyleConnector
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
 from .serializers import ExpenseGroupSerializer, ExpenseSerializer, ExpenseFieldSerializer, \
     ExpenseGroupSettingsSerializer

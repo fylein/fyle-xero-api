@@ -61,7 +61,7 @@ def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str,
     try:
         fyle_credentials = FyleCredential.objects.get(workspace_id=expense_group.workspace_id)
         expense_ids = expense_group.expenses.values_list('expense_id', flat=True)
-        fyle_connector = FyleConnector(fyle_credentials.refresh_token, expense_group.workspace_id)
+        fyle_connector = FyleConnector(fyle_credentials.refresh_token)
         attachments = fyle_connector.get_attachments(expense_ids)
         xero_connection.post_attachments(ref_id, ref_type, attachments)
     except Exception:
@@ -572,9 +572,8 @@ def check_expenses_reimbursement_status(expenses):
 def create_payment(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
-    fyle_connector = FyleConnector(fyle_credentials.refresh_token, workspace_id)
-
-    fyle_connector.sync_reimbursements()
+    platform = PlatformConnector(fyle_credentials)
+    platform.reimbursements.sync()
 
     bills: List[Bill] = Bill.objects.filter(
         payment_synced=False, expense_group__workspace_id=workspace_id,
@@ -765,10 +764,10 @@ def schedule_xero_objects_status_sync(sync_xero_to_fyle_payments, workspace_id):
 
 def process_reimbursements(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_connector = FyleConnector(fyle_credentials.refresh_token)
 
-    fyle_connector = FyleConnector(fyle_credentials.refresh_token, workspace_id)
-
-    fyle_connector.sync_reimbursements()
+    platform = PlatformConnector(fyle_credentials)
+    platform.reimbursements.sync()
 
     reimbursements = Reimbursement.objects.filter(state='PENDING', workspace_id=workspace_id).all()
 
@@ -788,7 +787,7 @@ def process_reimbursements(workspace_id):
 
     if reimbursement_ids:
         fyle_connector.post_reimbursement(reimbursement_ids)
-        fyle_connector.sync_reimbursements()
+        platform.reimbursements.sync()
 
 
 def schedule_reimbursements_sync(sync_xero_to_fyle_payments, workspace_id):
