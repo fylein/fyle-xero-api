@@ -72,8 +72,8 @@ def get_access_token(refresh_token: str) -> str:
         'client_id': settings.FYLE_CLIENT_ID,
         'client_secret': settings.FYLE_CLIENT_SECRET
     }
-    temp = post_request(settings.FYLE_TOKEN_URI, body=api_data)
-    return temp['access_token']
+
+    return post_request(settings.FYLE_TOKEN_URI, body=api_data)['access_token']
 
 
 def get_fyle_orgs(refresh_token: str, cluster_domain: str):
