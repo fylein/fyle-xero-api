@@ -29,7 +29,7 @@ ALLOWED_FIELDS = [
 
 
 ALLOWED_FORM_INPUT = {
-    'group_expenses_by': ['settlement_id', 'claim_number', 'report_id', 'category', 'vendor'],
+    'group_expenses_by': ['settlement_id', 'claim_number', 'report_id', 'category', 'vendor', 'expense_id'],
     'export_date_type': ['current_date', 'approved_at', 'spent_at', 'verified_at', 'last_spent_at']
 }
 
@@ -178,7 +178,8 @@ class ExpenseGroupSettings(models.Model):
     expense_state = models.CharField(
         max_length=100, default=get_default_expense_state,
         help_text='state at which the expenses are fetched ( PAYMENT_PENDING / PAYMENT_PROCESSING / PAID)')
-    export_date_type = models.CharField(max_length=100, default='current_date', help_text='Export Date')
+    reimbursable_export_date_type = models.CharField(max_length=100, default='current_date', help_text='Export Date')
+    ccc_export_date_type = models.CharField(max_length=100, default='current_date', help_text='CCC Export Date')
     workspace = models.OneToOneField(
         Workspace, on_delete=models.PROTECT, help_text='To which workspace this expense group setting belongs to'
     )
@@ -223,8 +224,10 @@ class ExpenseGroupSettings(models.Model):
         reimbursable_grouped_by.extend(current_reimbursable_settings)
         corporate_credit_card_expenses_grouped_by.extend(current_ccc_settings)
 
-        reimbursable_grouped_by.extend(expense_group_settings['expenses_grouped_by'])
-        corporate_credit_card_expenses_grouped_by.extend(expense_group_settings['expenses_grouped_by'])
+        reimbursable_grouped_by.extend(expense_group_settings['reimbursable_expense_group_fields'])
+        corporate_credit_card_expenses_grouped_by.extend(
+            expense_group_settings['corporate_credit_card_expense_group_fields']
+        )
 
         reimbursable_grouped_by = list(set(reimbursable_grouped_by))
         corporate_credit_card_expenses_grouped_by = list(set(corporate_credit_card_expenses_grouped_by))
@@ -237,9 +240,11 @@ class ExpenseGroupSettings(models.Model):
             if field in corporate_credit_card_expenses_grouped_by:
                 corporate_credit_card_expenses_grouped_by.remove(field)
 
-        if expense_group_settings['export_date_type'] != 'current_date':
-            reimbursable_grouped_by.append(expense_group_settings['export_date_type'])
-            corporate_credit_card_expenses_grouped_by.append(expense_group_settings['export_date_type'])
+        if expense_group_settings['reimbursable_export_date_type'] != 'current_date':
+            reimbursable_grouped_by.append(expense_group_settings['reimbursable_export_date_type'])
+
+        if expense_group_settings['ccc_export_date_type'] != 'current_date':
+            corporate_credit_card_expenses_grouped_by.append(expense_group_settings['ccc_export_date_type'])
 
         if 'claim_number' in reimbursable_grouped_by and corporate_credit_card_expenses_grouped_by:
             reimbursable_grouped_by.append('report_id')
@@ -251,7 +256,8 @@ class ExpenseGroupSettings(models.Model):
                 'reimbursable_expense_group_fields': reimbursable_grouped_by,
                 'corporate_credit_card_expense_group_fields': corporate_credit_card_expenses_grouped_by,
                 'expense_state': expense_group_settings['expense_state'],
-                'export_date_type': expense_group_settings['export_date_type']
+                'reimbursable_export_date_type': expense_group_settings['reimbursable_export_date_type'],
+                'ccc_export_date_type': expense_group_settings['ccc_export_date_type']
             }
         )
 
@@ -315,7 +321,12 @@ class ExpenseGroup(models.Model):
         expense_group_objects = []
 
         for expense_group in expense_groups:
-            if expense_group_settings.export_date_type == 'last_spent_at':
+            if expense_group_settings.reimbursable_export_date_type == 'last_spent_at':
+                expense_group['last_spent_at'] = Expense.objects.filter(
+                    id__in=expense_group['expense_ids']
+                ).order_by('-spent_at').first().spent_at
+
+            if expense_group_settings.ccc_export_date_type == 'last_spent_at':
                 expense_group['last_spent_at'] = Expense.objects.filter(
                                                  id__in=expense_group['expense_ids']
                                                  ).order_by('-spent_at').first().spent_at
