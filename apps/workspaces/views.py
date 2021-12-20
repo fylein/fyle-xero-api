@@ -437,3 +437,18 @@ class GeneralSettingsView(viewsets.ViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    def patch(self, request, **kwargs):
+        """
+        PATCH workspace general settings
+        """
+        workspace_general_settings_object = WorkspaceGeneralSettings.objects.get(workspace_id=kwargs['workspace_id'])
+        serializer = WorkSpaceGeneralSettingsSerializer(
+            workspace_general_settings_object, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                data=serializer.data,
+                status=status.HTTP_200_OK
+            )

@@ -14,7 +14,7 @@ urlpatterns = [
     path('<int:workspace_id>/credentials/xero/', ConnectXeroView.as_view({'get': 'get'})),
     path('<int:workspace_id>/connection/xero/revoke/', RevokeXeroConnectionView.as_view({'post': 'post'})),
     path('<int:workspace_id>/credentials/xero/delete/', ConnectXeroView.as_view({'post': 'delete'})),
-    path('<int:workspace_id>/settings/general/', GeneralSettingsView.as_view({'post': 'post', 'get': 'get'})),
+    path('<int:workspace_id>/settings/general/', GeneralSettingsView.as_view({'post': 'post', 'get': 'get', 'patch': 'patch'})),
     path('<int:workspace_id>/fyle/', include('apps.fyle.urls')),
     path('<int:workspace_id>/tasks/', include('apps.tasks.urls')),
     path('<int:workspace_id>/xero/', include('apps.xero.urls')),
