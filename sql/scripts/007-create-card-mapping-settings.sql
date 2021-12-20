@@ -9,7 +9,7 @@ select
     'BANK_ACCOUNT' as destination_field,
     now() as created_at,
     now() as updated_at,
-    wgs.id as workspace_id,
+    wgs.workspace_id as workspace_id,
     false as import_to_fyle,
     false as is_custom
 from workspace_general_settings wgs
