@@ -9,7 +9,7 @@ from apps.fyle.models import ExpenseGroup, Expense
 from apps.mappings.models import GeneralMapping
 
 from apps.fyle.utils import FyleConnector
-from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
+from apps.workspaces.models import FyleCredential, Workspace
 
 
 def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
@@ -254,17 +254,15 @@ class BankTransaction(models.Model):
             ).destination.destination_id
 
         bank_account_id = None
-        workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
 
-        if workspace_general_settings.map_fyle_cards_xero_bank_account:
-            bank_account = Mapping.objects.filter(
-                source_type='CORPORATE_CARD',
-                destination_type='BANK_ACCOUNT',
-                source__source_id=expense.corporate_card_id,
-                workspace_id=expense_group.workspace_id
-            ).first()
-            if bank_account:
-                bank_account_id = bank_account.destination.destination_id
+        bank_account = Mapping.objects.filter(
+            source_type='CORPORATE_CARD',
+            destination_type='BANK_ACCOUNT',
+            source__source_id=expense.corporate_card_id,
+            workspace_id=expense_group.workspace_id
+        ).first()
+        if bank_account:
+            bank_account_id = bank_account.destination.destination_id
 
         if not bank_account_id:
             bank_account_id = GeneralMapping.objects.get(workspace_id=expense_group.workspace_id).bank_account_id
