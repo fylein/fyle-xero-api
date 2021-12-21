@@ -29,6 +29,8 @@ def post_request(url, body, access_token: str = None, origin_address: str = None
         data=body
     )
 
+    print('response', response.status_code, response.text)
+
     if response.status_code == 200:
         return json.loads(response.text)
     else:
