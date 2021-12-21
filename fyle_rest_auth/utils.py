@@ -14,8 +14,7 @@ def post_request(url, body, access_token: str = None, origin_address: str = None
     Create a HTTP post request.
     """
     api_headers = {
-        'content-type': 'application/json',
-        'X-Forwarded-For': origin_address
+        'content-type': 'application/json'
     }
 
     if access_token:
