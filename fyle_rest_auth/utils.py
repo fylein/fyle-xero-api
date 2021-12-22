@@ -78,7 +78,7 @@ class AuthUtils:
             'code': authorization_code
         }
 
-        return self.post(url=self.token_url, body=api_data)
+        return post_request(self.token_url, api_data)
 
     def refresh_access_token(self, refresh_token: str) -> Dict:
         """
