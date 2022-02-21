@@ -5,6 +5,8 @@ FROM python:3.7.4-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+RUN apt-get update && apt-get -y install libpq-dev gcc && apt-get install git -y --no-install-recommends
+
 # Installing requirements
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt && pip install pylint-django==2.3.0
