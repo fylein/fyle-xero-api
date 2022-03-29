@@ -11,7 +11,7 @@ from django_q.tasks import async_task
 
 from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute
 from apps.mappings.tasks import schedule_projects_creation, schedule_cost_centers_creation, schedule_fyle_attributes_creation,\
-                        upload_attributes_to_fyle
+                        upload_attributes_to_fyle, schedule_tax_groups_creation
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -42,7 +42,7 @@ def run_pre_mapping_settings_triggers(sender, instance: MappingSetting, **kwargs
     :param instance: Row instance of Sender Class
     :return: None
     """
-    default_attributes = ['EMPLOYEE', 'CATEGORY', 'PROJECT', 'COST_CENTER', 'CORPORATE_CARD']
+    default_attributes = ['EMPLOYEE', 'CATEGORY', 'PROJECT', 'COST_CENTER', 'CORPORATE_CARD', 'TAX_GROUP']
 
     instance.source_field = instance.source_field.upper().replace(' ', '_')
 

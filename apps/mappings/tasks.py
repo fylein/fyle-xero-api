@@ -551,3 +551,101 @@ def schedule_fyle_attributes_creation(workspace_id: int):
 
         if schedule:
             schedule.delete()
+
+
+def upload_tax_groups_to_fyle(platform_connection: PlatformConnector, workspace_id: int):    
+    existing_tax_codes_name = ExpenseAttribute.objects.filter(
+        attribute_type='TAX_GROUP', workspace_id=workspace_id).values_list('value', flat=True)
+
+    xero_attributes = DestinationAttribute.objects.filter(
+        attribute_type='TAX_CODE', workspace_id=workspace_id).order_by('value', 'id')
+
+    xero_attributes = remove_duplicates(xero_attributes)
+
+    fyle_payload: List[Dict] = create_fyle_tax_group_payload(xero_attributes, existing_tax_codes_name)
+
+    for payload in fyle_payload:
+        platform_connection.connection.v1.admin.tax_groups.post(payload)
+
+    platform_connection.sync_tax_groups()
+    Mapping.bulk_create_mappings(xero_attributes, 'TAX_GROUP', 'TAX_CODE', workspace_id)
+
+
+def create_fyle_tax_group_payload(xero_attributes: List[DestinationAttribute], existing_fyle_tax_groups: list):
+    """
+    Create Fyle Cost Centers Payload from Xero Objects
+    :param existing_fyle_tax_groups: Existing cost center names
+    :param xero_attributes: Xero Objects
+    :return: Fyle Cost Centers Payload
+    """
+
+    fyle_tax_group_payload = []
+    for xero_attribute in xero_attributes:
+        if xero_attribute.value not in existing_fyle_tax_groups:
+            fyle_tax_group_payload.append(
+                {
+                    'name': xero_attribute.value,
+                    'is_enabled': True,
+                    'percentage': round((xero_attribute.detail['tax_rate']/100), 2)
+                }
+            )
+
+    return fyle_tax_group_payload
+
+def auto_create_tax_codes_mappings(workspace_id: int):
+    """
+    Create Tax Codes Mappings
+    :return: None
+    """
+    try:
+        fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+
+        platform = PlatformConnector(fyle_credentials=fyle_credentials)
+        platform.tax_groups.sync()
+
+
+        mapping_setting = MappingSetting.objects.get(
+            source_field='TAX_GROUP', workspace_id=workspace_id
+        )
+
+        sync_xero_attributes(mapping_setting.destination_field, workspace_id)
+
+        upload_tax_groups_to_fyle(platform, workspace_id)
+
+    except WrongParamsError as exception:
+        logger.error(
+            'Error while creating tax groups workspace_id - %s in Fyle %s %s',
+            workspace_id, exception.message, {'error': exception.response}
+        )
+
+    except Exception:
+        error = traceback.format_exc()
+        error = {
+            'error': error
+        }
+        logger.error(
+            'Error while creating tax groups workspace_id - %s error: %s',
+            workspace_id, error
+        )
+
+
+def schedule_tax_groups_creation(import_tax_codes, workspace_id):
+    import_tax_codes = True
+    if import_tax_codes:
+        schedule, _ = Schedule.objects.update_or_create(
+            func='apps.mappings.tasks.auto_create_tax_codes_mappings',
+            args='{}'.format(workspace_id),
+            defaults={
+                'schedule_type': Schedule.MINUTES,
+                'minutes': 24 * 60,
+                'next_run': datetime.now()
+            }
+        )
+    else:
+        schedule: Schedule = Schedule.objects.filter(
+            func='apps.mappings.tasks.auto_create_tax_codes_mappings',
+            args='{}'.format(workspace_id),
+        ).first()
+
+        if schedule:
+            schedule.delete()

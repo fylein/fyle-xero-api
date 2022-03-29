@@ -14,7 +14,7 @@ from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuth
 from apps.fyle.models import ExpenseGroup
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import XeroCredentials, Workspace
-from apps.workspaces.serializers import WorkspaceSerializer
+from apps.workspaces.serializers import WorkspaceSerializer, XeroCredentialSerializer
 from apps.xero.models import BankTransaction, Bill
 from fyle_xero_api.utils import assert_valid
 
@@ -362,7 +362,7 @@ class XeroFieldsView(generics.ListAPIView):
     def get_queryset(self):
         attributes = DestinationAttribute.objects.filter(
             ~Q(attribute_type='CONTACT') & ~Q(attribute_type='ACCOUNT') &
-            ~Q(attribute_type='TENANT') & ~Q(attribute_type='BANK_ACCOUNT'),
+            ~Q(attribute_type='TENANT') & ~Q(attribute_type='BANK_ACCOUNT') & ~Q(attribute_type='TAX_GROUP'),
             workspace_id=self.kwargs['workspace_id']
         ).values('attribute_type', 'display_name').distinct()
 
@@ -469,3 +469,28 @@ class ReimburseXeroPaymentsView(generics.CreateAPIView):
             data={},
             status=status.HTTP_200_OK
         )
+
+class TaxCodeView(generics.ListCreateAPIView):
+    """
+    Tax code API View
+    """
+    serializer_class = DestinationAttributeSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return DestinationAttribute.objects.filter(
+            attribute_type='TAX_CODE', workspace_id=self.kwargs['workspace_id']).order_by('value')
+
+
+class DestinationAttributesView(generics.ListAPIView):
+    """
+    Destination Attributes view
+    """
+    serializer_class = DestinationAttributeSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        attribute_types = self.request.query_params.get('attribute_types').split(',')
+
+        return DestinationAttribute.objects.filter(
+            attribute_type__in=attribute_types, workspace_id=self.kwargs['workspace_id']).order_by('value')

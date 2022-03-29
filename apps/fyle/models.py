@@ -91,6 +91,8 @@ class Expense(models.Model):
     verified_at = models.DateTimeField(help_text='Report verified at', null=True)
     custom_properties = JSONField(null=True)
     paid_on_xero = models.BooleanField(help_text='Expense Payment status on Xero', default=False)
+    tax_amount = models.FloatField(null=True, help_text='Tax Amount')
+    tax_group_id = models.CharField(null=True, max_length=255, help_text='Tax Group ID')
 
     class Meta:
         db_table = 'expenses'
@@ -137,7 +139,9 @@ class Expense(models.Model):
                         'expense_updated_at': expense['expense_updated_at'],
                         'fund_source': SOURCE_ACCOUNT_MAP[expense['source_account_type']],
                         'verified_at': expense['verified_at'],
-                        'custom_properties': expense['custom_properties']
+                        'custom_properties': expense['custom_properties'],
+                        'tax_amount': expense['tax'],
+                        'tax_group_id': expense['tax_group_id'],
                     }
                 )
 

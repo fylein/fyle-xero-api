@@ -47,7 +47,9 @@ class MappingUtils:
             'bank_account_name': None,
             'bank_account_id': None,
             'payment_account_name': None,
-            'payment_account_id': None
+            'payment_account_id': None,
+            'default_tax_code_id': None,
+            'default_tax_code_name': None
         }
 
         if general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
@@ -67,6 +69,15 @@ class MappingUtils:
 
             params['payment_account_name'] = general_mapping.get('payment_account_name')
             params['payment_account_id'] = general_mapping.get('payment_account_id')
+
+        if general_settings.import_tax_codes:
+            assert_valid('default_tax_code_name' in general_mapping and general_mapping['default_tax_code_name'],
+                        'default tax code name is blank')
+            assert_valid('default_tax_code_name' in general_mapping and general_mapping['default_tax_code_name'],
+                        'default tax code name is blank')
+
+            params['default_tax_code_id'] = general_mapping['default_tax_code_id'],
+            params['default_tax_code_name'] = general_mapping['default_tax_code_name'],
 
         general_mapping_object, _ = GeneralMapping.objects.update_or_create(
             workspace_id=self.__workspace_id,

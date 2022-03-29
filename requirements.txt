@@ -38,4 +38,4 @@ Unidecode==1.1.2
 urllib3==1.26.5
 wcwidth==0.1.8
 wrapt==1.12.1
-xerosdk==0.11.2
+xerosdk==0.12.0

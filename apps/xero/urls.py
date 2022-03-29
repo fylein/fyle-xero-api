@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import TenantView, AccountView, BankAccountView, TrackingCategoryView, ContactView, \
     ItemView, XeroFieldsView, BankTransactionView, BillView, TokenHealthView, PaymentView, \
-        ReimburseXeroPaymentsView, SyncXeroDimensionView, RefreshXeroDimensionView, ExportsTriggerView
+        ReimburseXeroPaymentsView, SyncXeroDimensionView, RefreshXeroDimensionView, ExportsTriggerView, TaxCodeView, DestinationAttributesView
 
 urlpatterns = [
     path('accounts/', AccountView.as_view()),
@@ -19,5 +19,7 @@ urlpatterns = [
     path('payments/', PaymentView.as_view()),
     path('reimburse_payments/', ReimburseXeroPaymentsView.as_view()),
     path('sync_dimensions/', SyncXeroDimensionView.as_view()),
-    path('refresh_dimensions/', RefreshXeroDimensionView.as_view())
+    path('refresh_dimensions/', RefreshXeroDimensionView.as_view()),
+    path('tax_codes/', TaxCodeView.as_view()),
+    path('destination_attributes/', DestinationAttributesView.as_view())
 ]

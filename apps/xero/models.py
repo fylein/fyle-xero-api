@@ -107,6 +107,20 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
     )
 
 
+def get_tax_code_id_or_none(expense_group: ExpenseGroup, lineitem: Expense = None):
+    tax_code = None
+    mapping: Mapping = Mapping.objects.filter(
+        source_type='TAX_GROUP',
+        destination_type='TAX_CODE',
+        source__source_id=lineitem.tax_group_id,
+        workspace_id=expense_group.workspace_id
+    ).first()
+    if mapping:
+        tax_code = mapping.destination.destination_id
+
+    return tax_code
+
+
 class Bill(models.Model):
     id = models.AutoField(primary_key=True)
     expense_group = models.OneToOneField(ExpenseGroup, on_delete=models.PROTECT, help_text='Expense group reference')
@@ -157,6 +171,8 @@ class BillLineItem(models.Model):
     account_id = models.CharField(max_length=255, help_text='Xero account id')
     description = models.TextField(help_text='Lineitem purpose')
     amount = models.FloatField(help_text='Bill amount')
+    tax_amount = models.FloatField(null=True, help_text='Tax amount')
+    tax_code = models.CharField(max_length=255, help_text='Tax Group ID', null=True)
 
     class Meta:
         db_table = 'bill_lineitems'
@@ -193,7 +209,9 @@ class BillLineItem(models.Model):
                     'item_code': item_code if item_code else None,
                     'account_id': account.destination.destination_id,
                     'description': description,
-                    'amount': lineitem.amount
+                    'amount': lineitem.amount,
+                    'tax_code': get_tax_code_id_or_none(expense_group, lineitem),
+                    'tax_amount': lineitem.tax_amount,
                 }
             )
             bill_lineitem_objects.append(lineitem_object)
