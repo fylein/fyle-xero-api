@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime, timezone
 
 from django.db.models import Q
@@ -14,7 +13,7 @@ from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuth
 from apps.fyle.models import ExpenseGroup
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import XeroCredentials, Workspace
-from apps.workspaces.serializers import WorkspaceSerializer, XeroCredentialSerializer
+from apps.workspaces.serializers import WorkspaceSerializer
 from apps.xero.models import BankTransaction, Bill
 from fyle_xero_api.utils import assert_valid
 
@@ -22,8 +21,6 @@ from .utils import XeroConnector
 from .serializers import XeroFieldSerializer, BankTransactionSerializer, BillSerializer
 from .tasks import create_bank_transaction, schedule_bank_transaction_creation, create_bill, schedule_bills_creation, \
     create_payment, check_xero_object_status, process_reimbursements, create_chain_and_export
-
-logger = logging.getLogger(__name__)
 
 
 class TokenHealthView(generics.RetrieveAPIView):

@@ -564,8 +564,7 @@ def upload_tax_groups_to_fyle(platform_connection: PlatformConnector, workspace_
 
     fyle_payload: List[Dict] = create_fyle_tax_group_payload(xero_attributes, existing_tax_codes_name)
 
-    for payload in fyle_payload:
-        platform_connection.connection.v1.admin.tax_groups.post(payload)
+    platform_connection.connection.v1.admin.tax_groups.post_bulk(fyle_payload)
 
     platform_connection.sync_tax_groups()
     Mapping.bulk_create_mappings(xero_attributes, 'TAX_GROUP', 'TAX_CODE', workspace_id)
@@ -573,10 +572,10 @@ def upload_tax_groups_to_fyle(platform_connection: PlatformConnector, workspace_
 
 def create_fyle_tax_group_payload(xero_attributes: List[DestinationAttribute], existing_fyle_tax_groups: list):
     """
-    Create Fyle Cost Centers Payload from Xero Objects
-    :param existing_fyle_tax_groups: Existing cost center names
+    Create Fyle tax Group Payload from Xero Objects
+    :param existing_fyle_tax_groups: Existing tax groups names
     :param xero_attributes: Xero Objects
-    :return: Fyle Cost Centers Payload
+    :return: Fyle tax Group Payload
     """
 
     fyle_tax_group_payload = []
@@ -605,7 +604,7 @@ def auto_create_tax_codes_mappings(workspace_id: int):
 
 
         mapping_setting = MappingSetting.objects.get(
-            source_field='TAX_GROUP', workspace_id=workspace_id
+            source_field='TAX_GROUP', workspace_id=workspace_id, destination_type='TAX_CODE'
         )
 
         sync_xero_attributes(mapping_setting.destination_field, workspace_id)
@@ -649,3 +648,4 @@ def schedule_tax_groups_creation(import_tax_codes, workspace_id):
 
         if schedule:
             schedule.delete()
+            

@@ -311,6 +311,8 @@ class BankTransactionLineItem(models.Model):
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
     amount = models.FloatField(help_text='Bank Transaction LineAmount')
     description = models.TextField(help_text='Xero Bank Transaction LineItem description', null=True)
+    tax_amount = models.FloatField(null=True, help_text='Tax amount')
+    tax_code = models.CharField(max_length=255, help_text='Tax Group ID', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
@@ -354,7 +356,9 @@ class BankTransactionLineItem(models.Model):
                     'item_code': item_code if item_code else None,
                     'tracking_categories': tracking_categories if tracking_categories else None,
                     'amount': lineitem.amount,
-                    'description': description
+                    'description': description,
+                    'tax_code': get_tax_code_id_or_none(expense_group, lineitem),
+                    'tax_amount': lineitem.tax_amount,
                 }
             )
 

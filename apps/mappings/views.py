@@ -66,9 +66,6 @@ class GeneralMappingView(generics.ListCreateAPIView):
         """
         general_mapping_payload = request.data
 
-        # general_mapping_payload['default_tax_code_name'] = "Tax on Goodss @8.125%" 
-        # general_mapping_payload['default_tax_code_id'] = "Tax on Goodss"
-
         assert_valid(general_mapping_payload is not None, 'Request body is empty')
 
         mapping_utils = MappingUtils(kwargs['workspace_id'])
