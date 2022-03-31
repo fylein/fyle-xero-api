@@ -363,7 +363,6 @@ class XeroConnector:
                         'value': line.tax_code if line.tax_code else general_mappings.default_tax_code_name
                     },
                 'TaxAmount': line.tax_amount if line.tax_amount else round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2),
-                'BillableStatus': 'Billable' if line.billable and line.customer_id else 'NotBillable',
             }
             lines.append(line)
 
