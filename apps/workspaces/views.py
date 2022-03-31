@@ -1,4 +1,3 @@
-from asyncio.log import logger
 import json
 
 from django.contrib.auth import get_user_model
