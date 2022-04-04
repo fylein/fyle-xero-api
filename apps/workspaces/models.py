@@ -36,6 +36,7 @@ class XeroCredentials(models.Model):
     workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
+    country = models.CharField(max_length=255, help_text='Xero Country Name', null=True)
 
     class Meta:
         db_table = 'xero_credentials'

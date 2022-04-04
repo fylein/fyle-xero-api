@@ -11,7 +11,7 @@ from django_q.tasks import async_task
 
 from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute
 from apps.mappings.tasks import schedule_projects_creation, schedule_cost_centers_creation, schedule_fyle_attributes_creation,\
-                        upload_attributes_to_fyle, schedule_tax_groups_creation
+                        upload_attributes_to_fyle
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver

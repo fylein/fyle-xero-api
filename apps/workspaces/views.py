@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -28,6 +29,9 @@ from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneral
 from .utils import generate_xero_refresh_token, create_or_update_general_settings
 from .serializers import WorkspaceSerializer, FyleCredentialSerializer, XeroCredentialSerializer, \
     WorkSpaceGeneralSettingsSerializer, WorkspaceScheduleSerializer
+
+logger = logging.getLogger(__name__)
+
 
 User = get_user_model()
 auth_utils = AuthUtils()
@@ -255,6 +259,7 @@ class ConnectXeroView(viewsets.ViewSet):
                     refresh_token=refresh_token,
                     workspace_id=kwargs['workspace_id']
                 )
+
             else:
                 xero_credentials.refresh_token = refresh_token
                 xero_credentials.save()
@@ -267,6 +272,16 @@ class ConnectXeroView(viewsets.ViewSet):
                 if connection:
                     tenant_mapping.connection_id = connection[0]['id']
                     tenant_mapping.save()
+                    
+            if tenant_mapping:
+                try:
+                    xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+                    company_info = xero_connector.get_organisations()[0]
+                    xero_credentials.country = company_info['CountryCode']
+                    xero_credentials.save()
+
+                except xero_exc.WrongParamsError as exception:
+                    logger.error(exception.response)
 
             return Response(
                 data=XeroCredentialSerializer(xero_credentials).data,

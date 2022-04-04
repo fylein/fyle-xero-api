@@ -1,4 +1,5 @@
-from asyncio.log import logger
+import logging
+
 from django_q.tasks import Chain
 from rest_framework import generics
 from rest_framework.response import Response
@@ -8,8 +9,12 @@ from fyle_xero_api.utils import assert_valid
 
 from .serializers import TenantMappingSerializer, GeneralMappingSerializer
 from .models import TenantMapping, GeneralMapping
+from apps.workspaces.models import XeroCredentials
 from .utils import MappingUtils
 from ..workspaces.models import WorkspaceGeneralSettings
+from apps.xero.utils import XeroConnector
+
+logger = logging.getLogger(__name__)
 
 
 class TenantMappingView(generics.ListCreateAPIView):
@@ -28,6 +33,16 @@ class TenantMappingView(generics.ListCreateAPIView):
 
         mapping_utils = MappingUtils(kwargs['workspace_id'])
         tenant_mapping_object = mapping_utils.create_or_update_tenant_mapping(tenant_mapping_payload)
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
+
+        try:
+            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+            company_info = xero_connector.get_organisations()[0]
+            xero_credentials.country = company_info['CountryCode']
+            xero_credentials.save()
+
+        except:
+            logger.error("Error while fetching company information")
 
         return Response(
             data=self.serializer_class(tenant_mapping_object).data,
