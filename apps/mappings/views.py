@@ -42,7 +42,7 @@ class TenantMappingView(generics.ListCreateAPIView):
             xero_credentials.save()
 
         except:
-            logger.error("Error while fetching company information")
+            logger.error('Error while fetching company information')
 
         return Response(
             data=self.serializer_class(tenant_mapping_object).data,
@@ -82,7 +82,6 @@ class GeneralMappingView(generics.ListCreateAPIView):
         general_mapping_payload = request.data
 
         assert_valid(general_mapping_payload is not None, 'Request body is empty')
-
         mapping_utils = MappingUtils(kwargs['workspace_id'])
         general_mapping_object = mapping_utils.create_or_update_general_mapping(general_mapping_payload)
 

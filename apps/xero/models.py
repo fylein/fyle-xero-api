@@ -107,7 +107,7 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
     )
 
 
-def get_tax_code_id_or_none(expense_group: ExpenseGroup, lineitem: Expense = None):
+def get_tax_code_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     tax_code = None
     mapping: Mapping = Mapping.objects.filter(
         source_type='TAX_GROUP',

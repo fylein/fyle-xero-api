@@ -112,7 +112,10 @@ class XeroConnector:
     def get_tax_inclusive_amount(self, amount, default_tax_code_id):
 
         tax_attribute = DestinationAttribute.objects.filter(
-            destination_id=default_tax_code_id, attribute_type='TAX_CODE',workspace_id=self.workspace_id).first()
+            destination_id=default_tax_code_id, 
+            attribute_type='TAX_CODE',
+            workspace_id=self.workspace_id
+        ).first()
         tax_inclusive_amount = amount
         if tax_attribute:
             tax_rate = int(tax_attribute.detail['tax_rate'])
@@ -360,7 +363,7 @@ class XeroConnector:
                 'AccountCode': line.account_id,
                 'ItemCode': line.item_code if line.item_code else None,
                 'Tracking': line.tracking_categories if line.tracking_categories else None,
-                'TaxType': line.tax_code if line.tax_code else general_mappings.default_tax_code_name,
+                'TaxType': line.tax_code if line.tax_code else general_mappings.default_tax_code_id,
                 'TaxAmount': line.tax_amount if line.tax_amount else round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2),
             }
             lines.append(line)
@@ -379,7 +382,7 @@ class XeroConnector:
             'Contact': {
                 'ContactID': bill.contact_id
             },
-            'LineAmountTypes': 'Exclusive',
+            'LineAmountTypes': 'Exclusive' if general_mappings.default_tax_code_id else 'NoTax',
             'Reference': bill.reference,
             'Date': bill.date,
             'DueDate': (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d'),
@@ -416,7 +419,7 @@ class XeroConnector:
                 'AccountCode': line.account_id,
                 'ItemCode': line.item_code if line.item_code else None,
                 'Tracking': line.tracking_categories if line.tracking_categories else None,
-                'TaxType': line.tax_code if line.tax_code else general_mappings.default_tax_code_name,
+                'TaxType': line.tax_code if line.tax_code else general_mappings.default_tax_code_id,
                 'TaxAmount': line.tax_amount if line.tax_amount else round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2),
                 
             }
@@ -440,7 +443,7 @@ class XeroConnector:
             'BankAccount': {
                 'AccountID': bank_transaction.bank_account_code
             },
-            'LineAmountTypes': 'Exclusive',
+            'LineAmountTypes': 'Exclusive' if general_mappings.default_tax_code_id else 'NoTax',
             'Reference': bank_transaction.reference,
             'Date': bank_transaction.transaction_date,
             'CurrencyCode': bank_transaction.currency,

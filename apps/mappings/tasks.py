@@ -564,7 +564,8 @@ def upload_tax_groups_to_fyle(platform_connection: PlatformConnector, workspace_
 
     fyle_payload: List[Dict] = create_fyle_tax_group_payload(xero_attributes, existing_tax_codes_name)
 
-    platform_connection.connection.v1beta.admin.tax_groups.post_bulk(fyle_payload)
+    if fyle_payload:
+        platform_connection.tax_groups.post_bulk(fyle_payload)
 
     platform_connection.sync_tax_groups()
     Mapping.bulk_create_mappings(xero_attributes, 'TAX_GROUP', 'TAX_CODE', workspace_id)
@@ -602,12 +603,11 @@ def auto_create_tax_codes_mappings(workspace_id: int):
         platform = PlatformConnector(fyle_credentials=fyle_credentials)
         platform.tax_groups.sync()
 
+        # mapping_setting = MappingSetting.objects.get(
+        #     source_field='TAX_GROUP', workspace_id=workspace_id, destination_field='TAX_CODE'
+        # )
 
-        mapping_setting = MappingSetting.objects.get(
-            source_field='TAX_GROUP', workspace_id=workspace_id, destination_field='TAX_CODE'
-        )
-
-        sync_xero_attributes(mapping_setting.destination_field, workspace_id)
+        sync_xero_attributes('TAX_CODE', workspace_id)
 
         upload_tax_groups_to_fyle(platform, workspace_id)
 
@@ -629,7 +629,6 @@ def auto_create_tax_codes_mappings(workspace_id: int):
 
 
 def schedule_tax_groups_creation(import_tax_codes, workspace_id):
-    import_tax_codes = True
     if import_tax_codes:
         schedule, _ = Schedule.objects.update_or_create(
             func='apps.mappings.tasks.auto_create_tax_codes_mappings',

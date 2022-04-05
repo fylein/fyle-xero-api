@@ -76,8 +76,8 @@ class MappingUtils:
             assert_valid('default_tax_code_name' in general_mapping and general_mapping['default_tax_code_name'],
                         'default tax code name is blank')
 
-            params['default_tax_code_id'] = general_mapping['default_tax_code_id'],
-            params['default_tax_code_name'] = general_mapping['default_tax_code_name'],
+            params['default_tax_code_id'] = general_mapping['default_tax_code_id']
+            params['default_tax_code_name'] = general_mapping['default_tax_code_name']
 
         general_mapping_object, _ = GeneralMapping.objects.update_or_create(
             workspace_id=self.__workspace_id,
