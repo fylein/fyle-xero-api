@@ -603,10 +603,6 @@ def auto_create_tax_codes_mappings(workspace_id: int):
         platform = PlatformConnector(fyle_credentials=fyle_credentials)
         platform.tax_groups.sync()
 
-        # mapping_setting = MappingSetting.objects.get(
-        #     source_field='TAX_GROUP', workspace_id=workspace_id, destination_field='TAX_CODE'
-        # )
-
         sync_xero_attributes('TAX_CODE', workspace_id)
 
         upload_tax_groups_to_fyle(platform, workspace_id)
