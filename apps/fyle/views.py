@@ -112,7 +112,7 @@ class ExpenseFieldsView(generics.ListAPIView):
     serializer_class = ExpenseFieldSerializer
 
     def get(self, request, *args, **kwargs):
-        default_attributes = ['EMPLOYEE', 'CATEGORY', 'PROJECT', 'COST_CENTER', 'CORPORATE_CARD']
+        default_attributes = ['EMPLOYEE', 'CATEGORY', 'PROJECT', 'COST_CENTER', 'CORPORATE_CARD', 'TAX_GROUP']
         attributes = ExpenseAttribute.objects.filter(
             ~Q(attribute_type__in=default_attributes),
             workspace_id=self.kwargs['workspace_id']

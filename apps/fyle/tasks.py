@@ -82,7 +82,11 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
                 source_account_type.append(SOURCE_ACCOUNT_MAP[source])
 
             expenses = platform.expenses.get(
-                source_account_type, expense_group_settings.expense_state, last_synced_at, True
+                source_account_type=source_account_type,
+                state=expense_group_settings.expense_state,
+                last_synced_at=last_synced_at,
+                settled_at=None,
+                filter_credit_expenses=True
             )
 
             if expenses:

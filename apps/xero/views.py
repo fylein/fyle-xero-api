@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime, timezone
 
 from django.db.models import Q
@@ -22,8 +21,6 @@ from .utils import XeroConnector
 from .serializers import XeroFieldSerializer, BankTransactionSerializer, BillSerializer
 from .tasks import create_bank_transaction, schedule_bank_transaction_creation, create_bill, schedule_bills_creation, \
     create_payment, check_xero_object_status, process_reimbursements, create_chain_and_export
-
-logger = logging.getLogger(__name__)
 
 
 class TokenHealthView(generics.RetrieveAPIView):
@@ -362,7 +359,7 @@ class XeroFieldsView(generics.ListAPIView):
     def get_queryset(self):
         attributes = DestinationAttribute.objects.filter(
             ~Q(attribute_type='CONTACT') & ~Q(attribute_type='ACCOUNT') &
-            ~Q(attribute_type='TENANT') & ~Q(attribute_type='BANK_ACCOUNT'),
+            ~Q(attribute_type='TENANT') & ~Q(attribute_type='BANK_ACCOUNT') & ~Q(attribute_type='TAX_GROUP'),
             workspace_id=self.kwargs['workspace_id']
         ).values('attribute_type', 'display_name').distinct()
 
@@ -469,3 +466,28 @@ class ReimburseXeroPaymentsView(generics.CreateAPIView):
             data={},
             status=status.HTTP_200_OK
         )
+
+class TaxCodeView(generics.ListCreateAPIView):
+    """
+    Tax code API View
+    """
+    serializer_class = DestinationAttributeSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return DestinationAttribute.objects.filter(
+            attribute_type='TAX_CODE', workspace_id=self.kwargs['workspace_id']).order_by('value')
+
+
+class DestinationAttributesView(generics.ListAPIView):
+    """
+    Destination Attributes view
+    """
+    serializer_class = DestinationAttributeSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        attribute_types = self.request.query_params.get('attribute_types').split(',')
+
+        return DestinationAttribute.objects.filter(
+            attribute_type__in=attribute_types, workspace_id=self.kwargs['workspace_id']).order_by('value')

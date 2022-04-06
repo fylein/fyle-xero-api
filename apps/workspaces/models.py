@@ -36,6 +36,7 @@ class XeroCredentials(models.Model):
     workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
+    country = models.CharField(max_length=255, help_text='Xero Country Name', null=True)
 
     class Meta:
         db_table = 'xero_credentials'
@@ -72,6 +73,7 @@ class WorkspaceGeneralSettings(models.Model):
     auto_map_employees = models.CharField(max_length=50, help_text='Auto Map Employees from Xero to Fyle', null=True)
     auto_create_destination_entity = models.BooleanField(default=False, help_text='Auto create contact')
     skip_cards_mapping = models.BooleanField(default=False, help_text='Skip cards mapping')
+    import_tax_codes = models.BooleanField(default=False, help_text='Auto import tax codes to Fyle', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 

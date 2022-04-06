@@ -10,7 +10,7 @@ from future.moves.urllib.parse import urlencode
 
 from xerosdk import InvalidTokenError, InternalServerError
 
-from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_employees
+from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_employees, schedule_tax_groups_creation
 from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
 from fyle_xero_api.utils import assert_valid
 from .models import WorkspaceGeneralSettings
@@ -85,6 +85,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
                 and general_settings_payload['corporate_credit_card_expenses_object'] else None,
             'sync_fyle_to_xero_payments': general_settings_payload['sync_fyle_to_xero_payments'],
             'sync_xero_to_fyle_payments': general_settings_payload['sync_xero_to_fyle_payments'],
+            'import_tax_codes': general_settings_payload['import_tax_codes'] if 'import_tax_codes' in general_settings_payload else False,
             'import_categories': general_settings_payload['import_categories'],
             'auto_map_employees': general_settings_payload['auto_map_employees'],
             'auto_create_destination_entity': general_settings_payload['auto_create_destination_entity'],
@@ -118,5 +119,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
     schedule_categories_creation(import_categories=general_settings.import_categories, workspace_id=workspace_id)
 
     schedule_auto_map_employees(general_settings_payload['auto_map_employees'], workspace_id)
+
+    schedule_tax_groups_creation(import_tax_codes=general_settings.import_tax_codes, workspace_id=workspace_id)
     
     return general_settings

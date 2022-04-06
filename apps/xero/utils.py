@@ -10,8 +10,9 @@ import unidecode
 from xerosdk import XeroSDK
 
 from apps.mappings.models import TenantMapping
-from apps.workspaces.models import XeroCredentials
-from fyle_accounting_mappings.models import DestinationAttribute
+from apps.workspaces.models import XeroCredentials, WorkspaceGeneralSettings
+from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute
+from apps.mappings.models import GeneralMapping
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,47 @@ class XeroConnector:
         tenant_attributes = DestinationAttribute.bulk_create_or_update_destination_attributes(
             tenant_attributes, 'TENANT', self.workspace_id, True)
         return tenant_attributes
+
+
+    def get_tax_inclusive_amount(self, amount, default_tax_code_id):
+
+        tax_attribute = DestinationAttribute.objects.filter(
+            destination_id=default_tax_code_id, 
+            attribute_type='TAX_CODE',
+            workspace_id=self.workspace_id
+        ).first()
+        tax_inclusive_amount = amount
+        if tax_attribute:
+            tax_rate = int(tax_attribute.detail['tax_rate'])
+            tax_inclusive_amount = round((amount - (amount/(tax_rate + 1))), 2)
+        return tax_inclusive_amount
+
+
+    def sync_tax_codes(self):
+        """
+        Get Tax Codes
+        """
+        tax_codes = self.connection.tax_rates.get_all()['TaxRates']
+
+        tax_attributes = []
+        for tax_code in tax_codes:
+            effective_tax_rate = tax_code['EffectiveRate']
+            if effective_tax_rate >= 0:
+                tax_attributes.append({
+                    'attribute_type': 'TAX_CODE',
+                    'display_name': 'Tax Code',
+                    'value': '{0} @{1}%'.format(tax_code['Name'], effective_tax_rate),
+                    'destination_id': tax_code['TaxType'],
+                    'detail': {
+                        'tax_rate': effective_tax_rate,
+                        'tax_refs': tax_code['TaxComponents']
+                    }
+                })
+
+        DestinationAttribute.bulk_create_or_update_destination_attributes(
+            tax_attributes, 'TAX_CODE', self.workspace_id, True)
+
+        return []
 
     def sync_accounts(self):
         """
@@ -278,6 +320,11 @@ class XeroConnector:
         except Exception as exception:
             logger.exception(exception)
 
+        try:
+            self.sync_tax_codes()
+        except Exception as exception:
+            logger.exception(exception)
+
     def post_contact(self, contact_name: str, email: str):
         """
         Post contact to Xero
@@ -300,8 +347,8 @@ class XeroConnector:
 
         return created_contact
 
-    @staticmethod
-    def __construct_bill_lineitems(bill_lineitems: List[BillLineItem]) -> List[Dict]:
+
+    def __construct_bill_lineitems(self, bill_lineitems: List[BillLineItem], general_mappings: GeneralMapping) -> List[Dict]:
         """
         Create bill line items
         :return: constructed line items
@@ -312,10 +359,12 @@ class XeroConnector:
             line = {
                 'Description': line.description,
                 'Quantity': '1',
-                'UnitAmount': line.amount,
+                'UnitAmount': line.amount - line.tax_amount if line.tax_code else self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id),
                 'AccountCode': line.account_id,
                 'ItemCode': line.item_code if line.item_code else None,
-                'Tracking': line.tracking_categories if line.tracking_categories else None
+                'Tracking': line.tracking_categories if line.tracking_categories else None,
+                'TaxType': line.tax_code if line.tax_code else general_mappings.default_tax_code_id,
+                'TaxAmount': line.tax_amount if line.tax_amount else round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2),
             }
             lines.append(line)
 
@@ -326,19 +375,22 @@ class XeroConnector:
         Create a bill
         :return: constructed bill
         """
+        general_mappings = GeneralMapping.objects.filter(workspace_id=self.workspace_id).first()
+
         bill_payload = {
             'Type': 'ACCPAY',
             'Contact': {
                 'ContactID': bill.contact_id
             },
-            'LineAmountTypes': 'NoTax',
+            'LineAmountTypes': 'Exclusive' if general_mappings.default_tax_code_id else 'NoTax',
             'Reference': bill.reference,
             'Date': bill.date,
             'DueDate': (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d'),
             'CurrencyCode': bill.currency,
             'Status': 'AUTHORISED',
-            'LineItems': self.__construct_bill_lineitems(bill_lineitems)
+            'LineItems': self.__construct_bill_lineitems(bill_lineitems, general_mappings)
         }
+
         return bill_payload
 
     def post_bill(self, bill: Bill, bill_lineitems: List[BillLineItem]):
@@ -352,8 +404,7 @@ class XeroConnector:
         created_bill = self.connection.invoices.post(bills_payload)
         return created_bill
 
-    @staticmethod
-    def __construct_bank_transaction_lineitems(bank_transaction_lineitems: List[BankTransactionLineItem]) -> List[Dict]:
+    def __construct_bank_transaction_lineitems(self, bank_transaction_lineitems: List[BankTransactionLineItem], general_mappings: GeneralMapping) -> List[Dict]:
         """
         Create bank transaction line items
         :return: constructed line items
@@ -364,10 +415,13 @@ class XeroConnector:
             line = {
                 'Description': line.description,
                 'Quantity': '1',
-                'UnitAmount': line.amount,
+                'UnitAmount': line.amount - line.tax_amount if line.tax_code else self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id),
                 'AccountCode': line.account_id,
                 'ItemCode': line.item_code if line.item_code else None,
-                'Tracking': line.tracking_categories if line.tracking_categories else None
+                'Tracking': line.tracking_categories if line.tracking_categories else None,
+                'TaxType': line.tax_code if line.tax_code else general_mappings.default_tax_code_id,
+                'TaxAmount': line.tax_amount if line.tax_amount else round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2),
+                
             }
             lines.append(line)
 
@@ -379,6 +433,8 @@ class XeroConnector:
         Create a bank transaction
         :return: constructed bank transaction
         """
+        general_mappings = GeneralMapping.objects.filter(workspace_id=self.workspace_id).first()
+        
         bank_transaction_payload = {
             'Type': 'SPEND',
             'Contact': {
@@ -387,13 +443,12 @@ class XeroConnector:
             'BankAccount': {
                 'AccountID': bank_transaction.bank_account_code
             },
-            'LineAmountTypes': 'NoTax',
+            'LineAmountTypes': 'Exclusive' if general_mappings.default_tax_code_id else 'NoTax',
             'Reference': bank_transaction.reference,
             'Date': bank_transaction.transaction_date,
             'CurrencyCode': bank_transaction.currency,
             'Status': 'AUTHORISED',
-            'LineItems': self.__construct_bank_transaction_lineitems(
-                bank_transaction_lineitems=bank_transaction_lineitems)
+            'LineItems': self.__construct_bank_transaction_lineitems(bank_transaction_lineitems, general_mappings)
         }
         return bank_transaction_payload
 
