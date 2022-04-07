@@ -38,11 +38,8 @@ class TenantMappingView(generics.ListCreateAPIView):
         try:
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
             company_info = xero_connector.get_organisations()[0]
-            print(company_info)
-            print(company_info['CountryCode'])
             xero_credentials.country = company_info['CountryCode']
             xero_credentials.save()
-            print(xero_credentials.country)
 
         except:
             logger.error('Error while fetching company information')
