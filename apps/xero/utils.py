@@ -119,7 +119,7 @@ class XeroConnector:
         general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
         tax_inclusive_amount = amount
         if tax_attribute and general_settings.import_tax_codes:
-            tax_rate = int(tax_attribute.detail['tax_rate'])
+            tax_rate = round((tax_attribute.detail['tax_rate'] / 100), 2)
             tax_amount = round((amount - (amount / ( tax_rate + 1))), 2)
             tax_inclusive_amount = round((amount - tax_amount), 2)
         return tax_inclusive_amount
