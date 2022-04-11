@@ -567,7 +567,7 @@ def upload_tax_groups_to_fyle(platform_connection: PlatformConnector, workspace_
     if fyle_payload:
         platform_connection.tax_groups.post_bulk(fyle_payload)
 
-    platform_connection.sync_tax_groups()
+    platform_connection.tax_groups.sync()
     Mapping.bulk_create_mappings(xero_attributes, 'TAX_GROUP', 'TAX_CODE', workspace_id)
 
 
