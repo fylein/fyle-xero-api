@@ -200,6 +200,8 @@ def sync_xero_attributes(xero_attribute_type: str, workspace_id: int):
 
     if xero_attribute_type == 'ITEM':
         xero_connection.sync_items()
+    elif xero_attribute_type == 'TAX_CODE':
+        xero_connection.sync_tax_codes()
     else:
         xero_connection.sync_tracking_categories()
 
