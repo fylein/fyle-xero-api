@@ -129,6 +129,9 @@ class XeroConnector:
         """
         Get Tax Codes
         """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
         tax_codes = self.connection.tax_rates.get_all()['TaxRates']
 
         tax_attributes = []
