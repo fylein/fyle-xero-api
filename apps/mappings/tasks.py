@@ -221,7 +221,7 @@ def create_fyle_cost_centers_payload(xero_attributes: List[DestinationAttribute]
         if xero_attribute.value not in existing_fyle_cost_centers:
             fyle_cost_centers_payload.append({
                 'name': xero_attribute.value,
-                'enabled': True if xero_attribute.active is None else xero_attribute.active,
+                'is_enabled': True if xero_attribute.active is None else xero_attribute.active,
                 'description': 'Cost Center - {0}, Id - {1}'.format(
                     xero_attribute.value,
                     xero_attribute.destination_id
@@ -230,8 +230,7 @@ def create_fyle_cost_centers_payload(xero_attributes: List[DestinationAttribute]
     return fyle_cost_centers_payload
 
 
-def post_cost_centers_in_batches(fyle_connection:FyleConnector, platform: PlatformConnector,
-    workspace_id: int, xero_attribute_type: str):
+def post_cost_centers_in_batches(platform: PlatformConnector, workspace_id: int, xero_attribute_type: str):
     existing_cost_center_names = ExpenseAttribute.objects.filter(
         attribute_type='COST_CENTER', workspace_id=workspace_id).values_list('value', flat=True)
 
@@ -252,7 +251,7 @@ def post_cost_centers_in_batches(fyle_connection:FyleConnector, platform: Platfo
             paginated_xero_attributes,existing_cost_center_names)
 
         if fyle_payload:
-            fyle_connection.connection.CostCenters.post(fyle_payload)
+            platform.cost_centers.post_bulk(fyle_payload)
             platform.cost_centers.sync()
         
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'COST_CENTER', xero_attribute_type, workspace_id)
@@ -264,9 +263,6 @@ def auto_create_cost_center_mappings(workspace_id: int):
     """
     try:
         fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-        fyle_connection = FyleConnector(
-            refresh_token= fyle_credentials.refresh_token
-        )
         platform = PlatformConnector(fyle_credentials)
 
         mapping_setting = MappingSetting.objects.get(
@@ -277,7 +273,7 @@ def auto_create_cost_center_mappings(workspace_id: int):
 
         sync_xero_attributes(mapping_setting.destination_field, workspace_id=workspace_id)
 
-        post_cost_centers_in_batches(fyle_connection, platform, workspace_id, mapping_setting.destination_field)
+        post_cost_centers_in_batches(platform, workspace_id, mapping_setting.destination_field)
     
     except WrongParamsError as exception:
         logger.error(
@@ -334,7 +330,7 @@ def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_
                     project.value,
                     project.destination_id
                 ),
-                'active': True if project.active is None else project.active
+                'is_enabled': True if project.active is None else project.active
             })
 
     return payload
@@ -359,7 +355,9 @@ def post_projects_in_batches(fyle_connection: FyleConnector, platform: PlatformC
             paginated_xero_attributes,existing_project_names)
         
         if fyle_payload:
-            fyle_connection.connection.Projects.post(fyle_payload)
+            print('I am here')
+            platform.projects.post_bulk(fyle_payload)
+            print('i was here project')
             platform.projects.sync()
 
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'PROJECT', destination_field, workspace_id)
@@ -442,20 +440,15 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
         existing_attribute = ExpenseAttribute.objects.filter(
             attribute_type=fyle_attribute, workspace_id=workspace_id).values_list('detail', flat=True).first()
 
-        custom_field_id = None
-        if existing_attribute is not None:
-            custom_field_id = existing_attribute['custom_field_id']
-
         fyle_attribute = fyle_attribute.replace('_', ' ').title()
 
         expense_custom_field_payload = {
-            'id': custom_field_id,
-            'name': fyle_attribute,
+            'field_name': fyle_attribute,
             'type': 'SELECT',
-            'active': True,
-            'mandatory': False,
+            'is_enabled': True,
+            'is_mandatory': False,
+            'category_ids': [],
             'placeholder': 'Select {0}'.format(fyle_attribute),
-            'default_value': None,
             'options': fyle_expense_custom_field_options,
             'code': None
         }
@@ -468,9 +461,6 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     Upload attributes to Fyle
     """
     fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-    fyle_connection = FyleConnector(
-        refresh_token=fyle_credentials.refresh_token
-    )
     platform = PlatformConnector(fyle_credentials)
 
     xero_attributes: List[DestinationAttribute] = DestinationAttribute.objects.filter(
@@ -486,7 +476,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     )
 
     if fyle_custom_field_payload:
-        fyle_connection.connection.ExpensesCustomFields.post(fyle_custom_field_payload)
+        platform.expense_custom_fields.post(fyle_custom_field_payload)
         platform.expense_custom_fields.sync()
 
     return xero_attributes
