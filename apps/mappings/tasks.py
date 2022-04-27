@@ -251,7 +251,6 @@ def post_cost_centers_in_batches(platform: PlatformConnector, workspace_id: int,
         fyle_payload: List[Dict] = create_fyle_cost_centers_payload(
             paginated_xero_attributes, existing_cost_center_names)
 
-        print('CostCenters payload - ', fyle_payload)
         if fyle_payload:
             platform.cost_centers.post_bulk(fyle_payload)
             platform.cost_centers.sync()
