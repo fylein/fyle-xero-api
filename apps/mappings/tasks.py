@@ -332,7 +332,7 @@ def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_
                     project.value,
                     project.destination_id
                 ),
-                'active': True if project.active is None else project.active
+                'is_enabled': True if project.active is None else project.active
             })
 
     return payload
@@ -357,7 +357,7 @@ def post_projects_in_batches(fyle_connection: FyleConnector, platform: PlatformC
             paginated_xero_attributes, existing_project_names)
 
         if fyle_payload:
-            fyle_connection.connection.Projects.post(fyle_payload)
+            platform.projects.post_bulk(fyle_payload)
             platform.projects.sync()
 
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'PROJECT', destination_field, workspace_id)
