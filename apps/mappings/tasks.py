@@ -50,8 +50,10 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
         if category.value not in existing_category_names:
             payload.append({
                 'name': category.value,
+                "sub_category": " ",
                 'code': category.destination_id,
-                'enabled': True
+                'is_enabled': True,
+                "restricted_project_ids": []
             })
 
     return payload
@@ -85,7 +87,7 @@ def upload_categories_to_fyle(workspace_id):
         fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id)
 
         if fyle_payload:
-            fyle_connection.connection.Categories.post(fyle_payload)
+            platform.categories.post_bulk(fyle_payload)
             platform.categories.sync()
 
         return xero_attributes
