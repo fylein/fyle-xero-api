@@ -4,6 +4,8 @@ import traceback
 from datetime import datetime, timedelta
 from time import sleep
 from typing import List
+import base64
+import requests
 
 from django.db import transaction
 from django.db.models import Q
@@ -50,6 +52,11 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
 
     return contact
 
+
+def get_as_base64(url):
+    return base64.b64encode(requests.get(url).content).decode('ascii')
+
+
 def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str, expense_group: ExpenseGroup):
     """
     Get attachments from fyle
@@ -60,10 +67,29 @@ def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str,
     """
     try:
         fyle_credentials = FyleCredential.objects.get(workspace_id=expense_group.workspace_id)
-        expense_ids = expense_group.expenses.values_list('expense_id', flat=True)
-        fyle_connector = FyleConnector(fyle_credentials.refresh_token)
-        attachments = fyle_connector.get_attachments(expense_ids)
+        file_ids = expense_group.expenses.values_list('file_ids', flat=True)
+        platform = PlatformConnector(fyle_credentials)
+
+        files_list = []
+        attachments = []
+        for file_id in file_ids:
+            if file_id:
+                file_object = {'id': file_id[0]}
+                files_list.append(file_object)
+
+        if len(files_list):
+            payload = {
+                "data": files_list
+            }
+
+            attachments = platform.connection.v1beta.admin.files.bulk_generate_file_urls(payload=payload)['data']
+
+            if attachments:
+                for attachment in attachments:
+                    attachment['download_url'] = get_as_base64(attachment['download_url'])
+
         xero_connection.post_attachments(ref_id, ref_type, attachments)
+
     except Exception:
         error = traceback.format_exc()
         logger.exception(

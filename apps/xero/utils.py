@@ -482,8 +482,8 @@ class XeroConnector:
             for attachment in attachments:
                 response = self.connection.attachments.post_attachment(
                     endpoint=ref_type,
-                    filename='{0}_{1}'.format(attachment['expense_id'], attachment['filename']),
-                    data=base64.b64decode(attachment['content']),
+                    filename='{0}_{1}'.format(attachment['id'], attachment['name']),
+                    data=base64.b64decode(attachment['download_url']),
                     guid=ref_id
                 )
 
