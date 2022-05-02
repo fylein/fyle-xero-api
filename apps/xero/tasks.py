@@ -799,7 +799,6 @@ def schedule_xero_objects_status_sync(sync_xero_to_fyle_payments, workspace_id):
 
 def process_reimbursements(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    fyle_connector = FyleConnector(fyle_credentials.refresh_token)
 
     platform = PlatformConnector(fyle_credentials)
     platform.reimbursements.sync()
@@ -821,7 +820,7 @@ def process_reimbursements(workspace_id):
                 reimbursement_ids.append(reimbursement.reimbursement_id)
 
     if reimbursement_ids:
-        fyle_connector.post_reimbursement(reimbursement_ids)
+        platform.reimbursements.bulk_post(reimbursement_ids)
         platform.reimbursements.sync()
 
 
