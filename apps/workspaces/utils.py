@@ -9,10 +9,11 @@ from django.conf import settings
 
 from future.moves.urllib.parse import urlencode
 
-from xerosdk import InvalidTokenError, InternalServerError
+from xerosdk import InvalidTokenError, InternalServerError, XeroSDK
 
 from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_employees, schedule_tax_groups_creation
 from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
+
 from fyle_xero_api.utils import assert_valid
 from .models import WorkspaceGeneralSettings
 from ..fyle.models import ExpenseGroupSettings
@@ -45,7 +46,24 @@ def generate_xero_refresh_token(authorization_code: str) -> str:
     if response.status_code == 200:
         response = json.loads(response.text)
         decoded_jwt = jwt.decode(response['id_token'], options={"verify_signature": False})
-        print(decoded_jwt)
+
+        connection = XeroSDK(
+            base_url=settings.XERO_BASE_URL,
+            client_id=settings.XERO_CLIENT_ID,
+            client_secret=settings.XERO_CLIENT_SECRET,
+            refresh_token=response['refresh_token']
+        )
+
+        identity = {
+            'user': {
+                'given_name': decoded_jwt['given_name'],
+                'family_name': decoded_jwt['family_name'],
+                'email': decoded_jwt['email']
+            },
+            'organization': connection.organisation.get_all()
+        }
+
+        print(identity)
         return response['refresh_token']
 
 
