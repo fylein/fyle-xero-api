@@ -60,7 +60,7 @@ def generate_xero_refresh_token(authorization_code: str) -> str:
                 'family_name': decoded_jwt['family_name'],
                 'email': decoded_jwt['email']
             },
-            'organization': connection.organisations.get_all()
+            'tenants': connection.tenants.get_all()
         }
 
         print(identity)
