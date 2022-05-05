@@ -485,6 +485,6 @@ class XeroExternalSignUpsView(viewsets.ViewSet):
         identity = generate_xero_identity(authorization_code)
 
         return Response(
-            data=json.dumps(identity),
+            data=identity,
             status=status.HTTP_200_OK
         )
