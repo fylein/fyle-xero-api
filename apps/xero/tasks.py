@@ -18,7 +18,6 @@ from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
-from apps.fyle.utils import FyleConnector
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential, Workspace

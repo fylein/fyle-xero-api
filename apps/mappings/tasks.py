@@ -12,7 +12,6 @@ from fyle_accounting_mappings.models import Mapping, MappingSetting, Destination
 
 from fylesdk import WrongParamsError
 
-from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
 from .constants import FYLE_EXPENSE_SYSTEM_FIELDS
@@ -65,10 +64,6 @@ def upload_categories_to_fyle(workspace_id):
     try:
         fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
         xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-
-        fyle_connection = FyleConnector(
-            refresh_token=fyle_credentials.refresh_token
-        )
 
         platform = PlatformConnector(fyle_credentials)
 
@@ -339,7 +334,7 @@ def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_
     return payload
 
 
-def post_projects_in_batches(fyle_connection: FyleConnector, platform: PlatformConnector,
+def post_projects_in_batches(platform: PlatformConnector,
                              workspace_id: int, destination_field: str):
     existing_project_names = ExpenseAttribute.objects.filter(
         attribute_type='PROJECT', workspace_id=workspace_id).values_list('value', flat=True)
@@ -371,9 +366,7 @@ def auto_create_project_mappings(workspace_id: int):
     """
     try:
         fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-        fyle_connection = FyleConnector(
-            refresh_token=fyle_credentials.refresh_token
-        )
+
         platform = PlatformConnector(fyle_credentials)
 
         platform.projects.sync()
@@ -384,7 +377,7 @@ def auto_create_project_mappings(workspace_id: int):
 
         sync_xero_attributes(mapping_setting.destination_field, workspace_id)
 
-        post_projects_in_batches(fyle_connection, platform, workspace_id, mapping_setting.destination_field)
+        post_projects_in_batches(platform, workspace_id, mapping_setting.destination_field)
 
     except WrongParamsError as exception:
         logger.error(
