@@ -44,9 +44,10 @@ def generate_xero_refresh_token(authorization_code: str) -> str:
 
     if response.status_code == 200:
         response = json.loads(response.text)
-        decoded_jwt = jwt.decode(response.text['id_token'])
+        decoded_jwt = jwt.decode(response['id_token'])
         print(decoded_jwt)
         return response['refresh_token']
+
 
     elif response.status_code == 401:
         raise InvalidTokenError('Wrong client secret or/and refresh token', response.text)
