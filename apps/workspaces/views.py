@@ -474,6 +474,9 @@ class XeroExternalSignUpsView(viewsets.ViewSet):
     """
     Xero External Sign Ups
     """
+    authentication_classes = []
+    permission_classes = []
+
     def post(self, request, **kwargs):
         """
         Post Xero External Sign Ups
