@@ -19,10 +19,7 @@ from .models import WorkspaceGeneralSettings
 from ..fyle.models import ExpenseGroupSettings
 
 
-def generate_xero_refresh_token(authorization_code: str) -> str:
-    """
-    Generate Xero refresh token from authorization code
-    """
+def generate_token(authorization_code: str) -> str:
     api_data = {
         'grant_type': 'authorization_code',
         'code': authorization_code,
@@ -42,29 +39,41 @@ def generate_xero_refresh_token(authorization_code: str) -> str:
 
     token_url = settings.XERO_TOKEN_URI
     response = requests.post(url=token_url, data=urlencode(api_data), headers=request_header)
+    return response
+
+
+def revoke_token(refresh_token: str) -> None:
+    """
+    Revoke token
+    """
+    api_data = {
+        'token': refresh_token
+    }
+
+    request_header = {
+        'Accept': 'application/json',
+        'Content-type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic {0}'.format(
+            str(auth.decode())
+        )
+    }
+
+    auth = '{0}:{1}'.format(settings.XERO_CLIENT_ID, settings.XERO_CLIENT_SECRET)
+    auth = base64.b64encode(auth.encode('utf-8'))
+    revocation_url = settings.XERO_TOKEN_URI.replace('/token', '/revocation')
+
+    requests.post(url=revocation_url, data=urlencode(api_data), headers=request_header)
+
+
+def generate_xero_refresh_token(authorization_code: str) -> str:
+    """
+    Generate Xero refresh token from authorization code
+    """
+    response = generate_token(authorization_code)
 
     if response.status_code == 200:
-        response = json.loads(response.text)
-        decoded_jwt = jwt.decode(response['id_token'], options={"verify_signature": False})
-
-        connection = XeroSDK(
-            base_url=settings.XERO_BASE_URL,
-            client_id=settings.XERO_CLIENT_ID,
-            client_secret=settings.XERO_CLIENT_SECRET,
-            refresh_token=response['refresh_token']
-        )
-
-        identity = {
-            'user': {
-                'given_name': decoded_jwt['given_name'],
-                'family_name': decoded_jwt['family_name'],
-                'email': decoded_jwt['email']
-            },
-            'tenants': connection.tenants.get_all()
-        }
-
-        print(identity)
-        return response['refresh_token']
+        successful_response = json.loads(response.text)
+        return successful_response['refresh_token']
 
 
     elif response.status_code == 401:
@@ -147,38 +156,39 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
     
     return general_settings
 
-# def generate_xero_identity(authorization_code: str) -> str:
-#     """
-#     Generate Xero identity from authorization code
-#     """
-#     api_data = {
-#         'grant_type': 'authorization_code',
-#         'code': authorization_code,
-#         'redirect_uri': settings.XERO_REDIRECT_URI
-#     }
 
-#     auth = '{0}:{1}'.format(settings.XERO_CLIENT_ID, settings.XERO_CLIENT_SECRET)
-#     auth = base64.b64encode(auth.encode('utf-8'))
+def generate_xero_identity(authorization_code: str) -> str:
+    """
+    Generate Xero identity from authorization code
+    """
+    response = generate_token(authorization_code)
 
-#     request_header = {
-#         'Accept': 'application/json',
-#         'Content-type': 'application/x-www-form-urlencoded',
-#         'Authorization': 'Basic {0}'.format(
-#             str(auth.decode())
-#         )
-#     }
+    if response.status_code == 200:
+        successful_response = json.loads(response.text)
+        decoded_jwt = jwt.decode(successful_response['id_token'], options={"verify_signature": False})
 
-#     token_url = settings.XERO_TOKEN_URI
-#     response = requests.post(url=token_url, data=urlencode(api_data), headers=request_header)
-    
-#     if response.status_code == 200:
-#         response = json.loads(response.text)
-#         decoded_jwt = jwt.decode(response.text['id_token'])
-#         print(decoded_jwt)
-#         return response['refresh_token']
+        connection = XeroSDK(
+            base_url=settings.XERO_BASE_URL,
+            client_id=settings.XERO_CLIENT_ID,
+            client_secret=settings.XERO_CLIENT_SECRET,
+            refresh_token=successful_response['refresh_token']
+        )
 
-#     elif response.status_code == 401:
-#         raise InvalidTokenError('Wrong client secret or/and refresh token', response.text)
+        identity = {
+            'user': {
+                'given_name': decoded_jwt['given_name'],
+                'family_name': decoded_jwt['family_name'],
+                'email': decoded_jwt['email']
+            },
+            'tenants': connection.tenants.get_all()
+        }
 
-#     elif response.status_code == 500:
-#         raise InternalServerError('Internal server error', response.text)
+        # Revoke refresh token
+        revoke_token(successful_response['refresh_token'])
+        return identity
+
+    elif response.status_code == 401:
+        raise InvalidTokenError('Wrong client secret or/and refresh token', response.text)
+
+    elif response.status_code == 500:
+        raise InternalServerError('Internal server error', response.text)

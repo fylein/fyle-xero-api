@@ -26,7 +26,7 @@ from apps.xero.utils import XeroConnector
 from apps.mappings.models import TenantMapping
 
 from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule
-from .utils import generate_xero_refresh_token, create_or_update_general_settings
+from .utils import generate_xero_identity, generate_xero_refresh_token, create_or_update_general_settings
 from .serializers import WorkspaceSerializer, FyleCredentialSerializer, XeroCredentialSerializer, \
     WorkSpaceGeneralSettingsSerializer, WorkspaceScheduleSerializer
 
@@ -470,13 +470,18 @@ class GeneralSettingsView(viewsets.ViewSet):
                 status=status.HTTP_200_OK
             )
 
-# class XeroExternalSignUpsview(viewsets.ViewSet):
-#     """
-#     Xero External Sign Ups
-#     """
-#     def post(self, request, **kwargs):
-#         """
-#         Post Xero External Sign Ups
-#         """
-#         authorization_code = request.data.get('code')
-#         refresh_token = generate_xero_refresh_token(authorization_code)
+class XeroExternalSignUpsView(viewsets.ViewSet):
+    """
+    Xero External Sign Ups
+    """
+    def post(self, request, **kwargs):
+        """
+        Post Xero External Sign Ups
+        """
+        authorization_code = request.data.get('code')
+        identity = generate_xero_identity(authorization_code)
+
+        return Response(
+            data=json.loads(identity),
+            status=status.HTTP_200_OK
+        )
