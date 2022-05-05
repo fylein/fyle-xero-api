@@ -3,6 +3,7 @@ import base64
 from typing import Dict
 
 import requests
+import jwt
 
 from django.conf import settings
 
@@ -42,8 +43,10 @@ def generate_xero_refresh_token(authorization_code: str) -> str:
     response = requests.post(url=token_url, data=urlencode(api_data), headers=request_header)
 
     if response.status_code == 200:
-        print(json.loads(response.text))
-        return json.loads(response.text)['refresh_token']
+        response = json.loads(response.text)
+        decoded_jwt = jwt.decode(response.text['id_token'])
+        print(decoded_jwt)
+        return response['refresh_token']
 
     elif response.status_code == 401:
         raise InvalidTokenError('Wrong client secret or/and refresh token', response.text)
@@ -148,9 +151,12 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
 
 #     token_url = settings.XERO_TOKEN_URI
 #     response = requests.post(url=token_url, data=urlencode(api_data), headers=request_header)
-
+    
 #     if response.status_code == 200:
-#         return json.loads(response.text)
+#         response = json.loads(response.text)
+#         decoded_jwt = jwt.decode(response.text['id_token'])
+#         print(decoded_jwt)
+#         return response['refresh_token']
 
 #     elif response.status_code == 401:
 #         raise InvalidTokenError('Wrong client secret or/and refresh token', response.text)
