@@ -482,7 +482,8 @@ class XeroExternalSignUpsView(viewsets.ViewSet):
         Post Xero External Sign Ups
         """
         authorization_code = request.data.get('code')
-        identity = generate_xero_identity(authorization_code)
+        redirect_uri = request.data.get('redirect_uri')
+        identity = generate_xero_identity(authorization_code, redirect_uri)
 
         return Response(
             data=identity,

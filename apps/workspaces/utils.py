@@ -157,11 +157,11 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
     return general_settings
 
 
-def generate_xero_identity(authorization_code: str) -> str:
+def generate_xero_identity(authorization_code: str, redirect_uri: str) -> str:
     """
     Generate Xero identity from authorization code
     """
-    response = generate_token(authorization_code, redirect_uri='https://oauthdebugger.com/debug')
+    response = generate_token(authorization_code, redirect_uri=redirect_uri)
     print(response)
 
     if response.status_code == 200:
@@ -187,6 +187,9 @@ def generate_xero_identity(authorization_code: str) -> str:
         # Revoke refresh token
         revoke_token(successful_response['refresh_token'])
         return identity
+
+    elif response.status_code == 400:
+        raise InvalidTokenError('Invalid Requests, something wrong with request params', response.text)
 
     elif response.status_code == 401:
         raise InvalidTokenError('Wrong client secret or/and refresh token', response.text)
