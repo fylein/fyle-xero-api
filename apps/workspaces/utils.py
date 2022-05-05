@@ -44,7 +44,7 @@ def generate_xero_refresh_token(authorization_code: str) -> str:
 
     if response.status_code == 200:
         response = json.loads(response.text)
-        decoded_jwt = jwt.decode(response['id_token'], algorithms=['RS256'])
+        decoded_jwt = jwt.decode(response['id_token'], verify=False)
         print(decoded_jwt)
         return response['refresh_token']
 
