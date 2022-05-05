@@ -469,3 +469,14 @@ class GeneralSettingsView(viewsets.ViewSet):
                 data=serializer.data,
                 status=status.HTTP_200_OK
             )
+
+# class XeroExternalSignUpsview(viewsets.ViewSet):
+#     """
+#     Xero External Sign Ups
+#     """
+#     def post(self, request, **kwargs):
+#         """
+#         Post Xero External Sign Ups
+#         """
+#         authorization_code = request.data.get('code')
+#         refresh_token = generate_xero_refresh_token(authorization_code)

@@ -42,6 +42,7 @@ def generate_xero_refresh_token(authorization_code: str) -> str:
     response = requests.post(url=token_url, data=urlencode(api_data), headers=request_header)
 
     if response.status_code == 200:
+        print(json.loads(response.text))
         return json.loads(response.text)['refresh_token']
 
     elif response.status_code == 401:
@@ -123,3 +124,36 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
     schedule_tax_groups_creation(import_tax_codes=general_settings.import_tax_codes, workspace_id=workspace_id)
     
     return general_settings
+
+# def generate_xero_identity(authorization_code: str) -> str:
+#     """
+#     Generate Xero identity from authorization code
+#     """
+#     api_data = {
+#         'grant_type': 'authorization_code',
+#         'code': authorization_code,
+#         'redirect_uri': settings.XERO_REDIRECT_URI
+#     }
+
+#     auth = '{0}:{1}'.format(settings.XERO_CLIENT_ID, settings.XERO_CLIENT_SECRET)
+#     auth = base64.b64encode(auth.encode('utf-8'))
+
+#     request_header = {
+#         'Accept': 'application/json',
+#         'Content-type': 'application/x-www-form-urlencoded',
+#         'Authorization': 'Basic {0}'.format(
+#             str(auth.decode())
+#         )
+#     }
+
+#     token_url = settings.XERO_TOKEN_URI
+#     response = requests.post(url=token_url, data=urlencode(api_data), headers=request_header)
+
+#     if response.status_code == 200:
+#         return json.loads(response.text)
+
+#     elif response.status_code == 401:
+#         raise InvalidTokenError('Wrong client secret or/and refresh token', response.text)
+
+#     elif response.status_code == 500:
+#         raise InternalServerError('Internal server error', response.text)
