@@ -162,7 +162,7 @@ def generate_xero_identity(authorization_code: str, redirect_uri: str) -> str:
     Generate Xero identity from authorization code
     """
     response = generate_token(authorization_code, redirect_uri=redirect_uri)
-    print(response)
+    print(response.text)
 
     if response.status_code == 200:
         successful_response = json.loads(response.text)
