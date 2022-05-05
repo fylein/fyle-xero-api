@@ -820,7 +820,15 @@ def process_reimbursements(workspace_id):
                 reimbursement_ids.append(reimbursement.reimbursement_id)
 
     if reimbursement_ids:
-        platform.reimbursements.bulk_post(reimbursement_ids)
+        reimbursements_list = []
+        for reimbursement_id in reimbursement_ids:
+            reimbursement_object = {'id': reimbursement_id}
+            reimbursements_list.append(reimbursement_object)
+
+        payload = {
+            "data": reimbursements_list
+        }
+        platform.connection.v1beta.admin.reimbursements.bulk_post_reimbursements(payload)
         platform.reimbursements.sync()
 
 
