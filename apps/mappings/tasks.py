@@ -50,10 +50,9 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
         if category.value not in existing_category_names:
             payload.append({
                 'name': category.value,
-                'sub_category': ' ',
                 'code': category.destination_id,
                 'is_enabled': True,
-                'restricted_project_ids': []
+                'restricted_project_ids': None
             })
 
     return payload
