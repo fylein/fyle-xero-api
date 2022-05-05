@@ -19,11 +19,11 @@ from .models import WorkspaceGeneralSettings
 from ..fyle.models import ExpenseGroupSettings
 
 
-def generate_token(authorization_code: str) -> str:
+def generate_token(authorization_code: str, redirect_uri: str = None) -> str:
     api_data = {
         'grant_type': 'authorization_code',
         'code': authorization_code,
-        'redirect_uri': settings.XERO_REDIRECT_URI
+        'redirect_uri': settings.XERO_REDIRECT_URI if not redirect_uri else redirect_uri
     }
 
     auth = '{0}:{1}'.format(settings.XERO_CLIENT_ID, settings.XERO_CLIENT_SECRET)
@@ -161,7 +161,7 @@ def generate_xero_identity(authorization_code: str) -> str:
     """
     Generate Xero identity from authorization code
     """
-    response = generate_token(authorization_code)
+    response = generate_token(authorization_code, redirect_uri='https://oauthdebugger.com/debug')
     print(response)
 
     if response.status_code == 200:
