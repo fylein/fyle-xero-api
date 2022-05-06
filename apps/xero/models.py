@@ -185,7 +185,7 @@ class BillLineItem(models.Model):
         bill_lineitem_objects = []
 
         for lineitem in expenses:
-            category = lineitem.category if lineitem.category == lineitem.sub_category else '{0} / {1}'.format(
+            category = lineitem.category if (lineitem.category == lineitem.sub_category or lineitem.sub_category == None) else '{0} / {1}'.format(
                 lineitem.category, lineitem.sub_category)
 
             account = Mapping.objects.filter(
@@ -332,7 +332,7 @@ class BankTransactionLineItem(models.Model):
         bank_transaction_lineitem_objects = []
 
         for lineitem in expenses:
-            category = lineitem.category if lineitem.category == lineitem.sub_category else '{0} / {1}'.format(
+            category = lineitem.category if (lineitem.category == lineitem.sub_category or lineitem.sub_category == None) else '{0} / {1}'.format(
                 lineitem.category, lineitem.sub_category)
 
             account: Mapping = Mapping.objects.filter(
