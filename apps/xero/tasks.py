@@ -16,7 +16,6 @@ from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
-from apps.fyle.utils import FyleConnector
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential, Workspace
@@ -50,6 +49,7 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
 
     return contact
 
+
 def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str, expense_group: ExpenseGroup):
     """
     Get attachments from fyle
@@ -60,10 +60,21 @@ def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str,
     """
     try:
         fyle_credentials = FyleCredential.objects.get(workspace_id=expense_group.workspace_id)
-        expense_ids = expense_group.expenses.values_list('expense_id', flat=True)
-        fyle_connector = FyleConnector(fyle_credentials.refresh_token)
-        attachments = fyle_connector.get_attachments(expense_ids)
+        file_ids = expense_group.expenses.values_list('file_ids', flat=True)
+        platform = PlatformConnector(fyle_credentials)
+
+        files_list = []
+        attachments = []
+        for file_id in file_ids:
+            if file_id:
+                file_object = {'id': file_id[0]}
+                files_list.append(file_object)
+
+        if files_list:
+            attachments = platform.files.bulk_generate_file_urls(files_list)
+
         xero_connection.post_attachments(ref_id, ref_type, attachments)
+
     except Exception:
         error = traceback.format_exc()
         logger.exception(
@@ -773,7 +784,6 @@ def schedule_xero_objects_status_sync(sync_xero_to_fyle_payments, workspace_id):
 
 def process_reimbursements(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    fyle_connector = FyleConnector(fyle_credentials.refresh_token)
 
     platform = PlatformConnector(fyle_credentials)
     platform.reimbursements.sync()
@@ -795,7 +805,12 @@ def process_reimbursements(workspace_id):
                 reimbursement_ids.append(reimbursement.reimbursement_id)
 
     if reimbursement_ids:
-        fyle_connector.post_reimbursement(reimbursement_ids)
+        reimbursements_list = []
+        for reimbursement_id in reimbursement_ids:
+            reimbursement_object = {'id': reimbursement_id}
+            reimbursements_list.append(reimbursement_object)
+
+        platform.reimbursements.bulk_post_reimbursements(reimbursements_list)
         platform.reimbursements.sync()
 
 
