@@ -76,16 +76,8 @@ def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str,
                 file_object = {'id': file_id[0]}
                 files_list.append(file_object)
 
-        if len(files_list):
-            payload = {
-                "data": files_list
-            }
-
-            attachments = platform.connection.v1beta.admin.files.bulk_generate_file_urls(payload=payload)['data']
-
-            if attachments:
-                for attachment in attachments:
-                    attachment['download_url'] = get_as_base64(attachment['download_url'])
+        if files_list:
+            attachments = platform.files.bulk_generate_file_urls(files_list)
 
         xero_connection.post_attachments(ref_id, ref_type, attachments)
 
@@ -824,10 +816,7 @@ def process_reimbursements(workspace_id):
             reimbursement_object = {'id': reimbursement_id}
             reimbursements_list.append(reimbursement_object)
 
-        payload = {
-            "data": reimbursements_list
-        }
-        platform.connection.v1beta.admin.reimbursements.bulk_post_reimbursements(payload)
+        platform.reimbursements.bulk_post_reimbursements(reimbursements_list)
         platform.reimbursements.sync()
 
 
