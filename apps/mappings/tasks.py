@@ -440,9 +440,6 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
             custom_field_id = existing_attribute['custom_field_id']
 
         fyle_attribute = fyle_attribute.replace('_', ' ').title()
-        category_ids = ExpenseAttribute.objects.filter(
-            attribute_type='CATEGORY', workspace_id=workspace_id
-        ).values_list('source_id', flat=True)
 
         expense_custom_field_payload = {
             'id': custom_field_id,
