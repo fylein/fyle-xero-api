@@ -12,6 +12,7 @@ from fyle_accounting_mappings.models import Mapping, MappingSetting, Destination
 
 from fylesdk import WrongParamsError
 
+from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
 from .constants import FYLE_EXPENSE_SYSTEM_FIELDS
@@ -417,8 +418,7 @@ def schedule_projects_creation(import_to_fyle, workspace_id):
             schedule.delete()
 
 
-def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int,
-                                              fyle_attribute: str):
+def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int, fyle_attribute: str):
     """
     Create Fyle Expense Custom Field Payload from Xero Objects
     :param workspace_id: Workspace ID
@@ -442,18 +442,16 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
         fyle_attribute = fyle_attribute.replace('_', ' ').title()
 
         expense_custom_field_payload = {
-                'field_name': fyle_attribute,
-                "category_ids": [],
-                'type': 'SELECT',
-                'is_enabled': True,
-                'is_mandatory': False,
-                'placeholder': 'Select {0}'.format(fyle_attribute),
-                'options': fyle_expense_custom_field_options,
-                'code': None
-            }
-
-        if custom_field_id:
-            expense_custom_field_payload['id'] = custom_field_id
+            'id': custom_field_id,
+            'name': fyle_attribute,
+            'type': 'SELECT',
+            'active': True,
+            'mandatory': False,
+            'placeholder': 'Select {0}'.format(fyle_attribute),
+            'default_value': None,
+            'options': fyle_expense_custom_field_options,
+            'code': None
+        }
 
         return expense_custom_field_payload
 
@@ -463,6 +461,10 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     Upload attributes to Fyle
     """
     fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+
+    fyle_connection = FyleConnector(
+        refresh_token=fyle_credentials.refresh_token
+    )
 
     platform = PlatformConnector(fyle_credentials)
 
@@ -479,7 +481,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     )
 
     if fyle_custom_field_payload:
-        platform.expense_custom_fields.post(fyle_custom_field_payload)
+        fyle_connection.connection.ExpensesCustomFields.post(fyle_custom_field_payload)
         platform.expense_custom_fields.sync()
 
     return xero_attributes
