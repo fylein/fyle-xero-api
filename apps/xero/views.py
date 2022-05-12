@@ -358,7 +358,7 @@ class XeroFieldsView(generics.ListAPIView):
 
     def get_queryset(self):
         attributes = DestinationAttribute.objects.filter(
-            ~Q(attribute_type='CONTACT') & ~Q(attribute_type='ACCOUNT') &
+            ~Q(attribute_type='CONTACT') & ~Q(attribute_type='ACCOUNT') & ~Q(attribute_type='TAX_CODE'),
             ~Q(attribute_type='TENANT') & ~Q(attribute_type='BANK_ACCOUNT') & ~Q(attribute_type='TAX_GROUP'),
             workspace_id=self.kwargs['workspace_id']
         ).values('attribute_type', 'display_name').distinct()
