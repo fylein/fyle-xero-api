@@ -26,6 +26,7 @@ isort==5.10.1
 lazy-object-proxy==1.6.0
 mccabe==0.6.1
 psycopg2-binary==2.8.4
+pyjwt==2.3.0
 pylint==2.7.4
 python-dateutil==2.8.1
 pytz==2019.3
