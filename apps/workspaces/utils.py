@@ -50,6 +50,9 @@ def revoke_token(refresh_token: str) -> None:
         'token': refresh_token
     }
 
+    auth = '{0}:{1}'.format(settings.XERO_CLIENT_ID, settings.XERO_CLIENT_SECRET)
+    auth = base64.b64encode(auth.encode('utf-8'))
+
     request_header = {
         'Accept': 'application/json',
         'Content-type': 'application/x-www-form-urlencoded',
@@ -58,8 +61,6 @@ def revoke_token(refresh_token: str) -> None:
         )
     }
 
-    auth = '{0}:{1}'.format(settings.XERO_CLIENT_ID, settings.XERO_CLIENT_SECRET)
-    auth = base64.b64encode(auth.encode('utf-8'))
     revocation_url = settings.XERO_TOKEN_URI.replace('/token', '/revocation')
 
     requests.post(url=revocation_url, data=urlencode(api_data), headers=request_header)
@@ -167,6 +168,8 @@ def generate_xero_identity(authorization_code: str, redirect_uri: str) -> str:
     if response.status_code == 200:
         successful_response = json.loads(response.text)
         decoded_jwt = jwt.decode(successful_response['id_token'], options={"verify_signature": False})
+
+        print('decoded_jwt',decoded_jwt)
 
         connection = XeroSDK(
             base_url=settings.XERO_BASE_URL,
