@@ -10,7 +10,7 @@ from fyle_integrations_platform_connector import PlatformConnector
 
 from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
 
-from fylesdk import WrongParamsError
+from fyle.platform.exceptions import WrongParamsError
 
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
