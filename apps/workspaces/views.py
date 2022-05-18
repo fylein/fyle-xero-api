@@ -9,7 +9,7 @@ from rest_framework.views import status
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from fylesdk import exceptions as fyle_exc
+from fyle.platform import exceptions as fyle_exc
 from xerosdk import exceptions as xero_exc
 
 from fyle_rest_auth.helpers import get_fyle_admin
@@ -21,7 +21,6 @@ from fyle_xero_api.utils import assert_valid
 
 from apps.fyle.helpers import get_cluster_domain
 from apps.fyle.models import ExpenseGroupSettings
-from apps.fyle.utils import FyleConnector
 from apps.xero.utils import XeroConnector
 from apps.mappings.models import TenantMapping
 

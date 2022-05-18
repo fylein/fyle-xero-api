@@ -8,7 +8,6 @@ from typing import List
 from apps.fyle.models import ExpenseGroup, Expense
 from apps.mappings.models import GeneralMapping
 
-from apps.fyle.utils import FyleConnector
 from apps.workspaces.models import FyleCredential, Workspace
 
 
