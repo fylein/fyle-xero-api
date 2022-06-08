@@ -199,6 +199,19 @@ class XeroConnector:
                     'detail': detail
                 })
 
+            # Temporary hack alert - enabled sync of accounts with ASSET / REVENUE type for these workspace ids
+            # TODO: remove this hack when #import_chart_of_account_xero goes live
+            if self.workspace_id in (132, 126, 130, 129, 131, 124, 123):
+                if account['Class'] == 'ASSET' or account['Class'] == 'REVENUE':
+                    account_attributes['account'].append({
+                        'attribute_type': 'ACCOUNT',
+                        'display_name': 'Account',
+                        'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
+                        'destination_id': account['Code'],
+                        'active': True if account['Status'] == 'ACTIVE' else False,
+                        'detail': detail
+                    })
+
         for attribute_type, account_attribute in account_attributes.items():
             if account_attribute:
                 DestinationAttribute.bulk_create_or_update_destination_attributes(
