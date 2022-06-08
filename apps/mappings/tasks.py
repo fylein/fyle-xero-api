@@ -52,7 +52,7 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
         attribute_type='CATEGORY', workspace_id=workspace_id).values_list('value', flat=True)
 
     for category in categories:
-        if category.value not in existing_category_names and category.value not in DEFAULT_FYLE_CATEGORIES:
+        if category.value not in (existing_category_names and DEFAULT_FYLE_CATEGORIES):
             payload.append({
                 'name': category.value,
                 'code': category.destination_id,
