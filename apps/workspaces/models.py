@@ -9,7 +9,7 @@ from django_q.models import Schedule
 User = get_user_model()
 
 def get_default_chart_of_accounts():
-    return ['Expense']
+    return ['EXPENSE']
 class Workspace(models.Model):
     """
     Workspace model
