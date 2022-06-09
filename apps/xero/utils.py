@@ -189,7 +189,7 @@ class XeroConnector:
                     'detail': detail
                 })
 
-            elif account['Class'] == 'EXPENSE':
+            elif account['Class'] in general_settings.charts_of_accounts:
                 account_attributes['account'].append({
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',

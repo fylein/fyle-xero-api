@@ -2,12 +2,14 @@
 Workspace Models
 """
 from django.db import models
+from django.contrib.postgres.fields import JSONField, ArrayField
 from django.contrib.auth import get_user_model
 from django_q.models import Schedule
 
 User = get_user_model()
 
-
+def get_default_chart_of_accounts():
+    return ['Expense']
 class Workspace(models.Model):
     """
     Workspace model
@@ -76,7 +78,10 @@ class WorkspaceGeneralSettings(models.Model):
     import_tax_codes = models.BooleanField(default=False, help_text='Auto import tax codes to Fyle', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
-
+    charts_of_accounts = ArrayField(
+        base_field=models.CharField(max_length=100), default=get_default_chart_of_accounts,
+        help_text='list of chart of account types to be imported into Fyle'
+    )
     class Meta:
         db_table = 'workspace_general_settings'
 
