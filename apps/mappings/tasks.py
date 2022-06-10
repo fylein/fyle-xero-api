@@ -19,6 +19,12 @@ from .constants import FYLE_EXPENSE_SYSTEM_FIELDS
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
+DEFAULT_FYLE_CATEGORIES = [
+    'Activity', 'Train', 'Fuel', 'Snacks', 'Office Supplies', 'Utility', 'Entertainment', 'Others', 'Mileage', 'Food',
+    'Per Diem', 'Bus', 'Internet', 'Taxi', 'Courier', 'Hotel', 'Professional Services', 'Phone', 'Office Party',
+    'Flight', 'Software', 'Parking', 'Toll Charge', 'Tax', 'Training', 'Unspecified'
+]
+
 
 def remove_duplicates(xero_attributes: List[DestinationAttribute]):
     unique_attributes = []
@@ -33,7 +39,7 @@ def remove_duplicates(xero_attributes: List[DestinationAttribute]):
     return unique_attributes
 
 
-def create_fyle_categories_payload(categories: List[DestinationAttribute], workspace_id: int):
+def create_fyle_categories_payload(categories: List[DestinationAttribute], workspace_id: int, category_map: Dict):
     """
     Create Fyle Categories Payload from Xero Categories
     :param workspace_id: Workspace integer id
@@ -42,20 +48,41 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
     """
     payload = []
 
-    existing_category_names = ExpenseAttribute.objects.filter(
-        attribute_type='CATEGORY', workspace_id=workspace_id).values_list('value', flat=True)
-
     for category in categories:
-        if category.value not in existing_category_names:
+        if category.value.lower() not in category_map:
             payload.append({
                 'name': category.value,
                 'code': category.destination_id,
                 'is_enabled': True,
                 'restricted_project_ids': None
             })
-
+        else:
+            payload.append({
+                'id': category_map[category.value.lower()]['id'],
+                'name': category.value,
+                'code': category.destination_id,
+                'is_enabled': True,
+                'restricted_project_ids': None
+            })
     return payload
 
+def get_all_categories_from_fyle(platform: PlatformConnector):
+    categories_generator = platform.connection.v1beta.admin.categories.list_all(query_params={
+            'order': 'id.desc'
+        })
+    categories = []
+
+    for response in categories_generator:
+        if response.get('data'):
+            categories.extend(response['data'])
+    
+    category_name_map = {}
+    for category in categories:
+        if category['sub_category'] and category['name'] != category['sub_category']:
+                    category['name'] = '{0} / {1}'.format(category['name'], category['sub_category'])
+        category_name_map[category['name'].lower()] = category
+
+    return category_name_map
 
 def upload_categories_to_fyle(workspace_id):
     """
@@ -66,6 +93,8 @@ def upload_categories_to_fyle(workspace_id):
         xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
 
         platform = PlatformConnector(fyle_credentials)
+        
+        category_map = get_all_categories_from_fyle(platform=platform)
 
         xero_connection = XeroConnector(
             credentials_object=xero_credentials,
@@ -78,7 +107,7 @@ def upload_categories_to_fyle(workspace_id):
 
         xero_attributes = remove_duplicates(xero_attributes)
 
-        fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id)
+        fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id, category_map)
 
         if fyle_payload:
             platform.categories.post_bulk(fyle_payload)
