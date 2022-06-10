@@ -49,7 +49,7 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
     payload = []
 
     for category in categories:
-        if category.value not in category_map:
+        if category.value.lower() not in category_map:
             payload.append({
                 'name': category.value,
                 'code': category.destination_id,
@@ -58,7 +58,7 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
             })
         else:
             payload.append({
-                'id': category_map[category.value]['id'],
+                'id': category_map[category.value.lower()]['id'],
                 'name': category.value,
                 'code': category.destination_id,
                 'is_enabled': True,
@@ -80,7 +80,7 @@ def get_all_categories_from_fyle(platform: PlatformConnector):
     for category in categories:
         if category['sub_category'] and category['name'] != category['sub_category']:
                     category['name'] = '{0} / {1}'.format(category['name'], category['sub_category'])
-        category_name_map[category['name']] = category
+        category_name_map[category['name'].lower()] = category
 
     return category_name_map
 
