@@ -14,7 +14,6 @@ from fyle.platform.exceptions import WrongParamsError
 
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
-from fyle_integrations_platform_connector.apis import categories
 from .constants import FYLE_EXPENSE_SYSTEM_FIELDS
 
 logger = logging.getLogger(__name__)
