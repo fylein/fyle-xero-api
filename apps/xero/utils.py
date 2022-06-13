@@ -172,7 +172,7 @@ class XeroConnector:
 
         for account in accounts:
             detail = {
-                'account_type': account['Type'],
+                'account_type': account['Class'],
                 'enable_payments_to_account': account['EnablePaymentsToAccount'],
                 'active': True if account['Status'] == 'ACTIVE' else False,
             }
