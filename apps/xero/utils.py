@@ -17,6 +17,7 @@ from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactio
 
 logger = logging.getLogger(__name__)
 
+CHARTS_OF_ACCOUNTS = ['EXPENSE', 'ASSET', 'EQUITY', 'LIABILITY', 'REVENUE']
 
 class XeroConnector:
     """
@@ -159,7 +160,7 @@ class XeroConnector:
         Get accounts
         """
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
-        CHARTS_OF_ACCOUNTS = ['EXPENSE', 'ASSET', 'EQUITY', 'LIABILITY', 'REVENUE']
+
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         updated_at = self.__get_last_synced_at('ACCOUNT')
