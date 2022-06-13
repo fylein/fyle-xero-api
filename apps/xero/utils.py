@@ -159,8 +159,7 @@ class XeroConnector:
         Get accounts
         """
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
-        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
-        print(general_settings)
+        CHARTS_OF_ACCOUNTS = ['EXPENSE', 'ASSET', 'EQUITY', 'LIABILITY', 'REVENUE']
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         updated_at = self.__get_last_synced_at('ACCOUNT')
@@ -172,7 +171,6 @@ class XeroConnector:
         }
 
         for account in accounts:
-            CHARTS_OF_ACCOUNTS = ['Expense', 'ASSET', 'EQUITY', 'LIABILITY', 'REVENUE']
             detail = {
                 'account_type': account['Type'],
                 'enable_payments_to_account': account['EnablePaymentsToAccount'],
