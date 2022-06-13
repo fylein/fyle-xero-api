@@ -91,7 +91,7 @@ def upload_categories_to_fyle(workspace_id):
     try:
         fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
         xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-
+        general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
         platform = PlatformConnector(fyle_credentials)
         
         category_map = get_all_categories_from_fyle(platform=platform)
@@ -103,8 +103,8 @@ def upload_categories_to_fyle(workspace_id):
         platform.categories.sync()
         xero_connection.sync_accounts()
 
-        xero_attributes = DestinationAttribute.objects.filter(attribute_type='ACCOUNT', workspace_id=workspace_id)
-
+        xero_attributes = DestinationAttribute.objects.filter(
+        workspace_id=workspace_id, attribute_type='ACCOUNT', detail__account_type__in=general_settings.charts_of_accounts).all()
         xero_attributes = remove_duplicates(xero_attributes)
 
         fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id, category_map)

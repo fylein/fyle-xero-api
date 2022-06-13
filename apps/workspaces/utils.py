@@ -122,7 +122,8 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             'import_categories': general_settings_payload['import_categories'],
             'auto_map_employees': general_settings_payload['auto_map_employees'],
             'auto_create_destination_entity': general_settings_payload['auto_create_destination_entity'],
-            'map_merchant_to_contact': map_merchant_to_contact
+            'map_merchant_to_contact': map_merchant_to_contact,
+            'charts_of_accounts': general_settings_payload['charts_of_accounts']
         }
     )
 

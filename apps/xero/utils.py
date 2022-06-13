@@ -17,6 +17,7 @@ from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactio
 
 logger = logging.getLogger(__name__)
 
+CHARTS_OF_ACCOUNTS = ['EXPENSE', 'ASSET', 'EQUITY', 'LIABILITY', 'REVENUE']
 
 class XeroConnector:
     """
@@ -165,16 +166,14 @@ class XeroConnector:
         updated_at = self.__get_last_synced_at('ACCOUNT')
 
         accounts = self.connection.accounts.get_all(modified_after=updated_at)['Accounts']
-
         account_attributes = {
             'bank_account': [],
             'account': []
         }
 
         for account in accounts:
-
             detail = {
-                'account_type': account['Type'],
+                'account_type': account['Class'],
                 'enable_payments_to_account': account['EnablePaymentsToAccount'],
                 'active': True if account['Status'] == 'ACTIVE' else False,
             }
@@ -189,7 +188,7 @@ class XeroConnector:
                     'detail': detail
                 })
 
-            elif account['Class'] == 'EXPENSE':
+            elif account['Class'] in CHARTS_OF_ACCOUNTS:
                 account_attributes['account'].append({
                     'attribute_type': 'ACCOUNT',
                     'display_name': 'Account',
@@ -198,19 +197,6 @@ class XeroConnector:
                     'active': True if account['Status'] == 'ACTIVE' else False,
                     'detail': detail
                 })
-
-            # Temporary hack alert - enabled sync of accounts with ASSET / REVENUE type for these workspace ids
-            # TODO: remove this hack when #import_chart_of_account_xero goes live
-            if self.workspace_id in (132, 126, 130, 129, 131, 124, 123) and (account['Class'] == 'ASSET' or account['Class'] == 'REVENUE'):
-                if 'Code' in account and account['Code']:
-                    account_attributes['account'].append({
-                        'attribute_type': 'ACCOUNT',
-                        'display_name': 'Account',
-                        'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
-                        'destination_id': account['Code'],
-                        'active': True if account['Status'] == 'ACTIVE' else False,
-                        'detail': detail
-                    })
 
         for attribute_type, account_attribute in account_attributes.items():
             if account_attribute:
