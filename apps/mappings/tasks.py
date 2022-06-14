@@ -48,12 +48,22 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
     """
     payload = []
 
+    print('Create Fyle categories func started - ')
+
     for category in categories:
         if category.value.lower() not in category_map:
             payload.append({
                 'name': category.value,
                 'code': category.destination_id,
-                'is_enabled': True,
+                'is_enabled': category.active,
+                'restricted_project_ids': None
+            })
+        if not category.active:
+            payload.append({
+                'id': category_map[category.value.lower()]['id'],
+                'name': category.value,
+                'code': category.destination_id,
+                'is_enabled': category.active,
                 'restricted_project_ids': None
             })
         else:
@@ -61,10 +71,11 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
                 'id': category_map[category.value.lower()]['id'],
                 'name': category.value,
                 'code': category.destination_id,
-                'is_enabled': True,
+                'is_enabled': category.active,
                 'restricted_project_ids': None
             })
     return payload
+
 
 def get_all_categories_from_fyle(platform: PlatformConnector):
     categories_generator = platform.connection.v1beta.admin.categories.list_all(query_params={
@@ -83,6 +94,7 @@ def get_all_categories_from_fyle(platform: PlatformConnector):
         category_name_map[category['name'].lower()] = category
 
     return category_name_map
+
 
 def upload_categories_to_fyle(workspace_id):
     """

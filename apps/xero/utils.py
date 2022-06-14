@@ -102,13 +102,13 @@ class XeroConnector:
                 'attribute_type': 'TENANT',
                 'display_name': 'Tenant',
                 'value': tenant['tenantName'],
+                'active': None,
                 'destination_id': tenant['tenantId']
             })
 
         tenant_attributes = DestinationAttribute.bulk_create_or_update_destination_attributes(
             tenant_attributes, 'TENANT', self.workspace_id, True)
         return tenant_attributes
-
 
     def get_tax_inclusive_amount(self, amount, default_tax_code_id):
 
@@ -121,10 +121,9 @@ class XeroConnector:
         tax_inclusive_amount = amount
         if tax_attribute and general_settings.import_tax_codes:
             tax_rate = float((tax_attribute.detail['tax_rate']) / 100)
-            tax_amount = round((amount - (amount / ( tax_rate + 1))), 2)
+            tax_amount = round((amount - (amount / (tax_rate + 1))), 2)
             tax_inclusive_amount = round((amount - tax_amount), 2)
         return tax_inclusive_amount
-
 
     def sync_tax_codes(self):
         """
@@ -144,6 +143,7 @@ class XeroConnector:
                     'display_name': 'Tax Code',
                     'value': '{0} @{1}%'.format(tax_code['Name'], effective_tax_rate),
                     'destination_id': tax_code['TaxType'],
+                    'active': True if tax_code['Status'] == 'ACTIVE' else False,
                     'detail': {
                         'tax_rate': effective_tax_rate,
                         'tax_refs': tax_code['TaxComponents']
@@ -229,6 +229,7 @@ class XeroConnector:
                     'display_name': 'Contact',
                     'value': contact['Name'],
                     'destination_id': contact['ContactID'],
+                    'active': True if contact['ContactStatus'] == 'ACTIVE' else False,
                     'detail': detail
                 })
 
@@ -255,6 +256,7 @@ class XeroConnector:
                     'attribute_type': tracking_category['Name'].upper().replace(' ', '_'),
                     'display_name': tracking_category['Name'],
                     'value': option['Name'],
+                    'active': True if option['Status'] == 'ACTIVE' else False,
                     'destination_id': option['TrackingOptionID']
                 })
 
@@ -282,6 +284,7 @@ class XeroConnector:
                 'attribute_type': 'ITEM',
                 'display_name': 'Item',
                 'value': item['Code'],
+                'active': None,
                 'destination_id': item['ItemID']
             })
         DestinationAttribute.bulk_create_or_update_destination_attributes(
