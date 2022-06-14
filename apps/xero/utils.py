@@ -155,7 +155,7 @@ class XeroConnector:
 
         return []
 
-    def sync_accounts(self):
+    def sync_accounts(self, update_last_synced_at: bool = False):
         """
         Get accounts
         """
@@ -163,7 +163,10 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        updated_at = self.__get_last_synced_at('ACCOUNT')
+        if update_last_synced_at:
+            updated_at = None
+        else:
+            updated_at = self.__get_last_synced_at('ACCOUNT')
 
         accounts = self.connection.accounts.get_all(modified_after=updated_at)['Accounts']
         account_attributes = {

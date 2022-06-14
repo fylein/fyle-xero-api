@@ -101,10 +101,14 @@ def upload_categories_to_fyle(workspace_id):
             workspace_id=workspace_id
         )
         platform.categories.sync()
-        xero_connection.sync_accounts()
+        xero_connection.sync_accounts(update_last_synced_at=True)
 
         xero_attributes = DestinationAttribute.objects.filter(
-        workspace_id=workspace_id, attribute_type='ACCOUNT', detail__account_type__in=general_settings.charts_of_accounts).all()
+            workspace_id=workspace_id,
+            attribute_type='ACCOUNT',
+            detail__account_type__in=general_settings.charts_of_accounts
+        ).all()
+
         xero_attributes = remove_duplicates(xero_attributes)
 
         fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id, category_map)
