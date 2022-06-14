@@ -201,7 +201,7 @@ class XeroConnector:
 
             # Temporary hack alert - enabled sync of accounts with ASSET / REVENUE type for these workspace ids
             # TODO: remove this hack when #import_chart_of_account_xero goes live
-            if self.workspace_id in (132, 126, 130, 129, 131, 124, 123) and (account['Class'] == 'ASSET' or account['Class'] == 'REVENUE'):
+            if self.workspace_id in (92, 121, 132, 126, 130, 129, 131, 124, 123) and (account['Class'] == 'ASSET' or account['Class'] == 'REVENUE'):
                 if 'Code' in account and account['Code']:
                     account_attributes['account'].append({
                         'attribute_type': 'ACCOUNT',
