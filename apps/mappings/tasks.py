@@ -48,8 +48,6 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
     """
     payload = []
 
-    print('Create Fyle categories func started - ')
-
     for category in categories:
         if category.value.lower() not in category_map:
             payload.append({
@@ -71,7 +69,7 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
                 'id': category_map[category.value.lower()]['id'],
                 'name': category.value,
                 'code': category.destination_id,
-                'is_enabled': category.active,
+                'is_enabled': category_map[category.value.lower()]['is_enabled'],
                 'restricted_project_ids': None
             })
     return payload
