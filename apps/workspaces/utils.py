@@ -1,6 +1,7 @@
 import json
 import base64
 from typing import Dict
+import datetime
 
 import requests
 import jwt
@@ -15,7 +16,7 @@ from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_
 from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
 
 from fyle_xero_api.utils import assert_valid
-from .models import WorkspaceGeneralSettings
+from .models import WorkspaceGeneralSettings, Workspace
 from ..fyle.models import ExpenseGroupSettings
 
 
@@ -102,7 +103,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
                      'auto_map_employees can have only EMAIL / NAME / EMPLOYEE_CODE')
 
     workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
-
+    workspace = Workspace.objects.filter(id=workspace_id).first()
     map_merchant_to_contact = True
 
     if workspace_general_settings:
@@ -126,6 +127,10 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             'charts_of_accounts': general_settings_payload['charts_of_accounts']
         }
     )
+
+    if set(workspace_general_settings.charts_of_accounts) != set(general_settings_payload['charts_of_accounts']):
+        workspace.xero_accounts_last_synced_at = None
+        workspace.save()
 
     if general_settings.map_merchant_to_contact and \
             general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':

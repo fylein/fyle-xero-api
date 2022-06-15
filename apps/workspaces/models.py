@@ -22,6 +22,7 @@ class Workspace(models.Model):
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
     source_synced_at = models.DateTimeField(help_text='Datetime when source dimensions were pulled', null=True)
     destination_synced_at = models.DateTimeField(help_text='Datetime when destination dimensions were pulled', null=True)
+    xero_accounts_last_synced_at = models.DateTimeField(null=True, help_text='Xero Accounts last synced at time')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
 
@@ -82,6 +83,7 @@ class WorkspaceGeneralSettings(models.Model):
         base_field=models.CharField(max_length=100), default=get_default_chart_of_accounts,
         help_text='list of chart of account types to be imported into Fyle'
     )
+
     class Meta:
         db_table = 'workspace_general_settings'
 
