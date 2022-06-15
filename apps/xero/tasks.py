@@ -179,16 +179,19 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
             expense_group.exported_at = datetime.now()
             expense_group.save()
 
+            # Assign billable expenses to customers
             if general_settings.import_customers:
+                # Save parent level ID and line item level ID to corresponding exports table to make things easier during posting of linked transaction for debugging purposes
                 bill_object.export_id = created_bill['Invoices'][0]['InvoiceID']
                 bill_object.save()
 
-                for lineitem, index in enumerate(created_bill['Invoices'][0]['LineItems']):
-                    print('bill_lineitems_objects[index]',bill_lineitems_objects[index])
-                    bill_lineitems_objects[index].line_item_id = lineitem['LineItemID']
-                    bill_lineitems_objects[index].save()
+                index = 0
+                for bill_lineitems_object in bill_lineitems_objects:
+                    bill_lineitems_object.line_item_id = created_bill['Invoices'][0]['LineItems'][index]['LineItemID']
+                    bill_lineitems_object.save()
+                    index += 1
 
-                attach_customer_to_export(xero_connection, created_bill)
+                attach_customer_to_export(xero_connection, task_log)
 
             load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
     except XeroCredentials.DoesNotExist:
@@ -339,6 +342,12 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
     return chaining_attributes
 
 def get_linked_transaction_object(export_instance, line_items: list):
+    """
+    Get linked transaction object
+    :param export_instance: export_instance will be either a Bill or a BankTransaction instance
+    :param line_items: line_items will be a list of BillLineItem or BankTransactionLineItem instances
+    :return: export_id, lines
+    """
     lines = []
     export_id = export_instance.export_id
 
@@ -353,14 +362,16 @@ def get_linked_transaction_object(export_instance, line_items: list):
 def extract_export_lines_contact_ids(task_log: TaskLog):
     """
     Construct linked transaction payload
-    :return:
+    :return: export id, lines
     """
+    # Constructing orm filter based on export type
     filter = {
         'bill': task_log.bill
     } if task_log.type == 'CREATING_BILL' else {
         'bank_transaction': task_log.bank_transaction
     }
 
+    # Customer ID is mandatory to create linked transaction
     filter['customer_id__isnull'] = False
 
     export_id, lines = get_linked_transaction_object(
@@ -381,15 +392,16 @@ def attach_customer_to_export(xero_connection: XeroConnector, task_log: TaskLog)
 
     for item in lines:
         try:
+            # Linked transaction payload
             data = {
                 'SourceTransactionID': export_id,
-                'SourceLineItemID': item.line_item_id,
-                'ContactID': item.customer_id
+                'SourceLineItemID': item['line_item_id'],
+                'ContactID': item['customer_id']
             }
-            print('posting to xeroooo', data)
-            xero_connection.linked_transactions.post(data)
+            xero_connection.connection.linked_transactions.post(data)
 
         except Exception as exception:
+            # Silently ignoring the error, since the export should be already created
             logger.exception('Something unexpected happened during attaching customer to export', exception)
 
 
@@ -436,15 +448,20 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
             expense_group.exported_at = datetime.now()
             expense_group.save()
 
+            # Assign billable expenses to customers
             if general_settings.import_customers:
+                # Save parent level ID and line item level ID to corresponding exports table to make things easier during posting of linked transaction for debugging purposes
                 bank_transaction_object.export_id = created_bank_transaction['BankTransactions'][0]['BankTransactionID']
                 bank_transaction_object.save()
 
-                for lineitem, index in enumerate(created_bank_transaction['BankTransactions'][0]['LineItems']):
-                    bank_transaction_lineitems_objects[index].line_item_id = lineitem['LineItemID']
-                    bank_transaction_lineitems_objects[index].save()
+                index = 0
+                for bank_transaction_lineitems_object in bank_transaction_lineitems_objects:
+                    bank_transaction_lineitems_object.line_item_id = created_bank_transaction['BankTransactions'][0]['LineItems'][index]['LineItemID']
+                    bank_transaction_lineitems_object.save()
+                    index += 1
 
-                attach_customer_to_export(xero_connection, created_bank_transaction)
+
+                attach_customer_to_export(xero_connection, task_log)
 
             load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
                     'banktransactions', expense_group)

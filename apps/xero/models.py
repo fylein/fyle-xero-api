@@ -107,7 +107,7 @@ def get_customer_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
         ).first()
 
         if mapping:
-            customer_id = mapping.destination.value
+            customer_id = mapping.destination.destination_id
     return customer_id
 
 
