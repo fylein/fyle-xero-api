@@ -114,7 +114,11 @@ def upload_categories_to_fyle(workspace_id):
         xero_connection.sync_accounts()
 
         xero_attributes = DestinationAttribute.objects.filter(
-        workspace_id=workspace_id, attribute_type='ACCOUNT', detail__account_type__in=general_settings.charts_of_accounts).all()
+            workspace_id=workspace_id,
+            attribute_type='ACCOUNT',
+            detail__account_type__in=general_settings.charts_of_accounts
+        ).all()
+
         xero_attributes = remove_duplicates(xero_attributes)
 
         fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id, category_map)
@@ -456,7 +460,8 @@ def schedule_projects_creation(import_to_fyle, workspace_id):
             schedule.delete()
 
 
-def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int, fyle_attribute: str):
+def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int,
+                                              fyle_attribute: str,  platform: PlatformConnector):
     """
     Create Fyle Expense Custom Field Payload from Xero Objects
     :param workspace_id: Workspace ID
@@ -490,7 +495,9 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
         }
 
         if custom_field_id:
+            expense_field = platform.expense_custom_fields.get_by_id(custom_field_id)
             expense_custom_field_payload['id'] = custom_field_id
+            expense_custom_field_payload['is_mandatory'] = expense_field['is_mandatory']
 
         return expense_custom_field_payload
 
@@ -512,7 +519,8 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     fyle_custom_field_payload = create_fyle_expense_custom_fields_payload(
         xero_attributes=xero_attributes,
         workspace_id=workspace_id,
-        fyle_attribute=fyle_attribute_type
+        fyle_attribute=fyle_attribute_type,
+        platform=platform
     )
 
     if fyle_custom_field_payload:
