@@ -101,7 +101,7 @@ def upload_categories_to_fyle(workspace_id):
             workspace_id=workspace_id
         )
         platform.categories.sync()
-        xero_connection.sync_accounts(update_last_synced_at=True)
+        xero_connection.sync_accounts()
 
         xero_attributes = DestinationAttribute.objects.filter(
             workspace_id=workspace_id,

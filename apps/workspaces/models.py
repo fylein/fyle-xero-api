@@ -82,6 +82,8 @@ class WorkspaceGeneralSettings(models.Model):
         base_field=models.CharField(max_length=100), default=get_default_chart_of_accounts,
         help_text='list of chart of account types to be imported into Fyle'
     )
+    xero_accounts_last_synced_at = models.DateTimeField(null=True, help_text='Xero Accounts last synced at time')
+
     class Meta:
         db_table = 'workspace_general_settings'
 

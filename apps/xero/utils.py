@@ -19,6 +19,21 @@ logger = logging.getLogger(__name__)
 
 CHARTS_OF_ACCOUNTS = ['EXPENSE', 'ASSET', 'EQUITY', 'LIABILITY', 'REVENUE']
 
+
+def format_updated_at(updated_at):
+    return datetime.strftime(updated_at, '%Y-%m-%dT%H:%M:%S')
+
+
+def get_last_synced_at(workspace_id: int, attribute_type: str):
+    latest_synced_record = DestinationAttribute.objects.filter(
+        workspace_id=workspace_id,
+        attribute_type=attribute_type
+    ).order_by('-updated_at').first()
+    updated_at = format_updated_at(latest_synced_record.updated_at) if latest_synced_record else None
+
+    return updated_at
+
+
 class XeroConnector:
     """
     Xero utility functions
@@ -40,18 +55,6 @@ class XeroConnector:
 
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
-
-    def __format_updated_at(self, updated_at):
-        return datetime.strftime(updated_at, '%Y-%m-%dT%H:%M:%S')
-
-    def __get_last_synced_at(self, attribute_type: str):
-        latest_synced_record = DestinationAttribute.objects.filter(
-            workspace_id=self.workspace_id,
-            attribute_type=attribute_type
-        ).order_by('-updated_at').first()
-        updated_at = self.__format_updated_at(latest_synced_record.updated_at) if latest_synced_record else None
-
-        return updated_at
 
     def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
         """
@@ -155,7 +158,7 @@ class XeroConnector:
 
         return []
 
-    def sync_accounts(self, update_last_synced_at: bool = False):
+    def sync_accounts(self):
         """
         Get accounts
         """
@@ -163,12 +166,12 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        if update_last_synced_at:
-            updated_at = None
-        else:
-            updated_at = self.__get_last_synced_at('ACCOUNT')
+        workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=self.workspace_id).first()
 
-        accounts = self.connection.accounts.get_all(modified_after=updated_at)['Accounts']
+        accounts = self.connection.accounts.get_all(
+            modified_after=workspace_general_settings.xero_accounts_last_synced_at
+        )['Accounts']
+
         account_attributes = {
             'bank_account': [],
             'account': []
@@ -216,7 +219,7 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        updated_at = self.__get_last_synced_at('CONTACT')
+        updated_at = get_last_synced_at(self.workspace_id, 'CONTACT')
 
         contacts_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)
 
@@ -274,7 +277,7 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        updated_at = self.__get_last_synced_at('ITEM')
+        updated_at = get_last_synced_at(self.workspace_id, 'ITEM')
 
         items = self.connection.items.get_all(modified_after=updated_at)['Items']
 
