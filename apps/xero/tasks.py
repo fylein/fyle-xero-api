@@ -187,6 +187,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
 
                 index = 0
                 for bill_lineitems_object in bill_lineitems_objects:
+                    # Sequence of lines in API response and bank_transaction_lineitems_objects will be the same, iterating over them and adding line item ID
                     bill_lineitems_object.line_item_id = created_bill['Invoices'][0]['LineItems'][index]['LineItemID']
                     bill_lineitems_object.save()
                     index += 1
@@ -456,6 +457,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
 
                 index = 0
                 for bank_transaction_lineitems_object in bank_transaction_lineitems_objects:
+                    # Sequence of lines in API response and bank_transaction_lineitems_objects will be the same, iterating over them and adding line item ID
                     bank_transaction_lineitems_object.line_item_id = created_bank_transaction['BankTransactions'][0]['LineItems'][index]['LineItemID']
                     bank_transaction_lineitems_object.save()
                     index += 1
