@@ -10,7 +10,7 @@ import unidecode
 from xerosdk import XeroSDK
 
 from apps.mappings.models import TenantMapping
-from apps.workspaces.models import XeroCredentials, WorkspaceGeneralSettings
+from apps.workspaces.models import XeroCredentials, WorkspaceGeneralSettings, Workspace
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute
 from apps.mappings.models import GeneralMapping
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
@@ -166,10 +166,10 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=self.workspace_id).first()
+        workspace = Workspace.objects.filter(id=self.workspace_id).first()
 
-        if workspace_general_settings.xero_accounts_last_synced_at:
-            updated_at = format_updated_at(workspace_general_settings.xero_accounts_last_synced_at)
+        if workspace.xero_accounts_last_synced_at:
+            updated_at = format_updated_at(workspace.xero_accounts_last_synced_at)
         else:
             updated_at = get_last_synced_at(self.workspace_id, 'ACCOUNT')
 
@@ -214,8 +214,8 @@ class XeroConnector:
                 DestinationAttribute.bulk_create_or_update_destination_attributes(
                     account_attribute, attribute_type.upper(), self.workspace_id, True)
 
-        workspace_general_settings.xero_accounts_last_synced_at = get_last_synced_at(self.workspace_id, 'ACCOUNT')
-        workspace_general_settings.save()
+        workspace.xero_accounts_last_synced_at = get_last_synced_at(self.workspace_id, 'ACCOUNT')
+        workspace.save()
 
         return []
 
