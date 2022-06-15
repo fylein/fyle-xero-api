@@ -105,7 +105,7 @@ class XeroConnector:
                 'attribute_type': 'TENANT',
                 'display_name': 'Tenant',
                 'value': tenant['tenantName'],
-                'active': None,
+                'active': True,
                 'destination_id': tenant['tenantId']
             })
 
@@ -298,7 +298,7 @@ class XeroConnector:
                 'attribute_type': 'ITEM',
                 'display_name': 'Item',
                 'value': item['Code'],
-                'active': None,
+                'active': True,
                 'destination_id': item['ItemID']
             })
         DestinationAttribute.bulk_create_or_update_destination_attributes(
