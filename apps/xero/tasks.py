@@ -169,8 +169,6 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
 
             created_bill = xero_connection.post_bill(bill_object, bill_lineitems_objects)
 
-            load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
-
             task_log.detail = created_bill
             task_log.bill = bill_object
             task_log.xero_errors = None
@@ -181,6 +179,18 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
             expense_group.exported_at = datetime.now()
             expense_group.save()
 
+            if general_settings.import_customers:
+                bill_object.export_id = created_bill['Invoices'][0]['InvoiceID']
+                bill_object.save()
+
+                for lineitem, index in enumerate(created_bill['Invoices'][0]['LineItems']):
+                    print('bill_lineitems_objects[index]',bill_lineitems_objects[index])
+                    bill_lineitems_objects[index].line_item_id = lineitem['LineItemID']
+                    bill_lineitems_objects[index].save()
+
+                attach_customer_to_export(xero_connection, created_bill)
+
+            load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
     except XeroCredentials.DoesNotExist:
         logger.info(
             'Xero Credentials not found for workspace_id %s / expense group %s',
@@ -328,6 +338,60 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
 
     return chaining_attributes
 
+def get_linked_transaction_object(export_instance, line_items: list):
+    lines = []
+    export_id = export_instance.export_id
+
+    for line in line_items:
+        lines.append({
+            'line_item_id': line.line_item_id,
+            'customer_id': line.customer_id
+        })
+
+    return export_id, lines
+
+def extract_export_lines_contact_ids(task_log: TaskLog):
+    """
+    Construct linked transaction payload
+    :return:
+    """
+    filter = {
+        'bill': task_log.bill
+    } if task_log.type == 'CREATING_BILL' else {
+        'bank_transaction': task_log.bank_transaction
+    }
+
+    filter['customer_id__isnull'] = False
+
+    export_id, lines = get_linked_transaction_object(
+        export_instance=task_log.bill if task_log.type == 'CREATING_BILL' else task_log.bank_transaction,
+        line_items = BillLineItem.objects.filter(**filter) if task_log.type == 'CREATING_BILL' else BankTransactionLineItem.objects.filter(**filter),
+    )
+
+    return export_id, lines
+
+def attach_customer_to_export(xero_connection: XeroConnector, task_log: TaskLog):
+    """
+    Attach customer to export
+    :param xero_connection:
+    :param task_log:
+    :return:
+    """
+    export_id, lines = extract_export_lines_contact_ids(task_log)
+
+    for item in lines:
+        try:
+            data = {
+                'SourceTransactionID': export_id,
+                'SourceLineItemID': item.line_item_id,
+                'ContactID': item.customer_id
+            }
+            print('posting to xeroooo', data)
+            xero_connection.linked_transactions.post(data)
+
+        except Exception as exception:
+            logger.exception('Something unexpected happened during attaching customer to export', exception)
+
 
 def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector):
     sleep(2)
@@ -362,9 +426,6 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
                 bank_transaction_object, bank_transaction_lineitems_objects
             )
 
-            load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
-                             'banktransactions', expense_group)
-
             task_log.detail = created_bank_transaction
             task_log.bank_transaction = bank_transaction_object
             task_log.xero_errors = None
@@ -375,6 +436,18 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
             expense_group.exported_at = datetime.now()
             expense_group.save()
 
+            if general_settings.import_customers:
+                bank_transaction_object.export_id = created_bank_transaction['BankTransactions'][0]['BankTransactionID']
+                bank_transaction_object.save()
+
+                for lineitem, index in enumerate(created_bank_transaction['BankTransactions'][0]['LineItems']):
+                    bank_transaction_lineitems_objects[index].line_item_id = lineitem['LineItemID']
+                    bank_transaction_lineitems_objects[index].save()
+
+                attach_customer_to_export(xero_connection, created_bank_transaction)
+
+            load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
+                    'banktransactions', expense_group)
     except XeroCredentials.DoesNotExist:
         logger.info(
             'Xero Credentials not found for workspace_id %s / expense group %s',

@@ -80,6 +80,7 @@ class Expense(models.Model):
     corporate_card_id = models.CharField(max_length=255, null=True, blank=True, help_text='Corporate Card ID')
     purpose = models.TextField(null=True, blank=True, help_text='Purpose')
     report_id = models.CharField(max_length=255, help_text='Report ID')
+    billable = models.BooleanField(default=False, help_text='Expense billable or not')
     file_ids = ArrayField(base_field=models.CharField(max_length=255), null=True, help_text='File IDs')
     spent_at = models.DateTimeField(null=True, help_text='Expense spent at')
     approved_at = models.DateTimeField(null=True, help_text='Expense approved at')
@@ -141,7 +142,8 @@ class Expense(models.Model):
                         'verified_at': expense['verified_at'],
                         'custom_properties': expense['custom_properties'],
                         'tax_amount': expense['tax_amount'], 
-                        'tax_group_id': expense['tax_group_id']
+                        'tax_group_id': expense['tax_group_id'],
+                        'billable': expense['billable']
                     }
                 )
 

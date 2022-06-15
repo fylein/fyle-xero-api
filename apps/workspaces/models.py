@@ -76,6 +76,7 @@ class WorkspaceGeneralSettings(models.Model):
     auto_create_destination_entity = models.BooleanField(default=False, help_text='Auto create contact')
     skip_cards_mapping = models.BooleanField(default=False, help_text='Skip cards mapping')
     import_tax_codes = models.BooleanField(default=False, help_text='Auto import tax codes to Fyle', null=True)
+    import_customers = models.BooleanField(default=False, help_text='Auto import customers to Fyle')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
     charts_of_accounts = ArrayField(
