@@ -168,8 +168,13 @@ class XeroConnector:
 
         workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=self.workspace_id).first()
 
+        if workspace_general_settings.xero_accounts_last_synced_at:
+            updated_at = format_updated_at(workspace_general_settings.xero_accounts_last_synced_at)
+        else:
+            updated_at = get_last_synced_at(self.workspace_id, 'ACCOUNT')
+
         accounts = self.connection.accounts.get_all(
-            modified_after=workspace_general_settings.xero_accounts_last_synced_at
+            modified_after=updated_at
         )['Accounts']
 
         account_attributes = {
@@ -208,6 +213,9 @@ class XeroConnector:
             if account_attribute:
                 DestinationAttribute.bulk_create_or_update_destination_attributes(
                     account_attribute, attribute_type.upper(), self.workspace_id, True)
+
+        workspace_general_settings.xero_accounts_last_synced_at = get_last_synced_at(self.workspace_id, 'ACCOUNT')
+        workspace_general_settings.save()
 
         return []
 

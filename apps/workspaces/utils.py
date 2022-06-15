@@ -130,8 +130,8 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
     )
 
     if set(workspace_general_settings.charts_of_accounts) != general_settings_payload['charts_of_accounts']:
-        workspace_general_settings.xero_accounts_last_synced_at = datetime.datetime.now() - datetime.timedelta(days=5*365)
-        workspace_general_settings.save()
+        general_settings.xero_accounts_last_synced_at = datetime.datetime.now() - datetime.timedelta(days=5*365)
+        general_settings.save()
     else:
         workspace_general_settings.xero_accounts_last_synced_at = get_last_synced_at(workspace_id, 'ACCOUNT')
 
