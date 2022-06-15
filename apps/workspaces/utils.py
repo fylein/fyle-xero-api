@@ -18,7 +18,6 @@ from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_sta
 from fyle_xero_api.utils import assert_valid
 from .models import WorkspaceGeneralSettings, Workspace
 from ..fyle.models import ExpenseGroupSettings
-from ..xero.utils import get_last_synced_at
 
 
 def generate_token(authorization_code: str, redirect_uri: str = None) -> str:
@@ -130,7 +129,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
     )
 
     if set(workspace_general_settings.charts_of_accounts) != set(general_settings_payload['charts_of_accounts']):
-        workspace.xero_accounts_last_synced_at = datetime.datetime.now() - datetime.timedelta(days=5*365)
+        workspace.xero_accounts_last_synced_at = None
         workspace.save()
 
     if general_settings.map_merchant_to_contact and \
