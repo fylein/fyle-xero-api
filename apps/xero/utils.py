@@ -170,8 +170,8 @@ class XeroConnector:
 
         updated_at = get_last_synced_at(self.workspace_id, 'ACCOUNT')
 
-        if workspace.xero_accounts_last_synced_at:
-            updated_at = format_updated_at(workspace.xero_accounts_last_synced_at)
+        if not workspace.xero_accounts_last_synced_at:
+            updated_at = None
 
         accounts = self.connection.accounts.get_all(
             modified_after=updated_at
