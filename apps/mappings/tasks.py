@@ -59,7 +59,6 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
             })
         # Xero Account is not active and present in Fyle -> This category will be disabled now
         elif not category.active and category.value.lower() in category_map:
-            print('Account is not active and present in Fyle')
             payload.append({
                 'id': category_map[category.value.lower()]['id'],
                 'name': category.value,
