@@ -103,9 +103,18 @@ class ExpenseCustomFieldsView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         attribute_type = self.request.query_params.get('attribute_type')
+        active = self.request.query_params.get('active')
 
-        return ExpenseAttribute.objects.filter(
-            attribute_type=attribute_type, workspace_id=self.kwargs['workspace_id']).order_by('value')
+        print('fyle params - ', attribute_type, active)
+        filters = {
+            'attribute_type': attribute_type,
+            'workspace_id': self.kwargs['workspace_id']
+        }
+
+        if active and active.lower() == 'true':
+            filters['active'] = True
+
+        return ExpenseAttribute.objects.filter(**filters).order_by('value')
 
 class ExpenseFieldsView(generics.ListAPIView):
     pagination_class = None

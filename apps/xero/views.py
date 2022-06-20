@@ -204,9 +204,17 @@ class TrackingCategoryView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         attribute_type = self.request.query_params.get('attribute_type')
+        active = self.request.query_params.get('active')
 
-        return DestinationAttribute.objects.filter(
-            attribute_type=attribute_type, workspace_id=self.kwargs['workspace_id']).order_by('value')
+        filters = {
+            'attribute_type' : attribute_type,
+            'workspace_id': self.kwargs['workspace_id']
+        }
+
+        if active and active.lower() == 'true':
+            filters['active'] = True
+
+        return DestinationAttribute.objects.filter(**filters).order_by('value')
 
     def post(self, request, *args, **kwargs):
         """
