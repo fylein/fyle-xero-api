@@ -127,10 +127,10 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             'charts_of_accounts': general_settings_payload['charts_of_accounts']
         }
     )
-
-    if set(workspace_general_settings.charts_of_accounts) != set(general_settings_payload['charts_of_accounts']):
-        workspace.xero_accounts_last_synced_at = None
-        workspace.save()
+    if workspace_general_settings:
+        if set(workspace_general_settings.charts_of_accounts) != set(general_settings_payload['charts_of_accounts']):
+            workspace.xero_accounts_last_synced_at = None
+            workspace.save()
 
     if general_settings.map_merchant_to_contact and \
             general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
