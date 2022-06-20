@@ -97,6 +97,30 @@ def get_all_categories_from_fyle(platform: PlatformConnector):
     return category_name_map
 
 
+def disable_inactive_expense_attributes(source_field, destination_field, workspace_id):
+
+    # Get All the inactive destination attribute ids
+    destination_attribute_ids = DestinationAttribute.objects.filter(
+		attribute_type=destination_field,
+		mapping__isnull=False,
+		mapping__destination_type=destination_field,
+		active=False,
+		workspace_id=workspace_id
+	).values_list('id', flat=True)
+
+    # Get all the expense attributes that are mapped to these destination_attribute_ids
+    expense_attributes = ExpenseAttribute.objects.filter(
+		attribute_type=source_field,
+		mapping__destination_id__in=destination_attribute_ids,
+		active=True
+	)
+
+    # if there are any expense attributes present, set active to False
+    if expense_attributes:
+        expense_attributes_ids = [expense_attribute.id for expense_attribute in expense_attributes]
+        expense_attributes.update(active=False)
+        return expense_attributes_ids
+
 def upload_categories_to_fyle(workspace_id):
     """
     Upload categories to Fyle
@@ -129,6 +153,7 @@ def upload_categories_to_fyle(workspace_id):
         if fyle_payload:
             platform.categories.post_bulk(fyle_payload)
             platform.categories.sync()
+            disable_inactive_expense_attributes('CATEGORY', 'ACCOUNT', workspace_id)
 
         return xero_attributes
 

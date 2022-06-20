@@ -105,7 +105,6 @@ class ExpenseCustomFieldsView(generics.ListCreateAPIView):
         attribute_type = self.request.query_params.get('attribute_type')
         active = self.request.query_params.get('active')
 
-        print('fyle params - ', attribute_type, active)
         filters = {
             'attribute_type': attribute_type,
             'workspace_id': self.kwargs['workspace_id']
