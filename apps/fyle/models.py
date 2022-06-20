@@ -143,7 +143,7 @@ class Expense(models.Model):
                         'custom_properties': expense['custom_properties'],
                         'tax_amount': expense['tax_amount'], 
                         'tax_group_id': expense['tax_group_id'],
-                        'billable': expense['billable']
+                        'billable': expense['billable'] if expense['billable'] else False
                     }
                 )
 
