@@ -80,46 +80,46 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
 
 def get_all_categories_from_fyle(platform: PlatformConnector):
     categories_generator = platform.connection.v1beta.admin.categories.list_all(query_params={
-            'order': 'id.desc'
-        })
+        'order': 'id.desc'
+    })
     categories = []
 
     for response in categories_generator:
         if response.get('data'):
             categories.extend(response['data'])
-    
+
     category_name_map = {}
     for category in categories:
         if category['sub_category'] and category['name'] != category['sub_category']:
-                    category['name'] = '{0} / {1}'.format(category['name'], category['sub_category'])
+            category['name'] = '{0} / {1}'.format(category['name'], category['sub_category'])
         category_name_map[category['name'].lower()] = category
 
     return category_name_map
 
 
 def disable_inactive_expense_attributes(source_field, destination_field, workspace_id):
-
     # Get All the inactive destination attribute ids
     destination_attribute_ids = DestinationAttribute.objects.filter(
-		attribute_type=destination_field,
-		mapping__isnull=False,
-		mapping__destination_type=destination_field,
-		active=False,
-		workspace_id=workspace_id
-	).values_list('id', flat=True)
+        attribute_type=destination_field,
+        mapping__isnull=False,
+        mapping__destination_type=destination_field,
+        active=False,
+        workspace_id=workspace_id
+    ).values_list('id', flat=True)
 
     # Get all the expense attributes that are mapped to these destination_attribute_ids
     expense_attributes = ExpenseAttribute.objects.filter(
-		attribute_type=source_field,
-		mapping__destination_id__in=destination_attribute_ids,
-		active=True
-	)
+        attribute_type=source_field,
+        mapping__destination_id__in=destination_attribute_ids,
+        active=True
+    )
 
     # if there are any expense attributes present, set active to False
     if expense_attributes:
         expense_attributes_ids = [expense_attribute.id for expense_attribute in expense_attributes]
         expense_attributes.update(active=False)
         return expense_attributes_ids
+
 
 def upload_categories_to_fyle(workspace_id):
     """
@@ -130,7 +130,7 @@ def upload_categories_to_fyle(workspace_id):
         xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
         general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
         platform = PlatformConnector(fyle_credentials)
-        
+
         category_map = get_all_categories_from_fyle(platform=platform)
 
         xero_connection = XeroConnector(
@@ -489,7 +489,7 @@ def schedule_projects_creation(import_to_fyle, workspace_id):
 
 
 def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int,
-                                              fyle_attribute: str,  platform: PlatformConnector):
+                                              fyle_attribute: str, platform: PlatformConnector):
     """
     Create Fyle Expense Custom Field Payload from Xero Objects
     :param workspace_id: Workspace ID
