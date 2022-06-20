@@ -49,8 +49,8 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
     payload = []
 
     for category in categories:
-        # Xero account is not in Fyle -> New category will be created
-        if category.value.lower() not in category_map:
+        # Xero account active and is not present in Fyle -> New category will be created
+        if category.value.lower() not in category_map and category.active:
             payload.append({
                 'name': category.value,
                 'code': category.destination_id,
@@ -67,7 +67,7 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
                 'restricted_project_ids': None
             })
         # Xero Account is active and already present in Fyle -> This category will be enabled now
-        else:
+        elif category.active and category.value.lower() in category_map:
             payload.append({
                 'id': category_map[category.value.lower()]['id'],
                 'name': category.value,
