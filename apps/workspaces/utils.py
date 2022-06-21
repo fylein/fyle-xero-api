@@ -12,6 +12,8 @@ from future.moves.urllib.parse import urlencode
 
 from xerosdk import InvalidTokenError, InternalServerError, XeroSDK
 
+from fyle_accounting_mappings.models import MappingSetting
+
 from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_employees, schedule_tax_groups_creation
 from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
 
@@ -124,13 +126,36 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             'auto_map_employees': general_settings_payload['auto_map_employees'],
             'auto_create_destination_entity': general_settings_payload['auto_create_destination_entity'],
             'map_merchant_to_contact': map_merchant_to_contact,
-            'charts_of_accounts': general_settings_payload['charts_of_accounts']
+            'charts_of_accounts': general_settings_payload['charts_of_accounts'],
+            'import_customers': general_settings_payload['import_customers']
         }
     )
     if workspace_general_settings:
         if set(workspace_general_settings.charts_of_accounts) != set(general_settings_payload['charts_of_accounts']):
             workspace.xero_accounts_last_synced_at = None
             workspace.save()
+
+    # Maintaining this flag update_customer_import_settings to update/create Mapping Setting row
+    update_customer_import_settings = False
+    import_to_fyle = True
+
+    # General Settings exist already and have import_customers enabled and the current setting is disabled
+    if not general_settings.import_customers and workspace_general_settings and \
+        workspace_general_settings.import_customers is True:
+        import_to_fyle = False
+        update_customer_import_settings = True
+
+    if general_settings.import_customers or update_customer_import_settings:
+        # Signal would take care of syncing them to Fyle
+        MappingSetting.objects.update_or_create(
+            source_field='PROJECT',
+            workspace_id=workspace_id,
+            destination_field='CUSTOMER',
+            defaults={
+                'import_to_fyle': import_to_fyle,
+                'is_custom': False
+            }
+        )
 
     if general_settings.map_merchant_to_contact and \
             general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':

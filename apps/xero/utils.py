@@ -251,6 +251,39 @@ class XeroConnector:
 
         return []
 
+    def sync_customers(self):
+        """
+        Get customers
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        updated_at = get_last_synced_at(self.workspace_id, 'CUSTOMER')
+
+        customers_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)
+
+        for customers in customers_generator:
+            customer_attributes = []
+
+            for customer in customers['Contacts']:
+                if customer['IsCustomer']:
+                    customer_attributes.append({
+                        'attribute_type': 'CUSTOMER',
+                        'display_name': 'Customer',
+                        'value': customer['Name'],
+                        'destination_id': customer['ContactID'],
+                        'detail': {
+                            'email': customer['EmailAddress'] if 'EmailAddress' in customer else None
+                        },
+                        'active': True if customer['ContactStatus'] == 'ACTIVE' else False
+                    })
+
+            DestinationAttribute.bulk_create_or_update_destination_attributes(
+                customer_attributes, 'CUSTOMER', self.workspace_id, True)
+
+        return []
+
     def sync_tracking_categories(self):
         """
         Get Tracking Categories
@@ -325,6 +358,11 @@ class XeroConnector:
 
         try:
             self.sync_contacts()
+        except Exception as exception:
+            logger.exception(exception)
+
+        try:
+            self.sync_customers()
         except Exception as exception:
             logger.exception(exception)
 

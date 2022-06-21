@@ -89,6 +89,29 @@ def get_item_code_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     return item_code
 
 
+def get_customer_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
+    customer_setting: MappingSetting = MappingSetting.objects.filter(
+        workspace_id=expense_group.workspace_id,
+        destination_field='CUSTOMER',
+        source_field='PROJECT'
+    ).first()
+
+    customer_id = None
+
+    if customer_setting and lineitem.billable and lineitem.project:
+        mapping: Mapping = Mapping.objects.filter(
+            source_type='PROJECT',
+            destination_type='CUSTOMER',
+            source__value=lineitem.project,
+            workspace_id=expense_group.workspace_id
+        ).first()
+
+        if mapping:
+            customer_id = mapping.destination.destination_id
+    return customer_id
+
+
+
 def get_expense_purpose(workspace_id, lineitem, category) -> str:
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
@@ -129,6 +152,7 @@ class Bill(models.Model):
     date = models.DateTimeField(help_text='Bill date')
     payment_synced = models.BooleanField(help_text='Payment synced status', default=False)
     paid_on_xero = models.BooleanField(help_text='Payment status in Xero', default=False)
+    export_id = models.CharField(max_length=255, help_text='Export ID', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
@@ -168,6 +192,8 @@ class BillLineItem(models.Model):
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
     item_code = models.CharField(max_length=255, null=True, help_text='Item code')
     account_id = models.CharField(max_length=255, help_text='Xero account id')
+    line_item_id = models.CharField(max_length=255, help_text='Xero line item id', null=True)
+    customer_id = models.CharField(max_length=255, help_text='Xero customer id', null=True)
     description = models.TextField(help_text='Lineitem purpose')
     amount = models.FloatField(help_text='Bill amount')
     tax_amount = models.FloatField(null=True, help_text='Tax amount')
@@ -195,6 +221,7 @@ class BillLineItem(models.Model):
             ).first()
 
             item_code = get_item_code_or_none(expense_group, lineitem)
+            customer_id = get_customer_id_or_none(expense_group, lineitem)
 
             description = get_expense_purpose(expense_group.workspace_id, lineitem, category)
 
@@ -211,6 +238,7 @@ class BillLineItem(models.Model):
                     'amount': lineitem.amount,
                     'tax_code': get_tax_code_id_or_none(expense_group, lineitem),
                     'tax_amount': lineitem.tax_amount,
+                    'customer_id': customer_id
                 }
             )
             bill_lineitem_objects.append(lineitem_object)
@@ -229,6 +257,7 @@ class BankTransaction(models.Model):
     currency = models.CharField(max_length=255, help_text='Bank Transaction Currency')
     reference = models.CharField(max_length=255, help_text='Bank Transaction ID')
     transaction_date = models.DateField(help_text='Bank transaction date')
+    export_id = models.CharField(max_length=255, help_text='Export ID', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
 
@@ -306,6 +335,8 @@ class BankTransactionLineItem(models.Model):
     bank_transaction = models.ForeignKey(BankTransaction, on_delete=models.PROTECT,
                                          help_text='Reference to bank transaction')
     account_id = models.CharField(max_length=255, help_text='Xero AccountCode')
+    line_item_id = models.CharField(max_length=255, help_text='Xero line item id', null=True)
+    customer_id = models.CharField(max_length=255, help_text='Xero customer id', null=True)
     item_code = models.CharField(max_length=255, help_text='Xero ItemCode', null=True)
     tracking_categories = JSONField(null=True, help_text='Save Tracking options')
     amount = models.FloatField(help_text='Bank Transaction LineAmount')
@@ -342,6 +373,7 @@ class BankTransactionLineItem(models.Model):
             ).first()
 
             item_code = get_item_code_or_none(expense_group, lineitem)
+            customer_id = get_customer_id_or_none(expense_group, lineitem)
 
             description = get_expense_purpose(expense_group.workspace_id, lineitem, category)
 
@@ -358,6 +390,7 @@ class BankTransactionLineItem(models.Model):
                     'description': description,
                     'tax_code': get_tax_code_id_or_none(expense_group, lineitem),
                     'tax_amount': lineitem.tax_amount,
+                    'customer_id': customer_id
                 }
             )
 
