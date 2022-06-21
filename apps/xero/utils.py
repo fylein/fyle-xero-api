@@ -259,7 +259,7 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        updated_at = self.__get_last_synced_at('CUSTOMER')
+        updated_at = get_last_synced_at(self.workspace_id, 'CUSTOMER')
 
         customers_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)
 
