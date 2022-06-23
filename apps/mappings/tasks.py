@@ -61,7 +61,8 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
                 'id': category_map[category.value.lower()]['id'],
                 'name': category.value,
                 'code': category.destination_id,
-                'is_enabled': category_map[category.value.lower()]['is_enabled'],
+                'is_enabled': True if category_map[category.value.lower()]['name'] in DEFAULT_FYLE_CATEGORIES else
+                category_map[category.value.lower()]['is_enabled'],
                 'restricted_project_ids': None
             })
     return payload
