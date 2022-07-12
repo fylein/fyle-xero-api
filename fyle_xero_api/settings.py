@@ -14,8 +14,6 @@ import os
 
 import dj_database_url
 
-from .sentry import Sentry
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -190,7 +188,6 @@ CACHES = {
     }
 }
 
-Sentry.init()
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
@@ -280,7 +277,6 @@ CACHE_EXPIRY = 3600
 CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOW_HEADERS = [
-    'sentry-trace',
     'authorization',
     'content-type'
 ]
