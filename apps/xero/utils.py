@@ -284,6 +284,41 @@ class XeroConnector:
 
         return []
 
+
+    def sync_vendors(self):
+        """
+        Get vendors
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        updated_at = get_last_synced_at(self.workspace_id, 'VENDOR')
+
+        vendors_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)
+
+        for vendors in vendors_generator:
+            vendor_attributes = []
+
+            for vendor in vendors['Contacts']:
+                if vendor['IsSupplier']:
+                    vendor_attributes.append({
+                        'attribute_type': 'VENDOR',
+                        'display_name': 'Vendor',
+                        'value': vendor['Name'],
+                        'destination_id': vendor['ContactID'],
+                        'detail': {
+                            'email': vendor['EmailAddress'] if 'EmailAddress' in vendor else None
+                        },
+                        'active': True if vendor['ContactStatus'] == 'ACTIVE' else False
+                    })
+
+            DestinationAttribute.bulk_create_or_update_destination_attributes(
+                vendor_attributes, 'VENDOR', self.workspace_id, True)
+
+        return []
+
+
     def sync_tracking_categories(self):
         """
         Get Tracking Categories
