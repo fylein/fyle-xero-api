@@ -13,7 +13,7 @@ from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, DestinationAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 
-from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError
+from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.mappings.models import GeneralMapping, TenantMapping
@@ -267,9 +267,33 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
 
         task_log.save()
 
+    except NoPrivilegeError as exception:
+        # Deleting xero credentials since the account got disconnected
+        XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).delete()
+        logger.error(exception.message)
+        task_log.status = 'FAILED'
+        task_log.detail = None
+        task_log.xero_errors = [
+            {
+                'error': {
+                    'Elements': [
+                        {
+                            'ValidationErrors': [
+                                {
+                                    'Message': 'Xero account got disconnected, please go Configurations -> Tenant page and connect to Xero again'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ]
+
+        task_log.save()
+
     except XeroSDKError as exception:
         logger.exception(exception.response)
-        detail = json.loads(exception.response)
+        detail = exception.response
         task_log.status = 'FAILED'
         task_log.detail = None
         task_log.xero_errors = detail
@@ -539,9 +563,33 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
 
         task_log.save()
 
+    except NoPrivilegeError as exception:
+        # Deleting xero credentials since the account got disconnected
+        XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).delete()
+        logger.error(exception.message)
+        task_log.status = 'FAILED'
+        task_log.detail = None
+        task_log.xero_errors = [
+            {
+                'error': {
+                    'Elements': [
+                        {
+                            'ValidationErrors': [
+                                {
+                                    'Message': 'Xero account got disconnected, please go Configurations -> Tenant page and connect to Xero again'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ]
+
+        task_log.save()
+
     except XeroSDKError as exception:
         logger.exception(exception.response)
-        detail = json.loads(exception.response)
+        detail = exception.response
         task_log.status = 'FAILED'
         task_log.detail = None
         task_log.xero_errors = detail
