@@ -412,12 +412,25 @@ class XeroConnector:
         lines = []
 
         for line in bill_lineitems:
-            unit_amount = line.amount - line.tax_amount if line.tax_code else \
-                    self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id) if general_mappings else line.amount
-            tax_type = line.tax_code if (line.tax_code and line.tax_amount) else \
-                    general_mappings.default_tax_code_id if general_settings.import_tax_codes and general_mappings else None
-            tax_amount = line.tax_amount if (line.tax_code and line.tax_amount) else \
-                    round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2) if general_mappings else 0.00
+
+            unit_amount = line.amount
+            if line.tax_code:
+                unit_amount = line.amount - line.tax_amount
+            elif general_mappings:
+                unit_amount = self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id)
+
+            tax_type = None
+            if line.tax_code and line.tax_amount:
+                tax_type = line.tax_code
+            elif general_settings.import_tax_codes and general_mappings != None:
+                tax_type = general_mappings.default_tax_code_id
+
+            tax_amount = 0.00
+            if line.tax_code and line.tax_amount:
+                tax_amount = line.tax_amount
+            elif general_mappings:
+                tax_amount = round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2)
+
             line = {
                 'Description': line.description,
                 'Quantity': '1',
@@ -475,10 +488,19 @@ class XeroConnector:
         lines = []
 
         for line in bank_transaction_lineitems:
-            unit_amount = line.amount - line.tax_amount if line.tax_code else \
-                    self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id) if general_mappings else line.amount
-            tax_type = line.tax_code if (line.tax_code and line.tax_amount) else \
-                    general_mappings.default_tax_code_id if general_settings.import_tax_codes and general_mappings else None
+
+            unit_amount = line.amount
+            if line.tax_code:
+                unit_amount = line.amount - line.tax_amount
+            elif general_mappings:
+                unit_amount = self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id)
+
+            tax_type = None
+            if (line.tax_code and line.tax_amount):
+                tax_type = line.tax_code
+            elif general_settings.import_tax_codes and general_mappings != None:
+                tax_type = general_mappings.default_tax_code_id
+
             line = {
                 'Description': line.description,
                 'Quantity': '1',
