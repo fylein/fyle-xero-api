@@ -415,12 +415,15 @@ class XeroConnector:
             line = {
                 'Description': line.description,
                 'Quantity': '1',
-                'UnitAmount': line.amount - line.tax_amount if line.tax_code else self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id),
+                'UnitAmount': line.amount - line.tax_amount if line.tax_code else \
+                    self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id) if general_mappings else line.amount,
                 'AccountCode': line.account_id,
                 'ItemCode': line.item_code if line.item_code else None,
                 'Tracking': line.tracking_categories if line.tracking_categories else None,
-                'TaxType': line.tax_code if (line.tax_code and line.tax_amount) else general_mappings.default_tax_code_id if general_settings.import_tax_codes else None,
-                'TaxAmount': line.tax_amount if (line.tax_code and line.tax_amount) else round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2),
+                'TaxType': line.tax_code if (line.tax_code and line.tax_amount) else \
+                    general_mappings.default_tax_code_id if general_settings.import_tax_codes and general_mappings else None,
+                'TaxAmount': line.tax_amount if (line.tax_code and line.tax_amount) else \
+                    round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2) if general_mappings else 0.00,
             }
             lines.append(line)
 
@@ -472,11 +475,13 @@ class XeroConnector:
             line = {
                 'Description': line.description,
                 'Quantity': '1',
-                'UnitAmount': line.amount - line.tax_amount if line.tax_code else self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id),
+                'UnitAmount': line.amount - line.tax_amount if line.tax_code else \
+                    self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id) if general_mappings else line.amount,
                 'AccountCode': line.account_id,
                 'ItemCode': line.item_code if line.item_code else None,
                 'Tracking': line.tracking_categories if line.tracking_categories else None,
-                'TaxType': line.tax_code if (line.tax_code and line.tax_amount) else general_mappings.default_tax_code_id if general_settings.import_tax_codes else None,
+                'TaxType': line.tax_code if (line.tax_code and line.tax_amount) else \
+                    general_mappings.default_tax_code_id if general_settings.import_tax_codes and general_mappings else None,
             }
             lines.append(line)
 
