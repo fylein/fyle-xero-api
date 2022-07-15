@@ -683,14 +683,23 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                 'message': 'Employee mapping not found'
             })
 
-    if general_settings.import_tax_codes and not (general_mapping.default_tax_code_id or general_mapping.default_tax_code_name): 
-        bulk_errors.append({
-            'row': None,
-            'expense_group_id': expense_group.id,
-            'value': 'Default Tax Code',
-            'type': 'General Mapping',
-            'message': 'Default Tax Code not found'
-        })
+    if general_settings.import_tax_codes:
+        if not general_mapping:
+            bulk_errors.append({
+                'row': None,
+                'expense_group_id': expense_group.id,
+                'value': 'Default Tax Code',
+                'type': 'General Mapping',
+                'message': 'General mapping not found'
+            })
+        elif not (general_mapping.default_tax_code_id or general_mapping.default_tax_code_name):
+            bulk_errors.append({
+                'row': None,
+                'expense_group_id': expense_group.id,
+                'value': 'Default Tax Code',
+                'type': 'General Mapping',
+                'message': 'Default Tax Code not found'
+            })
 
     expenses = expense_group.expenses.all()
 
