@@ -474,12 +474,8 @@ class XeroConnector:
                 if workspace_general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
                     first_day_of_month = datetime.today().date().replace(day=1).strftime('%Y-%m-%d')
                     bills_payload = self.__construct_bill(bill, bill_lineitems)
-                    print('bills_payload', bills_payload)
                     bills_payload['Date'] = first_day_of_month
-                    print('bills_payload', bills_payload)
-                    print('niesh')
                     created_bill = self.connection.invoices.post(bills_payload)
-                    print('sionfsomfg')
                     return created_bill
                 else:
                     raise
@@ -536,12 +532,29 @@ class XeroConnector:
         """
         Post bank transactions to Xero
         """
+        
+        workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        bank_transaction_payload = self.__construct_bank_transaction(bank_transaction, bank_transaction_lineitems)
-        created_bank_transaction = self.connection.bank_transactions.post(bank_transaction_payload)
-        return created_bank_transaction
+        try:
+            bank_transaction_payload = self.__construct_bank_transaction(bank_transaction, bank_transaction_lineitems)
+            created_bank_transaction = self.connection.bank_transactions.post(bank_transaction_payload)
+            return created_bank_transaction
+    
+        except WrongParamsError as exception:
+            detail = json.dumps(exception.__dict__)
+            detail = json.loads(detail)
+
+            if detail['message']['Elements']:
+                if workspace_general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
+                    first_day_of_month = datetime.today().date().replace(day=1).strftime('%Y-%m-%d')
+                    bank_transaction_payload = self.__construct_bank_transaction(bank_transaction, bank_transaction_lineitems)
+                    bank_transaction_payload['Date'] = first_day_of_month
+                    bank_transaction_payload = self.connection.bank_transactions.post(bank_transaction_payload)
+                    return bank_transaction_payload
+                else:
+                    raise
 
     def post_attachments(self, ref_id: str, ref_type: str, attachments: List[Dict]) -> List:
         """
