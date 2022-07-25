@@ -72,6 +72,7 @@ class WorkspaceGeneralSettings(models.Model):
     sync_fyle_to_xero_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Fyle to Xero')
     sync_xero_to_fyle_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Xero to Fyle')
     map_merchant_to_contact = models.BooleanField(default=False, help_text='Map Merchant to Contact for CCC Expenses')
+    change_accounting_period = models.BooleanField(default=False, help_text='Change the accounting period')
     import_categories = models.BooleanField(default=False, help_text='Auto import Categories to Fyle')
     auto_map_employees = models.CharField(max_length=50, help_text='Auto Map Employees from Xero to Fyle', null=True)
     auto_create_destination_entity = models.BooleanField(default=False, help_text='Auto create contact')

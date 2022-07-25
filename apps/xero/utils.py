@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 from datetime import timedelta, datetime
 
@@ -8,6 +9,7 @@ from typing import List, Dict
 import unidecode
 
 from xerosdk import XeroSDK
+from xerosdk.exceptions import XeroSDKError, WrongParamsError
 
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import XeroCredentials, WorkspaceGeneralSettings, Workspace
@@ -454,13 +456,34 @@ class XeroConnector:
         """
         Post vendor bills to Xero
         """
+
+        workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        bills_payload = self.__construct_bill(bill, bill_lineitems)
-        created_bill = self.connection.invoices.post(bills_payload)
-        return created_bill
+        try:
+            bills_payload = self.__construct_bill(bill, bill_lineitems)
+            created_bill = self.connection.invoices.post(bills_payload)
+            return created_bill
 
+        except WrongParamsError as exception:
+            detail = json.dumps(exception.__dict__)
+            detail = json.loads(detail)
+
+            if detail['message']['Elements']:
+                if workspace_general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
+                    first_day_of_month = datetime.today().date().replace(day=1).strftime('%Y-%m-%d')
+                    bills_payload = self.__construct_bill(bill, bill_lineitems)
+                    print('bills_payload', bills_payload)
+                    bills_payload['Date'] = first_day_of_month
+                    print('bills_payload', bills_payload)
+                    print('niesh')
+                    created_bill = self.connection.invoices.post(bills_payload)
+                    print('sionfsomfg')
+                    return created_bill
+                else:
+                    raise
+    
     def __construct_bank_transaction_lineitems(self, bank_transaction_lineitems: List[BankTransactionLineItem], general_mappings: GeneralMapping, general_settings: WorkspaceGeneralSettings) -> List[Dict]:
         """
         Create bank transaction line items
