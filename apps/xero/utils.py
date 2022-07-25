@@ -452,12 +452,11 @@ class XeroConnector:
 
         return bill_payload
 
-    def post_bill(self, bill: Bill, bill_lineitems: List[BillLineItem]):
+    def post_bill(self, bill: Bill, bill_lineitems: List[BillLineItem], general_settings: WorkspaceGeneralSettings):
         """
         Post vendor bills to Xero
         """
 
-        workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
@@ -471,7 +470,7 @@ class XeroConnector:
             detail = json.loads(detail)
 
             if detail['message']['Elements']:
-                if workspace_general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
+                if general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
                     first_day_of_month = datetime.today().date().replace(day=1).strftime('%Y-%m-%d')
                     bills_payload = self.__construct_bill(bill, bill_lineitems)
                     bills_payload['Date'] = first_day_of_month
@@ -528,12 +527,11 @@ class XeroConnector:
         return bank_transaction_payload
 
     def post_bank_transaction(self, bank_transaction: BankTransaction,
-                              bank_transaction_lineitems: List[BankTransactionLineItem]):
+                              bank_transaction_lineitems: List[BankTransactionLineItem], general_settings: WorkspaceGeneralSettings):
         """
         Post bank transactions to Xero
         """
         
-        workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
@@ -547,7 +545,7 @@ class XeroConnector:
             detail = json.loads(detail)
 
             if detail['message']['Elements']:
-                if workspace_general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
+                if general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
                     first_day_of_month = datetime.today().date().replace(day=1).strftime('%Y-%m-%d')
                     bank_transaction_payload = self.__construct_bank_transaction(bank_transaction, bank_transaction_lineitems)
                     bank_transaction_payload['Date'] = first_day_of_month
