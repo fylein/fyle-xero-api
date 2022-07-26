@@ -167,7 +167,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
 
             bill_lineitems_objects = BillLineItem.create_bill_lineitems(expense_group)
 
-            created_bill = xero_connection.post_bill(bill_object, bill_lineitems_objects)
+            created_bill = xero_connection.post_bill(bill_object, bill_lineitems_objects, general_settings)
 
             task_log.detail = created_bill
             task_log.bill = bill_object
@@ -460,7 +460,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
             )
 
             created_bank_transaction = xero_connection.post_bank_transaction(
-                bank_transaction_object, bank_transaction_lineitems_objects
+                bank_transaction_object, bank_transaction_lineitems_objects, general_settings
             )
 
             task_log.detail = created_bank_transaction
