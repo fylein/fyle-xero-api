@@ -1,4 +1,3 @@
-import pytest
 from apps.fyle.models import get_default_expense_state, get_default_expense_group_fields, ExpenseGroupSettings, Expense, Reimbursement, \
     ExpenseGroup, _group_expenses
 from .fixtures import data
@@ -68,15 +67,15 @@ def test_create_reimbursement(db):
 def test_create_expense_groups_by_report_id_fund_source(db):
     workspace_id = 1
     payload = data['expenses']
-    
+
     Expense.create_expense_objects(payload, workspace_id)
     expense_objects = Expense.objects.last()
-    
+
     expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
     expense_group_settings.reimbursable_export_date_type = 'last_spent_at'
     expense_group_settings.ccc_export_date_type = 'last_spent_at'
     expense_group_settings.save()
-    
+
     expense_groups = _group_expenses([], ['claim_number', 'fund_source', 'projects', 'employee_email', 'report_id'], 4)
     assert expense_groups == []
 

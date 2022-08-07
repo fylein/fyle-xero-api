@@ -2,7 +2,6 @@ from apps.fyle.models import ExpenseGroup
 from apps.workspaces.models import FyleCredential, Workspace
 import pytest
 import json
-from django.urls import reverse
 from .fixtures import data
 from tests.helper import dict_compare_keys
 from apps.tasks.models import TaskLog
@@ -47,7 +46,6 @@ def test_expense_group_view(api_client, test_connection):
     })
 
     response = json.loads(response.content)
-    print(response)
     assert response == {'count': 0, 'next': None, 'previous': None, 'results': []}
 
     response = api_client.get(url, {
@@ -150,7 +148,6 @@ def test_expense_group_id_view(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response)
     assert dict_compare_keys(response, data['expense_group_id_response']) == [], 'expense group api return diffs in keys'
 
     url = '/api/workspaces/1/fyle/expense_groups/{}/'.format(3000)
@@ -177,10 +174,34 @@ def test_expense_group_by_id_expenses_view(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response)
     assert dict_compare_keys(response, data['expense_group_by_id_expenses_response']) == [], 'expense group api return diffs in keys'
 
     url = '/api/workspaces/1/fyle/expense_groups/{}/'.format(3000)
+
+    response = api_client.get(url)
+    assert response.status_code == 400
+    assert response.data['message'] == 'Expense group not found'
+
+
+def test_expense_view(api_client, test_connection):
+
+    access_token = test_connection.access_token
+
+    workspace_id = 1
+    expense_group = ExpenseGroup.objects.filter(workspace_id=workspace_id).first()
+
+    url = '/api/workspaces/1/fyle/expense_groups/{}/expenses/'.format(expense_group.id)
+
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(access_token))
+
+    response = api_client.get(url)
+    assert response.status_code == 200
+
+    response = json.loads(response.content)
+    print(response)
+    assert dict_compare_keys(response, data['expense_group_by_id_expenses_response']) == [], 'expense group api return diffs in keys'
+
+    url = '/api/workspaces/1/fyle/expense_groups/{}/expenses/'.format(3000)
 
     response = api_client.get(url)
     assert response.status_code == 400
@@ -199,7 +220,6 @@ def test_employees_view(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response[0])
     assert response[0] == data['employee_view'][0]
 
 
@@ -215,7 +235,6 @@ def test_categories_view(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response[0])
     assert response[0] == data['categories_view'][0]
 
 
@@ -231,7 +250,6 @@ def test_cost_centers_view(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response[0])
     assert response[0] == data['cost_centers_view'][0]
 
 
@@ -245,9 +263,8 @@ def test_projects_view(api_client, test_connection):
 
     response = api_client.get(url)
     assert response.status_code == 200
-    response = json.loads(response.content)
 
-    print(response[0])
+    response = json.loads(response.content)
     assert response[0] == data['project_view'][0]
 
 

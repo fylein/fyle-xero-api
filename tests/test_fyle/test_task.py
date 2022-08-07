@@ -1,4 +1,3 @@
-import pytest
 from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
 from apps.workspaces.models import FyleCredential
 from apps.fyle.tasks import schedule_expense_group_creation, create_expense_groups
