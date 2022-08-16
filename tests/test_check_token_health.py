@@ -17,7 +17,7 @@ def test_token_health():
         try:
             xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
             xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
-
+            xero_connection.get_organisations()
             logger.info('xero_connection succeded - %s', xero_connection)
 
         except Exception as error:
