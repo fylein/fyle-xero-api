@@ -282,16 +282,16 @@ class BankTransactionView(generics.ListCreateAPIView):
         """
         Create BankTransaction from expense group
         """
+        xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+        xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+
         expense_group_id = request.data.get('expense_group_id')
         task_log_id = request.data.get('task_log_id')
 
         assert_valid(expense_group_id is not None, 'Expense ids not found')
         assert_valid(task_log_id is not None, 'Task Log id not found')
 
-        expense_group = ExpenseGroup.objects.get(pk=expense_group_id)
-        task_log = TaskLog.objects.get(pk=task_log_id)
-
-        create_bank_transaction(expense_group, task_log)
+        create_bank_transaction(expense_group_id, task_log_id, xero_connector)
 
         return Response(
             data={},
@@ -335,16 +335,16 @@ class BillView(generics.ListCreateAPIView):
         """
         Create Bill from expense group
         """
+        xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+        xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+
         expense_group_id = request.data.get('expense_group_id')
         task_log_id = request.data.get('task_log_id')
 
         assert_valid(expense_group_id is not None, 'Expense group id not found')
         assert_valid(task_log_id is not None, 'Task Log id not found')
 
-        expense_group = ExpenseGroup.objects.get(pk=expense_group_id)
-        task_log = TaskLog.objects.get(pk=task_log_id)
-
-        create_bill(expense_group, task_log)
+        create_bill(expense_group_id, task_log_id, xero_connector)
 
         return Response(
             data={},

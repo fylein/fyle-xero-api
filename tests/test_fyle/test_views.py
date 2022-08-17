@@ -198,7 +198,6 @@ def test_expense_view(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response)
     assert dict_compare_keys(response, data['expense_group_by_id_expenses_response']) == [], 'expense group api return diffs in keys'
 
     url = '/api/workspaces/1/fyle/expense_groups/{}/expenses/'.format(3000)

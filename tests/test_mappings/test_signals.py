@@ -1,7 +1,5 @@
-import pytest
-from datetime import datetime, timezone
 from django_q.models import Schedule
-from fyle_accounting_mappings.models import MappingSetting, Mapping, ExpenseAttribute, EmployeeMapping
+from fyle_accounting_mappings.models import MappingSetting, Mapping
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import Workspace
 
