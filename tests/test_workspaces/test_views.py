@@ -346,9 +346,13 @@ def test_get_general_settings_detail(api_client, test_connection):
     assert response.status_code == 400
 
 
-def test_xero_external_signup_view(api_client, test_connection):
+def test_xero_external_signup_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'apps.workspaces.views.generate_xero_identity',
+        return_value={}
+    )
     url = '/api/workspaces/external_signup/'
-    code = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRfaWQiOiJ0cGFWVVhtd2FZWGVRIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJjbHVzdGVyX2RvbWFpbiI6Imh0dHBzOi8vc3RhZ2luZy5meWxlLnRlY2giLCJvcmdfdXNlcl9pZCI6Im91NDV2ekhFWUJGUyIsImV4cCI6MTY1MjI2MzMwMH0.D6WdXnkUcKMU98VjZEMz6OH1kGtRXVj1uLGsTeIo0IQ'
+    code = 'sdfghjk'
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
 
@@ -358,4 +362,4 @@ def test_xero_external_signup_view(api_client, test_connection):
             'code': code,
             'redirect_uri': settings.XERO_REDIRECT_URI
         })
-    assert response.status_code == 500
+    assert response.status_code == 200
