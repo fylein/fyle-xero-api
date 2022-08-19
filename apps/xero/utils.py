@@ -300,6 +300,9 @@ class XeroConnector:
             tracking_category_attributes = []
 
             for option in tracking_category['Options']:
+                if tracking_category['Name'].lower() == 'customer':
+                    tracking_category['Name'] = '{}-TC'.format(tracking_category['Name'])
+
                 tracking_category_attributes.append({
                     'attribute_type': tracking_category['Name'].upper().replace(' ', '_'),
                     'display_name': tracking_category['Name'],
