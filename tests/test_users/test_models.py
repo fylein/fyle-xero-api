@@ -11,7 +11,6 @@ def test_user_creation(db):
     '''
     try:
         user = User.objects.create_user(email='', full_name='sample', password='samp')
-        print(user)
     except:
         logger.info('Users must have an email address')
 

@@ -1,10 +1,29 @@
 import json
+import requests
+import unittest
+from unittest.mock import MagicMock, patch, Mock
+from unittest import mock
+from requests.models import Response
 from apps.mappings.models import TenantMapping
+from apps.xero.utils import XeroConnector, XeroCredentials
 from fyle_xero_api import settings
+from django.contrib.auth import get_user_model
+from fyle_rest_auth.utils import AuthUtils
 from tests.helper import dict_compare_keys
+from xerosdk import exceptions as xero_exc
+from fyle.platform import exceptions as fyle_exc
 from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings
 from .fixtures import data
+from apps.workspaces.utils import generate_xero_refresh_token
 
+User = get_user_model()
+auth_utils = AuthUtils()
+
+class FakeResponse:
+    """A class for creating fake http responses for the patched method"""
+    def __init__(self, body, status):
+        self.body = body
+        self.status = status
 
 def test_ready_view(api_client, test_connection):
 
@@ -62,7 +81,6 @@ def test_post_of_workspace(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response)
     assert dict_compare_keys(response, data['workspace']) == [], 'workspaces api returns a diff in the keys'
 
 
@@ -87,16 +105,73 @@ def test_connect_fyle_view(api_client, test_connection):
     response = api_client.get(url)
     assert response.status_code == 400
 
-    code = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRfaWQiOiJ0cGFWVVhtd2FZWGVRIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJjbHVzdGVyX2RvbWFpbiI6Imh0dHBzOi8vc3RhZ2luZy5meWxlLnRlY2giLCJvcmdfdXNlcl9pZCI6Im91NDV2ekhFWUJGUyIsImV4cCI6MTY1MjI2MzMwMH0.D6WdXnkUcKMU98VjZEMz6OH1kGtRXVj1uLGsTeIo0IQ'
+
+def test_connect_fyle_view_post(mocker, api_client, test_connection):
+    mocker.patch(
+        'fyle_rest_auth.utils.AuthUtils.generate_fyle_refresh_token',
+        return_value={'refresh_token': 'asdfghjk', 'access_token': 'qwertyuio'}
+    )
+    mocker.patch(
+        'apps.workspaces.views.get_fyle_admin',
+        return_value={'data': {'org': {'name': 'FAE', 'id': 'orPJvXuoLqvJ'}}}
+    )
+    mocker.patch(
+        'apps.workspaces.views.get_cluster_domain',
+        return_value='https://staging.fyle.tech'
+    )
+    workspace_id = 1
+
+    code = 'sdfghj'
     url = '/api/workspaces/{}/connect_fyle/authorization_code/'.format(workspace_id)
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
 
     response = api_client.post(
-        url,
-        data={'code': code}    
-    )
-    assert response.status_code == 500
+            url,
+            data={'code': code}    
+        )
+    assert response.status_code == 200
+
+
+def test_connect_fyle_view_exceprions(api_client, test_connection):
+    workspace_id = 1
+    
+    code = 'qwertyu'
+    url = '/api/workspaces/{}/connect_fyle/authorization_code/'.format(workspace_id)
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
+    
+    with mock.patch('fyle_rest_auth.utils.AuthUtils.generate_fyle_refresh_token') as mock_call:
+        mock_call.side_effect = fyle_exc.UnauthorizedClientError(msg='Invalid Authorization Code', response='Invalid Authorization Code')
+        
+        response = api_client.post(
+            url,
+            data={'code': code}    
+        )
+        assert response.status_code == 403
+
+        mock_call.side_effect = fyle_exc.NotFoundClientError(msg='Fyle Application not found', response='Fyle Application not found')
+        
+        response = api_client.post(
+            url,
+            data={'code': code}    
+        )
+        assert response.status_code == 404
+
+        mock_call.side_effect = fyle_exc.WrongParamsError(msg='Some of the parameters are wrong', response='Some of the parameters are wrong')
+        
+        response = api_client.post(
+            url,
+            data={'code': code}    
+        )
+        assert response.status_code == 400
+
+        mock_call.side_effect = fyle_exc.InternalServerError(msg='Wrong/Expired Authorization code', response='Wrong/Expired Authorization code')
+        
+        response = api_client.post(
+            url,
+            data={'code': code}    
+        )
+        assert response.status_code == 401
 
 
 def test_connect_xero_view(api_client, test_connection):
@@ -109,7 +184,6 @@ def test_connect_xero_view(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response)
 
     url = '/api/workspaces/{}/credentials/xero/delete/'.format(workspace_id)
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
@@ -123,7 +197,15 @@ def test_connect_xero_view(api_client, test_connection):
     response = api_client.get(url)
     assert response.status_code == 400
 
-    code = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRfaWQiOiJ0cGFWVVhtd2FZWGVRIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJjbHVzdGVyX2RvbWFpbiI6Imh0dHBzOi8vc3RhZ2luZy5meWxlLnRlY2giLCJvcmdfdXNlcl9pZCI6Im91NDV2ekhFWUJGUyIsImV4cCI6MTY1MjI2MzMwMH0.D6WdXnkUcKMU98VjZEMz6OH1kGtRXVj1uLGsTeIo0IQ'
+
+def test_connect_xero_view_post(mocker, api_client, test_connection):
+    mocker.patch(
+        'apps.workspaces.views.generate_xero_refresh_token',
+        return_value='asdfghjk'
+    )
+    workspace_id = 1
+
+    code = 'asdfghj'
     url = '/api/workspaces/{}/connect_xero/authorization_code/'.format(workspace_id)
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
@@ -133,11 +215,56 @@ def test_connect_xero_view(api_client, test_connection):
     )
 
     response = api_client.post(url)
-    print(response)
-    assert response.status_code == 500
+    assert response.status_code == 200
 
 
-def test_revoke_xero_connection(api_client, test_connection):
+def test_connect_xero_view_exceprions(api_client, test_connection):
+    workspace_id = 1
+    
+    code = 'qwertyu'
+    url = '/api/workspaces/{}/connect_xero/authorization_code/'.format(workspace_id)
+
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
+    
+    with mock.patch('apps.workspaces.views.generate_xero_refresh_token') as mock_call:
+        mock_call.side_effect = xero_exc.InvalidClientError(msg='Invalid client', response=json.dumps({'message': 'Invalid client'}))
+        
+        response = api_client.post(
+            url,
+            data={'code': code}    
+        )
+        assert response.status_code == 400
+
+        mock_call.side_effect = xero_exc.InvalidGrant(msg='invalid grant', response=json.dumps({'message': 'invalid grant'}))
+        
+        response = api_client.post(
+            url,
+            data={'code': code}    
+        )
+        assert response.status_code == 400
+
+        mock_call.side_effect = xero_exc.InvalidTokenError(msg='Invalid token', response='Invalid token')
+        
+        response = api_client.post(
+            url,
+            data={'code': code}    
+        )
+        assert response.status_code == 401
+
+        mock_call.side_effect = xero_exc.InternalServerError(msg='Wrong/Expired Authorization code', response='Wrong/Expired Authorization code')
+        
+        response = api_client.post(
+            url,
+            data={'code': code}    
+        )
+        assert response.status_code == 500
+
+
+def test_revoke_xero_connection(mocker, api_client, test_connection):
+    mocker.patch(
+        'xerosdk.apis.Connections.remove_connection',
+        return_value=None
+    )
     workspace_id = 1
     
     url = '/api/workspaces/{}/connection/xero/revoke/'.format(workspace_id)
@@ -146,13 +273,14 @@ def test_revoke_xero_connection(api_client, test_connection):
 
     tenant_mapping = TenantMapping.objects.get(workspace_id=workspace_id)
     tenant_mapping.connection_id = 'sdfghjkl'
+    tenant_mapping.save()
 
     response = api_client.post(url)
     assert response.status_code == 200
 
 
 def test_workspace_schedule(api_client, test_connection):
-    workspace_id = 3
+    workspace_id = 1
 
     url = '/api/workspaces/{}/schedule/'.format(workspace_id)
 
@@ -166,20 +294,20 @@ def test_workspace_schedule(api_client, test_connection):
     response = api_client.get(url)
 
     response = json.loads(response.content)
-    print(response)
-    # assert response == {'id': 2, 'enabled': False, 'start_datetime': None, 'interval_hours': None, 'workspace': 2, 'schedule': None}
+    assert dict_compare_keys(response, data['workspace_schedule']) == [], 'workspace_schedule api returns a diff in keys'
 
     response = api_client.post(
         url,
         data={
             'schedule_enabled': True,
-            'hours': 1}    
+            'hours': 1
+        },
+        format='json'    
     )
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    print(response)
-    assert response == {'id': 2, 'enabled': True, 'start_datetime': None, 'interval_hours': 1, 'workspace': 2, 'schedule': None}
+    assert dict_compare_keys(response, data['workspace_schedule']) == [], 'workspace_schedule api returns a diff in keys'
 
 
 def test_get_general_settings_detail(api_client, test_connection):
