@@ -9,10 +9,10 @@ from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactio
 from apps.xero.tasks import get_or_create_credit_card_contact, create_bill, create_bank_transaction, create_payment, \
     check_xero_object_status, schedule_reimbursements_sync, process_reimbursements, create_or_update_employee_mapping, \
         schedule_payment_creation, schedule_bank_transaction_creation, schedule_bills_creation, schedule_xero_objects_status_sync, \
-            create_missing_currency, update_xero_short_code, create_chain_and_export
+            create_missing_currency, update_xero_short_code, create_chain_and_export, load_attachments, attach_customer_to_export
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute
-from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
+from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.xero.utils import XeroConnector
@@ -23,19 +23,81 @@ logger = logging.getLogger(__name__)
 
 def test_get_or_create_credit_card_contact(mocker, db):
     mocker.patch(
-        'xerosdk.apis.Contacts.post',
-        return_value=data['create_contact']
-    )
-    mocker.patch(
-        'xerosdk.apis.Contacts.search_contact_by_contact_name',
+        'apps.xero.utils.XeroConnector.get_or_create_contact',
         return_value=[],
     )
     workspace_id = 1
 
     contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant')
 
-    print(contact)
     assert contact != None
+
+    try:
+        with mock.patch('apps.xero.utils.XeroConnector.get_or_create_contact') as mock_call:
+            mock_call.side_effect = WrongParamsError(msg='wrong parameters', response='wrong parameters')
+            contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant')
+    except:
+        logger.info('wrong parameters')
+
+
+def test_load_attachments(mocker, db):
+    mocker.patch(
+        'fyle_integrations_platform_connector.apis.Files.bulk_generate_file_urls',
+        return_value=[],
+    )
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.post_attachments',
+        return_value=[],
+    )
+    workspace_id = 1
+
+    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+
+    expense_group = ExpenseGroup.objects.get(id=4)
+    expenses = expense_group.expenses.all()
+
+    for expense in expenses:
+        expense.file_ids = ['asdfghj']
+        expense.save()
+    
+    load_attachments(xero_connection, 'dfgh', 'werty', expense_group)
+
+    with mock.patch('apps.xero.utils.XeroConnector.post_attachments') as mock_call:
+        mock_call.side_effect = Exception()
+        load_attachments(xero_connection, 'dfgh', 'werty', expense_group)
+
+
+def test_attach_customer_to_export(mocker, db):
+    mocker.patch(
+        'xerosdk.apis.LinkedTransactions.post',
+        return_value=[],
+    )
+    workspace_id = 1
+
+    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+
+    bill = Bill.objects.filter(id=4).first()
+    bill_lineitems = BillLineItem.objects.get(bill_id=bill.id)
+    bill_lineitems.customer_id = '234'
+    bill_lineitems.save()
+
+    task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
+    task_log.status = 'READY'
+    task_log.type = 'CREATING_BILL'
+    task_log.bill = bill
+    task_log.save()
+
+    attach_customer_to_export(xero_connection, task_log)
+
+    try:
+        with mock.patch('xerosdk.apis.LinkedTransactions.post') as mock_call:
+            mock_call.side_effect = Exception()
+            attach_customer_to_export(xero_connection, task_log)
+        assert 1 == 2
+    except:
+        logger.info('Something unexpected happened during attaching customer to export')
 
 
 def test_create_or_update_employee_mapping(db):
@@ -336,7 +398,11 @@ def test_create_bank_transactions_exceptions(db):
         assert task_log.status == 'FAILED'
 
 
-def test_create_payment(db):
+def test_create_payment(mocker, db):
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.post_payment',
+        return_value={}
+    )
     workspace_id = 1
 
     bills = Bill.objects.all()
@@ -358,8 +424,8 @@ def test_create_payment(db):
     general_mappings.save()
 
     create_payment(workspace_id)
-    task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
 
+    task_log = TaskLog.objects.filter(task_id='PAYMENT_{}'.format(bill.expense_group.id)).first()
     assert task_log.status == 'COMPLETE'
 
     bill = Bill.objects.last()

@@ -1,3 +1,4 @@
+import base64
 from asyncio.log import logger
 from unittest import mock
 from fyle_accounting_mappings.models import DestinationAttribute
@@ -6,7 +7,7 @@ from .fixtures import data
 from tests.helper import dict_compare_keys
 from xerosdk.exceptions import WrongParamsError
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
-from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
+from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
 
 def test_get_or_create_contact(mocker, db):
@@ -270,3 +271,44 @@ def test_post_bank_transaction_exception(db):
             xero_connection.post_bank_transaction(bank_transaction, bank_transaction_lineitems, workspace_general_setting)
     except:
         logger.info("Account period error")
+
+
+def test_post_attachments(mocker, db):
+    mocker.patch(
+        'xerosdk.apis.Attachments.post_attachment',
+        return_value=[]
+    )
+
+    workspace_id = 1
+
+    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+
+    attachments = xero_connection.post_attachments(ref_id='ref_id', ref_type='ref_type', attachments=[{
+        'id': 'sdfgh',
+        'name': 'sample',
+        'download_url': base64.b64encode('https://aaa.bbb.cc/x232sds'.encode("ascii"))
+    }])
+    assert len(attachments) == 1
+
+
+def test_post_payment(mocker, db):
+    mocker.patch(
+        'xerosdk.apis.Payments.post',
+        return_value=[]
+    )
+
+    workspace_id = 1
+
+    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+
+    created_payment = xero_connection.post_payment(payment=Payment(
+        invoice_id='werty',
+        account_id=346,
+        amount=45,
+        expense_group_id=4,
+        workspace_id=workspace_id
+    ))
+
+    assert created_payment == []

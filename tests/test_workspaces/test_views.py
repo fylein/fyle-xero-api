@@ -19,11 +19,6 @@ from apps.workspaces.utils import generate_xero_refresh_token
 User = get_user_model()
 auth_utils = AuthUtils()
 
-class FakeResponse:
-    """A class for creating fake http responses for the patched method"""
-    def __init__(self, body, status):
-        self.body = body
-        self.status = status
 
 def test_ready_view(api_client, test_connection):
 
