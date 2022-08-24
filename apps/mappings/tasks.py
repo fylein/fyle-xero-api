@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime, timedelta
 
 from typing import List, Dict
-
+from django.db.models import Q
 from django_q.models import Schedule
 
 from fyle_integrations_platform_connector import PlatformConnector
@@ -234,6 +234,8 @@ def sync_xero_attributes(xero_attribute_type: str, workspace_id: int):
         xero_connection.sync_tax_codes()
     elif xero_attribute_type == 'CUSTOMER':
         xero_connection.sync_customers()
+    elif xero_attribute_type == 'CONTACT':
+        xero_connection.sync_contacts()
     else:
         xero_connection.sync_tracking_categories()
 
@@ -672,6 +674,102 @@ def schedule_tax_groups_creation(import_tax_codes, workspace_id):
     else:
         schedule: Schedule = Schedule.objects.filter(
             func='apps.mappings.tasks.auto_create_tax_codes_mappings',
+            args='{}'.format(workspace_id),
+        ).first()
+
+        if schedule:
+            schedule.delete()
+
+
+def create_xero_contact_payload(fyle_merchants: List[ExpenseAttribute], existing_xero_contacts: list):
+    """
+    Create Xero Contacts from Fyle Merchants
+    :param existing_xero_contacts: Existing tax groups names
+    :param fyle_merchants: Fyle Objects
+    :return: Xero contacts Payload
+    """
+
+    xero_contacts_payload = []
+    for fyle_attribute in fyle_merchants:
+        if fyle_attribute not in existing_xero_contacts:
+            xero_contacts_payload.append(
+                fyle_attribute,
+            )
+
+    return xero_contacts_payload
+
+
+def upload_merchants_as_xero_contacts(workspace_id: int):
+    xero_credentials =  XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+    
+    fyle_merchants = ExpenseAttribute.objects.filter(
+        attribute_type='MERCHANT', workspace_id=workspace_id).values_list('value', flat=True)
+
+    existing_xero_contacts = DestinationAttribute.objects.filter(
+        attribute_type='CONTACT', workspace_id=workspace_id).order_by('value', 'id')
+        
+    existing_xero_contacts = remove_duplicates(existing_xero_contacts)
+
+    xero_contacts_payload = create_xero_contact_payload(fyle_merchants, existing_xero_contacts)
+
+    xero_connection.bulk_create_contacts(
+        contacts_list=xero_contacts_payload,
+        create=True
+    )
+
+    new_xero_contacts = DestinationAttribute.objects.filter(
+        attribute_type='CONTACT', workspace_id=workspace_id, value__in=xero_contacts_payload)
+
+    Mapping.bulk_create_mappings(new_xero_contacts, 'MERCHANT', 'CONTACT', workspace_id)
+
+
+def auto_create_merchant_as_xero_contact(workspace_id: int):
+    """
+    Create Fyle merchants as Xero Contacts
+    :return: None
+    """
+    try:
+        fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+
+        platform = PlatformConnector(fyle_credentials=fyle_credentials)
+        platform.merchants.sync(workspace_id)
+
+        sync_xero_attributes('CONTACT', workspace_id)
+
+        upload_merchants_as_xero_contacts(workspace_id)
+    
+    except WrongParamsError as exception:
+        logger.error(
+            'Error while creating contacts workspace_id - %s in Fyle %s %s',
+            workspace_id, exception.message, {'error': exception.response}
+        )
+
+    except Exception:
+        error = traceback.format_exc()
+        error = {
+            'error': error
+        }
+        logger.error(
+            'Error while creating contacts workspace_id - %s error: %s',
+            workspace_id, error
+        )
+
+
+def schedule_xero_contacts_creation(auto_create_merchant_destination_entity, workspace_id):
+    if auto_create_merchant_destination_entity:
+        schedule, _ = Schedule.objects.update_or_create(
+            func='apps.mappings.tasks.auto_create_merchant_as_xero_contact',
+            args='{}'.format(workspace_id),
+            defaults={
+                'schedule_type': Schedule.MINUTES,
+                'minutes': 24 * 60,
+                'next_run': datetime.now()
+            }
+        )
+    else:
+        schedule: Schedule = Schedule.objects.filter(
+            func='apps.mappings.tasks.auto_create_merchant_as_xero_contact',
             args='{}'.format(workspace_id),
         ).first()
 

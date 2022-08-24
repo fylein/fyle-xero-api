@@ -14,7 +14,8 @@ from xerosdk import InvalidTokenError, InternalServerError, XeroSDK
 
 from fyle_accounting_mappings.models import MappingSetting
 
-from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_employees, schedule_tax_groups_creation
+from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_employees, schedule_tax_groups_creation, \
+    schedule_xero_contacts_creation
 from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
 
 from fyle_xero_api.utils import assert_valid
@@ -125,6 +126,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             'import_categories': general_settings_payload['import_categories'],
             'auto_map_employees': general_settings_payload['auto_map_employees'],
             'auto_create_destination_entity': general_settings_payload['auto_create_destination_entity'],
+            'auto_create_merchant_destination_entity': general_settings_payload['auto_create_merchant_destination_entity'],
             'map_merchant_to_contact': map_merchant_to_contact,
             'change_accounting_period': general_settings_payload['change_accounting_period'],
             'charts_of_accounts': general_settings_payload['charts_of_accounts'],
@@ -187,6 +189,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
 
     schedule_tax_groups_creation(import_tax_codes=general_settings.import_tax_codes, workspace_id=workspace_id)
     
+    schedule_xero_contacts_creation(general_settings.auto_create_merchant_destination_entity, workspace_id)
     return general_settings
 
 

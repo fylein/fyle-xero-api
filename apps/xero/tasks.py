@@ -26,7 +26,7 @@ from fyle_xero_api.exceptions import BulkError
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
-def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
+def get_or_create_credit_card_contact(workspace_id: int, merchant: str, auto_create_merchant_destination_entity):
     """
     Get or create credit card contact
     :param workspace_id: Workspace Id
@@ -44,9 +44,12 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str):
         except WrongParamsError as bad_request:
             logger.error(bad_request.message)
 
-    if not contact:
-        contact = xero_connection.get_or_create_contact('Credit Card Misc', create=True)
+        if not contact and auto_create_merchant_destination_entity:
+            merchant = merchant
+    else:
+        merchant = 'Credit Card Misc'
 
+    contact = xero_connection.get_or_create_contact(merchant, create=True)
     return contact
 
 
@@ -448,7 +451,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
                 create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
         else:
             merchant = expense_group.expenses.first().vendor
-            get_or_create_credit_card_contact(expense_group.workspace_id, merchant)
+            get_or_create_credit_card_contact(expense_group.workspace_id, merchant, general_settings.auto_create_merchant_destination_entity)
 
         with transaction.atomic():
             __validate_expense_group(expense_group)

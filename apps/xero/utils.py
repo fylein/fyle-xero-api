@@ -85,6 +85,28 @@ class XeroConnector:
         else:
             return self.create_contact_destination_attribute(contact)
 
+    def bulk_create_contacts(self, contacts_list: list, create: bool = False):
+        """
+        Call xero api to create multiple contacts
+        :param contacts_list: List of the contacts
+        :param create: False to just Get and True to Get or Create if not exists
+        :return: Contact
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        for contact in contacts_list:
+            contact = contact.replace('#', '%23')  # Replace '#' with %23
+            contact = contact.replace('"', '')  # remove double quotes from merchant name
+            contact = contact.replace('&', '')  # remove & merchant name
+
+        if create:
+            created_contacts = self.bulk_post_contact(contacts_list)
+            self.bulk_create_contact_destination_attribute(created_contacts)
+            return created_contacts
+        else:
+            return
+
     def get_organisations(self):
         """
         Get xero organisations
@@ -354,6 +376,22 @@ class XeroConnector:
 
         return created_contact
 
+    def bulk_create_contact_destination_attribute(self, contacts_list):
+
+        contact_attributes = []
+        for contact in contacts_list:
+            contact_attributes.append({
+            'attribute_type': 'CONTACT',
+            'display_name': 'Contact',
+            'value': contact['Name'],
+            'destination_id': contact['ContactID'],
+            'detail': {
+                'email': contact['EmailAddress']
+            }
+        })
+
+        DestinationAttribute.bulk_create_or_update_destination_attributes(contact_attributes, 'CONTACT', self.workspace_id, True)
+
     def sync_dimensions(self, workspace_id: str):
 
         try:
@@ -408,6 +446,32 @@ class XeroConnector:
 
         return created_contact
 
+    def bulk_post_contact(self, contacts_list: list):
+        """
+        Post contact list to Xero
+        :param contact_name: name of the contact to be created
+        :param email: email of the contact
+        :return: Contact Destination Attribute
+        """
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        contacts_payload = {
+            'Contacts': []
+        }
+
+        for contact in contacts_list:
+            contacts_payload['Contacts'].append({
+                'Name': contact,
+                'FirstName': contact.split(' ')[0],
+                'LastName': contact.split(' ')[-1]
+                if len(contact.split(' ')) > 1 else '',
+                'EmailAddress': contact['email'] if 'email' in contact else None
+            })
+        
+        created_contacts = self.connection.contacts.post(contacts_payload)['Contacts']
+
+        return created_contacts
 
     def __construct_bill_lineitems(self, bill_lineitems: List[BillLineItem], general_mappings: GeneralMapping, general_settings: WorkspaceGeneralSettings) -> List[Dict]:
         """

@@ -15,7 +15,7 @@ def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
     mapping_settings = MappingSetting.objects.filter(workspace_id=expense_group.workspace_id).all()
 
     tracking_categories = []
-    default_expense_attributes = ['CATEGORY', 'EMPLOYEE', 'CORPORATE_CARD', 'TAX_GROUP']
+    default_expense_attributes = ['CATEGORY', 'EMPLOYEE', 'CORPORATE_CARD', 'TAX_GROUP', 'MERCHANT']
     default_destination_attributes = ['ITEM']
 
     for setting in mapping_settings:
