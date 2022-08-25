@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def test_get_or_create_credit_card_contact(mocker, db):
     mocker.patch(
         'apps.xero.utils.XeroConnector.get_or_create_contact',
-        return_value=[],
+        return_value=[]
     )
     workspace_id = 1
 
@@ -126,7 +126,11 @@ def test_create_or_update_employee_mapping(db):
         create_or_update_employee_mapping(expense_group=expense_group, xero_connection=xero_connection, auto_map_employees_preference='NAME')
 
 
-def test_post_bill_success(create_task_logs, db):
+def test_post_bill_success(mocker, create_task_logs, db):
+    mocker.patch(
+        'xerosdk.apis.Invoices.post',
+        return_value=data['bill_object']
+    )
     workspace_id = 1
 
     xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
@@ -159,47 +163,6 @@ def test_post_bill_success(create_task_logs, db):
 
     assert task_log.status=='COMPLETE'
     assert bill.currency == 'USD'
-
-
-def test_bill_accounting_period_working(create_task_logs, db):
-    workspace_id = 1
-
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
-
-    task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
-    task_log.status = 'READY'
-    task_log.type = 'CREATING_BILL'
-    task_log.save()
-
-    expense_group = ExpenseGroup.objects.get(id=4)
-    expenses = expense_group.expenses.all()
-
-    expense_group.id = random.randint(100, 1500000)
-    expense_group.save()
-
-    for expense in expenses:
-        expense.expense_group_id = expense_group.id
-        expense.save()
-
-        bill_lineitems = BillLineItem.objects.get(expense_id=expense.id)
-        bill_lineitems.delete()
-
-    expense_group.expenses.set(expenses)
-
-    spent_at = {'spent_at': '2000-09-14'}
-    expense_group.description.update(spent_at)
-
-    workaspace_general_setting = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
-    workaspace_general_setting.change_accounting_period = True
-    workaspace_general_setting.save()
-
-    create_bill(expense_group.id, task_log.id, xero_connection)
-    
-    task_log = TaskLog.objects.get(pk=task_log.id)
-
-    task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
-    assert task_log.status == 'COMPLETE'
 
 
 def test_create_bill_exceptions(db):
@@ -284,7 +247,11 @@ def test_schedule_bills_creation(db):
     assert len(chaining_attributes) == 1
 
 
-def test_post_create_bank_transaction_success(create_task_logs, db):
+def test_post_create_bank_transaction_success(mocker, create_task_logs, db):
+    mocker.patch(
+        'xerosdk.apis.BankTransactions.post',
+        return_value=data['bank_transaction_object']
+    )
     workspace_id = 1
 
     xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
@@ -498,7 +465,7 @@ def test_schedule_payment_creation(db):
 def test_check_xero_object_status(mocker, db):
     mocker.patch(
         'apps.xero.utils.XeroConnector.get_bill',
-        return_value=data['bill_object'][0]
+        return_value=data['bill_object']
     )
     workspace_id = 1
 

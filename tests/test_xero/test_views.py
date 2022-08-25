@@ -2,6 +2,7 @@ import json
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import XeroCredentials
 from apps.fyle.models import Reimbursement
+from .fixtures import data
 
 
 def test_get_token_health(api_client, test_connection):
@@ -40,7 +41,11 @@ def test_get_account_view(api_client, test_connection):
     assert len(response) == 56
 
 
-def test_post_account_view(api_client, test_connection):
+def test_post_account_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.sync_accounts',
+        return_value=None
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -79,7 +84,11 @@ def test_get_bank_account_view(api_client, test_connection):
     assert len(response) == 2
 
 
-def test_post_bank_account_view(api_client, test_connection):
+def test_post_bank_account_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.sync_accounts',
+        return_value=None
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -109,7 +118,11 @@ def test_get_tracking_categories_view(api_client, test_connection):
     assert len(response) == 0
 
 
-def test_post_tracking_categories_view(api_client, test_connection):
+def test_post_tracking_categories_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.sync_tracking_categories',
+        return_value=None
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -148,7 +161,11 @@ def test_get_contact_view(api_client, test_connection):
     assert len(response) == 48
 
 
-def test_post_contact_view(api_client, test_connection):
+def test_post_contact_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.sync_contacts',
+        return_value=None
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -187,7 +204,11 @@ def test_get_item_view(api_client, test_connection):
     assert len(response) == 16
 
 
-def test_post_item_view(api_client, test_connection):
+def test_post_item_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'xerosdk.apis.Items.get_all',
+        return_value={'Items': []}
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -226,7 +247,11 @@ def test_get_tenant_view(api_client, test_connection):
     assert len(response) == 1
 
 
-def test_post_tenant_view(api_client, test_connection):
+def test_post_tenant_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'xerosdk.apis.TrackingCategories.get_all',
+        return_value = []
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -280,7 +305,11 @@ def test_get_bank_transaction_view(api_client, test_connection):
     assert len(response) == 4
 
 
-def test_post_bank_transaction_view(api_client, test_connection):
+def test_post_bank_transaction_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'xerosdk.apis.BankTransactions.post',
+        return_value=data['bill_object']
+    )
     workspace_id = 1
 
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
@@ -325,7 +354,11 @@ def test_get_bill_view(api_client, test_connection):
     assert len(response) == 4
 
 
-def test_post_bill_view(api_client, test_connection):
+def test_post_bill_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'xerosdk.apis.Invoices.post',
+        return_value=data['bill_object']
+    )
     workspace_id = 1
 
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
@@ -372,7 +405,11 @@ def test_export_trigger_view(api_client, test_connection):
     assert response.status_code == 200
 
 
-def test_post_payment_view(api_client, test_connection):
+def test_post_payment_view(mocker, api_client, test_connection):
+    mocker.patch(
+        'xerosdk.apis.Payments.post',
+        return_value = []
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -387,7 +424,15 @@ def test_post_payment_view(api_client, test_connection):
     assert len(response) == 0
 
 
-def test_post_reimburse_payments(api_client, test_connection):
+def test_post_reimburse_payments(mocker, api_client, test_connection):
+    mocker.patch(
+        'xerosdk.apis.Invoices.post',
+        return_value=data['bill_object']
+    )
+    mocker.patch(
+        'fyle_integrations_platform_connector.apis.Reimbursements.bulk_post_reimbursements',
+        return_value=[]
+    )
     workspace_id = 1
 
     Reimbursement.objects.all().delete()
@@ -401,7 +446,11 @@ def test_post_reimburse_payments(api_client, test_connection):
     assert response.status_code == 200
 
 
-def test_post_sync_dimensions(api_client, test_connection):
+def test_post_sync_dimensions(mocker, api_client, test_connection):
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.sync_dimensions',
+        return_value=None
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -413,7 +462,11 @@ def test_post_sync_dimensions(api_client, test_connection):
     assert response.status_code == 200
 
 
-def test_post_refresh_dimensions(api_client, test_connection):
+def test_post_refresh_dimensions(mocker, api_client, test_connection):
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.sync_dimensions',
+        return_value=None
+    )
     workspace_id = 1
 
     access_token = test_connection.access_token
