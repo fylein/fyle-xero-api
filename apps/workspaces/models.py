@@ -76,6 +76,7 @@ class WorkspaceGeneralSettings(models.Model):
     import_categories = models.BooleanField(default=False, help_text='Auto import Categories to Fyle')
     auto_map_employees = models.CharField(max_length=50, help_text='Auto Map Employees from Xero to Fyle', null=True)
     auto_create_destination_entity = models.BooleanField(default=False, help_text='Auto create contact')
+    auto_create_merchant_destination_entity = models.BooleanField(default=False, help_text='Auto create fyle merchnat as xero contact')
     skip_cards_mapping = models.BooleanField(default=False, help_text='Skip cards mapping')
     import_tax_codes = models.BooleanField(default=False, help_text='Auto import tax codes to Fyle', null=True)
     import_customers = models.BooleanField(default=False, help_text='Auto import customers to Fyle')
