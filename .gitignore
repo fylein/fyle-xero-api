@@ -66,6 +66,9 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+test-reports/
+pytest-coverage.txt
+test_refresh_token.txt
 
 # Translations
 *.mo

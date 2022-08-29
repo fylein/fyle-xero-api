@@ -1,3 +1,5 @@
+import os
+import ast
 import base64
 import json
 import logging
@@ -45,18 +47,36 @@ class XeroConnector:
         client_id = settings.XERO_CLIENT_ID
         client_secret = settings.XERO_CLIENT_SECRET
         base_url = settings.XERO_BASE_URL
+        refresh_token = ''
+
+        if 'XERO_TESTS_REFRESH_TOKENS' in os.environ:
+            refresh_tokens = ast.literal_eval(os.environ.get('XERO_TESTS_REFRESH_TOKENS'))
+            refresh_token = refresh_tokens[workspace_id]
+
+        else:
+            refresh_token = credentials_object.refresh_token
 
         self.connection = XeroSDK(
             base_url=base_url,
             client_id=client_id,
             client_secret=client_secret,
-            refresh_token=credentials_object.refresh_token
+            refresh_token=refresh_token
         )
 
         self.workspace_id = workspace_id
 
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
+
+        if 'XERO_TESTS_REFRESH_TOKENS' in os.environ:
+            XERO_TESTS_REFRESH_TOKENS = ast.literal_eval(os.environ.get('XERO_TESTS_REFRESH_TOKENS'))
+            XERO_TESTS_REFRESH_TOKENS[workspace_id] = self.connection.refresh_token
+            os.environ['XERO_TESTS_REFRESH_TOKENS'] = str(XERO_TESTS_REFRESH_TOKENS)
+
+        if 'WRITE_TESTS_REFRESH_TOKENS' in os.environ: #For saving the refresh tokens on local while running tests
+            with open('test_refresh_token.txt', 'w') as file:
+                file.write(str(XERO_TESTS_REFRESH_TOKENS))
+
 
     def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
         """
