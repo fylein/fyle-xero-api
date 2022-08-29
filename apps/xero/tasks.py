@@ -49,7 +49,11 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str, auto_cre
     else:
         merchant = 'Credit Card Misc'
 
-    contact = xero_connection.get_or_create_contact(merchant, create=True)
+    try:
+        contact = xero_connection.get_or_create_contact(merchant, create=True)
+    except WrongParamsError as bad_request:
+        logger.error(bad_request.message)
+
     return contact
 
 
