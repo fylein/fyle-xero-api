@@ -552,5 +552,16 @@ data = {
             'Timezone': 'EASTERNSTANDARDTIME',
             'Version': 'GLOBAL'
         }
+    ],
+    'get_all_tenants': [
+        {
+            'authEventId': 'b71b3d1b-9f9f-4c9b-87f3-88ff776392a3',
+            'createdDateUtc': '2022-08-26T07:51:30.7975760',
+            'id': '182474d4-9413-49f0-b948-b83abd60304d',
+            'tenantId': '25d7b4cd-ed1c-4c5c-80e5-c058b87db8a1',
+            'tenantName': 'Demo Company (Global)',
+            'tenantType': 'ORGANISATION',
+            'updatedDateUtc': '2022-08-26T07:51:30.7992450'
+        }
     ]
 }
