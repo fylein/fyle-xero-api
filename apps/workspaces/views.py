@@ -40,6 +40,7 @@ class ReadyView(viewsets.ViewSet):
     """
     Ready call
     """
+    authentication_classes = []
     permission_classes = []
 
     def get(self, request):
