@@ -15,6 +15,12 @@ def test_get_or_create_contact(mocker, db):
         'xerosdk.apis.Contacts.post',
         return_value=data['create_contact']
     )
+
+    mocker.patch(
+        'xerosdk.apis.Contacts.search_contact_by_contact_name',
+        return_value=[],
+    )
+
     workspace_id = 1
 
     xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
@@ -28,10 +34,6 @@ def test_get_or_create_contact(mocker, db):
     new_contact_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CONTACT').count()
     assert new_contact_count == 49
 
-    mocker.patch(
-        'xerosdk.apis.Contacts.search_contact_by_contact_name',
-        return_value=[],
-    )
     xero_connection.get_or_create_contact(contact_name='sample', email='sample@fyle.in', create=True)
 
     new_contact_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CONTACT').count()

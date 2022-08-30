@@ -15,6 +15,7 @@ data = {
         'import_customers':True,
         'created_at':'2022-08-02T20:25:24.644164Z',
         'updated_at':'2022-08-02T20:25:24.644209Z',
+        'auto_create_merchant_destination_entity': False,
         'charts_of_accounts':[
             'EXPENSE'
         ],

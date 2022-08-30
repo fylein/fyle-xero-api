@@ -14,6 +14,7 @@ from xerosdk import exceptions as xero_exc
 from fyle.platform import exceptions as fyle_exc
 from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings
 from .fixtures import data
+from ..test_xero.fixtures import data as xero_data
 from apps.workspaces.utils import generate_xero_refresh_token
 
 User = get_user_model()
@@ -128,7 +129,7 @@ def test_connect_fyle_view_post(mocker, api_client, test_connection):
     assert response.status_code == 200
 
 
-def test_connect_fyle_view_exceprions(api_client, test_connection):
+def test_connect_fyle_view_exceptions(api_client, test_connection):
     workspace_id = 1
     
     code = 'qwertyu'
@@ -198,22 +199,36 @@ def test_connect_xero_view_post(mocker, api_client, test_connection):
         'apps.workspaces.views.generate_xero_refresh_token',
         return_value='asdfghjk'
     )
+
+    mocker.patch(
+        'xerosdk.apis.Connections.get_all',
+        return_value={}
+    )
+
+    mocker.patch(
+        'xerosdk.apis.Organisations.get_all',
+        return_value=xero_data['get_all_organisations']
+    )
+
     workspace_id = 1
 
     code = 'asdfghj'
     url = '/api/workspaces/{}/connect_xero/authorization_code/'.format(workspace_id)
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
+
     response = api_client.post(
         url,
-        data={'code': code}    
+        data={
+            'code': code
+        }    
     )
 
     response = api_client.post(url)
     assert response.status_code == 200
 
 
-def test_connect_xero_view_exceprions(api_client, test_connection):
+def test_connect_xero_view_exceptions(api_client, test_connection):
     workspace_id = 1
     
     code = 'qwertyu'
@@ -226,7 +241,9 @@ def test_connect_xero_view_exceprions(api_client, test_connection):
         
         response = api_client.post(
             url,
-            data={'code': code}    
+            data={
+                'code': code
+            }    
         )
         assert response.status_code == 400
 
@@ -234,7 +251,9 @@ def test_connect_xero_view_exceprions(api_client, test_connection):
         
         response = api_client.post(
             url,
-            data={'code': code}    
+            data={
+                'code': code
+            }
         )
         assert response.status_code == 400
 
@@ -242,7 +261,9 @@ def test_connect_xero_view_exceprions(api_client, test_connection):
         
         response = api_client.post(
             url,
-            data={'code': code}    
+            data={
+                'code': code
+            }
         )
         assert response.status_code == 401
 
@@ -250,7 +271,9 @@ def test_connect_xero_view_exceprions(api_client, test_connection):
         
         response = api_client.post(
             url,
-            data={'code': code}    
+            data={
+                'code': code
+            }   
         )
         assert response.status_code == 500
 
@@ -316,6 +339,7 @@ def test_get_general_settings_detail(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
+
     assert dict_compare_keys(response, data['workspace_general_settings_payload']) == [], 'general_setting api returns a diff in keys'
 
     response = api_client.post(
