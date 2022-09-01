@@ -1,8 +1,6 @@
 import logging
 import random
-import pytest
 from unittest import mock
-from django_q.tasks import Chain
 from django_q.models import Schedule
 from apps.tasks.models import TaskLog
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
@@ -12,12 +10,13 @@ from apps.xero.tasks import get_or_create_credit_card_contact, create_bill, crea
             create_missing_currency, update_xero_short_code, create_chain_and_export, load_attachments, attach_customer_to_export
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute
-from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
+from apps.workspaces.models import XeroCredentials
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 from .fixtures import data
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,14 +27,14 @@ def test_get_or_create_credit_card_contact(mocker, db):
     )
     workspace_id = 1
 
-    contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant')
+    contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant', True)
 
     assert contact != None
 
     try:
         with mock.patch('apps.xero.utils.XeroConnector.get_or_create_contact') as mock_call:
             mock_call.side_effect = WrongParamsError(msg='wrong parameters', response='wrong parameters')
-            contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant')
+            contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant', True)
     except:
         logger.info('wrong parameters')
 
@@ -247,10 +246,20 @@ def test_schedule_bills_creation(db):
     assert len(chaining_attributes) == 1
 
 
-def test_post_create_bank_transaction_success(mocker, create_task_logs, db):
+def test_post_create_bank_transaction_success(mocker, db):
     mocker.patch(
         'xerosdk.apis.BankTransactions.post',
         return_value=data['bank_transaction_object']
+    )
+
+    mocker.patch(
+        'xerosdk.apis.Contacts.search_contact_by_contact_name',
+        return_value=data['create_contact']['Contacts'][0]
+    )
+
+    mocker.patch(
+        'xerosdk.apis.Contacts.post',
+        return_vaue=data['create_contact']['Contacts'][0]
     )
     workspace_id = 1
 
@@ -265,13 +274,13 @@ def test_post_create_bank_transaction_success(mocker, create_task_logs, db):
     expense_group = ExpenseGroup.objects.get(id=5)
     expenses = expense_group.expenses.all()
 
-    expense_group.id = random.randint(100, 1500000)
+    expense_group.id = 5
     expense_group.save()
 
     for expense in expenses:
         expense.expense_group_id = expense_group.id
         expense.save()
-
+        
         bank_transaction_lineitems = BankTransactionLineItem.objects.get(expense_id=expense.id)
         bank_transaction_lineitems.delete()
     

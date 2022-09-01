@@ -345,7 +345,6 @@ class XeroConnector:
         return []
 
     def create_contact_destination_attribute(self, contact):
-
         created_contact = DestinationAttribute.create_or_update_destination_attribute({
             'attribute_type': 'CONTACT',
             'display_name': 'Contact',
