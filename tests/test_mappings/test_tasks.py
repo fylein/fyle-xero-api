@@ -1,8 +1,6 @@
-from asyncio.log import logger
-import imp
 import pytest
 from django_q.models import Schedule
-from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, CategoryMapping, \
+from fyle_accounting_mappings.models import DestinationAttribute, CategoryMapping, \
     Mapping, MappingSetting, EmployeeMapping
 from apps.mappings.tasks import auto_create_tax_codes_mappings, schedule_tax_groups_creation,auto_create_project_mappings, \
     schedule_projects_creation, remove_duplicates, create_fyle_categories_payload, upload_categories_to_fyle, \
@@ -11,7 +9,7 @@ from apps.mappings.tasks import auto_create_tax_codes_mappings, schedule_tax_gro
                 auto_create_cost_center_mappings, schedule_fyle_attributes_creation, \
                     async_auto_create_custom_field_mappings, auto_create_expense_fields_mappings
 from fyle_integrations_platform_connector import PlatformConnector
-from apps.mappings.models import GeneralMapping
+from ..test_xero.fixtures import data as xero_data
 from .fixtures import data
 from tests.helper import dict_compare_keys
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings 
@@ -167,6 +165,11 @@ def test_auto_create_category_mappings(db, mocker): #needs refresh token
     mocker.patch(
         'fyle_integrations_platform_connector.apis.Categories.post_bulk',
         return_value=[]
+    )
+
+    mocker.patch(
+        'xerosdk.apis.Accounts.get_all',
+        return_value=xero_data['get_all_accounts']
     )
 
     response = auto_create_category_mappings(workspace_id=workspace_id)
