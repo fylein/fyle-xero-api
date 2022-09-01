@@ -5,9 +5,11 @@ import pytest
 from rest_framework.test import APIClient
 from fyle_rest_auth.models import AuthToken, User
 from fyle.platform import Platform
-from .test_fyle.fixtures import data as fyle_data
+
 from apps.fyle.helpers import get_access_token
 from fyle_xero_api.tests import settings
+from .test_fyle.fixtures import data as fyle_data
+
 
 def pytest_configure():
     os.system('sh ./tests/sql_fixtures/reset_db_fixtures/reset_db.sh')
