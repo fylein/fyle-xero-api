@@ -2,6 +2,7 @@ from django_q.models import Schedule
 from fyle_accounting_mappings.models import MappingSetting, Mapping
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import Workspace
+from ..test_fyle.fixtures import data as fyle_data
 
 
 def test_run_post_mapping_settings_triggers(db, mocker, test_connection):
@@ -9,6 +10,12 @@ def test_run_post_mapping_settings_triggers(db, mocker, test_connection):
         'fyle_integrations_platform_connector.apis.ExpenseCustomFields.post',
         return_value=[]
     )
+
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.ExpenseFields.list_all',
+        return_value=fyle_data['get_all_expense_fields']
+    )
+
     workspace_id = 1
 
     mapping_setting = MappingSetting(
@@ -69,6 +76,12 @@ def test_run_pre_mapping_settings_triggers(db, mocker, test_connection):
         'fyle_integrations_platform_connector.apis.ExpenseCustomFields.post',
         return_value=[]
     )
+
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.ExpenseFields.list_all',
+        return_value=fyle_data['get_all_expense_fields']
+    )
+
     workspace_id = 1
 
     custom_mappings = Mapping.objects.filter(workspace_id=workspace_id, source_type='CUSTOM_INTENTs').count()

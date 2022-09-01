@@ -16,6 +16,7 @@ from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 from .fixtures import data
+from ..test_fyle.fixtures import data as fyle_data
 
 logger = logging.getLogger(__name__)
 
@@ -386,6 +387,11 @@ def test_create_payment(mocker, db):
     )
     workspace_id = 1
 
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.Reimbursements.list_all',
+        return_value=fyle_data['get_all_reimbursements']
+    )
+
     bills = Bill.objects.all()
     expenses = []
 
@@ -422,8 +428,13 @@ def test_create_payment(mocker, db):
         logger.info('Xero Account not connected')
 
 
-def test_create_payment_exceptions(db):
+def test_create_payment_exceptions(mocker, db):
     workspace_id = 1
+
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.Reimbursements.list_all',
+        return_value=fyle_data['get_all_reimbursements']
+    )
 
     bills = Bill.objects.all()
     expenses = []
@@ -538,7 +549,6 @@ def test_schedule_reimbursements_sync(db):
 
 
 def test_process_reimbursements(db, mocker):
-
     mocker.patch(
         'fyle_integrations_platform_connector.apis.Reimbursements.bulk_post_reimbursements',
         return_value=[]

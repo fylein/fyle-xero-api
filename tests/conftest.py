@@ -41,7 +41,7 @@ def default_session_fixture(request):
         'apps.fyle.helpers.post_request',
         return_value={
             'access_token': 'easnfkjo12233.asnfaosnfa.absfjoabsfjk',
-            'cluster_domain': 'anskflansflanfls'
+            'cluster_domain': 'https://staging.fyle.tech'
         }
     )
     patched_4.__enter__()

@@ -3,7 +3,7 @@ from apps.tasks.models import TaskLog
 from apps.workspaces.models import XeroCredentials
 from apps.fyle.models import Reimbursement
 from .fixtures import data
-
+from ..test_fyle.fixtures import data as fyle_data
 
 def test_get_token_health(api_client, test_connection):
     workspace_id = 1
@@ -412,6 +412,16 @@ def test_post_payment_view(mocker, api_client, test_connection):
     )
     workspace_id = 1
 
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.Reimbursements.list_all',
+        return_value=fyle_data['get_all_reimbursements']
+    )
+
+    mocker.patch(
+        'apps.xero.tasks.check_expenses_reimbursement_status',
+        return_value = []
+    )
+    
     access_token = test_connection.access_token
     url = '/api/workspaces/{}/xero/payments/'.format(workspace_id)
 
@@ -428,6 +438,11 @@ def test_post_reimburse_payments(mocker, api_client, test_connection):
     mocker.patch(
         'xerosdk.apis.Invoices.post',
         return_value=data['bill_object']
+    )
+
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.Reimbursements.list_all',
+        return_value=fyle_data['get_all_reimbursements']
     )
     
     mocker.patch(
