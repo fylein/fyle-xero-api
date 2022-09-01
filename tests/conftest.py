@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from unittest import mock
 import pytest
 from rest_framework.test import APIClient
 from fyle_rest_auth.models import AuthToken, User
@@ -14,6 +15,17 @@ def pytest_configure():
 @pytest.fixture
 def api_client():
     return APIClient()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def default_session_fixture(request):
+    patched = mock.patch('xerosdk.XeroSDK.refresh_access_token')
+    patched.__enter__()
+
+    def unpatch():
+        patched.__exit__()
+
+    request.addfinalizer(unpatch)
 
 
 @pytest.fixture()

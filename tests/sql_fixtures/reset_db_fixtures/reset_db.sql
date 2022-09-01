@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.4 (Debian 14.4-1.pgdg110+1)
--- Dumped by pg_dump version 14.4 (Debian 14.4-1.pgdg110+1)
+-- Dumped from database version 14.2 (Debian 14.2-1.pgdg110+1)
+-- Dumped by pg_dump version 14.4 (Debian 14.4-1.pgdg100+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1296,7 +1296,8 @@ CREATE TABLE public.workspace_general_settings (
     import_tax_codes boolean,
     charts_of_accounts character varying(100)[] NOT NULL,
     import_customers boolean NOT NULL,
-    change_accounting_period boolean NOT NULL
+    change_accounting_period boolean NOT NULL,
+    auto_create_merchant_destination_entity boolean NOT NULL
 );
 
 
@@ -2273,6 +2274,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 103	xero	0007_auto_20220329_0837	2022-08-02 20:14:49.014705+00
 104	xero	0008_auto_20220331_0504	2022-08-02 20:14:49.120136+00
 105	xero	0009_auto_20220614_1320	2022-08-02 20:14:49.359825+00
+106	workspaces	0023_workspacegeneralsettings_auto_create_merchant_destination_entity	2022-08-29 11:29:34.137291+00
 \.
 
 
@@ -2905,6 +2907,7 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 574	PROJECT	Project	Rob deMontarnal	153649	2022-08-02 20:25:07.847538+00	2022-08-02 20:25:07.847565+00	1	\N	\N	f	f
 575	PROJECT	Project	Whitehead and Sons	153650	2022-08-02 20:25:07.847621+00	2022-08-02 20:25:07.847649+00	1	\N	\N	f	f
 576	PROJECT	Project	Whitehead and Sons:QBO	153651	2022-08-02 20:25:07.847706+00	2022-08-02 20:25:07.847733+00	1	\N	\N	f	f
+649	PROJECT	Project	Eric Schmidt	156103	2022-08-02 20:25:07.859968+00	2022-08-02 20:25:07.859995+00	1	\N	\N	f	f
 577	PROJECT	Project	Whitehead and Sons:Whitehead - Employee celebration	153652	2022-08-02 20:25:07.847789+00	2022-08-02 20:25:07.847817+00	1	\N	\N	f	f
 578	PROJECT	Project	Alex Wolfe	156029	2022-08-02 20:25:07.847874+00	2022-08-02 20:25:07.847901+00	1	\N	\N	f	f
 579	PROJECT	Project	Anderson Boughton Inc.	156030	2022-08-02 20:25:07.847958+00	2022-08-02 20:25:07.847985+00	1	\N	\N	f	f
@@ -2977,7 +2980,6 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 646	PROJECT	Project	Oconner _ Holding Corp.	156100	2022-08-02 20:25:07.859717+00	2022-08-02 20:25:07.859744+00	1	\N	\N	f	f
 647	PROJECT	Project	Sumter Apartments Systems	156101	2022-08-02 20:25:07.859801+00	2022-08-02 20:25:07.859828+00	1	\N	\N	f	f
 648	PROJECT	Project	Bochenek and Skoog Liquors Company	156102	2022-08-02 20:25:07.859884+00	2022-08-02 20:25:07.859912+00	1	\N	\N	f	f
-649	PROJECT	Project	Eric Schmidt	156103	2022-08-02 20:25:07.859968+00	2022-08-02 20:25:07.859995+00	1	\N	\N	f	f
 650	PROJECT	Project	Jones & Bernstein Law Firm	156104	2022-08-02 20:25:07.86011+00	2022-08-02 20:25:07.860139+00	1	\N	\N	f	f
 651	PROJECT	Project	Jackson Alexander	156105	2022-08-02 20:25:07.860199+00	2022-08-02 20:25:07.860229+00	1	\N	\N	f	f
 652	PROJECT	Project	Jennings Financial	156106	2022-08-02 20:25:07.860393+00	2022-08-02 20:25:07.860423+00	1	\N	\N	f	f
@@ -3188,6 +3190,7 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 857	PROJECT	Project	Schmauder Markets Corporation	156314	2022-08-02 20:25:08.51057+00	2022-08-02 20:25:08.510623+00	1	\N	\N	f	f
 858	PROJECT	Project	Berthelette Antiques	156315	2022-08-02 20:25:08.510732+00	2022-08-02 20:25:08.510772+00	1	\N	\N	f	f
 859	PROJECT	Project	Pittsburgh Quantum Analytics	156316	2022-08-02 20:25:08.540207+00	2022-08-02 20:25:08.540258+00	1	\N	\N	f	f
+1421	PROJECT	Project	Flores Inc	156881	2022-08-02 20:25:09.968364+00	2022-08-02 20:25:09.968392+00	1	\N	\N	f	f
 860	PROJECT	Project	Veradale Telecom Manufacturing	156317	2022-08-02 20:25:08.540438+00	2022-08-02 20:25:08.540471+00	1	\N	\N	f	f
 861	PROJECT	Project	Zurasky Markets Dynamics	156318	2022-08-02 20:25:08.540537+00	2022-08-02 20:25:08.540567+00	1	\N	\N	f	f
 862	PROJECT	Project	Asch _ Agency	156319	2022-08-02 20:25:08.54063+00	2022-08-02 20:25:08.54066+00	1	\N	\N	f	f
@@ -3535,6 +3538,7 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 1204	PROJECT	Project	Downey and Sweezer Electric Group	156663	2022-08-02 20:25:09.53635+00	2022-08-02 20:25:09.536391+00	1	\N	\N	f	f
 1205	PROJECT	Project	Leemans Builders Agency	156664	2022-08-02 20:25:09.536451+00	2022-08-02 20:25:09.536479+00	1	\N	\N	f	f
 1206	PROJECT	Project	Stai Publishing -	156665	2022-08-02 20:25:09.536535+00	2022-08-02 20:25:09.536563+00	1	\N	\N	f	f
+1656	PROJECT	Project	Aaron Abbott	157116	2022-08-02 20:25:10.279027+00	2022-08-02 20:25:10.279054+00	1	\N	\N	f	f
 1207	PROJECT	Project	Hebden Automotive Dynamics	156666	2022-08-02 20:25:09.536619+00	2022-08-02 20:25:09.536647+00	1	\N	\N	f	f
 1208	PROJECT	Project	Holtmeier Leasing -	156667	2022-08-02 20:25:09.536703+00	2022-08-02 20:25:09.53673+00	1	\N	\N	f	f
 1209	PROJECT	Project	Douse Telecom Leasing	156668	2022-08-02 20:25:09.542498+00	2022-08-02 20:25:09.54254+00	1	\N	\N	f	f
@@ -3675,6 +3679,7 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 1344	PROJECT	Project	Mike Franko	156804	2022-08-02 20:25:09.938132+00	2022-08-02 20:25:09.93816+00	1	\N	\N	f	f
 1345	PROJECT	Project	Fabre Enterprises	156805	2022-08-02 20:25:09.938217+00	2022-08-02 20:25:09.938257+00	1	\N	\N	f	f
 1346	PROJECT	Project	Spectrum Eye	156806	2022-08-02 20:25:09.93843+00	2022-08-02 20:25:09.938457+00	1	\N	\N	f	f
+1657	PROJECT	Project	FA-HB Inc.	157117	2022-08-02 20:25:10.279111+00	2022-08-02 20:25:10.279138+00	1	\N	\N	f	f
 1347	PROJECT	Project	Academy Vision Science Clinic	156807	2022-08-02 20:25:09.938515+00	2022-08-02 20:25:09.938542+00	1	\N	\N	f	f
 1348	PROJECT	Project	Focal Point Opticians	156808	2022-08-02 20:25:09.938599+00	2022-08-02 20:25:09.938627+00	1	\N	\N	f	f
 1349	PROJECT	Project	John G. Roche Opticians	156809	2022-08-02 20:25:09.938684+00	2022-08-02 20:25:09.938711+00	1	\N	\N	f	f
@@ -3749,7 +3754,6 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 1418	PROJECT	Project	Russ Mygrant	156878	2022-08-02 20:25:09.967102+00	2022-08-02 20:25:09.967131+00	1	\N	\N	f	f
 1419	PROJECT	Project	Ashton Consulting Ltd	156879	2022-08-02 20:25:09.967192+00	2022-08-02 20:25:09.967221+00	1	\N	\N	f	f
 1420	PROJECT	Project	Alex Benedet	156880	2022-08-02 20:25:09.968067+00	2022-08-02 20:25:09.968273+00	1	\N	\N	f	f
-1421	PROJECT	Project	Flores Inc	156881	2022-08-02 20:25:09.968364+00	2022-08-02 20:25:09.968392+00	1	\N	\N	f	f
 1422	PROJECT	Project	Peterson Builders & Assoc	156882	2022-08-02 20:25:09.96845+00	2022-08-02 20:25:09.968478+00	1	\N	\N	f	f
 1423	PROJECT	Project	Michael Jannsen	156883	2022-08-02 20:25:09.968535+00	2022-08-02 20:25:09.968572+00	1	\N	\N	f	f
 1424	PROJECT	Project	Cino & Cino	156884	2022-08-02 20:25:09.968633+00	2022-08-02 20:25:09.968661+00	1	\N	\N	f	f
@@ -3984,8 +3988,6 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 1653	PROJECT	Project	Rogers Communication	157113	2022-08-02 20:25:10.278776+00	2022-08-02 20:25:10.278803+00	1	\N	\N	f	f
 1654	PROJECT	Project	Global Supplies Inc.	157114	2022-08-02 20:25:10.27886+00	2022-08-02 20:25:10.278887+00	1	\N	\N	f	f
 1655	PROJECT	Project	John Paulsen	157115	2022-08-02 20:25:10.278943+00	2022-08-02 20:25:10.27897+00	1	\N	\N	f	f
-1656	PROJECT	Project	Aaron Abbott	157116	2022-08-02 20:25:10.279027+00	2022-08-02 20:25:10.279054+00	1	\N	\N	f	f
-1657	PROJECT	Project	FA-HB Inc.	157117	2022-08-02 20:25:10.279111+00	2022-08-02 20:25:10.279138+00	1	\N	\N	f	f
 1658	PROJECT	Project	NetSuite Incorp	157118	2022-08-02 20:25:10.279209+00	2022-08-02 20:25:10.279336+00	1	\N	\N	f	f
 1659	PROJECT	Project	MAC	157119	2022-08-02 20:25:10.285509+00	2022-08-02 20:25:10.285552+00	1	\N	\N	f	f
 1660	PROJECT	Project	Estee Lauder	157120	2022-08-02 20:25:10.285619+00	2022-08-02 20:25:10.285648+00	1	\N	\N	f	f
@@ -4258,6 +4260,7 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 1926	NETSUITE_CLASS	Netsuite Class	Red Rock Diner	expense_custom_field.netsuite class.23	2022-08-02 20:25:11.033115+00	2022-08-02 20:25:11.033142+00	1	\N	{"placeholder": "Select Netsuite Class", "custom_field_id": 205266}	f	f
 1927	NETSUITE_CLASS	Netsuite Class	Rondonuwu Fruit and Vegi	expense_custom_field.netsuite class.24	2022-08-02 20:25:11.033206+00	2022-08-02 20:25:11.033351+00	1	\N	{"placeholder": "Select Netsuite Class", "custom_field_id": 205266}	f	f
 1928	NETSUITE_CLASS	Netsuite Class	Shara Barnett	expense_custom_field.netsuite class.25	2022-08-02 20:25:11.03343+00	2022-08-02 20:25:11.033458+00	1	\N	{"placeholder": "Select Netsuite Class", "custom_field_id": 205266}	f	f
+2003	CORPORATE_CARD	Corporate Card	American Express - xxx188	baccaF1eUjhxFE	2022-08-02 20:25:11.266256+00	2022-08-02 20:25:11.266285+00	1	\N	{"cardholder_name": "HOSPITALITY OAKLEAF"}	f	f
 1929	NETSUITE_CLASS	Netsuite Class	Shara Barnett:Barnett Design	expense_custom_field.netsuite class.26	2022-08-02 20:25:11.033523+00	2022-08-02 20:25:11.03355+00	1	\N	{"placeholder": "Select Netsuite Class", "custom_field_id": 205266}	f	f
 1930	NETSUITE_CLASS	Netsuite Class	Sheldon Cooper	expense_custom_field.netsuite class.27	2022-08-02 20:25:11.033615+00	2022-08-02 20:25:11.033643+00	1	\N	{"placeholder": "Select Netsuite Class", "custom_field_id": 205266}	f	f
 1931	NETSUITE_CLASS	Netsuite Class	Sheldon Cooper:Incremental Project	expense_custom_field.netsuite class.28	2022-08-02 20:25:11.033768+00	2022-08-02 20:25:11.033797+00	1	\N	{"placeholder": "Select Netsuite Class", "custom_field_id": 205266}	f	f
@@ -4332,7 +4335,6 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 2000	CORPORATE_CARD	Corporate Card	American Express - xx8291	bacc0lEwS3OOfl	2022-08-02 20:25:11.265961+00	2022-08-02 20:25:11.26599+00	1	\N	{"cardholder_name": "D'morea Green"}	f	f
 2001	CORPORATE_CARD	Corporate Card	American Express - xx1930	baccPksofv9tEs	2022-08-02 20:25:11.266059+00	2022-08-02 20:25:11.266088+00	1	\N	{"cardholder_name": "ESTUDENTS FLEMING"}	f	f
 2002	CORPORATE_CARD	Corporate Card	American Express - xx6145	baccJZ7Hts78fu	2022-08-02 20:25:11.266157+00	2022-08-02 20:25:11.266187+00	1	\N	{"cardholder_name": "Kenil Edmond"}	f	f
-2003	CORPORATE_CARD	Corporate Card	American Express - xxx188	baccaF1eUjhxFE	2022-08-02 20:25:11.266256+00	2022-08-02 20:25:11.266285+00	1	\N	{"cardholder_name": "HOSPITALITY OAKLEAF"}	f	f
 2004	CORPORATE_CARD	Corporate Card	American Express - xx9945	baccNuIzDqCxuP	2022-08-02 20:25:11.266355+00	2022-08-02 20:25:11.266384+00	1	\N	{"cardholder_name": "EKIDS SUN OAKLEAF"}	f	f
 2005	CORPORATE_CARD	Corporate Card	American Express - xx9224	baccV3w0GuuevD	2022-08-02 20:25:11.266453+00	2022-08-02 20:25:11.266483+00	1	\N	{"cardholder_name": "ESTUDENTS ADMIN"}	f	f
 2006	CORPORATE_CARD	Corporate Card	American Express - xx2733	baccE7LNy9BHhB	2022-08-02 20:25:11.26669+00	2022-08-02 20:25:11.266741+00	1	\N	{"cardholder_name": "ELA CENTRAL"}	f	f
@@ -4657,8 +4659,8 @@ COPY public.users (password, last_login, id, email, user_id, full_name, active, 
 -- Data for Name: workspace_general_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, skip_cards_mapping, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period) FROM stdin;
-1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	EMAIL	t	t	f	t	{EXPENSE}	t	t
+COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, skip_cards_mapping, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity) FROM stdin;
+1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	EMAIL	t	t	f	t	{EXPENSE}	t	t	f
 \.
 
 
@@ -4771,7 +4773,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 35, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 105, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 106, true);
 
 
 --

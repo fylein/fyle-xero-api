@@ -144,7 +144,6 @@ def auto_create_category_mappings(workspace_id):
             'Error while creating categories workspace_id - %s in Fyle %s %s',
             workspace_id, exception.message, {'error': exception.response}
         )
-
     except Exception:
         error = traceback.format_exc()
         error = {

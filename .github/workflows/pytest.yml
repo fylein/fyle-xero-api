@@ -19,10 +19,9 @@ jobs:
         continue-on-error: true
       - name: Bring up Services and test for token health
         run: |
-          echo "XERO_TESTS_REFRESH_TOKENS=$XERO_TESTS_REFRESH_TOKENS" >> $GITHUB_ENV
           docker-compose -f docker-compose-pipeline.yml build
           docker-compose -f docker-compose-pipeline.yml up -d
-          docker-compose -f docker-compose-pipeline.yml exec -T api pytest tests/ --cov=. --junit-xml=test-reports/report.xml --cov-report=term-missing --cov-fail-under=85 | tee pytest-coverage.txt
+          docker-compose -f docker-compose-pipeline.yml exec -T api pytest tests/ --cov=. --junit-xml=test-reports/report.xml --cov-report=term-missing --cov-fail-under=90 | tee pytest-coverage.txt
           echo "STATUS=$(cat pytest-coverage.txt | grep 'Required test' | awk '{ print $1 }')" >> $GITHUB_ENV
           echo "FAILED=$(cat test-reports/report.xml | awk -F'=' '{print $5}' | awk -F' ' '{gsub(/"/, "", $1); print $1}')" >> $GITHUB_ENV
         env:
@@ -34,21 +33,9 @@ jobs:
           FYLE_TOKEN_URI: ${{ secrets.FYLE_TOKEN_URI }}
           FYLE_SERVER_URL: ${{ secrets.FYLE_SERVER_URL }}
           XERO_BASE_URL: ${{ secrets.XERO_BASE_URL }}
-          XERO_CLIENT_ID: ${{ secrets.XERO_CLIENT_ID }}
-          XERO_CLIENT_SECRET: ${{ secrets.XERO_CLIENT_SECRET }}
           XERO_REDIRECT_URI: ${{ secrets.XERO_REDIRECT_URI }}
           XERO_TOKEN_URI: ${{ secrets.XERO_TOKEN_URI }}
-          WRITE_TESTS_REFRESH_TOKENS: 'TRUE'
         continue-on-error: true
-      - name: gh auth login
-        shell: bash
-        run: gh auth login --with-token <<< $pat_token
-      - name: gh update refresh token
-        shell: bash
-        run: |
-          echo $(cat test_refresh_token.txt)| sed 's/./& /g'
-          repository='${{ github.repository }}'
-          gh secret set "$secret_name" --body "$(cat test_refresh_token.txt)" --repo $repository
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         if: ${{ always() && github.ref != 'refs/heads/master' }}

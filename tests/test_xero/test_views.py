@@ -249,7 +249,7 @@ def test_get_tenant_view(api_client, test_connection):
 
 def test_post_tenant_view(mocker, api_client, test_connection):
     mocker.patch(
-        'xerosdk.apis.TrackingCategories.get_all',
+        'xerosdk.apis.Tenants.get_all',
         return_value = []
     )
     workspace_id = 1
@@ -429,10 +429,17 @@ def test_post_reimburse_payments(mocker, api_client, test_connection):
         'xerosdk.apis.Invoices.post',
         return_value=data['bill_object']
     )
+    
     mocker.patch(
         'fyle_integrations_platform_connector.apis.Reimbursements.bulk_post_reimbursements',
         return_value=[]
     )
+
+    mocker.patch(
+        'xerosdk.apis.Invoices.get_by_id',
+        return_value=data['bill_object']
+    )
+
     workspace_id = 1
 
     Reimbursement.objects.all().delete()
