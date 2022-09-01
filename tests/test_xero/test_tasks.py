@@ -99,8 +99,13 @@ def test_attach_customer_to_export(mocker, db):
         logger.info('Something unexpected happened during attaching customer to export')
 
 
-def test_create_or_update_employee_mapping(db):
+def test_create_or_update_employee_mapping(mocker, db):
     workspace_id = 1
+
+    mocker.patch(
+        'xerosdk.apis.Contacts.search_contact_by_contact_name',
+        return_value=data['create_contact']['Contacts'][0]
+    )
 
     xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
