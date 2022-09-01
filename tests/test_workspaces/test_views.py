@@ -1,21 +1,16 @@
 import json
-import requests
-import unittest
-from unittest.mock import MagicMock, patch, Mock
 from unittest import mock
-from requests.models import Response
 from apps.mappings.models import TenantMapping
-from apps.xero.utils import XeroConnector, XeroCredentials
 from fyle_xero_api import settings
 from django.contrib.auth import get_user_model
 from fyle_rest_auth.utils import AuthUtils
 from tests.helper import dict_compare_keys
 from xerosdk import exceptions as xero_exc
 from fyle.platform import exceptions as fyle_exc
-from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings
+from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings
 from .fixtures import data
 from ..test_xero.fixtures import data as xero_data
-from apps.workspaces.utils import generate_xero_refresh_token
+from ..test_fyle.fixtures import data as fyle_data
 
 User = get_user_model()
 auth_utils = AuthUtils()
@@ -67,12 +62,23 @@ def test_get_workspace_by_id(api_client, test_connection):
     assert response.status_code == 400
 
 
-def test_post_of_workspace(api_client, test_connection):
+def test_post_of_workspace(api_client, test_connection, mocker):
 
     url = '/api/workspaces/'
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
     
+    mocker.patch(
+        'apps.workspaces.views.get_fyle_admin',
+        return_value=fyle_data['get_my_profile']
+    )
+
+    mocker.patch(
+        'apps.workspaces.views.get_cluster_domain',
+        return_value={
+            'cluster_domain': 'https://staging.fyle.tech/'
+        }
+    )
     response = api_client.post(url)
     assert response.status_code == 200
 

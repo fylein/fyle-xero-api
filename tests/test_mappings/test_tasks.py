@@ -10,6 +10,7 @@ from apps.mappings.tasks import auto_create_tax_codes_mappings, schedule_tax_gro
                     async_auto_create_custom_field_mappings, auto_create_expense_fields_mappings
 from fyle_integrations_platform_connector import PlatformConnector
 from ..test_xero.fixtures import data as xero_data
+from ..test_fyle.fixtures import data as fyle_data
 from .fixtures import data
 from tests.helper import dict_compare_keys
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings 
@@ -130,10 +131,15 @@ def test_upload_categories_to_fyle(db):
     assert xero_attributes == None
 
 
-def test_create_fyle_category_payload(db):
+def test_create_fyle_category_payload(mocker, db):
     workspace_id = 1
     qbo_attributes = DestinationAttribute.objects.filter(
         workspace_id=1, attribute_type='ACCOUNT'
+    )
+
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.Categories.list_all',
+        return_value=fyle_data['get_all_categories']
     )
 
     qbo_attributes = remove_duplicates(qbo_attributes)
@@ -170,6 +176,11 @@ def test_auto_create_category_mappings(db, mocker):
     mocker.patch(
         'xerosdk.apis.Accounts.get_all',
         return_value=xero_data['get_all_accounts']
+    )
+
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.Categories.list_all',
+        return_value=fyle_data['get_all_categories']
     )
 
     response = auto_create_category_mappings(workspace_id=workspace_id)
@@ -214,6 +225,11 @@ def test_async_auto_map_employees(mocker, db):
     mocker.patch(
         'xerosdk.apis.Contacts.list_all_generator',
         return_value=xero_data['get_all_contacts']
+    )
+
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.Employees.list_all',
+        return_value=fyle_data['get_all_employees']
     )
 
     async_auto_map_employees(workspace_id)
