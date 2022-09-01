@@ -5,6 +5,7 @@ import pytest
 from rest_framework.test import APIClient
 from fyle_rest_auth.models import AuthToken, User
 from fyle.platform import Platform
+from .test_fyle.fixtures import data as fyle_data
 from apps.fyle.helpers import get_access_token
 from fyle_xero_api.tests import settings
 
@@ -19,11 +20,42 @@ def api_client():
 
 @pytest.fixture(scope="session", autouse=True)
 def default_session_fixture(request):
-    patched = mock.patch('xerosdk.XeroSDK.refresh_access_token')
-    patched.__enter__()
+    patched_1 = mock.patch('xerosdk.XeroSDK.refresh_access_token')
+    patched_1.__enter__()
+
+    patched_2 = mock.patch(
+        'fyle_rest_auth.authentication.get_fyle_admin',
+        return_value=fyle_data['get_my_profile']
+    )
+    patched_2.__enter__()
+
+    patched_3 = mock.patch(
+        'fyle.platform.internals.auth.Auth.update_access_token',
+        return_value='asnfalsnkflanskflansfklsan'
+    )
+    patched_3.__enter__()
+
+    patched_4 = mock.patch(
+        'apps.fyle.helpers.post_request',
+        return_value={
+            'access_token': 'easnfkjo12233.asnfaosnfa.absfjoabsfjk',
+            'cluster_domain': 'anskflansflanfls'
+        }
+    )
+    patched_4.__enter__()
+
+    patched_5 = mock.patch(
+        'fyle.platform.apis.v1beta.spender.MyProfile.get',
+        return_value=fyle_data['get_my_profile']
+    )
+    patched_5.__enter__()
 
     def unpatch():
-        patched.__exit__()
+        patched_1.__exit__()
+        patched_2.__exit__()
+        patched_3.__exit__()
+        patched_4.__exit__()
+        patched_5.__exit__()
 
     request.addfinalizer(unpatch)
 
