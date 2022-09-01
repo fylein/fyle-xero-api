@@ -160,7 +160,7 @@ def test_upload_categories_to_fyle(mocker, db):
     assert count_of_accounts == 56
 
 
-def test_auto_create_category_mappings(db, mocker): #needs refresh token
+def test_auto_create_category_mappings(db, mocker):
     workspace_id = 1
     mocker.patch(
         'fyle_integrations_platform_connector.apis.Categories.post_bulk',
@@ -208,8 +208,13 @@ def test_schedule_categories_creation(db):
     assert schedule == None
 
 
-def test_async_auto_map_employees(db):  #needs refresh token
+def test_async_auto_map_employees(mocker, db):
     workspace_id = 1
+
+    mocker.patch(
+        'xerosdk.apis.Contacts.list_all_generator',
+        return_value=xero_data['get_all_contacts']
+    )
 
     async_auto_map_employees(workspace_id)
     employee_mappings = EmployeeMapping.objects.filter(workspace_id=workspace_id).count()
@@ -313,6 +318,11 @@ def test_schedule_fyle_attributes_creation(db, mocker):
     mocker.patch(
         'fyle_integrations_platform_connector.apis.ExpenseCustomFields.post',
         return_value=[]
+    )
+
+    mocker.patch(
+        'xerosdk.apis.TrackingCategories.get_all',
+        return_value=xero_data['get_all_tracking_categories']
     )
 
     schedule = Schedule.objects.filter(
