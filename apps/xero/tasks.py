@@ -46,6 +46,8 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str, auto_cre
 
         if not contact and auto_create_merchant_destination_entity:
             merchant = merchant
+        else:
+            merchant = 'Credit Card Misc'
     else:
         merchant = 'Credit Card Misc'
 
