@@ -8,8 +8,28 @@ from django_q.models import Schedule
 
 User = get_user_model()
 
+ONBOARDING_STATE_CHOICES = (
+    ('CONNECTION', 'CONNECTION'),
+    ('EXPORT_SETTINGS', 'EXPORT_SETTINGS'),
+    ('IMPORT_SETTINGS', 'IMPORT_SETTINGS'),
+    ('ADVANCED_CONFIGURATION', 'ADVANCED_CONFIGURATION'),
+    ('COMPLETE', 'COMPLETE')
+)
+
+APP_VERSION_CHOICES = (
+    ('v1', 'v1'),
+    ('v2', 'v2')
+)
+#add or remove this after discussion.
+AUTO_MAP_EMPLOYEE = {
+    ('EMAIL', 'EMAIL')
+}
+
 def get_default_chart_of_accounts():
     return ['EXPENSE']
+
+def get_default_onboarding_state():
+    return 'CONNECTION'
 class Workspace(models.Model):
     """
     Workspace model
@@ -22,6 +42,11 @@ class Workspace(models.Model):
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
     source_synced_at = models.DateTimeField(help_text='Datetime when source dimensions were pulled', null=True)
     destination_synced_at = models.DateTimeField(help_text='Datetime when destination dimensions were pulled', null=True)
+    app_version = models.CharField(max_length=2, help_text='App version', default='v1', choices=APP_VERSION_CHOICES)
+    onboarding_state = models.CharField(
+        max_length=50, choices=ONBOARDING_STATE_CHOICES, default=get_default_onboarding_state,
+        help_text='Onboarding status of the workspace', null=True
+    )
     xero_accounts_last_synced_at = models.DateTimeField(null=True, help_text='Xero Accounts last synced at time')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
@@ -65,7 +90,8 @@ class WorkspaceGeneralSettings(models.Model):
     Workspace General Settings
     """
     id = models.AutoField(primary_key=True, help_text='Unique Id to identify a workspace')
-    workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
+    workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model',
+                                        related_name='workspace_general_settings')
     reimbursable_expenses_object = models.CharField(max_length=50, help_text='Reimbursable Expenses type')
     corporate_credit_card_expenses_object = models.CharField(max_length=50,
                                                              help_text='Non Reimbursable Expenses type', null=True)
@@ -74,7 +100,7 @@ class WorkspaceGeneralSettings(models.Model):
     map_merchant_to_contact = models.BooleanField(default=False, help_text='Map Merchant to Contact for CCC Expenses')
     change_accounting_period = models.BooleanField(default=False, help_text='Change the accounting period')
     import_categories = models.BooleanField(default=False, help_text='Auto import Categories to Fyle')
-    auto_map_employees = models.CharField(max_length=50, help_text='Auto Map Employees from Xero to Fyle', null=True)
+    auto_map_employees = models.CharField(max_length=50, help_text='Auto Map Employees from Xero to Fyle', null=True, choices=AUTO_MAP_EMPLOYEE)
     auto_create_destination_entity = models.BooleanField(default=False, help_text='Auto create contact')
     auto_create_merchant_destination_entity = models.BooleanField(default=False, help_text='Auto create fyle merchnat as xero contact')
     skip_cards_mapping = models.BooleanField(default=False, help_text='Skip cards mapping')

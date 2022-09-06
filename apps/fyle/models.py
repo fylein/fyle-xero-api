@@ -38,6 +38,15 @@ SOURCE_ACCOUNT_MAP = {
     'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT': 'CCC'
 }
 
+EXPENSE_STATE = {
+    'REIMBURSABLE': 'PAYMENT_PROCESSING',
+    'CCC': 'PAID'
+}
+
+EXPENSE_GROUP_FIELDS = {
+    'REIMBURSABLE': ['employee_email', 'report_id', 'claim_number', 'fund_source'],
+    'CCC': ['employee_email', 'report_id', 'claim_number', 'fund_source', 'expense_id']   
+}
 
 def _format_date(date_string) -> datetime:
     """
@@ -159,13 +168,6 @@ class Expense(models.Model):
         return expense_objects
 
 
-def get_default_expense_group_fields():
-    return ['employee_email', 'report_id', 'claim_number', 'fund_source']
-
-
-def get_default_expense_state():
-    return 'PAYMENT_PROCESSING'
-
 
 class ExpenseGroupSettings(models.Model):
     """
@@ -173,21 +175,25 @@ class ExpenseGroupSettings(models.Model):
     """
     id = models.AutoField(primary_key=True)
     reimbursable_expense_group_fields = ArrayField(
-        base_field=models.CharField(max_length=100), default=get_default_expense_group_fields,
+        base_field=models.CharField(max_length=100), default=EXPENSE_GROUP_FIELDS['REIMBURSABLE'],
         help_text='list of fields reimbursable expense grouped by'
     )
 
     corporate_credit_card_expense_group_fields = ArrayField(
-        base_field=models.CharField(max_length=100), default=get_default_expense_group_fields,
+        base_field=models.CharField(max_length=100), default=EXPENSE_GROUP_FIELDS['CCC'],
         help_text='list of fields ccc expenses grouped by'
     )
-    expense_state = models.CharField(
-        max_length=100, default=get_default_expense_state,
-        help_text='state at which the expenses are fetched ( PAYMENT_PENDING / PAYMENT_PROCESSING / PAID)')
+    reimbursable_expense_state = models.CharField(
+        max_length=100, default=EXPENSE_STATE['REIMBURSABLE'],
+        help_text='state at which the reimbursable expenses are fetched (PAYMENT_PROCESSING / PAID)')
+    ccc_expense_state = models.CharField(
+        max_length=100, default=EXPENSE_STATE['CCC'],
+        help_text='state at which the ccc expenses are fetched (PAYMENT_PROCESSING /PAID)')
     reimbursable_export_date_type = models.CharField(max_length=100, default='current_date', help_text='Export Date')
-    ccc_export_date_type = models.CharField(max_length=100, default='current_date', help_text='CCC Export Date')
+    ccc_export_date_type = models.CharField(max_length=100, default='spent_at', help_text='CCC Export Date')
     workspace = models.OneToOneField(
-        Workspace, on_delete=models.PROTECT, help_text='To which workspace this expense group setting belongs to'
+        Workspace, on_delete=models.PROTECT, help_text='To which workspace this expense group setting belongs to',
+        related_name='expense_group_settings'
     )
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
