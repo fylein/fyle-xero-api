@@ -25,7 +25,7 @@ def add_workspace_to_database():
 
 
 @pytest.fixture()
-def add_netsuite_credentials(db):
+def add_xero_credentials(db):
     workspace_id = 2
 
     XeroCredentials.objects.create(
