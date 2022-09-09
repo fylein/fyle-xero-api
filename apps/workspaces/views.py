@@ -252,7 +252,8 @@ class ConnectXeroView(viewsets.ViewSet):
 
             xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
             tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
-
+            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
+            
             if not xero_credentials:
                 xero_credentials = XeroCredentials.objects.create(
                     refresh_token=refresh_token,
@@ -281,6 +282,10 @@ class ConnectXeroView(viewsets.ViewSet):
 
                 except xero_exc.WrongParamsError as exception:
                     logger.error(exception.response)
+
+            if workspace.onboarding_state == 'CONNECTION':
+                workspace.onboarding_state = 'EXPORT_SETTINGS'
+                workspace.save()
 
             return Response(
                 data=XeroCredentialSerializer(xero_credentials).data,

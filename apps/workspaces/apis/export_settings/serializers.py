@@ -51,16 +51,16 @@ class GeneralMappingsSerializer(serializers.ModelSerializer):
         }
 
 class ExpenseGroupSettingsSerializer(serializers.ModelSerializer):
-    reimbursable_expense_group_fields = serializers.ListField(allow_null=True, required=False) #remove this
+    reimbursable_expense_group_fields = serializers.ListField(allow_null=True, required=False)
     reimbursable_export_date_type = serializers.CharField(allow_null=True, allow_blank=True, required=False)
     reimbursable_expense_state = serializers.CharField(allow_null=True, allow_blank=True, required=False)
-    corporate_credit_card_expense_group_fields = serializers.ListField(allow_null=True, required=False) #remove this
-    ccc_export_date_type = serializers.CharField(allow_null=True, allow_blank=True, required=False) #remove this 
+    corporate_credit_card_expense_group_fields = serializers.ListField(allow_null=True, required=False)
+    ccc_export_date_type = serializers.CharField(allow_null=True, allow_blank=True, required=False) 
     ccc_expense_state = serializers.CharField(allow_null=True, allow_blank=True, required=False)
 
     class Meta:
         model = ExpenseGroupSettings
-        fields = [ #remove here as well .
+        fields = [
             'reimbursable_expense_group_fields',
             'reimbursable_export_date_type',
             'reimbursable_expense_state',
@@ -68,10 +68,6 @@ class ExpenseGroupSettingsSerializer(serializers.ModelSerializer):
             'ccc_export_date_type',
             'ccc_expense_state'
         ]
-
-
-
-
 
 class ExportSettingsSerializer(serializers.ModelSerializer) :
     workspace_general_settings = WorkspaceGeneralSettingsSerializer()
@@ -100,14 +96,52 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
 
         workspace_general_settings_instance = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
 
+        map_merchant_to_contact = True
+
+        if workspace_general_settings_instance:
+            map_merchant_to_contact = workspace_general_settings_instance.map_merchant_to_contact
+
         workspace_general_settings_instance, _ = WorkspaceGeneralSettings.objects.update_or_create(
             workspace_id=workspace_id,
             defaults={
                 'auto_map_employees': workspace_general_settings['auto_map_employees'],
                 'reimbursable_expenses_object': workspace_general_settings['reimbursable_expenses_object'], 
-                'corporate_credit_card_expenses_object': workspace_general_settings['corporate_credit_card_expenses_object']
+                'corporate_credit_card_expenses_object': workspace_general_settings['corporate_credit_card_expenses_object'],
+                'map_merchant_to_contact': map_merchant_to_contact
             }
         )
+
+        if map_merchant_to_contact and \
+            workspace_general_settings['corporate_credit_card_expenses_object'] == 'BANK TRANSACTION':
+
+            ccc_expense_group_fields = expense_group_settings['corporate_credit_card_expense_group_fields']
+            ccc_expense_group_fields.append('expense_id')
+            expense_group_settings['corporate_credit_card_expense_group_fields'] = list(set(ccc_expense_group_fields))
+            expense_group_settings['ccc_export_date_type'] = 'spent_at'
+
+        ExpenseGroupSettings.update_expense_group_settings(expense_group_settings, workspace_id=workspace_id)
+
+        GeneralMapping.objects.update_or_create(
+            workspace=instance,
+            defaults={
+                'accounts_payable_name': general_mappings.get('accounts_payable').get('name'),
+                'accounts_payable_id': general_mappings.get('accounts_payable').get('id'),
+                'qbo_expense_account_name': general_mappings.get('qbo_expense_account').get('name'),
+                'qbo_expense_account_id': general_mappings.get('qbo_expense_account').get('id'),
+                'bank_account_name': general_mappings.get('bank_account').get('name'),
+                'bank_account_id': general_mappings.get('bank_account').get('id'),
+                'default_ccc_account_name': general_mappings.get('default_ccc_account').get('name'),
+                'default_ccc_account_id': general_mappings.get('default_ccc_account').get('id'),
+                'default_debit_card_account_name': general_mappings.get('default_debit_card_account').get('name'),
+                'default_debit_card_account_id': general_mappings.get('default_debit_card_account').get('id'),
+                'default_ccc_vendor_name': general_mappings.get('default_ccc_vendor').get('name'),
+                'default_ccc_vendor_id': general_mappings.get('default_ccc_vendor').get('id')
+            }
+        )
+
+        if instance.onboarding_state == 'EXPORT_SETTINGS':
+            instance.onboarding_state = 'IMPORT_SETTINGS'
+            instance.save()
 
         return instance
     
@@ -120,4 +154,9 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
 
         if not data.get('general_mappings'):
             raise serializers.ValidationError('General mappings are required')
+        
+        if data.get('workspace_general_settings').get('auto_map_employees') and \
+            data.get('workspace_general_settings').get('auto_map_employees') not in ['EMAIL', 'NAME', 'EMPLOYEE_CODE']:
+            raise serializers.ValidationError('auto_map_employees can have only EMAIL / NAME / EMPLOYEE_CODE')
+
         return data

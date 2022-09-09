@@ -16,13 +16,16 @@ ONBOARDING_STATE_CHOICES = (
     ('COMPLETE', 'COMPLETE')
 )
 
-APP_VERSION_CHOICES = (
-    ('v1', 'v1'),
-    ('v2', 'v2')
-)
 #add or remove this after discussion.
-AUTO_MAP_EMPLOYEE = {
-    ('EMAIL', 'EMAIL')
+AUTO_MAP_EMPLOYEE = (
+    ('EMAIL', 'EMAIL'),
+    ('NAME', 'NAME'),
+    ('EMPLOYEE_CODE', 'EMPLOYEE_CODE')
+)
+
+EXPENSE_OBJECT={
+    'REIMBURSABLE': (('PURCHASE BILL', 'PURCHASE BILL')),
+    'CCC': (('BANK TRANSACTION', 'BANK TRANSACTION'))
 }
 
 def get_default_chart_of_accounts():
@@ -42,7 +45,6 @@ class Workspace(models.Model):
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
     source_synced_at = models.DateTimeField(help_text='Datetime when source dimensions were pulled', null=True)
     destination_synced_at = models.DateTimeField(help_text='Datetime when destination dimensions were pulled', null=True)
-    app_version = models.CharField(max_length=2, help_text='App version', default='v1', choices=APP_VERSION_CHOICES)
     onboarding_state = models.CharField(
         max_length=50, choices=ONBOARDING_STATE_CHOICES, default=get_default_onboarding_state,
         help_text='Onboarding status of the workspace', null=True
@@ -92,9 +94,9 @@ class WorkspaceGeneralSettings(models.Model):
     id = models.AutoField(primary_key=True, help_text='Unique Id to identify a workspace')
     workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model',
                                         related_name='workspace_general_settings')
-    reimbursable_expenses_object = models.CharField(max_length=50, help_text='Reimbursable Expenses type')
+    reimbursable_expenses_object = models.CharField(max_length=50, help_text='Reimbursable Expenses type', choices=EXPENSE_OBJECT['REIMBURSABLE'])
     corporate_credit_card_expenses_object = models.CharField(max_length=50,
-                                                             help_text='Non Reimbursable Expenses type', null=True)
+                                                             help_text='Non Reimbursable Expenses type', null=True, choices=EXPENSE_OBJECT['CCC'])
     sync_fyle_to_xero_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Fyle to Xero')
     sync_xero_to_fyle_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Xero to Fyle')
     map_merchant_to_contact = models.BooleanField(default=False, help_text='Map Merchant to Contact for CCC Expenses')

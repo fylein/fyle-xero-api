@@ -45,7 +45,7 @@ EXPENSE_STATE = {
 
 EXPENSE_GROUP_FIELDS = {
     'REIMBURSABLE': ['employee_email', 'report_id', 'claim_number', 'fund_source'],
-    'CCC': ['employee_email', 'report_id', 'claim_number', 'fund_source', 'expense_id']   
+    'CCC': ['employee_email', 'report_id', 'claim_number', 'fund_source', 'expense_id']
 }
 
 def _format_date(date_string) -> datetime:
