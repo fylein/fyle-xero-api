@@ -77,12 +77,12 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
 
     class Meta:
         model = Workspace
-        fields = {
+        fields = [
             'workspace_general_settings',
             'expense_group_settings',
             'general_mappings',
             'workspace_id'
-        }
+        ]
         read_only_fields = ['workspace_id']
 
     def get_workspace_id(self, instance):
@@ -124,18 +124,10 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
         GeneralMapping.objects.update_or_create(
             workspace=instance,
             defaults={
-                'accounts_payable_name': general_mappings.get('accounts_payable').get('name'),
-                'accounts_payable_id': general_mappings.get('accounts_payable').get('id'),
-                'qbo_expense_account_name': general_mappings.get('qbo_expense_account').get('name'),
-                'qbo_expense_account_id': general_mappings.get('qbo_expense_account').get('id'),
                 'bank_account_name': general_mappings.get('bank_account').get('name'),
                 'bank_account_id': general_mappings.get('bank_account').get('id'),
-                'default_ccc_account_name': general_mappings.get('default_ccc_account').get('name'),
-                'default_ccc_account_id': general_mappings.get('default_ccc_account').get('id'),
-                'default_debit_card_account_name': general_mappings.get('default_debit_card_account').get('name'),
-                'default_debit_card_account_id': general_mappings.get('default_debit_card_account').get('id'),
-                'default_ccc_vendor_name': general_mappings.get('default_ccc_vendor').get('name'),
-                'default_ccc_vendor_id': general_mappings.get('default_ccc_vendor').get('id')
+                'payment_account_name': general_mappings.get('payment_account').get('name'),
+                'payment_account_id': general_mappings.get('payment_account').get('id')
             }
         )
 

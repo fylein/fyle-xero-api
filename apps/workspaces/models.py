@@ -23,10 +23,6 @@ AUTO_MAP_EMPLOYEE = (
     ('EMPLOYEE_CODE', 'EMPLOYEE_CODE')
 )
 
-EXPENSE_OBJECT={
-    'REIMBURSABLE': (('PURCHASE BILL', 'PURCHASE BILL')),
-    'CCC': (('BANK TRANSACTION', 'BANK TRANSACTION'))
-}
 
 def get_default_chart_of_accounts():
     return ['EXPENSE']
@@ -94,9 +90,9 @@ class WorkspaceGeneralSettings(models.Model):
     id = models.AutoField(primary_key=True, help_text='Unique Id to identify a workspace')
     workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model',
                                         related_name='workspace_general_settings')
-    reimbursable_expenses_object = models.CharField(max_length=50, help_text='Reimbursable Expenses type', choices=EXPENSE_OBJECT['REIMBURSABLE'])
+    reimbursable_expenses_object = models.CharField(max_length=50, help_text='Reimbursable Expenses type')
     corporate_credit_card_expenses_object = models.CharField(max_length=50,
-                                                             help_text='Non Reimbursable Expenses type', null=True, choices=EXPENSE_OBJECT['CCC'])
+                                                             help_text='Non Reimbursable Expenses type', null=True)
     sync_fyle_to_xero_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Fyle to Xero')
     sync_xero_to_fyle_payments = models.BooleanField(default=False, help_text='Auto Sync Payments from Xero to Fyle')
     map_merchant_to_contact = models.BooleanField(default=False, help_text='Map Merchant to Contact for CCC Expenses')

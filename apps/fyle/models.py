@@ -167,7 +167,11 @@ class Expense(models.Model):
 
         return expense_objects
 
+def get_default_expense_group_fields():
+    return EXPENSE_GROUP_FIELDS['REIMBURSABLE']
 
+def get_default_expense_state():
+    return EXPENSE_STATE['REIMBURSABLE']
 
 class ExpenseGroupSettings(models.Model):
     """
