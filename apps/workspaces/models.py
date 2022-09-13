@@ -29,6 +29,7 @@ def get_default_chart_of_accounts():
 
 def get_default_onboarding_state():
     return 'CONNECTION'
+
 class Workspace(models.Model):
     """
     Workspace model

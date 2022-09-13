@@ -1,8 +1,6 @@
-from statistics import mode
-
-from attr import fields
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from rest_framework import serializers
+from fyle_accounting_mappings.models import MappingSetting
 
 from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.models import GeneralMapping
@@ -111,13 +109,21 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
             }
         )
 
-        if map_merchant_to_contact and \
-            workspace_general_settings['corporate_credit_card_expenses_object'] == 'BANK TRANSACTION':
+        if workspace_general_settings['corporate_credit_card_expenses_object'] == 'BANK TRANSACTION':
+            MappingSetting.objects.update_or_create(
+                destination_field='CREDIT_CARD_ACCOUNT',
+                workspace_id=instance.id,
+                defaults={
+                    'source_field': 'CORPORATE_CARD',
+                    'import_to_fyle': False,
+                    'is_custom': False
+                }
+            )
 
-            ccc_expense_group_fields = expense_group_settings['corporate_credit_card_expense_group_fields']
-            ccc_expense_group_fields.append('expense_id')
-            expense_group_settings['corporate_credit_card_expense_group_fields'] = list(set(ccc_expense_group_fields))
-            expense_group_settings['ccc_export_date_type'] = 'spent_at'
+        expense_group_settings_instance = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
+        expense_group_settings['reimbursable_expense_group_fields'] = expense_group_settings_instance.reimbursable_expense_group_fields
+        expense_group_settings['corporate_credit_card_expense_group_fields'] = expense_group_settings_instance.corporate_credit_card_expense_group_fields
+        expense_group_settings['ccc_export_date_type'] = expense_group_settings_instance.ccc_export_date_type
 
         ExpenseGroupSettings.update_expense_group_settings(expense_group_settings, workspace_id=workspace_id)
 
