@@ -172,19 +172,19 @@ class ExpenseGroupSettings(models.Model):
     """
     id = models.AutoField(primary_key=True)
     reimbursable_expense_group_fields = ArrayField(
-        base_field=models.CharField(max_length=100), default=get_default_expense_group_fields(),
+        base_field=models.CharField(max_length=100), default=get_default_expense_group_fields,
         help_text='list of fields reimbursable expense grouped by'
     )
 
     corporate_credit_card_expense_group_fields = ArrayField(
-        base_field=models.CharField(max_length=100), default=get_default_ccc_expense_group_fields(),
+        base_field=models.CharField(max_length=100), default=get_default_ccc_expense_group_fields,
         help_text='list of fields ccc expenses grouped by'
     )
     reimbursable_expense_state = models.CharField(
-        max_length=100, default=get_default_expense_state(),
+        max_length=100, default=get_default_expense_state,
         help_text='state at which the reimbursable expenses are fetched (PAYMENT_PROCESSING / PAID)')
     ccc_expense_state = models.CharField(
-        max_length=100, default=get_default_expense_state(),
+        max_length=100, default=get_default_expense_state,
         help_text='state at which the ccc expenses are fetched (PAYMENT_PROCESSING /PAID)')
     reimbursable_export_date_type = models.CharField(max_length=100, default='current_date', help_text='Export Date')
     ccc_export_date_type = models.CharField(max_length=100, default='spent_at', help_text='CCC Export Date')
