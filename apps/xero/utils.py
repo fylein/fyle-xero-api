@@ -351,7 +351,7 @@ class XeroConnector:
             'value': contact['Name'],
             'destination_id': contact['ContactID'],
             'detail': {
-                'email': contact['EmailAddress']
+                'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
             }
         }, self.workspace_id)
 
