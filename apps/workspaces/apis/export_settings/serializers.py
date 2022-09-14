@@ -5,6 +5,7 @@ from fyle_accounting_mappings.models import MappingSetting
 from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.models import GeneralMapping
 from apps.fyle.models import ExpenseGroupSettings
+from .triggers import ExportSettingsTrigger
 
 class ReadWriteSerializerMethodField(serializers.SerializerMethodField):
     """
@@ -119,6 +120,8 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
                     'is_custom': False
                 }
             )
+        
+        ExportSettingsTrigger.run_workspace_general_settings_triggers(workspace_general_settings_instance)
 
         expense_group_settings_instance = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
         expense_group_settings['reimbursable_expense_group_fields'] = expense_group_settings_instance.reimbursable_expense_group_fields

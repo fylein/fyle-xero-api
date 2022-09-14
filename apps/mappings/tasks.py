@@ -179,8 +179,8 @@ def schedule_categories_creation(import_categories, workspace_id):
 
 def async_auto_map_employees(workspace_id: int):
     try:
-        employee_mapping_preference = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id).auto_map_employees
-
+        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+        employee_mapping_preference = general_settings.auto_map_employees
         fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
         platform = PlatformConnector(fyle_credentials)
 
