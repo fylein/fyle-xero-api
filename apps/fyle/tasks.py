@@ -81,24 +81,13 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             for source in fund_source:
                 source_account_type.append(SOURCE_ACCOUNT_MAP[source])
 
-            expenses = []
             expenses = platform.expenses.get(
                 source_account_type=source_account_type,
-                state=expense_group_settings.ccc_expense_state,
-                settled_at=last_synced_at if expense_group_settings.ccc_expense_state == 'PAYMENT_PROCESSING' else None,
+                state=expense_group_settings.expense_state,
+                settled_at=last_synced_at if expense_group_settings.expense_state == 'PAYMENT_PROCESSING' else None,
                 filter_credit_expenses=True,
-                last_paid_at=last_synced_at if expense_group_settings.ccc_expense_state == 'PAID' else None
+                last_paid_at=last_synced_at if expense_group_settings.expense_state == 'PAID' else None
             )
-
-            if SOURCE_ACCOUNT_MAP['PERSONAL'] in source_account_type: 
-                reimbursable_expenses = platform.expenses.get(
-                    source_account_type=source_account_type,
-                    state=expense_group_settings.reimbursable_expense_state,
-                    settled_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAYMENT_PROCESSING' else None,
-                    filter_credit_expenses=True,
-                    last_paid_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAID' else None
-                )
-                expenses = expenses + reimbursable_expenses
 
             if expenses:
                 workspace.last_synced_at = datetime.now()
