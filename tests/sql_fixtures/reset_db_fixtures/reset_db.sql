@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.4 (Debian 14.4-1.pgdg110+1)
--- Dumped by pg_dump version 14.4 (Debian 14.4-1.pgdg100+1)
+-- Dumped from database version 14.2 (Debian 14.2-1.pgdg110+1)
+-- Dumped by pg_dump version 14.5 (Debian 14.5-1.pgdg100+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -671,12 +671,13 @@ CREATE TABLE public.expense_group_settings (
     id integer NOT NULL,
     reimbursable_expense_group_fields character varying(100)[] NOT NULL,
     corporate_credit_card_expense_group_fields character varying(100)[] NOT NULL,
-    expense_state character varying(100) NOT NULL,
     reimbursable_export_date_type character varying(100) NOT NULL,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     workspace_id integer NOT NULL,
-    ccc_export_date_type character varying(100) NOT NULL
+    ccc_export_date_type character varying(100) NOT NULL,
+    ccc_expense_state character varying(100) NOT NULL,
+    reimbursable_expense_state character varying(100) NOT NULL
 );
 
 
@@ -1334,7 +1335,8 @@ CREATE TABLE public.workspaces (
     destination_synced_at timestamp with time zone,
     source_synced_at timestamp with time zone,
     xero_short_code character varying(30),
-    xero_accounts_last_synced_at timestamp with time zone
+    xero_accounts_last_synced_at timestamp with time zone,
+    onboarding_state character varying(50)
 );
 
 
@@ -2282,6 +2284,11 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 110	fyle_accounting_mappings	0016_auto_20220413_1624	2022-09-08 08:50:25.793733+00
 111	fyle_accounting_mappings	0017_auto_20220419_0649	2022-09-08 08:50:25.811911+00
 112	fyle_accounting_mappings	0018_auto_20220419_0709	2022-09-08 08:50:25.834243+00
+113	workspaces	0024_auto_20220909_1206	2022-09-16 07:08:00.55819+00
+114	fyle	0012_auto_20220909_1206	2022-09-16 07:08:00.62654+00
+115	fyle	0013_auto_20220913_0851	2022-09-16 07:08:00.641607+00
+116	fyle	0014_auto_20220913_0946	2022-09-16 07:08:00.682908+00
+117	mappings	0006_auto_20220909_1206	2022-09-16 07:08:00.699922+00
 \.
 
 
@@ -4454,8 +4461,8 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 -- Data for Name: expense_group_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corporate_credit_card_expense_group_fields, expense_state, reimbursable_export_date_type, created_at, updated_at, workspace_id, ccc_export_date_type) FROM stdin;
-1	{employee_email,report_id,claim_number,fund_source}	{report_id,fund_source,employee_email,claim_number,expense_id}	PAYMENT_PROCESSING	current_date	2022-08-02 20:24:42.329794+00	2022-08-02 20:25:24.6873+00	1	spent_at
+COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corporate_credit_card_expense_group_fields, reimbursable_export_date_type, created_at, updated_at, workspace_id, ccc_export_date_type, ccc_expense_state, reimbursable_expense_state) FROM stdin;
+1	{employee_email,report_id,claim_number,fund_source}	{report_id,fund_source,employee_email,claim_number,expense_id}	current_date	2022-08-02 20:24:42.329794+00	2022-08-02 20:25:24.6873+00	1	spent_at	PAID	PAYMENT_PROCESSING
 \.
 
 
@@ -4683,8 +4690,8 @@ COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, sc
 -- Data for Name: workspaces; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at) FROM stdin;
-1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00
+COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state) FROM stdin;
+1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION
 \.
 
 
@@ -4780,7 +4787,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 35, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 112, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 117, true);
 
 
 --
@@ -5928,6 +5935,14 @@ ALTER TABLE ONLY public.employee_mappings
 
 
 --
+-- Name: expense_group_settings expense_group_settings_workspace_id_4c110bbe_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_group_settings
+    ADD CONSTRAINT expense_group_settings_workspace_id_4c110bbe_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: expense_groups_expenses expense_groups_expen_expensegroup_id_c5b379a2_fk_expense_g; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5989,14 +6004,6 @@ ALTER TABLE ONLY public.destination_attributes
 
 ALTER TABLE ONLY public.fyle_credentials
     ADD CONSTRAINT fyle_credentials_workspace_id_52f7febf_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
--- Name: expense_group_settings fyle_expensegroupset_workspace_id_98c370a1_fk_workspace; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.expense_group_settings
-    ADD CONSTRAINT fyle_expensegroupset_workspace_id_98c370a1_fk_workspace FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -6104,6 +6111,14 @@ ALTER TABLE ONLY public.tenant_mappings
 
 
 --
+-- Name: workspace_general_settings workspace_general_se_workspace_id_a218afd8_fk_workspace; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.workspace_general_settings
+    ADD CONSTRAINT workspace_general_se_workspace_id_a218afd8_fk_workspace FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: workspaces_user workspaces_user_user_id_4253baf7_fk_users_user_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6133,14 +6148,6 @@ ALTER TABLE ONLY public.workspace_schedules
 
 ALTER TABLE ONLY public.workspace_schedules
     ADD CONSTRAINT workspaces_workspace_workspace_id_3c3942bc_fk_workspace FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
--- Name: workspace_general_settings workspaces_workspace_workspace_id_a18c5f9f_fk_workspace; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.workspace_general_settings
-    ADD CONSTRAINT workspaces_workspace_workspace_id_a18c5f9f_fk_workspace FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --

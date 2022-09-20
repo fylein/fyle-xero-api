@@ -5,6 +5,8 @@ from fyle_accounting_mappings.models import MappingSetting
 from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.models import GeneralMapping
 from apps.fyle.models import ExpenseGroupSettings
+from .triggers import ExportSettingsTrigger
+
 
 class ReadWriteSerializerMethodField(serializers.SerializerMethodField):
     """
@@ -22,11 +24,13 @@ class ReadWriteSerializerMethodField(serializers.SerializerMethodField):
             self.field_name: data
         }
 
+
 class WorkspaceGeneralSettingsSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = WorkspaceGeneralSettings
         fields = ['reimbursable_expenses_object', 'corporate_credit_card_expenses_object', 'auto_map_employees']
+
 
 class GeneralMappingsSerializer(serializers.ModelSerializer):
     bank_account = ReadWriteSerializerMethodField()
@@ -59,6 +63,7 @@ class ExpenseGroupSettingsSerializer(serializers.ModelSerializer):
             'ccc_export_date_type',
             'ccc_expense_state'
         ]
+
 
 class ExportSettingsSerializer(serializers.ModelSerializer) :
     workspace_general_settings = WorkspaceGeneralSettingsSerializer()
@@ -112,6 +117,8 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
                     'is_custom': False
                 }
             )
+        
+        ExportSettingsTrigger.run_workspace_general_settings_triggers(workspace_general_settings_instance)
 
         expense_group_settings_instance = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
         expense_group_settings['reimbursable_expense_group_fields'] = expense_group_settings_instance.reimbursable_expense_group_fields
