@@ -182,10 +182,10 @@ class ExpenseGroupSettings(models.Model):
     )
     reimbursable_expense_state = models.CharField(
         max_length=100, default=get_default_expense_state,
-        help_text='state at which the reimbursable expenses are fetched (PAYMENT_PROCESSING / PAID)')
+        help_text='state at which the reimbursable expenses are fetched (PAYMENT_PROCESSING / PAID)', null=True)
     ccc_expense_state = models.CharField(
         max_length=100, default=get_default_expense_state,
-        help_text='state at which the ccc expenses are fetched (PAYMENT_PROCESSING /PAID)')
+        help_text='state at which the ccc expenses are fetched (PAYMENT_PROCESSING /PAID)', null=True)
     reimbursable_export_date_type = models.CharField(max_length=100, default='current_date', help_text='Export Date')
     ccc_export_date_type = models.CharField(max_length=100, default='spent_at', help_text='CCC Export Date')
     workspace = models.OneToOneField(
