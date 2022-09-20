@@ -1,6 +1,7 @@
 from apps.mappings.tasks import schedule_auto_map_employees
 from apps.workspaces.models import WorkspaceGeneralSettings
 
+
 class ExportSettingsTrigger:
     """
     Class containing all triggers for Export Settings

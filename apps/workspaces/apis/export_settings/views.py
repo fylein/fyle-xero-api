@@ -4,6 +4,7 @@ from apps.workspaces.models import Workspace
 
 from .serializers import ExportSettingsSerializer
 
+
 class ExportSettingsView(generics.RetrieveUpdateAPIView):
     serializer_class = ExportSettingsSerializer
 

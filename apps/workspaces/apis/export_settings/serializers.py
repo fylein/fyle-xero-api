@@ -7,6 +7,7 @@ from apps.mappings.models import GeneralMapping
 from apps.fyle.models import ExpenseGroupSettings
 from .triggers import ExportSettingsTrigger
 
+
 class ReadWriteSerializerMethodField(serializers.SerializerMethodField):
     """
     Serializer Method Field to Read and Write from values
@@ -23,11 +24,13 @@ class ReadWriteSerializerMethodField(serializers.SerializerMethodField):
             self.field_name: data
         }
 
+
 class WorkspaceGeneralSettingsSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = WorkspaceGeneralSettings
         fields = ['reimbursable_expenses_object', 'corporate_credit_card_expenses_object', 'auto_map_employees']
+
 
 class GeneralMappingsSerializer(serializers.ModelSerializer):
     bank_account = ReadWriteSerializerMethodField()
@@ -49,6 +52,7 @@ class GeneralMappingsSerializer(serializers.ModelSerializer):
             'name': instance.payment_account_name
         }
 
+
 class ExpenseGroupSettingsSerializer(serializers.ModelSerializer):
     reimbursable_expense_group_fields = serializers.ListField(allow_null=True, required=False)
     reimbursable_export_date_type = serializers.CharField(allow_null=True, allow_blank=True, required=False)
@@ -67,6 +71,7 @@ class ExpenseGroupSettingsSerializer(serializers.ModelSerializer):
             'ccc_export_date_type',
             'ccc_expense_state'
         ]
+
 
 class ExportSettingsSerializer(serializers.ModelSerializer) :
     workspace_general_settings = WorkspaceGeneralSettingsSerializer()
