@@ -25,7 +25,7 @@ def test_export_settings(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    assert dict_compare_keys(response, data['export_settings_response']) == [], 'workspaces api returns a diff in the keys'
+    assert dict_compare_keys(response, data['export_settings_response']) == [], 'Export settings api returns a diff in the keys'
 
     response = api_client.put(
         url,
