@@ -25,6 +25,7 @@ data = {
         'id':2,
         'name':'Fyle For MS Dynamics Demo',
         'fyle_org_id':'orNoatdUnm1w',
+        'onboarding_state': 'CONNECTION',
         'xero_short_code':'None',
         'last_synced_at':'None',
         'source_synced_at':'None',

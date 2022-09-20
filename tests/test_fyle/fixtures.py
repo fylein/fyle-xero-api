@@ -114,7 +114,8 @@ data = {
             "claim_number",
             "fund_source"
         ],
-        "expense_state": "PAYMENT_PROCESSING",
+        "ccc_expense_state": "PAYMENT_PROCESSING",
+        "reimbursable_expense_state": "PAYMENT_PROCESSING",
         "reimbursable_export_date_type": "current_date",
         "ccc_export_date_type": "current_date",
         "import_card_credits": "false",
@@ -145,7 +146,8 @@ data = {
     'expense_group_settings_payload': {
         'reimbursable_expense_group_fields': ['claim_number'],
         'corporate_credit_card_expense_group_fields': ['claim_number'],
-        'expense_state': 'PAYMENT_PROCESSING',
+        'reimbursable_expense_state': 'PAYMENT_PROCESSING',
+        'ccc_expense_state': 'PAYMENT_PROCESSING',
         'reimbursable_export_date_type': 'spent_at',
         'ccc_export_date_type': 'spent_at',
     },

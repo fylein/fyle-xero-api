@@ -25,7 +25,8 @@ def create_temp_workspace(db):
     ExpenseGroupSettings.objects.create(
         reimbursable_expense_group_fields='{employee_email,report_id,claim_number,fund_source}',
         corporate_credit_card_expense_group_fields='{fund_source,employee_email,claim_number,expense_id,report_id}',
-        expense_state='PAYMENT PROCESSING',
+        reimbursable_expense_state='PAYMENT PROCESSING',
+        ccc_expense_state='PAYMENT_PROCESSING',
         workspace_id=98,
         reimbursable_export_date_type='current_date',
         ccc_export_date_type='spent_at'
