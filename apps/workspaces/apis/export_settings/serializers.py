@@ -30,22 +30,15 @@ class WorkspaceGeneralSettingsSerializer(serializers.ModelSerializer):
 
 class GeneralMappingsSerializer(serializers.ModelSerializer):
     bank_account = ReadWriteSerializerMethodField()
-    payment_account = ReadWriteSerializerMethodField()
 
     class Meta:
         model = GeneralMapping
-        fields = ['bank_account','payment_account']
+        fields = ['bank_account']
 
     def get_bank_account(self, instance):
         return {
             'id': instance.bank_account_id,
             'name': instance.bank_account_name
-        }
-
-    def get_payment_account(self, instance):
-        return {
-            'id': instance.payment_account_id,
-            'name': instance.payment_account_name
         }
 
 class ExpenseGroupSettingsSerializer(serializers.ModelSerializer):
@@ -131,9 +124,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
             workspace=instance,
             defaults={
                 'bank_account_name': general_mappings.get('bank_account').get('name'),
-                'bank_account_id': general_mappings.get('bank_account').get('id'),
-                'payment_account_name': general_mappings.get('payment_account').get('name'),
-                'payment_account_id': general_mappings.get('payment_account').get('id')
+                'bank_account_id': general_mappings.get('bank_account').get('id')
             }
         )
 
