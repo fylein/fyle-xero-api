@@ -452,7 +452,7 @@ def schedule_projects_creation(import_to_fyle, workspace_id):
 
 
 def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int,
-                                              fyle_attribute: str,  platform: PlatformConnector):
+                                              fyle_attribute: str,  platform: PlatformConnector, source_placeholder: str = None):
     """
     Create Fyle Expense Custom Field Payload from Xero Objects
     :param workspace_id: Workspace ID
@@ -472,6 +472,7 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
         custom_field_id = None
         if existing_attribute is not None:
             custom_field_id = existing_attribute['custom_field_id']
+            placeholder = existing_attribute['placeholder'] if 'placeholder' in existing_attribute else None
 
         fyle_attribute = fyle_attribute.replace('_', ' ').title()
 
@@ -493,7 +494,7 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
         return expense_custom_field_payload
 
 
-def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str):
+def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str, source_placeholder: str = None):
     """
     Upload attributes to Fyle
     """
@@ -511,6 +512,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
         xero_attributes=xero_attributes,
         workspace_id=workspace_id,
         fyle_attribute=fyle_attribute_type,
+        source_placeholder=source_placeholder,
         platform=platform
     )
 
