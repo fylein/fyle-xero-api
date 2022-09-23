@@ -65,7 +65,7 @@ class ExpenseGroupSettingsSerializer(serializers.ModelSerializer):
         ]
 
 
-class ExportSettingsSerializer(serializers.ModelSerializer) :
+class ExportSettingsSerializer(serializers.ModelSerializer):
     workspace_general_settings = WorkspaceGeneralSettingsSerializer()
     expense_group_settings = ExpenseGroupSettingsSerializer()
     general_mappings = GeneralMappingsSerializer()
@@ -127,7 +127,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer) :
         expense_group_settings['ccc_export_date_type'] = expense_group_settings_instance.ccc_export_date_type
 
         if 'expense_state' in expense_group_settings and not expense_group_settings['expense_state']:
-            expense_group_settings['expense_state'] = ['PAYMENT_PROCESSING']
+            expense_group_settings['expense_state'] = 'PAYMENT_PROCESSING'
 
         ExpenseGroupSettings.update_expense_group_settings(expense_group_settings, workspace_id=workspace_id)
         GeneralMapping.objects.update_or_create(
