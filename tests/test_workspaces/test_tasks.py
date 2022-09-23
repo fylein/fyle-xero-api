@@ -23,32 +23,32 @@ def test_schedule_sync(db):
 
     assert ws_schedule.schedule == None
 
-# Fix this while we are in the dashboard module.
-# def test_run_sync_schedule(mocker,db):
-#     workspace_id = 1
 
-#     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
-#     mocker.patch(
-#         'fyle_integrations_platform_connector.apis.Expenses.get',
-#         return_value=data['expenses']
-#     )
+def test_run_sync_schedule(mocker,db):
+    workspace_id = 1
 
-#     run_sync_schedule(workspace_id)
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    mocker.patch(
+        'fyle_integrations_platform_connector.apis.Expenses.get',
+        return_value=data['expenses']
+    )
 
-#     task_log = TaskLog.objects.filter(
-#         workspace_id=workspace_id
-#     ).first()
+    run_sync_schedule(workspace_id)
+
+    task_log = TaskLog.objects.filter(
+        workspace_id=workspace_id
+    ).first()
     
-#     assert task_log.status == 'COMPLETE'
+    assert task_log.status == 'COMPLETE'
 
-#     general_settings.reimbursable_expenses_object = 'PURCHASE BILL'
-#     general_settings.corporate_credit_card_expenses_object = 'BANK TRANSACTION'
-#     general_settings.save()
+    general_settings.reimbursable_expenses_object = 'PURCHASE BILL'
+    general_settings.corporate_credit_card_expenses_object = 'BANK TRANSACTION'
+    general_settings.save()
 
-#     run_sync_schedule(workspace_id)
+    run_sync_schedule(workspace_id)
     
-#     task_log = TaskLog.objects.filter(
-#         workspace_id=workspace_id
-#     ).first()
+    task_log = TaskLog.objects.filter(
+        workspace_id=workspace_id
+    ).first()
     
-#     assert task_log.status == 'COMPLETE'
+    assert task_log.status == 'COMPLETE'
