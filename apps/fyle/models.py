@@ -166,6 +166,8 @@ def get_default_ccc_expense_group_fields():
 
 def get_default_expense_state():
     return 'PAYMENT_PROCESSING'
+
+
 class ExpenseGroupSettings(models.Model):
     """
     ExpenseGroupCustomizationSettings
@@ -180,6 +182,11 @@ class ExpenseGroupSettings(models.Model):
         base_field=models.CharField(max_length=100), default=get_default_ccc_expense_group_fields,
         help_text='list of fields ccc expenses grouped by'
     )
+
+    expense_state = models.CharField(
+        max_length=100, default=get_default_expense_state,
+        help_text='state at which expenses are fetched (PAYMENT_PROCESSING / PAID)', null=False)
+
     reimbursable_expense_state = models.CharField(
         max_length=100, default=get_default_expense_state,
         help_text='state at which the reimbursable expenses are fetched (PAYMENT_PROCESSING / PAID)', null=True)
@@ -255,13 +262,18 @@ class ExpenseGroupSettings(models.Model):
         if expense_group_settings['ccc_export_date_type'] != 'current_date':
             corporate_credit_card_expenses_grouped_by.append(expense_group_settings['ccc_export_date_type'])
 
+        if 'claim_number' in reimbursable_grouped_by and corporate_credit_card_expenses_grouped_by:
+            reimbursable_grouped_by.append('report_id')
+            corporate_credit_card_expenses_grouped_by.append('report_id')
+
         return ExpenseGroupSettings.objects.update_or_create(
             workspace_id=workspace_id,
             defaults={
                 'reimbursable_expense_group_fields': reimbursable_grouped_by,
                 'corporate_credit_card_expense_group_fields': corporate_credit_card_expenses_grouped_by,
-                'reimbursable_expense_state': expense_group_settings['reimbursable_expense_state'],
-                'ccc_expense_state': expense_group_settings['ccc_expense_state'],
+                'expense_state': expense_group_settings['expense_state'],
+                'reimbursable_expense_state': expense_group_settings['reimbursable_expense_state'] if 'reimbursable_expense_state' in expense_group_settings else None,
+                'ccc_expense_state': expense_group_settings['ccc_expense_state'] if 'ccc_expense_state' in expense_group_settings else None,
                 'reimbursable_export_date_type': expense_group_settings['reimbursable_export_date_type'],
                 'ccc_export_date_type': expense_group_settings['ccc_export_date_type']
             }
