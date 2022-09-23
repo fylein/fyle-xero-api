@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 14.2 (Debian 14.2-1.pgdg110+1)
--- Dumped by pg_dump version 14.5 (Debian 14.5-1.pgdg100+1)
+-- Dumped by pg_dump version 14.4 (Debian 14.4-1.pgdg100+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -671,13 +671,14 @@ CREATE TABLE public.expense_group_settings (
     id integer NOT NULL,
     reimbursable_expense_group_fields character varying(100)[] NOT NULL,
     corporate_credit_card_expense_group_fields character varying(100)[] NOT NULL,
+    expense_state character varying(100) NOT NULL,
     reimbursable_export_date_type character varying(100) NOT NULL,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     workspace_id integer NOT NULL,
     ccc_export_date_type character varying(100) NOT NULL,
-    ccc_expense_state character varying(100) NOT NULL,
-    reimbursable_expense_state character varying(100) NOT NULL
+    ccc_expense_state character varying(100),
+    reimbursable_expense_state character varying(100)
 );
 
 
@@ -1283,7 +1284,7 @@ ALTER SEQUENCE public.users_user_id_seq OWNED BY public.users.id;
 
 CREATE TABLE public.workspace_general_settings (
     id integer NOT NULL,
-    reimbursable_expenses_object character varying(50) NOT NULL,
+    reimbursable_expenses_object character varying(50),
     corporate_credit_card_expenses_object character varying(50),
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
@@ -2284,11 +2285,10 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 110	fyle_accounting_mappings	0016_auto_20220413_1624	2022-09-08 08:50:25.793733+00
 111	fyle_accounting_mappings	0017_auto_20220419_0649	2022-09-08 08:50:25.811911+00
 112	fyle_accounting_mappings	0018_auto_20220419_0709	2022-09-08 08:50:25.834243+00
-113	workspaces	0024_auto_20220909_1206	2022-09-16 07:08:00.55819+00
-114	fyle	0012_auto_20220909_1206	2022-09-16 07:08:00.62654+00
-115	fyle	0013_auto_20220913_0851	2022-09-16 07:08:00.641607+00
-116	fyle	0014_auto_20220913_0946	2022-09-16 07:08:00.682908+00
-117	mappings	0006_auto_20220909_1206	2022-09-16 07:08:00.699922+00
+113	workspaces	0024_auto_20220909_1206	2022-09-23 08:56:07.83287+00
+114	workspaces	0025_auto_20220920_1111	2022-09-23 08:56:07.842453+00
+115	fyle	0012_auto_20220923_0613	2022-09-23 08:56:07.90403+00
+116	mappings	0006_auto_20220909_1206	2022-09-23 08:56:07.919911+00
 \.
 
 
@@ -4461,8 +4461,8 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 -- Data for Name: expense_group_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corporate_credit_card_expense_group_fields, reimbursable_export_date_type, created_at, updated_at, workspace_id, ccc_export_date_type, ccc_expense_state, reimbursable_expense_state) FROM stdin;
-1	{employee_email,report_id,claim_number,fund_source}	{report_id,fund_source,employee_email,claim_number,expense_id}	current_date	2022-08-02 20:24:42.329794+00	2022-08-02 20:25:24.6873+00	1	spent_at	PAID	PAYMENT_PROCESSING
+COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corporate_credit_card_expense_group_fields, expense_state, reimbursable_export_date_type, created_at, updated_at, workspace_id, ccc_export_date_type, ccc_expense_state, reimbursable_expense_state) FROM stdin;
+1	{employee_email,report_id,claim_number,fund_source}	{report_id,fund_source,employee_email,claim_number,expense_id}	PAYMENT_PROCESSING	current_date	2022-08-02 20:24:42.329794+00	2022-08-02 20:25:24.6873+00	1	spent_at	PAYMENT_PROCESSING	PAYMENT_PROCESSING
 \.
 
 
@@ -4787,7 +4787,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 35, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 117, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 116, true);
 
 
 --
