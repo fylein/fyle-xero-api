@@ -495,7 +495,6 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
             new_placeholder = source_placeholder
         else:
             # Else, we're choosing the placeholder as filled by user in form or None
-
             new_placeholder = source_placeholder
 
         expense_custom_field_payload = {
