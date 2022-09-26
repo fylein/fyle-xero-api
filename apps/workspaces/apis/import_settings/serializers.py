@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from fyle_accounting_mappings.models import MappingSetting
 from django.db import transaction
+from django.db.models import Q
 
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from apps.workspaces.models import WorkspaceGeneralSettings
@@ -17,7 +18,7 @@ class MappingSettingFilteredListSerializer(serializers.ListSerializer):
     """
 
     def to_representation(self, data):
-        data = data.filter(destination_field__in=['ITEM', 'REGION'])
+        data = data.filter(~Q(destination_field__in=['TAX_CODE', 'ACCOUNT', 'BANK_ACCOUNT', 'CUSTOMER', 'CONTACT']))
         return super(MappingSettingFilteredListSerializer, self).to_representation(data)
 
 
@@ -54,7 +55,7 @@ class MappingSettingSerializer(serializers.ModelSerializer):
 class WorkspaceGeneralSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkspaceGeneralSettings
-        fields = ['import_categories', 'charts_of_accounts', 'import_tax_codes']
+        fields = ['import_categories', 'charts_of_accounts', 'import_tax_codes', 'import_customers']
 
 
 class GeneralMappingsSerializer(serializers.ModelSerializer):
@@ -97,15 +98,18 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
         general_mappings = validated.pop('general_mappings')
         mapping_settings = validated.pop('mapping_settings')
 
-        WorkspaceGeneralSettings.objects.update_or_create(
-            workspace=instance,
-            defaults={
-                'import_categories': workspace_general_settings.get('import_categories'),
-                'charts_of_accounts': workspace_general_settings.get('charts_of_accounts'),
-                'import_tax_codes': workspace_general_settings.get('import_tax_codes')
-            }
-        )
+        with transaction.atomic():
+            WorkspaceGeneralSettings.objects.update_or_create(
+                workspace=instance,
+                defaults={
+                    'import_categories': workspace_general_settings.get('import_categories'),
+                    'charts_of_accounts': workspace_general_settings.get('charts_of_accounts'),
+                    'import_tax_codes': workspace_general_settings.get('import_tax_codes'),
+                    'import_customers': workspace_general_settings.get('import_customers')
+                }
+            )
 
+<<<<<<< HEAD
         GeneralMapping.objects.update_or_create(
             workspace=instance,
             defaults={
@@ -124,21 +128,40 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
         trigger.pre_save_mapping_settings()
 
         if workspace_general_settings['import_tax_codes']:
+=======
+            GeneralMapping.objects.update_or_create(
+                workspace=instance,
+                defaults={
+                    'default_tax_code_name': general_mappings.get('default_tax_code').get('name'),
+                    'default_tax_code_id': general_mappings.get('default_tax_code').get('id')
+                }
+            )
+            
+            if workspace_general_settings['import_tax_codes']:
+                mapping_settings.append({
+                    'source_field': 'TAX_GROUP',
+                    'destination_field': 'TAX_CODE',
+                    'import_to_fyle': True,
+                    'is_custom': False
+                })
+
+            if workspace_general_settings['import_customers']:
+                mapping_settings.append({
+                    'source_field': 'PROJECT',
+                    'destination_field': 'CUSTOMER',
+                    'import_to_fyle': True,
+                    'is_custom': False
+                })
+            
+>>>>>>> onboarding-api-1-placeholder
             mapping_settings.append({
-                'source_field': 'TAX_GROUP',
-                'destination_field': 'TAX_CODE',
+                'source_field': 'CATEGORY',
+                'destination_field': 'ACCOUNT',
                 'import_to_fyle': True,
                 'is_custom': False
             })
-        
-        mapping_settings.append({
-            'source_field': 'CATEGORY',
-            'destination_field': 'ACCOUNT',
-            'import_to_fyle': False,
-            'is_custom': False
-        })
 
-        with transaction.atomic():
+        
             for setting in mapping_settings:
                 MappingSetting.objects.update_or_create(
                     destination_field=setting['destination_field'],
