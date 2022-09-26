@@ -5,6 +5,7 @@ from django.db import transaction
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.models import GeneralMapping
+from .triggers import ImportSettingsTrigger
 
 
 
@@ -113,6 +114,15 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
             }
         )
         
+        trigger: ImportSettingsTrigger = ImportSettingsTrigger(
+            workspace_general_settings=workspace_general_settings,
+            mapping_settings=mapping_settings,
+            workspace_id=instance.id
+        )
+
+        trigger.post_save_workspace_general_settings()
+        trigger.pre_save_mapping_settings()
+
         if workspace_general_settings['import_tax_codes']:
             mapping_settings.append({
                 'source_field': 'TAX_GROUP',
@@ -140,6 +150,8 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                         'source_placeholder': setting['source_placeholder'] if 'source_placeholder' in setting else None
                     }
                 )
+        
+        trigger.post_save_mapping_settings()
 
         if instance.onboarding_state == 'IMPORT_SETTINGS':
             instance.onboarding_state = 'ADVANCED_CONFIGURATION'
