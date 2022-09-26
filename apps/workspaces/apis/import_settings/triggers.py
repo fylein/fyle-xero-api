@@ -55,14 +55,13 @@ class ImportSettingsTrigger:
         """
         Post save actions for mapping settings
         """
-        destination_fields = []
+        destination_fields = ['TAX_CODE', 'ACCOUNT', 'BANK_ACCOUNT', 'CREDIT_CARD_ACCOUNT', 'CUSTOMER', 'CONTACT']
+        
         for setting in self.__mapping_settings:
-            destination_fields.append(setting['destination_field'])
-
-        print(self.__mapping_settings)
+            if setting['destination_field'] not in destination_fields:
+                destination_fields.append(setting['destination_field'])
 
         MappingSetting.objects.filter(
             ~Q(destination_field__in=destination_fields),
-            destination_field__in=['CLASS', 'CUSTOMER', 'DEPARTMENT'],
             workspace_id=self.__workspace_id
         ).delete()

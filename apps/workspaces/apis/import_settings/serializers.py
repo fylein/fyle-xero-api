@@ -18,7 +18,7 @@ class MappingSettingFilteredListSerializer(serializers.ListSerializer):
     """
 
     def to_representation(self, data):
-        data = data.filter(~Q(destination_field__in=['TAX_CODE', 'ACCOUNT', 'BANK_ACCOUNT', 'CUSTOMER', 'CONTACT']))
+        data = data.filter(~Q(destination_field__in=['TAX_CODE', 'ACCOUNT', 'BANK_ACCOUNT', 'CREDIT_CARD_ACCOUNT', 'CUSTOMER', 'CONTACT']))
         return super(MappingSettingFilteredListSerializer, self).to_representation(data)
 
 
@@ -109,26 +109,6 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                 }
             )
 
-<<<<<<< HEAD
-        GeneralMapping.objects.update_or_create(
-            workspace=instance,
-            defaults={
-                'default_tax_code_name': general_mappings.get('default_tax_code').get('name'),
-                'default_tax_code_id': general_mappings.get('default_tax_code').get('id')
-            }
-        )
-        
-        trigger: ImportSettingsTrigger = ImportSettingsTrigger(
-            workspace_general_settings=workspace_general_settings,
-            mapping_settings=mapping_settings,
-            workspace_id=instance.id
-        )
-
-        trigger.post_save_workspace_general_settings()
-        trigger.pre_save_mapping_settings()
-
-        if workspace_general_settings['import_tax_codes']:
-=======
             GeneralMapping.objects.update_or_create(
                 workspace=instance,
                 defaults={
@@ -136,6 +116,15 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                     'default_tax_code_id': general_mappings.get('default_tax_code').get('id')
                 }
             )
+
+            trigger: ImportSettingsTrigger = ImportSettingsTrigger(
+                workspace_general_settings=workspace_general_settings,
+                mapping_settings=mapping_settings,
+                workspace_id=instance.id
+            )
+
+            trigger.post_save_workspace_general_settings()
+            trigger.pre_save_mapping_settings()
             
             if workspace_general_settings['import_tax_codes']:
                 mapping_settings.append({
@@ -153,7 +142,6 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                     'is_custom': False
                 })
             
->>>>>>> onboarding-api-1-placeholder
             mapping_settings.append({
                 'source_field': 'CATEGORY',
                 'destination_field': 'ACCOUNT',
@@ -174,7 +162,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                     }
                 )
         
-        trigger.post_save_mapping_settings()
+            trigger.post_save_mapping_settings()
 
         if instance.onboarding_state == 'IMPORT_SETTINGS':
             instance.onboarding_state = 'ADVANCED_CONFIGURATION'
