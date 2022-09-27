@@ -18,7 +18,7 @@ class MappingSettingFilteredListSerializer(serializers.ListSerializer):
     """
 
     def to_representation(self, data):
-        data = data.filter(~Q(destination_field__in=['TAX_CODE', 'ACCOUNT', 'BANK_ACCOUNT', 'CREDIT_CARD_ACCOUNT', 'CUSTOMER', 'CONTACT']))
+        data = data.filter(~Q(destination_field__in=['TAX_CODE', 'ACCOUNT', 'BANK_ACCOUNT', 'CUSTOMER', 'CONTACT']))
         return super(MappingSettingFilteredListSerializer, self).to_representation(data)
 
 

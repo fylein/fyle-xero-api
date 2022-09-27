@@ -17,7 +17,7 @@ class ExportSettingsTrigger:
             workspace_id=workspace_general_settings_instance.workspace_id,
             source_field='EMPLOYEE',
             defaults={
-                'import_to_fyle': False if workspace_general_settings_instance.auto_map_employees == None else True,
+                'import_to_fyle': False,
                 'is_custom': False,
                 'source_placeholder': None
             }

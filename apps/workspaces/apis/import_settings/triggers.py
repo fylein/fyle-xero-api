@@ -55,7 +55,7 @@ class ImportSettingsTrigger:
         """
         Post save actions for mapping settings
         """
-        destination_fields = ['TAX_CODE', 'ACCOUNT', 'BANK_ACCOUNT', 'CREDIT_CARD_ACCOUNT', 'CUSTOMER', 'CONTACT']
+        destination_fields = ['TAX_CODE', 'ACCOUNT', 'BANK_ACCOUNT', 'CUSTOMER', 'CONTACT']
         
         for setting in self.__mapping_settings:
             if setting['destination_field'] not in destination_fields:
