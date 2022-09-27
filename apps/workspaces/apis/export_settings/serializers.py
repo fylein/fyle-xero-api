@@ -109,7 +109,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
 
         if workspace_general_settings['corporate_credit_card_expenses_object'] == 'BANK TRANSACTION':
             MappingSetting.objects.update_or_create(
-                destination_field='CREDIT_CARD_ACCOUNT',
+                destination_field='BANK_ACCOUNT',
                 workspace_id=instance.id,
                 defaults={
                     'source_field': 'CORPORATE_CARD',
