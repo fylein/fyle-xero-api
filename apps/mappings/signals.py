@@ -50,7 +50,8 @@ def run_pre_mapping_settings_triggers(sender, instance: MappingSetting, **kwargs
         upload_attributes_to_fyle(
             workspace_id=int(instance.workspace_id),
             xero_attribute_type=instance.destination_field,
-            fyle_attribute_type=instance.source_field
+            fyle_attribute_type=instance.source_field,
+            source_placeholder=instance.source_placeholder
         )
 
         async_task(

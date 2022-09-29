@@ -452,7 +452,7 @@ def schedule_projects_creation(import_to_fyle, workspace_id):
 
 
 def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int,
-                                              fyle_attribute: str,  platform: PlatformConnector):
+                                              fyle_attribute: str,  platform: PlatformConnector, source_placeholder: str = None):
     """
     Create Fyle Expense Custom Field Payload from Xero Objects
     :param workspace_id: Workspace ID
@@ -470,17 +470,39 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
             attribute_type=fyle_attribute, workspace_id=workspace_id).values_list('detail', flat=True).first()
 
         custom_field_id = None
+        placeholder = None
         if existing_attribute is not None:
             custom_field_id = existing_attribute['custom_field_id']
+            placeholder = existing_attribute['placeholder'] if 'placeholder' in existing_attribute else None
 
         fyle_attribute = fyle_attribute.replace('_', ' ').title()
+
+        new_placeholder = None
+
+        # Here is the explanation of what's happening in the if-else ladder below   
+        # source_field is the field that's save in mapping settings, this field user may or may not fill in the custom field form
+        # placeholder is the field that's saved in the detail column of destination attributes
+        # fyle_attribute is what we're constructing when both of these fields would not be available
+
+        if not (source_placeholder or placeholder):
+            # If source_placeholder and placeholder are both None, then we're creating adding a self constructed placeholder
+            new_placeholder = 'Select {0}'.format(fyle_attribute)
+        elif not source_placeholder and placeholder:
+            # If source_placeholder is None but placeholder is not, then we're choosing same place holder as 1 in detail section
+            new_placeholder = placeholder
+        elif source_placeholder and not placeholder:
+            # If source_placeholder is not None but placeholder is None, then we're choosing the placeholder as filled by user in form
+            new_placeholder = source_placeholder
+        else:
+            # Else, we're choosing the placeholder as filled by user in form or None
+            new_placeholder = source_placeholder
 
         expense_custom_field_payload = {
             'field_name': fyle_attribute,
             'type': 'SELECT',
             'is_enabled': True,
             'is_mandatory': False,
-            'placeholder': 'Select {0}'.format(fyle_attribute),
+            'placeholder': new_placeholder,
             'options': fyle_expense_custom_field_options,
             'code': None
         }
@@ -493,7 +515,7 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
         return expense_custom_field_payload
 
 
-def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str):
+def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str, source_placeholder: str = None):
     """
     Upload attributes to Fyle
     """
@@ -511,6 +533,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
         xero_attributes=xero_attributes,
         workspace_id=workspace_id,
         fyle_attribute=fyle_attribute_type,
+        source_placeholder=source_placeholder,
         platform=platform
     )
 
@@ -521,14 +544,14 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     return xero_attributes
 
 
-def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str):
+def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str, source_placeholder: str = None):
     """
     Create Fyle Attributes Mappings
     :return: mappings
     """
     try:
         fyle_attributes = upload_attributes_to_fyle(workspace_id=workspace_id, xero_attribute_type=xero_attribute_type,
-                                                    fyle_attribute_type=fyle_attribute_type)
+                                                    fyle_attribute_type=fyle_attribute_type, source_placeholder=source_placeholder)
         if fyle_attributes:
             Mapping.bulk_create_mappings(fyle_attributes, fyle_attribute_type, xero_attribute_type, workspace_id)
 
@@ -556,7 +579,8 @@ def async_auto_create_custom_field_mappings(workspace_id: str):
         if mapping_setting.import_to_fyle:
             sync_xero_attributes(mapping_setting.destination_field, workspace_id)
             auto_create_expense_fields_mappings(
-                workspace_id, mapping_setting.destination_field, mapping_setting.source_field
+                workspace_id, mapping_setting.destination_field, mapping_setting.source_field,
+                mapping_setting.source_placeholder
             )
 
 
