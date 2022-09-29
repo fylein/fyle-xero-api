@@ -33,7 +33,7 @@ def schedule_sync(workspace_id: int, schedule_enabled: bool, hours: int):
 
         ws_schedule.save()
 
-    elif not schedule_enabled:
+    elif not schedule_enabled and ws_schedule.schedule:
         schedule = ws_schedule.schedule
         ws_schedule.enabled = schedule_enabled
         ws_schedule.schedule = None

@@ -165,7 +165,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
             trigger.post_save_mapping_settings()
 
         if instance.onboarding_state == 'IMPORT_SETTINGS':
-            instance.onboarding_state = 'ADVANCED_CONFIGURATION'
+            instance.onboarding_state = 'ADVANCED_SETTINGS'
             instance.save()
 
         return instance
