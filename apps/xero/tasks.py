@@ -53,6 +53,16 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
                 }
             }
         ]
+        Error.objects.update_or_create(
+            workspace_id=expense_group.workspace_id,
+            expense_group=expense_group,
+            defaults={
+                'type': 'XERO_ERROR',
+                'error_title': 'Rate Limit Error',
+                'error_detail': 'Rate limit exceeded, integration will retry exports in a while',
+                'is_resolved': False
+            }
+        )
 
     else:
         all_details = []
