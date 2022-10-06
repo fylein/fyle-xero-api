@@ -35,7 +35,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
     :params task_log: task_log
     :params export_type: export_type
     """
-    if exception == 'RateLimitError':
+    if type(exception).__name__ == 'RateLimitError':
         logger.error(exception.message)
         task_log.xero_errors = [
             {
