@@ -573,7 +573,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         task_log.save()
 
     except WrongParamsError as exception:
-        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log, export_type='BANK_TRANSACTION')
+        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
     except InvalidGrant as exception:
         logger.exception(exception.message)
@@ -586,26 +586,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         task_log.save()
 
     except RateLimitError as exception:
-        logger.error(exception.message)
-        task_log.status = 'FAILED'
-        task_log.detail = None
-        task_log.xero_errors = [
-            {
-                'error': {
-                    'Elements': [
-                        {
-                            'ValidationErrors': [
-                                {
-                                    'Message': 'Rate limit exceeded, integration will retry exports in a while'
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        ]
-
-        task_log.save()
+        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
     except NoPrivilegeError as exception:
         # Deleting xero credentials since the account got disconnected

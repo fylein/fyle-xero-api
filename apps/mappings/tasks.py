@@ -41,10 +41,9 @@ def resolve_expense_attribute_errors(
     if errored_attribute_ids:
         mapped_attribute_ids = []
 
-        if source_attribute_type in ('CATEGORY', 'EMPLOYEE'):
-            mapped_attribute_ids: List[int] = Mapping.objects.filter(
-                source_id__in=errored_attribute_ids
-            ).values_list('source_id', flat=True)
+        mapped_attribute_ids: List[int] = Mapping.objects.filter(
+            source_id__in=errored_attribute_ids
+        ).values_list('source_id', flat=True)
 
         if mapped_attribute_ids:
             Error.objects.filter(expense_attribute_id__in=mapped_attribute_ids).update(is_resolved=True)
@@ -218,7 +217,7 @@ def async_auto_map_employees(workspace_id: int):
 
         Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)
 
-        resolve_expense_attribute_errors(source_attribute_type='CATEGORY', workspace_id=workspace_id)
+        resolve_expense_attribute_errors(source_attribute_type='EMPLOYEE', workspace_id=workspace_id)
 
     except XeroCredentials.DoesNotExist:
         logger.error(
