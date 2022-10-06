@@ -9,7 +9,8 @@ from datetime import datetime
 
 from django_q.tasks import async_task
 
-from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute
+from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute, Mapping
+from apps.tasks.models import Error
 from apps.mappings.tasks import schedule_projects_creation, schedule_cost_centers_creation, schedule_fyle_attributes_creation,\
                         upload_attributes_to_fyle
 
@@ -17,6 +18,17 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from .models import TenantMapping
+
+@receiver(post_save, sender=Mapping)
+def resolve_post_mapping_errors(sender, instance: Mapping, **kwargs):
+    """
+    Resolve errors after mapping is created
+    """
+    if instance.source_type in ('CATEGORY', 'EMPLOYEE'):
+        error = Error.objects.filter(expense_attribute_id=instance.source_id).first()
+        if error:
+            error.is_resolved = True
+            error.save()
 
 @receiver(post_save, sender=MappingSetting)
 def run_post_mapping_settings_triggers(sender, instance: MappingSetting, **kwargs):

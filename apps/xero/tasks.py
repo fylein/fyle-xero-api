@@ -3,6 +3,7 @@ import logging
 import traceback
 from datetime import datetime, timedelta
 from time import sleep
+from turtle import heading
 from typing import List
 
 from django.db import transaction
@@ -16,6 +17,7 @@ from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
+from apps.tasks.models import Error
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential, Workspace
@@ -25,6 +27,72 @@ from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
+
+def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog):
+    """
+    Handle the xero-error and save it to Errors and TaskLogs table
+    :params exception: exception
+    :params expense_group: expense_group
+    :params task_log: task_log
+    :params export_type: export_type
+    """
+    if exception == 'RateLimitError':
+        logger.error(exception.message)
+        task_log.xero_errors = [
+            {
+                'error': {
+                    'Elements': [
+                        {
+                            'ValidationErrors': [
+                                {
+                                    'Message': 'Rate limit exceeded, integration will retry exports in a while'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ]
+
+    else:
+        all_details = []
+        logger.exception(exception)
+        detail = json.dumps(exception.__dict__)
+        detail = json.loads(detail)
+
+        all_details.append({
+            'expense_group_id': expense_group.id,
+            'message': detail['message']['Message'],
+            'error': detail['message']
+        })
+        Error.objects.update_or_create(
+            workspace_id=expense_group.workspace_id,
+            expense_group=expense_group,
+            defaults={
+                'type': 'XERO_ERROR',
+                'error_title': detail['message']['Message'],
+                'error_detail': detail['message'],
+                'is_resolved': False
+            }
+        )
+
+        task_log.xero_errors = all_details
+
+    task_log.detail = None
+    task_log.status = 'FAILED'
+
+    task_log.save()
+
+def resolve_errors_for_exported_expense_group(expense_group: ExpenseGroup):
+    """
+    Resolve errors for exported expense group
+    :param expense_group: Expense group
+    """
+    Error.objects.filter(
+        workspace_id=expense_group.workspace_id,
+        expense_group=expense_group,
+        is_resolved=False
+    ).update(is_resolved=True)
 
 def get_or_create_credit_card_contact(workspace_id: int, merchant: str, auto_create_merchant_destination_entity):
     """
@@ -169,8 +237,9 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
                 and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
             create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
 
+        __validate_expense_group(expense_group)
+
         with transaction.atomic():
-            __validate_expense_group(expense_group)
 
             bill_object = Bill.create_bill(expense_group)
 
@@ -202,6 +271,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
                     index += 1
 
                 attach_customer_to_export(xero_connection, task_log)
+                resolve_errors_for_exported_expense_group(expense_group)
 
             load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
     except XeroCredentials.DoesNotExist:
@@ -228,21 +298,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         task_log.save()
 
     except WrongParamsError as exception:
-        all_details = []
-        logger.exception(exception)
-        detail = json.dumps(exception.__dict__)
-        detail = json.loads(detail)
-
-        all_details.append({
-            'expense_group_id': expense_group.id,
-            'message': detail['message']['Message'],
-            'error': detail['message']
-        })
-        task_log.xero_errors = all_details
-        task_log.detail = None
-        task_log.status = 'FAILED'
-
-        task_log.save()
+        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
     except InvalidGrant as exception:
         logger.exception(exception.message)
@@ -255,26 +311,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         task_log.save()
 
     except RateLimitError as exception:
-        logger.error(exception.message)
-        task_log.status = 'FAILED'
-        task_log.detail = None
-        task_log.xero_errors = [
-            {
-                'error': {
-                    'Elements': [
-                        {
-                            'ValidationErrors': [
-                                {
-                                    'Message': 'Rate limit exceeded, integration will retry exports in a while'
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        ]
-
-        task_log.save()
+        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
     except NoPrivilegeError as exception:
         # Deleting xero credentials since the account got disconnected
@@ -459,8 +496,9 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
             merchant = expense_group.expenses.first().vendor
             get_or_create_credit_card_contact(expense_group.workspace_id, merchant, general_settings.auto_create_merchant_destination_entity)
 
+        __validate_expense_group(expense_group)
+
         with transaction.atomic():
-            __validate_expense_group(expense_group)
 
             bank_transaction_object = BankTransaction.create_bank_transaction(expense_group, general_settings.map_merchant_to_contact)
 
@@ -497,6 +535,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
 
 
                 attach_customer_to_export(xero_connection, task_log)
+                resolve_errors_for_exported_expense_group(expense_group)
 
             load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
                     'banktransactions', expense_group)
@@ -524,21 +563,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         task_log.save()
 
     except WrongParamsError as exception:
-        all_details = []
-        logger.exception(exception)
-        detail = json.dumps(exception.__dict__)
-        detail = json.loads(detail)
-
-        all_details.append({
-            'expense_group_id': expense_group.id,
-            'message': detail['message']['Message'],
-            'error': detail['message']
-        })
-        task_log.xero_errors = all_details
-        task_log.detail = None
-        task_log.status = 'FAILED'
-
-        task_log.save()
+        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log, export_type='BANK_TRANSACTION')
 
     except InvalidGrant as exception:
         logger.exception(exception.message)
@@ -675,12 +700,18 @@ def __validate_expense_group(expense_group: ExpenseGroup):
     
     if not (general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION'
             and general_settings.map_merchant_to_contact and expense_group.fund_source == 'CCC'):
+        
+        employee_attribute = ExpenseAttribute.objects.filter(
+            value=expense_group.description.get('employee_email'),
+            workspace_id=expense_group.workspace_id,
+            attribute_type='EMPLOYEE'
+        ).first()
 
         try:
             Mapping.objects.get(
                 destination_type='CONTACT',
                 source_type='EMPLOYEE',
-                source__value=expense_group.description.get('employee_email'),
+                source=employee_attribute,
                 workspace_id=expense_group.workspace_id
             )
         except Mapping.DoesNotExist:
@@ -691,6 +722,18 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                 'type': 'Employee Mapping',
                 'message': 'Employee mapping not found'
             })
+
+            if employee_attribute:
+                Error.objects.update_or_create(
+                    workspace_id=expense_group.workspace_id,
+                    expense_attribute=employee_attribute,
+                    defaults={
+                        'type': 'EMPLOYEE_MAPPING',
+                        'error_title': employee_attribute.value,
+                        'error_detail': 'Employee mapping is missing',
+                        'is_resolved': False
+                    }
+                )
 
     if general_settings.import_tax_codes:
         if not general_mapping:
@@ -716,11 +759,18 @@ def __validate_expense_group(expense_group: ExpenseGroup):
         category = lineitem.category if (lineitem.category == lineitem.sub_category or lineitem.sub_category == None) else '{0} / {1}'.format(
             lineitem.category, lineitem.sub_category)
 
+        category_attribute = ExpenseAttribute.objects.filter(
+            value=category,
+            workspace_id=expense_group.workspace_id,
+            attribute_type='CATEGORY'
+        ).first()
+
         account = Mapping.objects.filter(
             source_type='CATEGORY',
-            source__value=category,
+            source=category_attribute,
             workspace_id=expense_group.workspace_id
         ).first()
+
         if not account:
             bulk_errors.append({
                 'row': row,
@@ -729,6 +779,18 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                 'type': 'Category Mapping',
                 'message': 'Category Mapping not found'
             })
+
+            if category_attribute:
+                Error.objects.update_or_create(
+                    workspace_id=expense_group.workspace_id,
+                    expense_attribute=category_attribute,
+                    defaults={
+                        'type': 'CATEGORY_MAPPING',
+                        'error_title': category_attribute.value,
+                        'error_detail': 'Category mapping is missing',
+                        'is_resolved': False
+                    }
+                )
 
         row = row + 1
 
