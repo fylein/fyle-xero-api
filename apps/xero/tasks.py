@@ -3,7 +3,6 @@ import logging
 import traceback
 from datetime import datetime, timedelta
 from time import sleep
-from turtle import heading
 from typing import List
 
 from django.db import transaction
