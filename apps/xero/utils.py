@@ -461,14 +461,14 @@ class XeroConnector:
         """
         general_mappings = GeneralMapping.objects.filter(workspace_id=self.workspace_id).first()
         general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
-        workspace = Workspace.objects.get(id=self.workspace_id)
+        workspace = bill.expense_group.workspace
 
         bill_payload = {
             'Type': 'ACCPAY',
             'Contact': {
                 'ContactID': bill.contact_id
             },
-            'Url': '{}/app/admin/#/reports/{}?org_id={}'.format(settings.FYLE_APP_URL, bill.reference, workspace.fyle_org_id),
+            'Url': '{}/app/admin/#/reports/{}?org_id={}'.format(settings.FYLE_APP_URL, bill_lineitems[0].expense.report_id, workspace.fyle_org_id),
             'LineAmountTypes': 'Exclusive' if general_settings.import_tax_codes else 'NoTax',
             'Reference': bill.reference,
             'InvoiceNumber': bill.reference,
@@ -550,7 +550,7 @@ class XeroConnector:
         """
         general_mappings = GeneralMapping.objects.filter(workspace_id=self.workspace_id).first()
         general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
-        workspace = Workspace.objects.get(id=self.workspace_id)
+        workspace = bank_transaction.expense_group.workspace
         
         bank_transaction_payload = {
             'Type': 'SPEND',

@@ -85,7 +85,6 @@ def get_item_code_or_none(expense_group: ExpenseGroup, lineitem: Expense):
         ).first()
 
         if mapping:
-            print(mapping)
             item_code = mapping.destination.value
     return item_code
 
@@ -178,7 +177,7 @@ class Bill(models.Model):
             defaults={
                 'currency': expense.currency,
                 'contact_id': contact.destination.destination_id,
-                'reference': expense.report_id,
+                'reference': expense.claim_number,
                 'date': get_transaction_date(expense_group)
             }
         )
