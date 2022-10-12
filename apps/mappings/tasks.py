@@ -13,6 +13,7 @@ from fyle_accounting_mappings.models import Mapping, MappingSetting, Destination
 from fyle.platform.exceptions import WrongParamsError
 
 from apps.xero.utils import XeroConnector
+from apps.tasks.models import Error
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
 from .constants import FYLE_EXPENSE_SYSTEM_FIELDS
 
@@ -24,6 +25,28 @@ DEFAULT_FYLE_CATEGORIES = [
     'Per Diem', 'Bus', 'Internet', 'Taxi', 'Courier', 'Hotel', 'Professional Services', 'Phone', 'Office Party',
     'Flight', 'Software', 'Parking', 'Toll Charge', 'Tax', 'Training', 'Unspecified'
 ]
+
+def resolve_expense_attribute_errors(
+    source_attribute_type: str, workspace_id: int, destination_attribute_type: str = None):
+    """
+    Resolve Expense Attribute Errors
+    :return: None
+    """
+    errored_attribute_ids: List[int] = Error.objects.filter(
+        is_resolved=False,
+        workspace_id=workspace_id,
+        type='{}_MAPPING'.format(source_attribute_type)
+    ).values_list('expense_attribute_id', flat=True)
+
+    if errored_attribute_ids:
+        mapped_attribute_ids = []
+
+        mapped_attribute_ids: List[int] = Mapping.objects.filter(
+            source_id__in=errored_attribute_ids
+        ).values_list('source_id', flat=True)
+
+        if mapped_attribute_ids:
+            Error.objects.filter(expense_attribute_id__in=mapped_attribute_ids).update(is_resolved=True)
 
 
 def remove_duplicates(xero_attributes: List[DestinationAttribute]):
@@ -137,6 +160,8 @@ def auto_create_category_mappings(workspace_id):
 
         Mapping.bulk_create_mappings(fyle_categories, 'CATEGORY', 'ACCOUNT', workspace_id)
 
+        resolve_expense_attribute_errors(source_attribute_type='CATEGORY', workspace_id=workspace_id)
+
         return []
 
     except WrongParamsError as exception:
@@ -191,6 +216,8 @@ def async_auto_map_employees(workspace_id: int):
         xero_connection.sync_contacts()
 
         Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)
+
+        resolve_expense_attribute_errors(source_attribute_type='EMPLOYEE', workspace_id=workspace_id)
 
     except XeroCredentials.DoesNotExist:
         logger.error(
