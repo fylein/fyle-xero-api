@@ -63,8 +63,24 @@ def test_get_item_code_or_none(db):
     for lineitem in expenses:
         item_code = get_item_code_or_none(expense_group, lineitem)
         assert item_code == None
-
     
+    mapping_setting.source_field == 'PROJECT'
+    mapping_setting.save()
+
+    for lineitem in expenses:
+        lineitem.project = 'Bank West'
+        item_code = get_item_code_or_none(expense_group, lineitem)
+        assert item_code == None
+
+    mapping_setting.source_field == 'COST_CENTER'
+    mapping_setting.save()
+
+    for lineitem in expenses:
+        lineitem.cost_center = 'Adidas'
+        item_code = get_item_code_or_none(expense_group, lineitem)
+        assert item_code == None
+
+
 def test_get_tax_code_id_or_none(db):
     expense_group = ExpenseGroup.objects.get(id=8)
     expenses = expense_group.expenses.all()
@@ -79,8 +95,10 @@ def test_get_customer_id_or_none(db):
     expenses = expense_group.expenses.all()
 
     for lineitem in expenses:
+        lineitem.billable = True
+        lineitem.project = 'Bank West'
         bill_lineitem_objects = get_customer_id_or_none(expense_group, lineitem)
-        assert bill_lineitem_objects == None
+        assert bill_lineitem_objects == '47f61ab1-5245-40a2-a3a5-bc224c850c8d'
     
     mapping_setting = MappingSetting.objects.filter( 
         workspace_id=expense_group.workspace_id, 
@@ -88,9 +106,10 @@ def test_get_customer_id_or_none(db):
     ).first() 
     mapping_setting.source_field = 'PROJECT'
     mapping_setting.save()
+
     for lineitem in expenses:
         bill_lineitem_objects = get_customer_id_or_none(expense_group, lineitem)
-        assert bill_lineitem_objects == None
+        assert bill_lineitem_objects == '47f61ab1-5245-40a2-a3a5-bc224c850c8d'
 
     mapping_setting.source_field = 'COST_CENTER'
     mapping_setting.save()

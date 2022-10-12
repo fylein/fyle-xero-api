@@ -1,9 +1,11 @@
 import json
+from unittest import mock
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import XeroCredentials
 from apps.fyle.models import Reimbursement
 from .fixtures import data
 from ..test_fyle.fixtures import data as fyle_data
+from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuthentication 
 
 def test_get_token_health(api_client, test_connection):
     workspace_id = 1
@@ -24,6 +26,21 @@ def test_get_token_health(api_client, test_connection):
 
     response = json.loads(response.content)
     assert response['message'] == 'Xero credentials not found in workspace'
+
+    with mock.patch('apps.workspaces.models.XeroCredentials.objects.get') as mock_call:
+        mock_call.side_effect = InvalidGrant(msg='Invalid grant')
+        response = api_client.get(url)
+        assert response.status_code == 400
+
+    with mock.patch('apps.workspaces.models.XeroCredentials.objects.get') as mock_call:
+        mock_call.side_effect = InvalidTokenError(msg='Invalid token error')
+        response = api_client.get(url)
+        assert response.status_code == 400
+
+    with mock.patch('apps.workspaces.models.XeroCredentials.objects.get') as mock_call:
+        mock_call.side_effect = UnsuccessfulAuthentication(msg='Auth error')
+        response = api_client.get(url)
+        assert response.status_code == 400
 
 
 def test_get_account_view(api_client, test_connection):
