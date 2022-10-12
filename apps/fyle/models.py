@@ -314,6 +314,7 @@ class ExpenseGroup(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.PROTECT,
                                   help_text='To which workspace this expense group belongs to')
     fund_source = models.CharField(max_length=255, help_text='Expense fund source')
+    response_logs = JSONField(help_text='Reponse log of the export', null=True)
     expenses = models.ManyToManyField(Expense, help_text="Expenses under this Expense Group")
     description = JSONField(max_length=255, help_text='Description', null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
