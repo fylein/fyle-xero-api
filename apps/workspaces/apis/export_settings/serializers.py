@@ -107,6 +107,8 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
             }
         )
 
+        expense_group_settings['import_card_credits'] = False
+
         if workspace_general_settings['corporate_credit_card_expenses_object'] == 'BANK TRANSACTION':
             MappingSetting.objects.update_or_create(
                 destination_field='BANK_ACCOUNT',
@@ -117,7 +119,8 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
                     'is_custom': False
                 }
             )
-        
+            expense_group_settings['import_card_credits'] = True
+
         ExportSettingsTrigger.run_workspace_general_settings_triggers(workspace_general_settings_instance)
 
         expense_group_settings_instance = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)

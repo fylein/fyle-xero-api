@@ -85,6 +85,7 @@ def get_item_code_or_none(expense_group: ExpenseGroup, lineitem: Expense):
         ).first()
 
         if mapping:
+            print(mapping)
             item_code = mapping.destination.value
     return item_code
 
@@ -177,7 +178,7 @@ class Bill(models.Model):
             defaults={
                 'currency': expense.currency,
                 'contact_id': contact.destination.destination_id,
-                'reference': '{} - {}'.format(expense_group.id, expense.employee_email),
+                'reference': expense.report_id,
                 'date': get_transaction_date(expense_group)
             }
         )
@@ -319,7 +320,7 @@ class BankTransaction(models.Model):
                 'contact_id': contact_id,
                 'bank_account_code': bank_account_id,
                 'currency': expense.currency,
-                'reference': '{} - {}'.format(expense_group.id, expense.employee_email),
+                'reference': expense.expense_number,
                 'transaction_date': get_transaction_date(expense_group),
             }
         )

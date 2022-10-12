@@ -81,11 +81,15 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             for source in fund_source:
                 source_account_type.append(SOURCE_ACCOUNT_MAP[source])
 
+            filter_credit_expenses = True
+            if expense_group_settings.import_card_credits:
+                filter_credit_expenses = False
+
             expenses = platform.expenses.get(
                 source_account_type=source_account_type,
                 state=expense_group_settings.expense_state,
                 settled_at=last_synced_at if expense_group_settings.expense_state == 'PAYMENT_PROCESSING' else None,
-                filter_credit_expenses=True,
+                filter_credit_expenses=filter_credit_expenses,
                 last_paid_at=last_synced_at if expense_group_settings.expense_state == 'PAID' else None
             )
 

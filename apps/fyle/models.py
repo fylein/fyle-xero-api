@@ -195,6 +195,7 @@ class ExpenseGroupSettings(models.Model):
         help_text='state at which the ccc expenses are fetched (PAYMENT_PROCESSING /PAID)', null=True)
     reimbursable_export_date_type = models.CharField(max_length=100, default='current_date', help_text='Export Date')
     ccc_export_date_type = models.CharField(max_length=100, default='spent_at', help_text='CCC Export Date')
+    import_card_credits = models.BooleanField(help_text='Import Card Credits', default=False)
     workspace = models.OneToOneField(
         Workspace, on_delete=models.PROTECT, help_text='To which workspace this expense group setting belongs to',
         related_name='expense_group_settings'
@@ -266,6 +267,10 @@ class ExpenseGroupSettings(models.Model):
             reimbursable_grouped_by.append('report_id')
             corporate_credit_card_expenses_grouped_by.append('report_id')
 
+        import_card_credits = settings.import_card_credits
+        if 'import_card_credits' in expense_group_settings.keys():
+            import_card_credits = expense_group_settings['import_card_credits']
+
         return ExpenseGroupSettings.objects.update_or_create(
             workspace_id=workspace_id,
             defaults={
@@ -275,7 +280,8 @@ class ExpenseGroupSettings(models.Model):
                 'reimbursable_expense_state': expense_group_settings['reimbursable_expense_state'] if 'reimbursable_expense_state' in expense_group_settings else None,
                 'ccc_expense_state': expense_group_settings['ccc_expense_state'] if 'ccc_expense_state' in expense_group_settings else None,
                 'reimbursable_export_date_type': expense_group_settings['reimbursable_export_date_type'],
-                'ccc_export_date_type': expense_group_settings['ccc_export_date_type']
+                'ccc_export_date_type': expense_group_settings['ccc_export_date_type'],
+                'import_card_credits': import_card_credits
             }
         )
 
