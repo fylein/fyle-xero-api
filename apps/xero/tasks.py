@@ -675,9 +675,9 @@ def __validate_expense_group(expense_group: ExpenseGroup):
 
     general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(
         workspace_id=expense_group.workspace_id)
+    general_mapping = GeneralMapping.objects.filter(workspace_id=expense_group.workspace_id).first()
 
     if general_settings.corporate_credit_card_expenses_object:
-        general_mapping = GeneralMapping.objects.filter(workspace_id=expense_group.workspace_id).first()
 
         if not general_mapping:
             bulk_errors.append({
