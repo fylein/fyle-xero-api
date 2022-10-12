@@ -13,6 +13,7 @@ import unidecode
 from xerosdk import XeroSDK
 from xerosdk.exceptions import WrongParamsError
 
+from fyle_xero_api import settings
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import XeroCredentials, WorkspaceGeneralSettings, Workspace
 from fyle_accounting_mappings.models import DestinationAttribute
@@ -460,14 +461,17 @@ class XeroConnector:
         """
         general_mappings = GeneralMapping.objects.filter(workspace_id=self.workspace_id).first()
         general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
+        workspace = bill.expense_group.workspace
 
         bill_payload = {
             'Type': 'ACCPAY',
             'Contact': {
                 'ContactID': bill.contact_id
             },
+            'Url': '{}/app/admin/#/reports/{}?org_id={}'.format(settings.FYLE_APP_URL, bill_lineitems[0].expense.report_id, workspace.fyle_org_id),
             'LineAmountTypes': 'Exclusive' if general_settings.import_tax_codes else 'NoTax',
             'Reference': bill.reference,
+            'InvoiceNumber': bill.reference,
             'Date': bill.date,
             'DueDate': (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d'),
             'CurrencyCode': bill.currency,
@@ -528,7 +532,7 @@ class XeroConnector:
             line = {
                 'Description': line.description,
                 'Quantity': '1',
-                'UnitAmount': unit_amount,
+                'UnitAmount': abs(unit_amount),
                 'AccountCode': line.account_id,
                 'ItemCode': line.item_code if line.item_code else None,
                 'Tracking': line.tracking_categories if line.tracking_categories else None,
@@ -546,6 +550,7 @@ class XeroConnector:
         """
         general_mappings = GeneralMapping.objects.filter(workspace_id=self.workspace_id).first()
         general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
+        workspace = bank_transaction.expense_group.workspace
         
         bank_transaction_payload = {
             'Type': 'SPEND',
@@ -555,6 +560,7 @@ class XeroConnector:
             'BankAccount': {
                 'AccountID': bank_transaction.bank_account_code
             },
+            'Url': '{}/app/admin/#/view_expense/{}?org_id={}'.format(settings.FYLE_APP_URL, bank_transaction_lineitems[0].expense.expense_id, workspace.fyle_org_id),
             'LineAmountTypes': 'Exclusive' if general_settings.import_tax_codes else 'NoTax',
             'Reference': bank_transaction.reference,
             'Date': bank_transaction.transaction_date,
@@ -562,6 +568,10 @@ class XeroConnector:
             'Status': 'AUTHORISED',
             'LineItems': self.__construct_bank_transaction_lineitems(bank_transaction_lineitems, general_mappings, general_settings)
         }
+
+        if bank_transaction_lineitems[0].amount < 0:
+            bank_transaction_payload['Type'] = 'RECEIVE'
+
         return bank_transaction_payload
 
     def post_bank_transaction(self, bank_transaction: BankTransaction,

@@ -3,10 +3,15 @@ import json
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.workspaces.models import WorkspaceGeneralSettings
 from .fixtures import data
+from ..test_xero.fixtures import data as xero_data
 
 
-def test_tenant_mapping_view(api_client, test_connection):
+def test_tenant_mapping_view(api_client, test_connection, mocker):
 
+    mocker.patch(
+        'xerosdk.apis.Organisations.get_all',
+        return_value=xero_data['get_all_organisations']
+    )
     workspace_id = 1
     url = '/api/workspaces/{}/mappings/tenant/'.format(workspace_id)
 

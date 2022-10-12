@@ -678,7 +678,8 @@ CREATE TABLE public.expense_group_settings (
     workspace_id integer NOT NULL,
     ccc_export_date_type character varying(100) NOT NULL,
     ccc_expense_state character varying(100),
-    reimbursable_expense_state character varying(100)
+    reimbursable_expense_state character varying(100),
+    import_card_credits boolean NOT NULL
 );
 
 
@@ -4461,8 +4462,8 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 -- Data for Name: expense_group_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corporate_credit_card_expense_group_fields, expense_state, reimbursable_export_date_type, created_at, updated_at, workspace_id, ccc_export_date_type, ccc_expense_state, reimbursable_expense_state) FROM stdin;
-1	{employee_email,report_id,claim_number,fund_source}	{report_id,fund_source,employee_email,claim_number,expense_id}	PAYMENT_PROCESSING	current_date	2022-08-02 20:24:42.329794+00	2022-08-02 20:25:24.6873+00	1	spent_at	PAYMENT_PROCESSING	PAYMENT_PROCESSING
+COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corporate_credit_card_expense_group_fields, expense_state, reimbursable_export_date_type, created_at, updated_at, workspace_id, ccc_export_date_type, ccc_expense_state, reimbursable_expense_state, import_card_credits) FROM stdin;
+1	{employee_email,report_id,claim_number,fund_source}	{report_id,fund_source,employee_email,claim_number,expense_id}	PAYMENT_PROCESSING	current_date	2022-08-02 20:24:42.329794+00	2022-08-02 20:25:24.6873+00	1	spent_at	PAYMENT_PROCESSING	PAYMENT_PROCESSING	t
 \.
 
 

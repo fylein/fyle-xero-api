@@ -159,15 +159,16 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             }
         )
 
-    if general_settings.map_merchant_to_contact and \
-            general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
+    if general_settings.corporate_credit_card_expenses_object == 'BANK TRANSACTION':
         expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
 
-        ccc_expense_group_fields = expense_group_settings.corporate_credit_card_expense_group_fields
-        ccc_expense_group_fields.append('expense_id')
-        expense_group_settings.corporate_credit_card_expense_group_fields = list(set(ccc_expense_group_fields))
-        expense_group_settings.ccc_export_date_type = 'spent_at'
+        if general_settings.map_merchant_to_contact:
+            ccc_expense_group_fields = expense_group_settings.corporate_credit_card_expense_group_fields
+            ccc_expense_group_fields.append('expense_id')
+            expense_group_settings.corporate_credit_card_expense_group_fields = list(set(ccc_expense_group_fields))
+            expense_group_settings.ccc_export_date_type = 'spent_at'
 
+        expense_group_settings.import_card_credits = True
         expense_group_settings.save()
 
     schedule_payment_creation(general_settings.sync_fyle_to_xero_payments, workspace_id)

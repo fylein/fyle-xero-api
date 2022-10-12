@@ -177,7 +177,7 @@ class Bill(models.Model):
             defaults={
                 'currency': expense.currency,
                 'contact_id': contact.destination.destination_id,
-                'reference': '{} - {}'.format(expense_group.id, expense.employee_email),
+                'reference': expense.claim_number,
                 'date': get_transaction_date(expense_group)
             }
         )
@@ -319,7 +319,7 @@ class BankTransaction(models.Model):
                 'contact_id': contact_id,
                 'bank_account_code': bank_account_id,
                 'currency': expense.currency,
-                'reference': '{} - {}'.format(expense_group.id, expense.employee_email),
+                'reference': expense.expense_number,
                 'transaction_date': get_transaction_date(expense_group),
             }
         )

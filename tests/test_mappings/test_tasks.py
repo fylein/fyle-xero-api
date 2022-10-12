@@ -23,6 +23,16 @@ def test_auto_create_tax_codes_mappings(db, mocker):
         return_value=[]
     )
 
+    mocker.patch(
+        'fyle_integrations_platform_connector.apis.TaxGroups.sync',
+        return_value=[]
+    )
+
+    mocker.patch(
+        'xerosdk.apis.TaxRates.get_all',
+        return_value=xero_data['get_all_tax_codes']
+    )
+
     tax_groups = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='TAX_CODE').count()
     mappings = Mapping.objects.filter(workspace_id=workspace_id, destination_type='TAX_CODE').count()
     
@@ -69,6 +79,16 @@ def test_auto_create_project_mappings(db, mocker):
     mocker.patch(
         'fyle_integrations_platform_connector.apis.Projects.post_bulk',
         return_value=[]
+    )
+
+    mocker.patch(
+        'fyle_integrations_platform_connector.apis.Projects.sync',
+        return_value=[]
+    )
+
+    mocker.patch(
+        'xerosdk.apis.Contacts.list_all_generator',
+        return_value=xero_data['get_all_contacts']
     )
     
     response = auto_create_project_mappings(workspace_id=workspace_id)
@@ -279,9 +299,19 @@ def test_schedule_auto_map_employees(db):
 def test_auto_create_cost_center_mappings(db, mocker, create_mapping_setting):
     workspace_id = 1
     mocker.patch(
-            'fyle_integrations_platform_connector.apis.CostCenters.post_bulk',
-            return_value=[]
-        )
+        'fyle_integrations_platform_connector.apis.CostCenters.post_bulk',
+        return_value=[]
+    )
+    
+    mocker.patch(
+        'fyle_integrations_platform_connector.apis.CostCenters.sync',
+        return_value=[]
+    )
+    
+    mocker.patch(
+        'xerosdk.apis.TrackingCategories.get_all',
+        return_value=xero_data['get_all_tracking_categories']
+    )
     
     response = auto_create_cost_center_mappings(workspace_id=workspace_id)
     assert response == None
@@ -350,13 +380,19 @@ def test_schedule_fyle_attributes_creation(db, mocker):
 
     async_auto_create_custom_field_mappings(workspace_id)
 
-    schedule_fyle_attributes_creation(2)
+    mapping_settings = MappingSetting.objects.filter(
+        is_custom=True, import_to_fyle=True, workspace_id=workspace_id
+    ).all()
+    mapping_settings.delete()
+
+    schedule_fyle_attributes_creation(workspace_id)
+
     schedule = Schedule.objects.filter(
         func='apps.mappings.tasks.async_auto_create_custom_field_mappings',
         args='{}'.format(workspace_id),
-    ).first()
+    ).count()
 
-    assert schedule.func == 'apps.mappings.tasks.async_auto_create_custom_field_mappings'
+    assert schedule == 0
 
 
 def test_auto_create_expense_fields_mappings(db, mocker, create_mapping_setting):

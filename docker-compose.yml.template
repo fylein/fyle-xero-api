@@ -22,6 +22,7 @@ services:
       FYLE_CLIENT_ID:
       FYLE_CLIENT_SECRET:
       FYLE_TOKEN_URI:
+      FYLE_APP_URL:
       XERO_BASE_URL: https://api.xero.com
       XERO_CLIENT_ID:
       XERO_CLIENT_SECRET:
@@ -49,6 +50,7 @@ services:
       FYLE_CLIENT_ID:
       FYLE_CLIENT_SECRET:
       FYLE_TOKEN_URI:
+      FYLE_APP_URL:
       XERO_BASE_URL: https://api.xero.com
       XERO_CLIENT_ID:
       XERO_CLIENT_SECRET:

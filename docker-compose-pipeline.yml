@@ -10,8 +10,6 @@ services:
     restart: unless-stopped
     volumes:
     - ./:/fyle-xero-api
-    ports:
-    - 8000:8000
     depends_on:
     - db
     environment: 
@@ -26,6 +24,7 @@ services:
       FYLE_CLIENT_ID: ''
       FYLE_CLIENT_SECRET: ''
       FYLE_REFRESH_TOKEN: ''
+      FYLE_APP_URL: ${FYLE_APP_URL}
       FYLE_TOKEN_URI: ${FYLE_TOKEN_URI}
       FYLE_SERVER_URL: ${FYLE_SERVER_URL}
       XERO_BASE_URL: ${XERO_BASE_URL}
