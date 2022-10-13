@@ -265,6 +265,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
 
             expense_group.exported_at = datetime.now()
             expense_group.save()
+            resolve_errors_for_exported_expense_group(expense_group)
 
             # Assign billable expenses to customers
             if general_settings.import_customers:
@@ -280,7 +281,6 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
                     index += 1
 
                 attach_customer_to_export(xero_connection, task_log)
-                resolve_errors_for_exported_expense_group(expense_group)
 
             load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
     except XeroCredentials.DoesNotExist:
@@ -528,6 +528,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
 
             expense_group.exported_at = datetime.now()
             expense_group.save()
+            resolve_errors_for_exported_expense_group(expense_group)
 
             # Assign billable expenses to customers
             if general_settings.import_customers:
@@ -542,9 +543,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
                     bank_transaction_lineitems_object.save()
                     index += 1
 
-
-                attach_customer_to_export(xero_connection, task_log)
-                resolve_errors_for_exported_expense_group(expense_group)
+                attach_customer_to_export(xero_connection, task_log)               
 
             load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
                     'banktransactions', expense_group)
