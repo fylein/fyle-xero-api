@@ -13,6 +13,7 @@ from apps.workspaces.models import XeroCredentials
 from .utils import MappingUtils
 from ..workspaces.models import WorkspaceGeneralSettings
 from apps.xero.utils import XeroConnector
+from apps.workspaces.models import Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +35,13 @@ class TenantMappingView(generics.ListCreateAPIView):
         mapping_utils = MappingUtils(kwargs['workspace_id'])
         tenant_mapping_object = mapping_utils.create_or_update_tenant_mapping(tenant_mapping_payload)
         xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
+        workspace = Workspace.objects.filter(id=kwargs['workspace_id']).first()
 
         try:
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
             company_info = xero_connector.get_organisations()[0]
+            workspace.xero_currency = company_info['BaseCurrency']
+            workspace.save()
             xero_credentials.country = company_info['CountryCode']
             xero_credentials.save()
 

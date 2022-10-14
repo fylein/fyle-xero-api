@@ -23,6 +23,10 @@ AUTO_MAP_EMPLOYEE = (
     ('EMPLOYEE_CODE', 'EMPLOYEE_CODE')
 )
 
+APP_VERSION_CHOICES = (
+    ('v1', 'v1'),
+    ('v2', 'v2')
+)
 
 def get_default_chart_of_accounts():
     return ['EXPENSE']
@@ -38,6 +42,10 @@ class Workspace(models.Model):
     name = models.CharField(max_length=255, help_text='Name of the workspace')
     user = models.ManyToManyField(User, help_text='Reference to users table')
     fyle_org_id = models.CharField(max_length=255, help_text='org id', unique=True)
+    fyle_currency = models.CharField(max_length=5, help_text='Fyle Currency', null=True)
+    xero_currency = models.CharField(max_length=5, help_text='Xero Currency', null=True)
+    # Todo change the default key to V2
+    app_version = models.CharField(max_length=2, help_text='App version', default='v1', choices=APP_VERSION_CHOICES)
     xero_short_code = models.CharField(max_length=30, help_text='Xero short code', null=True, blank=True)
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
     source_synced_at = models.DateTimeField(help_text='Datetime when source dimensions were pulled', null=True)

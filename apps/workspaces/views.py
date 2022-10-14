@@ -73,6 +73,7 @@ class WorkspaceView(viewsets.ViewSet):
         fyle_user = get_fyle_admin(access_token.split(' ')[1], None)
         org_name = fyle_user['data']['org']['name']
         org_id = fyle_user['data']['org']['id']
+        org_currency = fyle_user['data']['org']['currency']
 
         workspace = Workspace.objects.filter(fyle_org_id=org_id).first()
 
@@ -80,7 +81,7 @@ class WorkspaceView(viewsets.ViewSet):
             workspace.user.add(User.objects.get(user_id=request.user))
             cache.delete(str(workspace.id))
         else:
-            workspace = Workspace.objects.create(name=org_name, fyle_org_id=org_id)
+            workspace = Workspace.objects.create(name=org_name, fyle_currency=org_currency, fyle_org_id=org_id)
 
             ExpenseGroupSettings.objects.create(workspace_id=workspace.id)
 
@@ -134,6 +135,21 @@ class WorkspaceView(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    def patch(self, request, **kwargs):
+        """
+        PATCH workspace
+        """
+        workspace_instance = Workspace.objects.get(pk=kwargs['workspace_id'])
+        serializer = WorkspaceSerializer(
+            workspace_instance, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                data=serializer.data,
+                status=status.HTTP_200_OK
+            )
+
 
 class ConnectFyleView(viewsets.ViewSet):
     """
@@ -154,12 +170,14 @@ class ConnectFyleView(viewsets.ViewSet):
             fyle_user = get_fyle_admin(tokens['access_token'], None)
             org_name = fyle_user['data']['org']['name']
             org_id = fyle_user['data']['org']['id']
+            org_currency = fyle_user['data']['org']['currency']
 
             assert_valid(workspace.fyle_org_id and workspace.fyle_org_id == org_id,
                          'Please select the correct Fyle account - {0}'.format(workspace.name))
 
             workspace.name = org_name
             workspace.fyle_org_id = org_id
+            workspace.fyle_currency = org_currency
             workspace.save()
 
             cluster_domain = get_cluster_domain(refresh_token)
@@ -276,6 +294,8 @@ class ConnectXeroView(viewsets.ViewSet):
                 try:
                     xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
                     company_info = xero_connector.get_organisations()[0]
+                    workspace.xero_currency = company_info['BaseCurrency']
+                    workspace.save()
                     xero_credentials.country = company_info['CountryCode']
                     xero_credentials.save()
 
