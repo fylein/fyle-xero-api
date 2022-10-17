@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.2 (Debian 14.2-1.pgdg110+1)
+-- Dumped from database version 14.5 (Debian 14.5-1.pgdg110+1)
 -- Dumped by pg_dump version 14.5 (Debian 14.5-1.pgdg100+1)
 
 SET statement_timeout = 0;
@@ -639,6 +639,48 @@ ALTER TABLE public.employee_mappings_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.employee_mappings_id_seq OWNED BY public.employee_mappings.id;
+
+
+--
+-- Name: errors; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.errors (
+    id integer NOT NULL,
+    type character varying(50) NOT NULL,
+    is_resolved boolean NOT NULL,
+    error_title character varying(255) NOT NULL,
+    error_detail text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    expense_attribute_id integer,
+    expense_group_id integer,
+    workspace_id integer NOT NULL
+);
+
+
+ALTER TABLE public.errors OWNER TO postgres;
+
+--
+-- Name: errors_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.errors_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.errors_id_seq OWNER TO postgres;
+
+--
+-- Name: errors_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.errors_id_seq OWNED BY public.errors.id;
 
 
 --
@@ -1596,6 +1638,13 @@ ALTER TABLE ONLY public.employee_mappings ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
+-- Name: errors id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.errors ALTER COLUMN id SET DEFAULT nextval('public.errors_id_seq'::regclass);
+
+
+--
 -- Name: expense_attributes id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1889,6 +1938,10 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 138	Can change Queued task	35	change_ormq
 139	Can delete Queued task	35	delete_ormq
 140	Can view Queued task	35	view_ormq
+141	Can add error	36	add_error
+142	Can change error	36	change_error
+143	Can delete error	36	delete_error
+144	Can view error	36	view_error
 \.
 
 
@@ -2166,6 +2219,7 @@ COPY public.django_content_type (id, app_label, model) FROM stdin;
 33	django_q	failure
 34	django_q	success
 35	django_q	ormq
+36	tasks	error
 \.
 
 
@@ -2290,6 +2344,9 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 114	workspaces	0025_auto_20220920_1111	2022-09-23 08:56:07.842453+00
 115	fyle	0012_auto_20220923_0613	2022-09-23 08:56:07.90403+00
 116	mappings	0006_auto_20220909_1206	2022-09-23 08:56:07.919911+00
+117	fyle	0013_expensegroupsettings_import_card_credits	2022-10-17 08:00:24.739834+00
+118	workspaces	0026_auto_20221004_1922	2022-10-17 08:00:25.224871+00
+119	tasks	0008_error	2022-10-17 08:00:25.413763+00
 \.
 
 
@@ -2364,6 +2421,14 @@ COPY public.django_session (session_key, session_data, expire_date) FROM stdin;
 --
 
 COPY public.employee_mappings (id, created_at, updated_at, destination_card_account_id, destination_employee_id, destination_vendor_id, source_employee_id, workspace_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: errors; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.errors (id, type, is_resolved, error_title, error_detail, created_at, updated_at, expense_attribute_id, expense_group_id, workspace_id) FROM stdin;
 \.
 
 
@@ -4732,7 +4797,7 @@ SELECT pg_catalog.setval('public.auth_group_permissions_id_seq', 1, false);
 -- Name: auth_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.auth_permission_id_seq', 140, true);
+SELECT pg_catalog.setval('public.auth_permission_id_seq', 144, true);
 
 
 --
@@ -4781,14 +4846,14 @@ SELECT pg_catalog.setval('public.django_admin_log_id_seq', 1, false);
 -- Name: django_content_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_content_type_id_seq', 35, true);
+SELECT pg_catalog.setval('public.django_content_type_id_seq', 36, true);
 
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 116, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 119, true);
 
 
 --
@@ -4810,6 +4875,13 @@ SELECT pg_catalog.setval('public.django_q_schedule_id_seq', 6, true);
 --
 
 SELECT pg_catalog.setval('public.employee_mappings_id_seq', 1, false);
+
+
+--
+-- Name: errors_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.errors_id_seq', 1, false);
 
 
 --
@@ -5165,6 +5237,22 @@ ALTER TABLE ONLY public.django_session
 
 ALTER TABLE ONLY public.employee_mappings
     ADD CONSTRAINT employee_mappings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: errors errors_expense_attribute_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.errors
+    ADD CONSTRAINT errors_expense_attribute_id_key UNIQUE (expense_attribute_id);
+
+
+--
+-- Name: errors errors_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.errors
+    ADD CONSTRAINT errors_pkey PRIMARY KEY (id);
 
 
 --
@@ -5629,6 +5717,20 @@ CREATE INDEX employee_mappings_workspace_id_4a25f8c9 ON public.employee_mappings
 
 
 --
+-- Name: errors_expense_group_id_86fafc8b; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX errors_expense_group_id_86fafc8b ON public.errors USING btree (expense_group_id);
+
+
+--
+-- Name: errors_workspace_id_a33dd61b; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX errors_workspace_id_a33dd61b ON public.errors USING btree (workspace_id);
+
+
+--
 -- Name: expense_groups_expenses_expense_id_af963907; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5936,6 +6038,30 @@ ALTER TABLE ONLY public.employee_mappings
 
 
 --
+-- Name: errors errors_expense_attribute_id_23be4f13_fk_expense_attributes_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.errors
+    ADD CONSTRAINT errors_expense_attribute_id_23be4f13_fk_expense_attributes_id FOREIGN KEY (expense_attribute_id) REFERENCES public.expense_attributes(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: errors errors_expense_group_id_86fafc8b_fk_expense_groups_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.errors
+    ADD CONSTRAINT errors_expense_group_id_86fafc8b_fk_expense_groups_id FOREIGN KEY (expense_group_id) REFERENCES public.expense_groups(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: errors errors_workspace_id_a33dd61b_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.errors
+    ADD CONSTRAINT errors_workspace_id_a33dd61b_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: expense_group_settings expense_group_settings_workspace_id_4c110bbe_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6120,6 +6246,14 @@ ALTER TABLE ONLY public.workspace_general_settings
 
 
 --
+-- Name: workspace_schedules workspace_schedules_workspace_id_50ec990f_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.workspace_schedules
+    ADD CONSTRAINT workspace_schedules_workspace_id_50ec990f_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: workspaces_user workspaces_user_user_id_4253baf7_fk_users_user_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6141,14 +6275,6 @@ ALTER TABLE ONLY public.workspaces_user
 
 ALTER TABLE ONLY public.workspace_schedules
     ADD CONSTRAINT workspaces_workspace_schedule_id_8274d659_fk_django_q_ FOREIGN KEY (schedule_id) REFERENCES public.django_q_schedule(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
--- Name: workspace_schedules workspaces_workspace_workspace_id_3c3942bc_fk_workspace; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.workspace_schedules
-    ADD CONSTRAINT workspaces_workspace_workspace_id_3c3942bc_fk_workspace FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
