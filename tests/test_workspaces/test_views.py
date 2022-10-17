@@ -115,7 +115,7 @@ def test_connect_fyle_view_post(mocker, api_client, test_connection):
     )
     mocker.patch(
         'apps.workspaces.views.get_fyle_admin',
-        return_value={'data': {'org': {'name': 'FAE', 'id': 'orPJvXuoLqvJ'}}}
+        return_value={'data': {'org': {'name': 'FAE', 'id': 'orPJvXuoLqvJ', 'currency': 'USD'}}}
     )
     mocker.patch(
         'apps.workspaces.views.get_cluster_domain',
