@@ -73,7 +73,7 @@ class WorkspaceView(viewsets.ViewSet):
         fyle_user = get_fyle_admin(access_token.split(' ')[1], None)
         org_name = fyle_user['data']['org']['name']
         org_id = fyle_user['data']['org']['id']
-        org_currency = fyle_user['data']['org']['currency']
+        fyle_currency = fyle_user['data']['org']['currency']
 
         workspace = Workspace.objects.filter(fyle_org_id=org_id).first()
 
@@ -81,7 +81,7 @@ class WorkspaceView(viewsets.ViewSet):
             workspace.user.add(User.objects.get(user_id=request.user))
             cache.delete(str(workspace.id))
         else:
-            workspace = Workspace.objects.create(name=org_name, fyle_currency=org_currency, fyle_org_id=org_id)
+            workspace = Workspace.objects.create(name=org_name, fyle_currency=fyle_currency, fyle_org_id=org_id)
 
             ExpenseGroupSettings.objects.create(workspace_id=workspace.id)
 
@@ -170,14 +170,14 @@ class ConnectFyleView(viewsets.ViewSet):
             fyle_user = get_fyle_admin(tokens['access_token'], None)
             org_name = fyle_user['data']['org']['name']
             org_id = fyle_user['data']['org']['id']
-            org_currency = fyle_user['data']['org']['currency']
+            fyle_currency = fyle_user['data']['org']['currency']
 
             assert_valid(workspace.fyle_org_id and workspace.fyle_org_id == org_id,
                          'Please select the correct Fyle account - {0}'.format(workspace.name))
 
             workspace.name = org_name
             workspace.fyle_org_id = org_id
-            workspace.fyle_currency = org_currency
+            workspace.fyle_currency = fyle_currency
             workspace.save()
 
             cluster_domain = get_cluster_domain(refresh_token)

@@ -136,7 +136,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
             expense_group_settings['reimbursable_export_date_type'] = 'current_date'
 
         if not expense_group_settings['ccc_export_date_type']:
-            expense_group_settings['ccc_export_date_type'] = 'current_date'
+            expense_group_settings['ccc_export_date_type'] = 'spent_at'
 
         ExpenseGroupSettings.update_expense_group_settings(expense_group_settings, workspace_id=workspace_id)
         GeneralMapping.objects.update_or_create(

@@ -44,7 +44,7 @@ class Workspace(models.Model):
     fyle_org_id = models.CharField(max_length=255, help_text='org id', unique=True)
     fyle_currency = models.CharField(max_length=5, help_text='Fyle Currency', null=True)
     xero_currency = models.CharField(max_length=5, help_text='Xero Currency', null=True)
-    # Todo change the default key to V2
+    # TODO change the default key to V2
     app_version = models.CharField(max_length=2, help_text='App version', default='v1', choices=APP_VERSION_CHOICES)
     xero_short_code = models.CharField(max_length=30, help_text='Xero short code', null=True, blank=True)
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
