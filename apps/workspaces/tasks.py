@@ -72,10 +72,6 @@ def run_sync_schedule(workspace_id):
         export_to_xero(workspace_id)
 
 def export_to_xero(workspace_id):
-    print("""
-    
-    
-    Export is in progress""")
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     chaining_attributes = []
     if general_settings.reimbursable_expenses_object:
