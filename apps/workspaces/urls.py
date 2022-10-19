@@ -1,7 +1,7 @@
 from django.urls import path, include
 
 from .views import WorkspaceView, ReadyView, ConnectFyleView, ConnectXeroView, GeneralSettingsView, ScheduleView, \
-    RevokeXeroConnectionView, XeroExternalSignUpsView
+    RevokeXeroConnectionView, XeroExternalSignUpsView, ExportToXeroView
 
 urlpatterns = [
     path('', WorkspaceView.as_view({'get': 'get', 'post': 'post'})),
@@ -14,6 +14,7 @@ urlpatterns = [
     path('<int:workspace_id>/credentials/xero/', ConnectXeroView.as_view({'get': 'get'})),
     path('<int:workspace_id>/connection/xero/revoke/', RevokeXeroConnectionView.as_view({'post': 'post'})),
     path('<int:workspace_id>/credentials/xero/delete/', ConnectXeroView.as_view({'post': 'delete'})),
+    path('<int:workspace_id>/exports/trigger/', ExportToXeroView.as_view({'post': 'post'}), name='export-to-xero'),
     path('<int:workspace_id>/settings/general/', GeneralSettingsView.as_view({'post': 'post', 'get': 'get', 'patch': 'patch'})),
     path('<int:workspace_id>/fyle/', include('apps.fyle.urls')),
     path('<int:workspace_id>/tasks/', include('apps.tasks.urls')),
