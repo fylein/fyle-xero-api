@@ -12,16 +12,22 @@ for workspace in workspaces:
     if workspace.fyle_currency == None and expense:
         workspace.fyle_currency = expense.currency
     elif workspace.fyle_currency == None:
-        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
-        platform = PlatformConnector(fyle_credentials)
-        my_profile = platform.connection.v1beta.spender.my_profile.get()
-        fyle_currency = my_profile['data']['org']['currency']
-        workspace.fyle_currency = fyle_currency
+        try:
+            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
+            platform = PlatformConnector(fyle_credentials)
+            my_profile = platform.connection.v1beta.spender.my_profile.get()
+            fyle_currency = my_profile['data']['org']['currency']
+            workspace.fyle_currency = fyle_currency
+        except Exception as e:
+            print("Some error occured")
 
     if workspace.xero_currency == None:
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace.id).first()
-        xero_connector = XeroConnector(xero_credentials, workspace_id=workspace.id)
-        company_info = xero_connector.get_organisations()[0]
-        workspace.xero_currency = company_info['BaseCurrency']
+        try:
+            xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace.id).first()
+            xero_connector = XeroConnector(xero_credentials, workspace_id=workspace.id)
+            company_info = xero_connector.get_organisations()[0]
+            workspace.xero_currency = company_info['BaseCurrency']
+        except Exception as e:
+            print("Some error occured")
 
     workspace.save()
