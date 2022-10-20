@@ -7,7 +7,7 @@ set
   xero_currency = 'USD', 
   fyle_currency = 'USD' 
 where 
-  id in (
+  id not in (
     select 
       workspace_id as id 
     from 
