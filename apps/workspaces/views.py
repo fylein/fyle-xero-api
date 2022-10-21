@@ -28,6 +28,7 @@ from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneral
 from .utils import generate_xero_identity, generate_xero_refresh_token, create_or_update_general_settings
 from .serializers import WorkspaceSerializer, FyleCredentialSerializer, XeroCredentialSerializer, \
     WorkSpaceGeneralSettingsSerializer, WorkspaceScheduleSerializer
+from .tasks import export_to_xero
 
 logger = logging.getLogger(__name__)
 
@@ -510,5 +511,18 @@ class XeroExternalSignUpsView(viewsets.ViewSet):
 
         return Response(
             data=identity,
+            status=status.HTTP_200_OK
+        )
+
+
+class ExportToXeroView(viewsets.ViewSet):
+    """
+    Export Expenses to QBO
+    """
+
+    def post(self, request, *args, **kwargs):
+        export_to_xero(workspace_id=kwargs['workspace_id'])
+
+        return Response(
             status=status.HTTP_200_OK
         )
