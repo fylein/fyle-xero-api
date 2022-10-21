@@ -1381,7 +1381,10 @@ CREATE TABLE public.workspaces (
     source_synced_at timestamp with time zone,
     xero_short_code character varying(30),
     xero_accounts_last_synced_at timestamp with time zone,
-    onboarding_state character varying(50)
+    onboarding_state character varying(50),
+    app_version character varying(2) NOT NULL,
+    fyle_currency character varying(5),
+    xero_currency character varying(5)
 );
 
 
@@ -2349,6 +2352,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 118	workspaces	0026_auto_20221004_1922	2022-10-17 08:00:25.224871+00
 119	tasks	0008_error	2022-10-17 08:00:25.413763+00
 120	fyle	0014_expensegroup_response_logs	2022-10-17 09:59:59.938388+00
+121	workspaces	0027_auto_20221014_0741	2022-10-17 11:17:16.229906+00
 \.
 
 
@@ -4758,8 +4762,8 @@ COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, sc
 -- Data for Name: workspaces; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state) FROM stdin;
-1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION
+COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state, app_version, fyle_currency, xero_currency) FROM stdin;
+1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION	v1	\N	\N
 \.
 
 
@@ -4855,7 +4859,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 36, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 120, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 121, true);
 
 
 --
