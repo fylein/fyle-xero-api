@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.5 (Debian 14.5-1.pgdg110+1)
+-- Dumped from database version 14.2 (Debian 14.2-1.pgdg110+1)
 -- Dumped by pg_dump version 14.5 (Debian 14.5-1.pgdg100+1)
 
 SET statement_timeout = 0;
@@ -738,7 +738,8 @@ CREATE TABLE public.expense_groups (
     created_at timestamp with time zone NOT NULL,
     exported_at timestamp with time zone,
     updated_at timestamp with time zone NOT NULL,
-    workspace_id integer NOT NULL
+    workspace_id integer NOT NULL,
+    response_logs jsonb
 );
 
 
@@ -1380,7 +1381,10 @@ CREATE TABLE public.workspaces (
     source_synced_at timestamp with time zone,
     xero_short_code character varying(30),
     xero_accounts_last_synced_at timestamp with time zone,
-    onboarding_state character varying(50)
+    onboarding_state character varying(50),
+    app_version character varying(2) NOT NULL,
+    fyle_currency character varying(5),
+    xero_currency character varying(5)
 );
 
 
@@ -2347,6 +2351,8 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 117	fyle	0013_expensegroupsettings_import_card_credits	2022-10-17 08:00:24.739834+00
 118	workspaces	0026_auto_20221004_1922	2022-10-17 08:00:25.224871+00
 119	tasks	0008_error	2022-10-17 08:00:25.413763+00
+120	fyle	0014_expensegroup_response_logs	2022-10-17 09:59:59.938388+00
+121	workspaces	0027_auto_20221014_0741	2022-10-17 11:17:16.229906+00
 \.
 
 
@@ -4536,17 +4542,17 @@ COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corpo
 -- Data for Name: expense_groups; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.expense_groups (id, fund_source, description, created_at, exported_at, updated_at, workspace_id) FROM stdin;
-2	PERSONAL	{"report_id": "rpE2JyATZhDe", "fund_source": "PERSONAL", "claim_number": "C/2022/05/R/16", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.944108+00	2022-08-02 20:27:44.873229+00	2022-08-02 20:27:44.873778+00	1
-4	PERSONAL	{"report_id": "rpKuJtEv6h0n", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/1", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.953025+00	2022-08-02 20:27:48.929649+00	2022-08-02 20:27:48.929826+00	1
-1	PERSONAL	{"report_id": "rp9EvDF8Umk6", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/2", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.939437+00	2022-08-02 20:27:52.017417+00	2022-08-02 20:27:52.017711+00	1
-3	PERSONAL	{"report_id": "rpNeZt3cv9wz", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/3", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.948473+00	2022-08-02 20:27:55.12672+00	2022-08-02 20:27:55.127073+00	1
-10	CCC	{"spent_at": "2022-05-25", "report_id": "rpVvNQvE2wbm", "expense_id": "txBMQRkBQciI", "fund_source": "CCC", "claim_number": "C/2022/05/R/13", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.974361+00	2022-08-02 20:27:59.397949+00	2022-08-02 20:27:59.39816+00	1
-5	CCC	{"spent_at": "2022-05-24", "report_id": "rp5lITpxFLxE", "expense_id": "txkw3dt3umkN", "fund_source": "CCC", "claim_number": "C/2022/05/R/12", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.956314+00	2022-08-02 20:28:03.682322+00	2022-08-02 20:28:03.682555+00	1
-8	CCC	{"spent_at": "2022-05-25", "report_id": "rprwGgzOZyfR", "expense_id": "tx1FW3uxYZG6", "fund_source": "CCC", "claim_number": "C/2022/05/R/15", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.966799+00	2022-08-02 20:28:07.656716+00	2022-08-02 20:28:07.657378+00	1
-6	CCC	{"spent_at": "2022-05-25", "report_id": "rpLawO11bFib", "expense_id": "txjIqTCtkkC8", "fund_source": "CCC", "claim_number": "C/2022/05/R/18", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.959403+00	2022-08-02 20:28:11.748729+00	2022-08-02 20:28:11.748944+00	1
-9	CCC	{"spent_at": "2021-01-01", "report_id": "rpv1txzAsgr3", "expense_id": "txUPRc3VwxOP", "fund_source": "CCC", "claim_number": "C/2022/05/R/17", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.97121+00	2022-08-02 20:28:16.115273+00	2022-08-02 20:28:16.115482+00	1
-7	CCC	{"spent_at": "2022-05-25", "report_id": "rpnG3lZYDsHU", "expense_id": "txVXhyVB8mgK", "fund_source": "CCC", "claim_number": "C/2022/05/R/14", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.962947+00	2022-08-02 20:28:20.026921+00	2022-08-02 20:28:20.027277+00	1
+COPY public.expense_groups (id, fund_source, description, created_at, exported_at, updated_at, workspace_id, response_logs) FROM stdin;
+2	PERSONAL	{"report_id": "rpE2JyATZhDe", "fund_source": "PERSONAL", "claim_number": "C/2022/05/R/16", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.944108+00	2022-08-02 20:27:44.873229+00	2022-08-02 20:27:44.873778+00	1	\N
+4	PERSONAL	{"report_id": "rpKuJtEv6h0n", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/1", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.953025+00	2022-08-02 20:27:48.929649+00	2022-08-02 20:27:48.929826+00	1	\N
+1	PERSONAL	{"report_id": "rp9EvDF8Umk6", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/2", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.939437+00	2022-08-02 20:27:52.017417+00	2022-08-02 20:27:52.017711+00	1	\N
+3	PERSONAL	{"report_id": "rpNeZt3cv9wz", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/3", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.948473+00	2022-08-02 20:27:55.12672+00	2022-08-02 20:27:55.127073+00	1	\N
+10	CCC	{"spent_at": "2022-05-25", "report_id": "rpVvNQvE2wbm", "expense_id": "txBMQRkBQciI", "fund_source": "CCC", "claim_number": "C/2022/05/R/13", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.974361+00	2022-08-02 20:27:59.397949+00	2022-08-02 20:27:59.39816+00	1	\N
+5	CCC	{"spent_at": "2022-05-24", "report_id": "rp5lITpxFLxE", "expense_id": "txkw3dt3umkN", "fund_source": "CCC", "claim_number": "C/2022/05/R/12", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.956314+00	2022-08-02 20:28:03.682322+00	2022-08-02 20:28:03.682555+00	1	\N
+8	CCC	{"spent_at": "2022-05-25", "report_id": "rprwGgzOZyfR", "expense_id": "tx1FW3uxYZG6", "fund_source": "CCC", "claim_number": "C/2022/05/R/15", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.966799+00	2022-08-02 20:28:07.656716+00	2022-08-02 20:28:07.657378+00	1	\N
+6	CCC	{"spent_at": "2022-05-25", "report_id": "rpLawO11bFib", "expense_id": "txjIqTCtkkC8", "fund_source": "CCC", "claim_number": "C/2022/05/R/18", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.959403+00	2022-08-02 20:28:11.748729+00	2022-08-02 20:28:11.748944+00	1	\N
+9	CCC	{"spent_at": "2021-01-01", "report_id": "rpv1txzAsgr3", "expense_id": "txUPRc3VwxOP", "fund_source": "CCC", "claim_number": "C/2022/05/R/17", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.97121+00	2022-08-02 20:28:16.115273+00	2022-08-02 20:28:16.115482+00	1	\N
+7	CCC	{"spent_at": "2022-05-25", "report_id": "rpnG3lZYDsHU", "expense_id": "txVXhyVB8mgK", "fund_source": "CCC", "claim_number": "C/2022/05/R/14", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.962947+00	2022-08-02 20:28:20.026921+00	2022-08-02 20:28:20.027277+00	1	\N
 \.
 
 
@@ -4756,8 +4762,8 @@ COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, sc
 -- Data for Name: workspaces; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state) FROM stdin;
-1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION
+COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state, app_version, fyle_currency, xero_currency) FROM stdin;
+1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION	v1	\N	\N
 \.
 
 
@@ -4853,7 +4859,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 36, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 119, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 121, true);
 
 
 --

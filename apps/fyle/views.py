@@ -29,6 +29,16 @@ class ExpenseGroupView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         state = self.request.query_params.get('state', 'ALL')
+        start_date = self.request.query_params.get('start_date', None)
+        end_date = self.request.query_params.get('end_date', None)
+        exported_at = self.request.query_params.get('exported_at', None)
+        expense_group_ids = self.request.query_params.get('expense_group_ids', None)
+
+        if expense_group_ids:
+            return ExpenseGroup.objects.filter(
+                workspace_id=self.kwargs['workspace_id'],
+                id__in=expense_group_ids.split(',')
+            )
 
         if state == 'ALL':
             return ExpenseGroup.objects.filter(workspace_id=self.kwargs['workspace_id']).order_by('-updated_at')
@@ -38,8 +48,18 @@ class ExpenseGroupView(generics.ListCreateAPIView):
                                                workspace_id=self.kwargs['workspace_id']).order_by('-updated_at')
 
         elif state == 'COMPLETE':
-            return ExpenseGroup.objects.filter(tasklog__status='COMPLETE',
-                                               workspace_id=self.kwargs['workspace_id']).order_by('-exported_at')
+            filters = {
+                'workspace_id': self.kwargs['workspace_id'],
+                'tasklog__status': 'COMPLETE'
+            }
+
+            if start_date and end_date:
+                filters['exported_at__range'] = [start_date, end_date]
+
+            if exported_at:
+                filters['exported_at__gte'] = exported_at
+
+            return ExpenseGroup.objects.filter(**filters).order_by('-exported_at')
 
         elif state == 'READY':
             return ExpenseGroup.objects.filter(

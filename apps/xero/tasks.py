@@ -264,6 +264,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
             task_log.save()
 
             expense_group.exported_at = datetime.now()
+            expense_group.response_logs = created_bill
             expense_group.save()
             resolve_errors_for_exported_expense_group(expense_group)
 
@@ -527,6 +528,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
             task_log.save()
 
             expense_group.exported_at = datetime.now()
+            expense_group.response_logs = created_bank_transaction
             expense_group.save()
             resolve_errors_for_exported_expense_group(expense_group)
 

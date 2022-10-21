@@ -98,7 +98,7 @@ data = {
         "exported_at": "2021-11-15T11:02:55.125205Z",
         "updated_at": "2021-11-15T11:02:55.125634Z",
         "workspace": 1,
-        "expenses": [1],
+        "expenses": [0],
     },
     "expense_group_setting_response": {
         "id": 1,
@@ -240,38 +240,138 @@ data = {
         }
     ],
     "expense_group_id_response": {
-        "id": 1,
-        "fund_source": "PERSONAL",
-        "description": {
-            "report_id": "rp9EvDF8Umk6",
-            "fund_source": "PERSONAL",
-            "claim_number": "C/2022/06/R/2",
-            "employee_email": "ashwin.t@fyle.in"
+        "id":1,
+        "expenses":[
+            {
+                "id":1,
+                "employee_email":"ashwin.t@fyle.in",
+                "category":"Food",
+                "sub_category":"None",
+                "project":"None",
+                "expense_id":"txaaVBj3yKGW",
+                "org_id":"orPJvXuoLqvJ",
+                "expense_number":"E/2022/06/T/4",
+                "claim_number":"C/2022/06/R/2",
+                "amount":1.0,
+                "currency":"USD",
+                "foreign_amount":"None",
+                "foreign_currency":"None",
+                "settlement_id":"setrunCck8hLH",
+                "reimbursable":True,
+                "state":"PAYMENT_PROCESSING",
+                "vendor":"None",
+                "cost_center":"None",
+                "corporate_card_id":"None",
+                "purpose":"None",
+                "report_id":"rp9EvDF8Umk6",
+                "billable":False,
+                "file_ids":[
+                    
+                ],
+                "spent_at":"2022-06-27T17:00:00Z",
+                "approved_at":"2022-06-27T09:06:52.951000Z",
+                "expense_created_at":"2022-06-27T09:06:13.135764Z",
+                "expense_updated_at":"2022-06-27T09:08:23.340321Z",
+                "created_at":"2022-08-02T20:26:22.810330Z",
+                "updated_at":"2022-08-02T20:26:22.810363Z",
+                "fund_source":"PERSONAL",
+                "verified_at":"None",
+                "custom_properties":{
+                    "Card":"",
+                    "Killua":"",
+                    "Classes":"",
+                    "avc_123":"None",
+                    "New Field":"",
+                    "Multi field":"",
+                    "Testing This":"",
+                    "abc in [123]":"None",
+                    "Postman Field":"",
+                    "Netsuite Class":""
+                },
+                "paid_on_xero":False,
+                "tax_amount":"None",
+                "tax_group_id":"None"
+            }
+        ],
+        "fund_source":"PERSONAL",
+        "response_logs":"None",
+        "description":{
+            "report_id":"rp9EvDF8Umk6",
+            "fund_source":"PERSONAL",
+            "claim_number":"C/2022/06/R/2",
+            "employee_email":"ashwin.t@fyle.in"
         },
-        "created_at": "2022-08-02T20:26:22.939437Z",
-        "exported_at": "2022-08-02T20:27:52.017417Z",
-        "updated_at": "2022-08-02T20:27:52.017711Z",
-        "workspace": 1,
-        "expenses": [
-            1
-        ]
+        "created_at":"2022-08-02T20:26:22.939437Z",
+        "exported_at":"2022-08-02T20:27:52.017417Z",
+        "updated_at":"2022-08-02T20:27:52.017711Z",
+        "workspace":1
     },
     "expense_group_by_id_expenses_response": {
-        "id": 1,
-        "fund_source": "PERSONAL",
-        "description": {
-            "report_id": "rp9EvDF8Umk6",
-            "fund_source": "PERSONAL",
-            "claim_number": "C/2022/06/R/2",
-            "employee_email": "ashwin.t@fyle.in"
+        "id":1,
+        "expenses":[
+            {
+                "id":1,
+                "employee_email":"ashwin.t@fyle.in",
+                "category":"Food",
+                "sub_category":"None",
+                "project":"None",
+                "expense_id":"txaaVBj3yKGW",
+                "org_id":"orPJvXuoLqvJ",
+                "expense_number":"E/2022/06/T/4",
+                "claim_number":"C/2022/06/R/2",
+                "amount":1.0,
+                "currency":"USD",
+                "foreign_amount":"None",
+                "foreign_currency":"None",
+                "settlement_id":"setrunCck8hLH",
+                "reimbursable":True,
+                "state":"PAYMENT_PROCESSING",
+                "vendor":"None",
+                "cost_center":"None",
+                "corporate_card_id":"None",
+                "purpose":"None",
+                "report_id":"rp9EvDF8Umk6",
+                "billable":False,
+                "file_ids":[
+                    
+                ],
+                "spent_at":"2022-06-27T17:00:00Z",
+                "approved_at":"2022-06-27T09:06:52.951000Z",
+                "expense_created_at":"2022-06-27T09:06:13.135764Z",
+                "expense_updated_at":"2022-06-27T09:08:23.340321Z",
+                "created_at":"2022-08-02T20:26:22.810330Z",
+                "updated_at":"2022-08-02T20:26:22.810363Z",
+                "fund_source":"PERSONAL",
+                "verified_at":"None",
+                "custom_properties":{
+                    "Card":"",
+                    "Killua":"",
+                    "Classes":"",
+                    "avc_123":"None",
+                    "New Field":"",
+                    "Multi field":"",
+                    "Testing This":"",
+                    "abc in [123]":"None",
+                    "Postman Field":"",
+                    "Netsuite Class":""
+                },
+                "paid_on_xero":False,
+                "tax_amount":"None",
+                "tax_group_id":"None"
+            }
+        ],
+        "fund_source":"PERSONAL",
+        "response_logs":"None",
+        "description":{
+            "report_id":"rp9EvDF8Umk6",
+            "fund_source":"PERSONAL",
+            "claim_number":"C/2022/06/R/2",
+            "employee_email":"ashwin.t@fyle.in"
         },
-        "created_at": "2022-08-02T20:26:22.939437Z",
-        "exported_at": "2022-08-02T20:27:52.017417Z",
-        "updated_at": "2022-08-02T20:27:52.017711Z",
-        "workspace": 1,
-        "expenses": [
-            1
-        ]
+        "created_at":"2022-08-02T20:26:22.939437Z",
+        "exported_at":"2022-08-02T20:27:52.017417Z",
+        "updated_at":"2022-08-02T20:27:52.017711Z",
+        "workspace":1
     },
     'get_my_profile': {
         'data': {
