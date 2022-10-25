@@ -24,10 +24,10 @@ from apps.fyle.models import ExpenseGroupSettings
 from apps.xero.utils import XeroConnector
 from apps.mappings.models import TenantMapping
 
-from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule
+from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule, LastExportDetail
 from .utils import generate_xero_identity, generate_xero_refresh_token, create_or_update_general_settings
 from .serializers import WorkspaceSerializer, FyleCredentialSerializer, XeroCredentialSerializer, \
-    WorkSpaceGeneralSettingsSerializer, WorkspaceScheduleSerializer
+    WorkSpaceGeneralSettingsSerializer, WorkspaceScheduleSerializer, LastExportDetailSerializer
 from .tasks import export_to_xero
 
 logger = logging.getLogger(__name__)
@@ -85,6 +85,8 @@ class WorkspaceView(viewsets.ViewSet):
             workspace = Workspace.objects.create(name=org_name, fyle_currency=fyle_currency, fyle_org_id=org_id)
 
             ExpenseGroupSettings.objects.create(workspace_id=workspace.id)
+
+            LastExportDetail.objects.create(workspace_id=workspace.id)
 
             workspace.user.add(User.objects.get(user_id=request.user))
 
@@ -526,3 +528,28 @@ class ExportToXeroView(viewsets.ViewSet):
         return Response(
             status=status.HTTP_200_OK
         )
+
+
+class LastExportDetailView(viewsets.ViewSet):
+    """
+    Last Export Details
+    """
+    serializer_class = LastExportDetailSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
+        last export detail
+        """
+        last_export_detail = LastExportDetail.objects.filter(workspace_id=kwargs['workspace_id']).first()
+        if last_export_detail.last_exported_at and last_export_detail.total_expense_groups_count:
+            return Response(
+                data=self.serializer_class(last_export_detail).data,
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                data={
+                    'message': 'latest exported details does not exist in workspace'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
