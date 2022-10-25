@@ -76,8 +76,8 @@ def export_to_xero(workspace_id, export_mode=None):
     last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
     last_exported_at = datetime.now()
     is_expenses_exported = False
-
     chaining_attributes = []
+
     if general_settings.reimbursable_expenses_object:
         expense_group_ids = ExpenseGroup.objects.filter(fund_source='PERSONAL').values_list('id', flat=True)
         if len(expense_group_ids):
