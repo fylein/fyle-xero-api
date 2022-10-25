@@ -1,6 +1,7 @@
+from datetime import datetime
 from apps.tasks.models import TaskLog
 from apps.workspaces.tasks import run_sync_schedule, schedule_sync
-from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings
+from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail
 from .fixtures import data
 
 
@@ -27,6 +28,11 @@ def test_schedule_sync(db):
 def test_run_sync_schedule(mocker,db):
     workspace_id = 1
 
+    LastExportDetail.objects.create(
+        last_exported_at=datetime.now(),
+        export_mode='MANUAL',
+        workspace_id=1
+    )
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     mocker.patch(
         'fyle_integrations_platform_connector.apis.Expenses.get',
