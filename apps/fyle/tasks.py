@@ -33,7 +33,9 @@ def get_task_log_and_fund_source(workspace_id: int):
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
 
-    fund_source = ['PERSONAL']
+    fund_source = []
+    if general_settings.reimbursable_expenses_object:
+        fund_source.append('PERSONAL')
     if general_settings.corporate_credit_card_expenses_object is not None:
         fund_source.append('CCC')
 
@@ -86,22 +88,25 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             if expense_group_settings.import_card_credits:
                 filter_credit_expenses = False
 
-            expenses = platform.expenses.get(
-                source_account_type=['PERSONAL_CASH_ACCOUNT'],
-                state=expense_group_settings.reimbursable_expense_state,
-                settled_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAYMENT_PROCESSING' else None,
-                filter_credit_expenses=filter_credit_expenses,
-                last_paid_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAID' else None
-            )
+            expenses = []
+
+            if 'PERSONAL' in fund_source:
+                expenses.append(platform.expenses.get(
+                    source_account_type=['PERSONAL_CASH_ACCOUNT'],
+                    state=expense_group_settings.reimbursable_expense_state,
+                    settled_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAYMENT_PROCESSING' else None,
+                    filter_credit_expenses=filter_credit_expenses,
+                    last_paid_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAID' else None
+                ))
 
             if 'CCC' in fund_source:
-                expenses += platform.expenses.get(
-                source_account_type=['PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT'],
-                state=expense_group_settings.ccc_expense_state,
-                settled_at=last_synced_at if expense_group_settings.ccc_expense_state == 'PAYMENT_PROCESSING' else None,
-                filter_credit_expenses=filter_credit_expenses,
-                last_paid_at=last_synced_at if expense_group_settings.ccc_expense_state == 'PAID' else None
-            )
+                expenses.append(platform.expenses.get(
+                    source_account_type=['PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT'],
+                    state=expense_group_settings.ccc_expense_state,
+                    settled_at=last_synced_at if expense_group_settings.ccc_expense_state == 'PAYMENT_PROCESSING' else None,
+                    filter_credit_expenses=filter_credit_expenses,
+                    last_paid_at=last_synced_at if expense_group_settings.ccc_expense_state == 'PAID' else None
+                ))
 
             if expenses:
                 workspace.last_synced_at = datetime.now()
