@@ -31,7 +31,7 @@ def update_last_export_details(workspace_id):
     last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
 
     failed_exports = TaskLog.objects.filter(
-        ~Q(type='CREATING_PAYMENT'), workspace_id=workspace_id, status__in=['FAILED', 'FATAL']
+        ~Q(type__in=['CREATING_PAYMENT', 'FETCHING_EXPENSES']), workspace_id=workspace_id, status__in=['FAILED', 'FATAL']
     ).count()
 
     successful_exports = TaskLog.objects.filter(
