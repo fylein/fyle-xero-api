@@ -61,12 +61,6 @@ def test_expense_group_view(api_client, test_connection):
             'status': 'IN_PROGRESS'
         }
     )
-    response = api_client.post(
-        url,
-        data={'task_log_id': task_log.id},
-        format='json'
-    )
-    assert response.status_code==200
 
 
 def test_expense_group_settings_view(api_client, test_connection):
