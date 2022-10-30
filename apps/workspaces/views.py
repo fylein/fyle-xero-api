@@ -266,7 +266,8 @@ class ConnectXeroView(viewsets.ViewSet):
         """
         try:
             authorization_code = request.data.get('code')
-            refresh_token = generate_xero_refresh_token(authorization_code)
+            redirect_uri = request.data.get('redirect_uri')
+            refresh_token = generate_xero_refresh_token(authorization_code, redirect_uri)
             xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
             tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
 
