@@ -62,7 +62,7 @@ def run_sync_schedule(workspace_id):
 
     fund_source = []
     if general_settings.reimbursable_expenses_object:
-            fund_source.append('PERSONAL')
+        fund_source.append('PERSONAL')
     if general_settings.corporate_credit_card_expenses_object:
         fund_source.append('CCC')
 
