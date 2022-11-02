@@ -18,7 +18,7 @@ from apps.xero.models import BankTransaction, Bill
 from fyle_xero_api.utils import assert_valid
 
 from .utils import XeroConnector
-from .serializers import XeroFieldSerializer, BankTransactionSerializer, BillSerializer
+from .serializers import XeroFieldSerializer
 from .tasks import create_bank_transaction, schedule_bank_transaction_creation, create_bill, schedule_bills_creation, \
     create_payment, check_xero_object_status, process_reimbursements, create_chain_and_export
 
@@ -267,38 +267,6 @@ class TenantView(generics.ListCreateAPIView):
             )
 
 
-class BankTransactionView(generics.ListCreateAPIView):
-    """
-    Create BankTransaction
-    """
-    serializer_class = BankTransactionSerializer
-
-    def get_queryset(self):
-        return BankTransaction.objects.filter(
-            expense_group__workspace_id=self.kwargs['workspace_id']
-        ).order_by('-updated_at')
-
-    def post(self, request, *args, **kwargs):
-        """
-        Create BankTransaction from expense group
-        """
-        xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
-        xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
-
-        expense_group_id = request.data.get('expense_group_id')
-        task_log_id = request.data.get('task_log_id')
-
-        assert_valid(expense_group_id is not None, 'Expense ids not found')
-        assert_valid(task_log_id is not None, 'Task Log id not found')
-
-        create_bank_transaction(expense_group_id, task_log_id, xero_connector)
-
-        return Response(
-            data={},
-            status=status.HTTP_200_OK
-        )
-
-
 class ExportsTriggerView(generics.CreateAPIView):
     """
     Schedule Exports creation
@@ -317,37 +285,6 @@ class ExportsTriggerView(generics.CreateAPIView):
             create_chain_and_export(chaining_attributes, kwargs['workspace_id'])
 
         return Response(
-            status=status.HTTP_200_OK
-        )
-
-class BillView(generics.ListCreateAPIView):
-    """
-    Create Bill
-    """
-    serializer_class = BillSerializer
-
-    def get_queryset(self):
-        return Bill.objects.filter(
-            expense_group__workspace_id=self.kwargs['workspace_id']
-        ).order_by('-updated_at')
-
-    def post(self, request, *args, **kwargs):
-        """
-        Create Bill from expense group
-        """
-        xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
-        xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
-
-        expense_group_id = request.data.get('expense_group_id')
-        task_log_id = request.data.get('task_log_id')
-
-        assert_valid(expense_group_id is not None, 'Expense group id not found')
-        assert_valid(task_log_id is not None, 'Task Log id not found')
-
-        create_bill(expense_group_id, task_log_id, xero_connector)
-
-        return Response(
-            data={},
             status=status.HTTP_200_OK
         )
 

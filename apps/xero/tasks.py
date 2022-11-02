@@ -19,13 +19,34 @@ from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.tasks.models import Error
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential, Workspace
+from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential, Workspace, LastExportDetail
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
+
+def update_last_export_details(workspace_id):
+    last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
+
+    failed_exports = TaskLog.objects.filter(
+        ~Q(type__in=['CREATING_PAYMENT', 'FETCHING_EXPENSES']), workspace_id=workspace_id, status__in=['FAILED', 'FATAL']
+    ).count()
+
+    successful_exports = TaskLog.objects.filter(
+        ~Q(type__in=['CREATING_PAYMENT', 'FETCHING_EXPENSES']),
+        workspace_id=workspace_id,
+        status='COMPLETE',
+        updated_at__gt=last_export_detail.last_exported_at
+    ).count()
+
+    last_export_detail.failed_expense_groups_count = failed_exports
+    last_export_detail.successful_expense_groups_count = successful_exports
+    last_export_detail.total_expense_groups_count = failed_exports + successful_exports
+    last_export_detail.save()
+
+    return last_export_detail
 
 def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog):
     """
@@ -230,7 +251,7 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             logger.info('Error while auto creating contact workspace_id - %s error: %s',
                 expense_group.workspace_id, {'error': exception.message})
 
-def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector):
+def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector, last_export: bool):
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
@@ -365,6 +386,9 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         task_log.status = 'FATAL'
         task_log.save()
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
+    
+    if last_export:
+        update_last_export_details(expense_group.workspace_id)
 
 
 def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> None:
@@ -379,7 +403,7 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
     chain = Chain()
     for group in chaining_attributes:
         trigger_function = 'apps.xero.tasks.create_{}'.format(group['export_type'])
-        chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection)
+        chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection, group['last_export'])
 
     if chain.length():
         chain.run()
@@ -399,7 +423,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
             workspace_id=workspace_id, id__in=expense_group_ids, bill__id__isnull=True, exported_at__isnull=True
         ).all()
 
-        for expense_group in expense_groups:
+        for index, expense_group in enumerate(expense_groups):
             task_log, _ = TaskLog.objects.get_or_create(
                 workspace_id=expense_group.workspace_id,
                 expense_group=expense_group,
@@ -412,10 +436,15 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
                 task_log.status = 'ENQUEUED'
                 task_log.save()
 
+            last_export = False
+            if expense_groups.count() == index + 1:
+                last_export = True
+
             chaining_attributes.append({
                 'expense_group_id': expense_group.id,
                 'task_log_id': task_log.id,
-                'export_type': 'bill'
+                'export_type': 'bill',
+                'last_export': last_export
             })
 
             task_log.save()
@@ -486,7 +515,7 @@ def attach_customer_to_export(xero_connection: XeroConnector, task_log: TaskLog)
             logger.exception('Something unexpected happened during attaching customer to export', exception)
 
 
-def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector):
+def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector, last_export: bool):
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
@@ -630,6 +659,9 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         task_log.status = 'FATAL'
         task_log.save()
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
+    
+    if last_export:
+        update_last_export_details(expense_group.workspace_id)
 
 
 def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: List[str]) -> list:
@@ -646,7 +678,7 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
             workspace_id=workspace_id, id__in=expense_group_ids, banktransaction__id__isnull=True, exported_at__isnull=True
         ).all()
 
-        for expense_group in expense_groups:
+        for index, expense_group in enumerate(expense_groups):
             task_log, _ = TaskLog.objects.get_or_create(
                 workspace_id=expense_group.workspace_id,
                 expense_group=expense_group,
@@ -659,10 +691,15 @@ def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: Lis
                 task_log.status = 'ENQUEUED'
                 task_log.save()
 
+            last_export = False
+            if expense_groups.count() == index + 1:
+                last_export = True
+
             chaining_attributes.append({
                 'expense_group_id': expense_group.id,
                 'task_log_id': task_log.id,
-                'export_type': 'bank_transaction'
+                'export_type': 'bank_transaction',
+                'last_export': last_export
             })
 
             task_log.save()
