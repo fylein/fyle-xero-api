@@ -1119,6 +1119,47 @@ ALTER SEQUENCE public.general_mappings_id_seq OWNED BY public.general_mappings.i
 
 
 --
+-- Name: last_export_details; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.last_export_details (
+    id integer NOT NULL,
+    last_exported_at timestamp with time zone,
+    export_mode character varying(50),
+    total_expense_groups_count integer,
+    successful_expense_groups_count integer,
+    failed_expense_groups_count integer,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    workspace_id integer NOT NULL
+);
+
+
+ALTER TABLE public.last_export_details OWNER TO postgres;
+
+--
+-- Name: last_export_details_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.last_export_details_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.last_export_details_id_seq OWNER TO postgres;
+
+--
+-- Name: last_export_details_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.last_export_details_id_seq OWNED BY public.last_export_details.id;
+
+
+--
 -- Name: payments; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1384,7 +1425,8 @@ CREATE TABLE public.workspaces (
     onboarding_state character varying(50),
     app_version character varying(2) NOT NULL,
     fyle_currency character varying(5),
-    xero_currency character varying(5)
+    xero_currency character varying(5),
+    ccc_last_synced_at timestamp with time zone
 );
 
 
@@ -1698,6 +1740,13 @@ ALTER TABLE ONLY public.general_mappings ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: last_export_details id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.last_export_details ALTER COLUMN id SET DEFAULT nextval('public.last_export_details_id_seq'::regclass);
+
+
+--
 -- Name: mapping_settings id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1946,6 +1995,10 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 142	Can change error	36	change_error
 143	Can delete error	36	delete_error
 144	Can view error	36	view_error
+145	Can add last export detail	37	add_lastexportdetail
+146	Can change last export detail	37	change_lastexportdetail
+147	Can delete last export detail	37	delete_lastexportdetail
+148	Can view last export detail	37	view_lastexportdetail
 \.
 
 
@@ -2224,6 +2277,7 @@ COPY public.django_content_type (id, app_label, model) FROM stdin;
 34	django_q	success
 35	django_q	ormq
 36	tasks	error
+37	workspaces	lastexportdetail
 \.
 
 
@@ -2353,6 +2407,8 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 119	tasks	0008_error	2022-10-17 08:00:25.413763+00
 120	fyle	0014_expensegroup_response_logs	2022-10-17 09:59:59.938388+00
 121	workspaces	0027_auto_20221014_0741	2022-10-17 11:17:16.229906+00
+122	workspaces	0028_lastexportdetail	2022-10-25 10:08:34.248947+00
+123	workspaces	0029_workspace_ccc_last_synced_at	2022-10-28 06:48:09.644137+00
 \.
 
 
@@ -4611,6 +4667,14 @@ COPY public.general_mappings (id, bank_account_name, bank_account_id, created_at
 
 
 --
+-- Data for Name: last_export_details; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.last_export_details (id, last_exported_at, export_mode, total_expense_groups_count, successful_expense_groups_count, failed_expense_groups_count, created_at, updated_at, workspace_id) FROM stdin;
+\.
+
+
+--
 -- Data for Name: mapping_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -4762,8 +4826,8 @@ COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, sc
 -- Data for Name: workspaces; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state, app_version, fyle_currency, xero_currency) FROM stdin;
-1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION	v1	\N	\N
+COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state, app_version, fyle_currency, xero_currency, ccc_last_synced_at) FROM stdin;
+1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION	v1	\N	\N	\N
 \.
 
 
@@ -4803,7 +4867,7 @@ SELECT pg_catalog.setval('public.auth_group_permissions_id_seq', 1, false);
 -- Name: auth_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.auth_permission_id_seq', 144, true);
+SELECT pg_catalog.setval('public.auth_permission_id_seq', 148, true);
 
 
 --
@@ -4852,14 +4916,14 @@ SELECT pg_catalog.setval('public.django_admin_log_id_seq', 1, false);
 -- Name: django_content_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_content_type_id_seq', 36, true);
+SELECT pg_catalog.setval('public.django_content_type_id_seq', 37, true);
 
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 121, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 123, true);
 
 
 --
@@ -4965,6 +5029,13 @@ SELECT pg_catalog.setval('public.fyle_rest_auth_authtokens_id_seq', 1, true);
 --
 
 SELECT pg_catalog.setval('public.general_mappings_id_seq', 1, true);
+
+
+--
+-- Name: last_export_details_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.last_export_details_id_seq', 1, false);
 
 
 --
@@ -5419,6 +5490,22 @@ ALTER TABLE ONLY public.general_mappings
 
 ALTER TABLE ONLY public.general_mappings
     ADD CONSTRAINT general_mappings_workspace_id_key UNIQUE (workspace_id);
+
+
+--
+-- Name: last_export_details last_export_details_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.last_export_details
+    ADD CONSTRAINT last_export_details_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: last_export_details last_export_details_workspace_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.last_export_details
+    ADD CONSTRAINT last_export_details_workspace_id_key UNIQUE (workspace_id);
 
 
 --
@@ -6153,6 +6240,14 @@ ALTER TABLE ONLY public.auth_tokens
 
 ALTER TABLE ONLY public.general_mappings
     ADD CONSTRAINT general_mappings_workspace_id_19666c5c_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: last_export_details last_export_details_workspace_id_0af72f0e_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.last_export_details
+    ADD CONSTRAINT last_export_details_workspace_id_0af72f0e_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --

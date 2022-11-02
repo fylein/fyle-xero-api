@@ -14,30 +14,12 @@ class XeroFieldSerializer(serializers.ModelSerializer):
         fields = ['attribute_type', 'display_name']
 
 
-class BankTransactionSerializer(serializers.ModelSerializer):
-    """
-    Xero Bank Transaction serializer
-    """
-    class Meta:
-        model = BankTransaction
-        fields = '__all__'
-
-
 class BankTransactionLineitemsSerializer(serializers.ModelSerializer):
     """
     Xero Bank Transaction Lineitems serializer
     """
     class Meta:
         model = BankTransactionLineItem
-        fields = '__all__'
-
-
-class BillSerializer(serializers.ModelSerializer):
-    """
-    Xero Bill serializer
-    """
-    class Meta:
-        model = Bill
         fields = '__all__'
 
 

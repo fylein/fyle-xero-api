@@ -6,7 +6,7 @@ from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
 from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation, create_chain_and_export
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings
+from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings,LastExportDetail
 
 
 def schedule_sync(workspace_id: int, schedule_enabled: bool, hours: int):
@@ -60,20 +60,25 @@ def run_sync_schedule(workspace_id):
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
 
-    fund_source = ['PERSONAL']
+    fund_source = []
+    if general_settings.reimbursable_expenses_object:
+        fund_source.append('PERSONAL')
     if general_settings.corporate_credit_card_expenses_object:
         fund_source.append('CCC')
-    if general_settings.reimbursable_expenses_object:
-        async_create_expense_groups(
-            workspace_id=workspace_id, fund_source=fund_source, task_log=task_log
-        )
+
+    async_create_expense_groups(
+        workspace_id=workspace_id, fund_source=fund_source, task_log=task_log
+    )
 
     if task_log.status == 'COMPLETE':
-        export_to_xero(workspace_id)
+        export_to_xero(workspace_id, 'AUTO')
 
-def export_to_xero(workspace_id):
+def export_to_xero(workspace_id, export_mode='MANUAL'):
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
+    last_exported_at = datetime.now()
     chaining_attributes = []
+
     if general_settings.reimbursable_expenses_object:
         expense_group_ids = ExpenseGroup.objects.filter(fund_source='PERSONAL').values_list('id', flat=True)
         chaining_attributes.extend(schedule_bills_creation(workspace_id, expense_group_ids))
@@ -84,3 +89,6 @@ def export_to_xero(workspace_id):
 
     if chaining_attributes:
         create_chain_and_export(chaining_attributes, workspace_id)
+        last_export_detail.last_exported_at = last_exported_at
+        last_export_detail.export_mode = export_mode
+        last_export_detail.save()

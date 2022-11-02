@@ -28,6 +28,11 @@ APP_VERSION_CHOICES = (
     ('v2', 'v2')
 )
 
+EXPORT_MODE_CHOICES = (
+    ('MANUAL', 'MANUAL'),
+    ('AUTO', 'AUTO')
+)
+
 def get_default_chart_of_accounts():
     return ['EXPENSE']
 
@@ -48,6 +53,7 @@ class Workspace(models.Model):
     app_version = models.CharField(max_length=2, help_text='App version', default='v1', choices=APP_VERSION_CHOICES)
     xero_short_code = models.CharField(max_length=30, help_text='Xero short code', null=True, blank=True)
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
+    ccc_last_synced_at = models.DateTimeField(help_text='Datetime when ccc expenses were pulled last', null=True)
     source_synced_at = models.DateTimeField(help_text='Datetime when source dimensions were pulled', null=True)
     destination_synced_at = models.DateTimeField(help_text='Datetime when destination dimensions were pulled', null=True)
     onboarding_state = models.CharField(
@@ -138,3 +144,23 @@ class WorkspaceSchedule(models.Model):
 
     class Meta:
         db_table = 'workspace_schedules'
+
+
+class LastExportDetail(models.Model):
+    """
+    Table to store Last Export Details
+    """
+    id = models.AutoField(primary_key=True)
+    last_exported_at = models.DateTimeField(help_text='Last exported at datetime', null=True)
+    export_mode = models.CharField(
+        max_length=50, help_text='Mode of the export Auto / Manual', choices=EXPORT_MODE_CHOICES, null=True
+    )
+    total_expense_groups_count = models.IntegerField(help_text='Total count of expense groups exported', null=True)
+    successful_expense_groups_count = models.IntegerField(help_text='count of successful expense_groups ', null=True)
+    failed_expense_groups_count = models.IntegerField(help_text='count of failed expense_groups ', null=True)
+    workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
+    created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
+    updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
+
+    class Meta:
+        db_table = 'last_export_details'
