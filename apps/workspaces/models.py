@@ -67,8 +67,9 @@ class XeroCredentials(models.Model):
     Table to store Xero credentials
     """
     id = models.AutoField(primary_key=True)
-    refresh_token = models.TextField(help_text='Stores Xero refresh token')
+    refresh_token = models.TextField(help_text='Stores Xero refresh token', null=True)
     workspace = models.OneToOneField(Workspace, on_delete=models.PROTECT, help_text='Reference to Workspace model')
+    is_expired = models.BooleanField(default=False, help_text='Xero token expiry flag')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at datetime')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at datetime')
     country = models.CharField(max_length=255, help_text='Xero Country Name', null=True)

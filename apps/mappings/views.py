@@ -39,11 +39,20 @@ class TenantMappingView(generics.ListCreateAPIView):
 
         try:
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+            tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
             company_info = xero_connector.get_organisations()[0]
             workspace.xero_currency = company_info['BaseCurrency']
             workspace.save()
             xero_credentials.country = company_info['CountryCode']
             xero_credentials.save()
+
+            if tenant_mapping and not tenant_mapping.connection_id:
+                connections = xero_connector.connection.connections.get_all()
+                connection = list(filter(lambda connection: connection['tenantId'] == tenant_mapping.tenant_id, connections))
+
+                if connection:
+                    tenant_mapping.connection_id = connection[0]['id']
+                    tenant_mapping.save()
 
         except:
             logger.error('Error while fetching company information')
