@@ -28,6 +28,7 @@ data = {
         'onboarding_state': 'CONNECTION',
         'xero_short_code':'None',
         'last_synced_at':'None',
+        'ccc_last_synced_at':'None',
         'fyle_currency':'USD',
         'xero_currency':'USD',
         'app_version': 'v1',

@@ -1425,7 +1425,8 @@ CREATE TABLE public.workspaces (
     onboarding_state character varying(50),
     app_version character varying(2) NOT NULL,
     fyle_currency character varying(5),
-    xero_currency character varying(5)
+    xero_currency character varying(5),
+    ccc_last_synced_at timestamp with time zone
 );
 
 
@@ -2407,6 +2408,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 120	fyle	0014_expensegroup_response_logs	2022-10-17 09:59:59.938388+00
 121	workspaces	0027_auto_20221014_0741	2022-10-17 11:17:16.229906+00
 122	workspaces	0028_lastexportdetail	2022-10-25 10:08:34.248947+00
+123	workspaces	0029_workspace_ccc_last_synced_at	2022-10-28 06:48:09.644137+00
 \.
 
 
@@ -4824,8 +4826,8 @@ COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, sc
 -- Data for Name: workspaces; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state, app_version, fyle_currency, xero_currency) FROM stdin;
-1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION	v1	\N	\N
+COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state, app_version, fyle_currency, xero_currency, ccc_last_synced_at) FROM stdin;
+1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION	v1	\N	\N	\N
 \.
 
 
@@ -4921,7 +4923,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 37, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 122, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 123, true);
 
 
 --

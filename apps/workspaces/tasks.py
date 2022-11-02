@@ -60,13 +60,15 @@ def run_sync_schedule(workspace_id):
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
 
-    fund_source = ['PERSONAL']
+    fund_source = []
+    if general_settings.reimbursable_expenses_object:
+        fund_source.append('PERSONAL')
     if general_settings.corporate_credit_card_expenses_object:
         fund_source.append('CCC')
-    if general_settings.reimbursable_expenses_object:
-        async_create_expense_groups(
-            workspace_id=workspace_id, fund_source=fund_source, task_log=task_log
-        )
+
+    async_create_expense_groups(
+        workspace_id=workspace_id, fund_source=fund_source, task_log=task_log
+    )
 
     if task_log.status == 'COMPLETE':
         export_to_xero(workspace_id, 'AUTO')

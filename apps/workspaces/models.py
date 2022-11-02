@@ -53,6 +53,7 @@ class Workspace(models.Model):
     app_version = models.CharField(max_length=2, help_text='App version', default='v1', choices=APP_VERSION_CHOICES)
     xero_short_code = models.CharField(max_length=30, help_text='Xero short code', null=True, blank=True)
     last_synced_at = models.DateTimeField(help_text='Datetime when expenses were pulled last', null=True)
+    ccc_last_synced_at = models.DateTimeField(help_text='Datetime when ccc expenses were pulled last', null=True)
     source_synced_at = models.DateTimeField(help_text='Datetime when source dimensions were pulled', null=True)
     destination_synced_at = models.DateTimeField(help_text='Datetime when destination dimensions were pulled', null=True)
     onboarding_state = models.CharField(

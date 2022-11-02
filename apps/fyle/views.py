@@ -68,28 +68,6 @@ class ExpenseGroupView(generics.ListCreateAPIView):
                 banktransaction__id__isnull=True
             ).order_by('-updated_at')
 
-    def post(self, request, *args, **kwargs):
-        """
-        Create expense groups
-        """
-        task_log = TaskLog.objects.get(pk=request.data.get('task_log_id'))
-
-        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=kwargs['workspace_id'])
-
-        fund_source = ['PERSONAL']
-        if general_settings.corporate_credit_card_expenses_object is not None:
-            fund_source.append('CCC')
-
-        create_expense_groups(
-            kwargs['workspace_id'],
-            fund_source=fund_source,
-            task_log=task_log
-        )
-
-        return Response(
-            status=status.HTTP_200_OK
-        )
-
 
 class ExpenseGroupSettingsView(generics.ListCreateAPIView):
     """
