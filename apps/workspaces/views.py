@@ -287,6 +287,7 @@ class ConnectXeroView(viewsets.ViewSet):
 
             else:
                 xero_credentials.refresh_token = refresh_token
+                xero_credentials.is_expired = False
                 xero_credentials.save()
 
             if tenant_mapping and not tenant_mapping.connection_id:
@@ -352,14 +353,6 @@ class ConnectXeroView(viewsets.ViewSet):
         xero_credentials.is_expired = True
         xero_credentials.save()
 
-        tenant_mapping = TenantMapping.objects.filter(workspace_id=workspace_id).first()
-        tenant_mapping.tenant_name = None
-        tenant_mapping.tenant_id = None
-        tenant_mapping.connection_id = None
-        tenant_mapping.save()
-
-        post_delete_xero_connection(workspace_id)
-
         return Response(data={
             'workspace_id': workspace_id,
             'message': 'Xero credentials deleted'
@@ -394,20 +387,26 @@ class RevokeXeroConnectionView(viewsets.ViewSet):
         Post of Xero Credentials
         """
         # TODO: cleanup later - merge with ConnectXeroView
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
-        tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
+        workspace_id = kwargs['workspace_id']
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
+        tenant_mapping = TenantMapping.objects.filter(workspace_id=workspace_id).first()
         if xero_credentials:
             if tenant_mapping and tenant_mapping.connection_id:
                 try:
-                    xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+                    xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
                     xero_connector.connection.connections.remove_connection(tenant_mapping.connection_id)
                 except (xero_exc.InvalidGrant, xero_exc.UnsupportedGrantType,
                         xero_exc.InvalidTokenError, xero_exc.UnsuccessfulAuthentication,
                         xero_exc.WrongParamsError, xero_exc.NoPrivilegeError,
                         xero_exc.InternalServerError):
                     pass
-            #TODO do we need to delete or set values to none?
-            xero_credentials.delete()
+            
+            xero_credentials.refresh_token = None
+            xero_credentials.country = None
+            xero_credentials.is_expired = True
+            xero_credentials.save()
+
+            post_delete_xero_connection(workspace_id)
 
         return Response(
             data={

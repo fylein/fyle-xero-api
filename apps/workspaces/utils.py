@@ -69,7 +69,7 @@ def revoke_token(refresh_token: str) -> None:
     requests.post(url=revocation_url, data=urlencode(api_data), headers=request_header)
 
 
-def generate_xero_refresh_token(authorization_code: str, redirect_uri: str) -> str:
+def generate_xero_refresh_token(authorization_code: str, redirect_uri: str=None) -> str:
     """
     Generate Xero refresh token from authorization code
     """

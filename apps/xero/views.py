@@ -45,23 +45,12 @@ class TokenHealthView(generics.RetrieveAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        except InvalidGrant as e:
-            return Response(
-                data={
-                    'message': 'Xero connection expired'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        except InvalidTokenError as e:
-            return Response(
-                data={
-                    'message': 'Xero connection expired'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        except UnsuccessfulAuthentication as e:
+        except (InvalidGrant, UnsuccessfulAuthentication, InvalidTokenError) as e:
+            if xero_credentials:
+                xero_credentials.refresh_token = None
+                xero_credentials.country = None
+                xero_credentials.is_expired = True
+                xero_credentials.save()
             return Response(
                 data={
                     'message': 'Xero connection expired'

@@ -7,7 +7,7 @@ from fyle_rest_auth.utils import AuthUtils
 from tests.helper import dict_compare_keys
 from xerosdk import exceptions as xero_exc
 from fyle.platform import exceptions as fyle_exc
-from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings
+from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings
 from .fixtures import data
 from ..test_xero.fixtures import data as xero_data
 from ..test_fyle.fixtures import data as fyle_data
@@ -290,6 +290,9 @@ def test_revoke_xero_connection(mocker, api_client, test_connection):
         return_value=None
     )
     workspace_id = 1
+    workspace = Workspace.objects.filter(id=workspace_id).first()
+    workspace.onboarding_state = 'COMPLETE'
+    workspace.save()
     
     url = '/api/workspaces/{}/connection/xero/revoke/'.format(workspace_id)
 

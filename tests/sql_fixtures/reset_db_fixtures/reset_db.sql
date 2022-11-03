@@ -1289,8 +1289,8 @@ ALTER SEQUENCE public.task_log_id_seq OWNED BY public.task_logs.id;
 
 CREATE TABLE public.tenant_mappings (
     id integer NOT NULL,
-    tenant_name character varying(255) NOT NULL,
-    tenant_id character varying(255) NOT NULL,
+    tenant_name character varying(255),
+    tenant_id character varying(255),
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     workspace_id integer NOT NULL,
@@ -1539,11 +1539,12 @@ ALTER SEQUENCE public.workspaces_workspaceschedule_id_seq OWNED BY public.worksp
 
 CREATE TABLE public.xero_credentials (
     id integer NOT NULL,
-    refresh_token text NOT NULL,
+    refresh_token text,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     workspace_id integer NOT NULL,
-    country character varying(255)
+    country character varying(255),
+    is_expired boolean NOT NULL
 );
 
 
@@ -2409,6 +2410,8 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 121	workspaces	0027_auto_20221014_0741	2022-10-17 11:17:16.229906+00
 122	workspaces	0028_lastexportdetail	2022-10-25 10:08:34.248947+00
 123	workspaces	0029_workspace_ccc_last_synced_at	2022-10-28 06:48:09.644137+00
+124	mappings	0007_auto_20221102_0630	2022-11-03 06:28:39.216754+00
+125	workspaces	0030_auto_20221102_1924	2022-11-03 06:28:39.245951+00
 \.
 
 
@@ -4844,8 +4847,8 @@ COPY public.workspaces_user (id, workspace_id, user_id) FROM stdin;
 -- Data for Name: xero_credentials; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.xero_credentials (id, refresh_token, created_at, updated_at, workspace_id, country) FROM stdin;
-1	cf7e4a4343f1c6f96125d1fb9ca84729b295a3520ba2c7a6b5ecda2883412f25	2022-08-02 20:24:56.04499+00	2022-08-02 20:28:18.97994+00	1	CA
+COPY public.xero_credentials (id, refresh_token, created_at, updated_at, workspace_id, country, is_expired) FROM stdin;
+1	cf7e4a4343f1c6f96125d1fb9ca84729b295a3520ba2c7a6b5ecda2883412f25	2022-08-02 20:24:56.04499+00	2022-08-02 20:28:18.97994+00	1	CA	f
 \.
 
 
@@ -4923,7 +4926,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 37, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 123, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 125, true);
 
 
 --
