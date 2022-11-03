@@ -9,7 +9,6 @@ def post_delete_xero_connection(workspace_id):
     """
     workspace = Workspace.objects.get(id=workspace_id)
     if workspace.onboarding_state in ('CONNECTION', 'EXPORT_SETTINGS'):
-        print("This block is reached ")
         tenant_mapping = TenantMapping.objects.filter(workspace_id=workspace_id).first()
         tenant_mapping.tenant_name = None
         tenant_mapping.tenant_id = None
