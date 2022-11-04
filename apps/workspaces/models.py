@@ -83,6 +83,10 @@ class XeroCredentials(models.Model):
     class Meta:
         db_table = 'xero_credentials'
 
+    @staticmethod
+    def get_active_xero_credentials(workspace_id):
+        return XeroCredentials.objects.get(workspace_id=workspace_id, is_expired=False, refresh_token__isnull=False)
+
 
 class FyleCredential(models.Model):
     """

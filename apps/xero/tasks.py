@@ -132,7 +132,7 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str, auto_cre
     :return: Contact
     """
 
-    xero_credentials =  XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials =  XeroCredentials.get_active_xero_credentials(workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
     contact = None
 
@@ -398,7 +398,7 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
     :param workspace_id:
     :return: None
     """
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
     xero_connection = XeroConnector(xero_credentials, workspace_id)
     chain = Chain()
     for group in chaining_attributes:
@@ -863,7 +863,7 @@ def create_payment(workspace_id):
                 }
             )
             try:
-                xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
                 with transaction.atomic():
                     xero_object_task_log = TaskLog.objects.get(expense_group=bill.expense_group)
@@ -975,7 +975,7 @@ def get_all_xero_bill_ids(xero_objects):
 
 def check_xero_object_status(workspace_id):
     try:
-        xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+        xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
 
         xero_connection = XeroConnector(xero_credentials, workspace_id)
 
@@ -1092,7 +1092,7 @@ def create_missing_currency(workspace_id: int):
     :return:
     """
     try:
-        xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+        xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
         xero_connection = XeroConnector(xero_credentials, workspace_id)
         tenant_mapping = TenantMapping.objects.get(workspace_id=workspace_id)
         xero_connection.connection.set_tenant_id(tenant_mapping.tenant_id)
@@ -1124,7 +1124,7 @@ def update_xero_short_code(workspace_id: int):
     :return:
     """
     try:
-        xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+        xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
         xero_connection = XeroConnector(xero_credentials, workspace_id)
 
         tenant_mapping = TenantMapping.objects.get(workspace_id=workspace_id)

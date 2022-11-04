@@ -30,7 +30,7 @@ class TokenHealthView(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
             XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
             return Response(
@@ -75,7 +75,7 @@ class AccountView(generics.ListCreateAPIView):
         Get accounts from Xero
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
 
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
@@ -130,7 +130,7 @@ class ContactView(generics.ListCreateAPIView):
         Get contacts from Xero
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
 
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
@@ -165,7 +165,7 @@ class ItemView(generics.ListCreateAPIView):
         Get items from Xero
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
 
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
@@ -202,7 +202,7 @@ class TrackingCategoryView(generics.ListCreateAPIView):
         Get Tracking Categories from Xero
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
 
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
@@ -237,7 +237,7 @@ class TenantView(generics.ListCreateAPIView):
         Get tenants from Xero
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
 
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
@@ -307,7 +307,7 @@ class SyncXeroDimensionView(generics.ListCreateAPIView):
                 time_interval = datetime.now(timezone.utc) - workspace.destination_synced_at
 
             if workspace.destination_synced_at is None or time_interval.days > 0:
-                xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
                 xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
                 xero_connector.sync_dimensions(kwargs['workspace_id'])
@@ -338,7 +338,7 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
         Sync data from Xero
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
             xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
 
             xero_connector.sync_dimensions(kwargs['workspace_id'])

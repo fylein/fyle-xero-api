@@ -113,7 +113,7 @@ def upload_categories_to_fyle(workspace_id):
     """
     try:
         fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-        xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+        xero_credentials: XeroCredentials = XeroCredentials.get_active_xero_credentials(workspace_id)
         general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
         platform = PlatformConnector(fyle_credentials)
         
@@ -209,7 +209,7 @@ def async_auto_map_employees(workspace_id: int):
         fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
         platform = PlatformConnector(fyle_credentials)
 
-        xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+        xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
         xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
         platform.employees.sync()
@@ -248,7 +248,7 @@ def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: 
 
 
 def sync_xero_attributes(xero_attribute_type: str, workspace_id: int):
-    xero_credentials: XeroCredentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials: XeroCredentials = XeroCredentials.get_active_xero_credentials(workspace_id)
     xero_connection = XeroConnector(
         credentials_object=xero_credentials,
         workspace_id=workspace_id
