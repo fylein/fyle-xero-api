@@ -336,3 +336,28 @@ class ProjectView(generics.ListCreateAPIView):
     def get_queryset(self):
         return ExpenseAttribute.objects.filter(
             attribute_type='PROJECT', workspace_id=self.kwargs['workspace_id']).order_by('value')
+
+
+class ExportableExpenseGroupsView(generics.RetrieveAPIView):
+    """
+    List Exportable Expense Groups
+    """
+    def get(self, request, *args, **kwargs):
+        configuration = WorkspaceGeneralSettings.objects.get(workspace_id=kwargs['workspace_id'])
+        fund_source = []
+
+        if configuration.reimbursable_expenses_object:
+            fund_source.append('PERSONAL')
+        if configuration.corporate_credit_card_expenses_object:
+            fund_source.append('CCC')
+
+        expense_group_ids = ExpenseGroup.objects.filter(
+            workspace_id=self.kwargs['workspace_id'],
+            exported_at__isnull=True,
+            fund_source__in=fund_source
+        ).values_list('id', flat=True)
+
+        return Response(
+            data={'exportable_expense_group_ids': expense_group_ids},
+            status=status.HTTP_200_OK
+        )
