@@ -3,6 +3,7 @@ data = {
         {
             'id': 'tx4ziVSAyIsv',
             'employee_email': 'jhonsnow@fyle.in',
+            'employee_name': None,
             'category': 'Accounts Payable',
             'sub_category': 'Accounts Payable',
             'project': 'Aaron Abbott',
@@ -94,6 +95,7 @@ data = {
             "externalId": "03294720937402397402937",
             "internalId": "116142",
         },
+        "employee_name": None,
         "created_at": "2021-11-15T10:29:07.618062Z",
         "exported_at": "2021-11-15T11:02:55.125205Z",
         "updated_at": "2021-11-15T11:02:55.125634Z",
@@ -245,6 +247,7 @@ data = {
             {
                 "id":1,
                 "employee_email":"ashwin.t@fyle.in",
+                "employee_name": None,
                 "category":"Food",
                 "sub_category":"None",
                 "project":"None",
@@ -301,6 +304,7 @@ data = {
             "claim_number":"C/2022/06/R/2",
             "employee_email":"ashwin.t@fyle.in"
         },
+        "employee_name": None,
         "created_at":"2022-08-02T20:26:22.939437Z",
         "exported_at":"2022-08-02T20:27:52.017417Z",
         "updated_at":"2022-08-02T20:27:52.017711Z",
@@ -314,6 +318,7 @@ data = {
                 "employee_email":"ashwin.t@fyle.in",
                 "category":"Food",
                 "sub_category":"None",
+                "employee_name": None,
                 "project":"None",
                 "expense_id":"txaaVBj3yKGW",
                 "org_id":"orPJvXuoLqvJ",
@@ -368,6 +373,7 @@ data = {
             "claim_number":"C/2022/06/R/2",
             "employee_email":"ashwin.t@fyle.in"
         },
+        "employee_name":None,
         "created_at":"2022-08-02T20:26:22.939437Z",
         "exported_at":"2022-08-02T20:27:52.017417Z",
         "updated_at":"2022-08-02T20:27:52.017711Z",
