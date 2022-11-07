@@ -10,6 +10,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from fyle.platform import exceptions as fyle_exc
+from apps.workspaces.signals import post_delete_xero_connection
 from xerosdk import exceptions as xero_exc
 
 from fyle_rest_auth.helpers import get_fyle_admin
@@ -268,7 +269,11 @@ class ConnectXeroView(viewsets.ViewSet):
         """
         try:
             authorization_code = request.data.get('code')
-            refresh_token = generate_xero_refresh_token(authorization_code)
+            redirect_uri = request.data.get('redirect_uri')
+            if redirect_uri:
+                refresh_token = generate_xero_refresh_token(authorization_code, redirect_uri)
+            else:
+                refresh_token = generate_xero_refresh_token(authorization_code)
             xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
             tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
 
@@ -282,6 +287,7 @@ class ConnectXeroView(viewsets.ViewSet):
 
             else:
                 xero_credentials.refresh_token = refresh_token
+                xero_credentials.is_expired = False
                 xero_credentials.save()
 
             if tenant_mapping and not tenant_mapping.connection_id:
@@ -341,7 +347,11 @@ class ConnectXeroView(viewsets.ViewSet):
     def delete(self, request, **kwargs):
         """Delete credentials"""
         workspace_id = kwargs['workspace_id']
-        XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
+        xero_credentials.refresh_token = None
+        xero_credentials.country = None
+        xero_credentials.is_expired = True
+        xero_credentials.save()
 
         return Response(data={
             'workspace_id': workspace_id,
@@ -353,7 +363,7 @@ class ConnectXeroView(viewsets.ViewSet):
         Get Xero Credentials in Workspace
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'])
+            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'], is_expired=False)
 
             return Response(
                 data=XeroCredentialSerializer(xero_credentials).data,
@@ -377,19 +387,26 @@ class RevokeXeroConnectionView(viewsets.ViewSet):
         Post of Xero Credentials
         """
         # TODO: cleanup later - merge with ConnectXeroView
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
-        tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
+        workspace_id = kwargs['workspace_id']
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
+        tenant_mapping = TenantMapping.objects.filter(workspace_id=workspace_id).first()
         if xero_credentials:
             if tenant_mapping and tenant_mapping.connection_id:
                 try:
-                    xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+                    xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
                     xero_connector.connection.connections.remove_connection(tenant_mapping.connection_id)
                 except (xero_exc.InvalidGrant, xero_exc.UnsupportedGrantType,
                         xero_exc.InvalidTokenError, xero_exc.UnsuccessfulAuthentication,
                         xero_exc.WrongParamsError, xero_exc.NoPrivilegeError,
                         xero_exc.InternalServerError):
                     pass
-            xero_credentials.delete()
+            
+            xero_credentials.refresh_token = None
+            xero_credentials.country = None
+            xero_credentials.is_expired = True
+            xero_credentials.save()
+
+            post_delete_xero_connection(workspace_id)
 
         return Response(
             data={

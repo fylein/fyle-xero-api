@@ -739,7 +739,8 @@ CREATE TABLE public.expense_groups (
     exported_at timestamp with time zone,
     updated_at timestamp with time zone NOT NULL,
     workspace_id integer NOT NULL,
-    response_logs jsonb
+    response_logs jsonb,
+    employee_name character varying(100)
 );
 
 
@@ -841,7 +842,8 @@ CREATE TABLE public.expenses (
     corporate_card_id character varying(255),
     tax_amount double precision,
     tax_group_id character varying(255),
-    billable boolean NOT NULL
+    billable boolean NOT NULL,
+    employee_name character varying(255)
 );
 
 
@@ -1289,8 +1291,8 @@ ALTER SEQUENCE public.task_log_id_seq OWNED BY public.task_logs.id;
 
 CREATE TABLE public.tenant_mappings (
     id integer NOT NULL,
-    tenant_name character varying(255) NOT NULL,
-    tenant_id character varying(255) NOT NULL,
+    tenant_name character varying(255),
+    tenant_id character varying(255),
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     workspace_id integer NOT NULL,
@@ -1539,11 +1541,12 @@ ALTER SEQUENCE public.workspaces_workspaceschedule_id_seq OWNED BY public.worksp
 
 CREATE TABLE public.xero_credentials (
     id integer NOT NULL,
-    refresh_token text NOT NULL,
+    refresh_token text,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     workspace_id integer NOT NULL,
-    country character varying(255)
+    country character varying(255),
+    is_expired boolean NOT NULL
 );
 
 
@@ -2409,6 +2412,9 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 121	workspaces	0027_auto_20221014_0741	2022-10-17 11:17:16.229906+00
 122	workspaces	0028_lastexportdetail	2022-10-25 10:08:34.248947+00
 123	workspaces	0029_workspace_ccc_last_synced_at	2022-10-28 06:48:09.644137+00
+124	mappings	0007_auto_20221102_0630	2022-11-03 06:28:39.216754+00
+125	workspaces	0030_auto_20221102_1924	2022-11-03 06:28:39.245951+00
+126	fyle	0015_auto_20221104_1049	2022-11-04 11:04:25.882513+00
 \.
 
 
@@ -4598,17 +4604,17 @@ COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corpo
 -- Data for Name: expense_groups; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.expense_groups (id, fund_source, description, created_at, exported_at, updated_at, workspace_id, response_logs) FROM stdin;
-2	PERSONAL	{"report_id": "rpE2JyATZhDe", "fund_source": "PERSONAL", "claim_number": "C/2022/05/R/16", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.944108+00	2022-08-02 20:27:44.873229+00	2022-08-02 20:27:44.873778+00	1	\N
-4	PERSONAL	{"report_id": "rpKuJtEv6h0n", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/1", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.953025+00	2022-08-02 20:27:48.929649+00	2022-08-02 20:27:48.929826+00	1	\N
-1	PERSONAL	{"report_id": "rp9EvDF8Umk6", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/2", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.939437+00	2022-08-02 20:27:52.017417+00	2022-08-02 20:27:52.017711+00	1	\N
-3	PERSONAL	{"report_id": "rpNeZt3cv9wz", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/3", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.948473+00	2022-08-02 20:27:55.12672+00	2022-08-02 20:27:55.127073+00	1	\N
-10	CCC	{"spent_at": "2022-05-25", "report_id": "rpVvNQvE2wbm", "expense_id": "txBMQRkBQciI", "fund_source": "CCC", "claim_number": "C/2022/05/R/13", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.974361+00	2022-08-02 20:27:59.397949+00	2022-08-02 20:27:59.39816+00	1	\N
-5	CCC	{"spent_at": "2022-05-24", "report_id": "rp5lITpxFLxE", "expense_id": "txkw3dt3umkN", "fund_source": "CCC", "claim_number": "C/2022/05/R/12", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.956314+00	2022-08-02 20:28:03.682322+00	2022-08-02 20:28:03.682555+00	1	\N
-8	CCC	{"spent_at": "2022-05-25", "report_id": "rprwGgzOZyfR", "expense_id": "tx1FW3uxYZG6", "fund_source": "CCC", "claim_number": "C/2022/05/R/15", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.966799+00	2022-08-02 20:28:07.656716+00	2022-08-02 20:28:07.657378+00	1	\N
-6	CCC	{"spent_at": "2022-05-25", "report_id": "rpLawO11bFib", "expense_id": "txjIqTCtkkC8", "fund_source": "CCC", "claim_number": "C/2022/05/R/18", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.959403+00	2022-08-02 20:28:11.748729+00	2022-08-02 20:28:11.748944+00	1	\N
-9	CCC	{"spent_at": "2021-01-01", "report_id": "rpv1txzAsgr3", "expense_id": "txUPRc3VwxOP", "fund_source": "CCC", "claim_number": "C/2022/05/R/17", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.97121+00	2022-08-02 20:28:16.115273+00	2022-08-02 20:28:16.115482+00	1	\N
-7	CCC	{"spent_at": "2022-05-25", "report_id": "rpnG3lZYDsHU", "expense_id": "txVXhyVB8mgK", "fund_source": "CCC", "claim_number": "C/2022/05/R/14", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.962947+00	2022-08-02 20:28:20.026921+00	2022-08-02 20:28:20.027277+00	1	\N
+COPY public.expense_groups (id, fund_source, description, created_at, exported_at, updated_at, workspace_id, response_logs, employee_name) FROM stdin;
+2	PERSONAL	{"report_id": "rpE2JyATZhDe", "fund_source": "PERSONAL", "claim_number": "C/2022/05/R/16", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.944108+00	2022-08-02 20:27:44.873229+00	2022-08-02 20:27:44.873778+00	1	\N	\N
+4	PERSONAL	{"report_id": "rpKuJtEv6h0n", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/1", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.953025+00	2022-08-02 20:27:48.929649+00	2022-08-02 20:27:48.929826+00	1	\N	\N
+1	PERSONAL	{"report_id": "rp9EvDF8Umk6", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/2", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.939437+00	2022-08-02 20:27:52.017417+00	2022-08-02 20:27:52.017711+00	1	\N	\N
+3	PERSONAL	{"report_id": "rpNeZt3cv9wz", "fund_source": "PERSONAL", "claim_number": "C/2022/06/R/3", "employee_email": "ashwin.t@fyle.in"}	2022-08-02 20:26:22.948473+00	2022-08-02 20:27:55.12672+00	2022-08-02 20:27:55.127073+00	1	\N	\N
+10	CCC	{"spent_at": "2022-05-25", "report_id": "rpVvNQvE2wbm", "expense_id": "txBMQRkBQciI", "fund_source": "CCC", "claim_number": "C/2022/05/R/13", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.974361+00	2022-08-02 20:27:59.397949+00	2022-08-02 20:27:59.39816+00	1	\N	\N
+5	CCC	{"spent_at": "2022-05-24", "report_id": "rp5lITpxFLxE", "expense_id": "txkw3dt3umkN", "fund_source": "CCC", "claim_number": "C/2022/05/R/12", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.956314+00	2022-08-02 20:28:03.682322+00	2022-08-02 20:28:03.682555+00	1	\N	\N
+8	CCC	{"spent_at": "2022-05-25", "report_id": "rprwGgzOZyfR", "expense_id": "tx1FW3uxYZG6", "fund_source": "CCC", "claim_number": "C/2022/05/R/15", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.966799+00	2022-08-02 20:28:07.656716+00	2022-08-02 20:28:07.657378+00	1	\N	\N
+6	CCC	{"spent_at": "2022-05-25", "report_id": "rpLawO11bFib", "expense_id": "txjIqTCtkkC8", "fund_source": "CCC", "claim_number": "C/2022/05/R/18", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.959403+00	2022-08-02 20:28:11.748729+00	2022-08-02 20:28:11.748944+00	1	\N	\N
+9	CCC	{"spent_at": "2021-01-01", "report_id": "rpv1txzAsgr3", "expense_id": "txUPRc3VwxOP", "fund_source": "CCC", "claim_number": "C/2022/05/R/17", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.97121+00	2022-08-02 20:28:16.115273+00	2022-08-02 20:28:16.115482+00	1	\N	\N
+7	CCC	{"spent_at": "2022-05-25", "report_id": "rpnG3lZYDsHU", "expense_id": "txVXhyVB8mgK", "fund_source": "CCC", "claim_number": "C/2022/05/R/14", "employee_email": "sravan.kumar@fyle.in"}	2022-08-02 20:26:22.962947+00	2022-08-02 20:28:20.026921+00	2022-08-02 20:28:20.027277+00	1	\N	\N
 \.
 
 
@@ -4634,17 +4640,17 @@ COPY public.expense_groups_expenses (id, expensegroup_id, expense_id) FROM stdin
 -- Data for Name: expenses; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.expenses (id, employee_email, category, sub_category, project, expense_id, expense_number, claim_number, amount, currency, foreign_amount, foreign_currency, settlement_id, reimbursable, state, vendor, cost_center, purpose, report_id, spent_at, approved_at, expense_created_at, expense_updated_at, created_at, updated_at, fund_source, verified_at, custom_properties, paid_on_xero, org_id, file_ids, corporate_card_id, tax_amount, tax_group_id, billable) FROM stdin;
-1	ashwin.t@fyle.in	Food	\N	\N	txaaVBj3yKGW	E/2022/06/T/4	C/2022/06/R/2	1	USD	\N	\N	setrunCck8hLH	t	PAYMENT_PROCESSING	\N	\N	\N	rp9EvDF8Umk6	2022-06-27 17:00:00+00	2022-06-27 09:06:52.951+00	2022-06-27 09:06:13.135764+00	2022-06-27 09:08:23.340321+00	2022-08-02 20:26:22.81033+00	2022-08-02 20:26:22.810363+00	PERSONAL	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "Postman Field": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-2	ashwin.t@fyle.in	Food	\N	\N	txB6D8k0Ws8a	E/2022/06/T/2	C/2022/06/R/3	4	USD	\N	\N	setrunCck8hLH	t	PAYMENT_PROCESSING	\N	\N	\N	rpNeZt3cv9wz	2022-06-27 17:00:00+00	2022-06-27 09:07:16.556+00	2022-06-27 09:05:45.738+00	2022-06-27 09:08:23.340321+00	2022-08-02 20:26:22.82716+00	2022-08-02 20:26:22.827194+00	PERSONAL	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "Postman Field": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-3	sravan.kumar@fyle.in	Food	\N	Bebe Rexha	txGilVGolf60	E/2022/06/T/1	C/2022/06/R/1	10	USD	\N	\N	setlpIUKpdvsT	t	PAYMENT_PROCESSING	\N	Adidas	\N	rpKuJtEv6h0n	2020-01-01 17:00:00+00	2022-06-08 04:28:30.61+00	2022-06-08 04:27:35.274447+00	2022-06-08 04:28:51.237261+00	2022-08-02 20:26:22.835984+00	2022-08-02 20:26:22.83608+00	PERSONAL	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-4	sravan.kumar@fyle.in	Food	\N	\N	txjIqTCtkkC8	E/2022/05/T/21	C/2022/05/R/18	100	USD	\N	\N	set3ZMFXrDPL3	f	PAYMENT_PROCESSING	\N	\N	\N	rpLawO11bFib	2022-05-25 17:00:00+00	2022-05-25 08:59:25.649+00	2022-05-25 08:59:07.718891+00	2022-05-25 09:04:05.66983+00	2022-08-02 20:26:22.844927+00	2022-08-02 20:26:22.844961+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-5	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	txUPRc3VwxOP	E/2022/05/T/19	C/2022/05/R/17	101	USD	\N	\N	setb1pSLMIok8	f	PAYMENT_PROCESSING	\N	Adidas	\N	rpv1txzAsgr3	2021-01-01 17:00:00+00	2022-05-25 07:24:12.987+00	2022-05-25 07:21:40.598113+00	2022-05-25 07:25:00.848892+00	2022-08-02 20:26:22.857516+00	2022-08-02 20:26:22.857675+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-6	ashwin.t@fyle.in	Food	\N	\N	txUDvDmEV4ep	E/2022/05/T/18	C/2022/05/R/16	5	USD	\N	\N	set33iAVXO7BA	t	PAYMENT_PROCESSING	\N	\N	\N	rpE2JyATZhDe	2020-05-25 17:00:00+00	2022-05-25 06:05:23.362+00	2022-05-25 06:04:46.557927+00	2022-05-25 06:05:47.36985+00	2022-08-02 20:26:22.870854+00	2022-08-02 20:26:22.87089+00	PERSONAL	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-7	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	tx1FW3uxYZG6	E/2022/05/T/16	C/2022/05/R/15	151	USD	\N	\N	setzFn3FK5t80	f	PAYMENT_PROCESSING	\N	Adidas	\N	rprwGgzOZyfR	2022-05-25 17:00:00+00	2022-05-25 03:41:49.042+00	2022-05-25 03:41:28.839711+00	2022-05-25 03:42:10.145663+00	2022-08-02 20:26:22.882803+00	2022-08-02 20:26:22.882836+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-8	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	txVXhyVB8mgK	E/2022/05/T/15	C/2022/05/R/14	45	USD	\N	\N	setsN8cLD9KIn	f	PAYMENT_PROCESSING	\N	Adidas	\N	rpnG3lZYDsHU	2022-05-25 17:00:00+00	2022-05-25 02:48:53.791+00	2022-05-25 02:48:37.432989+00	2022-05-25 02:49:18.189037+00	2022-08-02 20:26:22.894793+00	2022-08-02 20:26:22.894827+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-9	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	txBMQRkBQciI	E/2022/05/T/14	C/2022/05/R/13	10	USD	\N	\N	setanDKqMZfXB	f	PAYMENT_PROCESSING	\N	Adidas	\N	rpVvNQvE2wbm	2022-05-25 17:00:00+00	2022-05-25 02:38:40.858+00	2022-05-25 02:38:25.832419+00	2022-05-25 02:39:08.208877+00	2022-08-02 20:26:22.908632+00	2022-08-02 20:26:22.908661+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
-10	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	txkw3dt3umkN	E/2022/05/T/12	C/2022/05/R/12	101	USD	\N	\N	setBe6qAlNXPU	f	PAYMENT_PROCESSING	\N	Adidas	\N	rp5lITpxFLxE	2022-05-24 17:00:00+00	2022-05-24 15:59:13.26+00	2022-05-24 15:55:50.369024+00	2022-05-24 16:00:27.982+00	2022-08-02 20:26:22.921466+00	2022-08-02 20:26:22.9215+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f
+COPY public.expenses (id, employee_email, category, sub_category, project, expense_id, expense_number, claim_number, amount, currency, foreign_amount, foreign_currency, settlement_id, reimbursable, state, vendor, cost_center, purpose, report_id, spent_at, approved_at, expense_created_at, expense_updated_at, created_at, updated_at, fund_source, verified_at, custom_properties, paid_on_xero, org_id, file_ids, corporate_card_id, tax_amount, tax_group_id, billable, employee_name) FROM stdin;
+1	ashwin.t@fyle.in	Food	\N	\N	txaaVBj3yKGW	E/2022/06/T/4	C/2022/06/R/2	1	USD	\N	\N	setrunCck8hLH	t	PAYMENT_PROCESSING	\N	\N	\N	rp9EvDF8Umk6	2022-06-27 17:00:00+00	2022-06-27 09:06:52.951+00	2022-06-27 09:06:13.135764+00	2022-06-27 09:08:23.340321+00	2022-08-02 20:26:22.81033+00	2022-08-02 20:26:22.810363+00	PERSONAL	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "Postman Field": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+2	ashwin.t@fyle.in	Food	\N	\N	txB6D8k0Ws8a	E/2022/06/T/2	C/2022/06/R/3	4	USD	\N	\N	setrunCck8hLH	t	PAYMENT_PROCESSING	\N	\N	\N	rpNeZt3cv9wz	2022-06-27 17:00:00+00	2022-06-27 09:07:16.556+00	2022-06-27 09:05:45.738+00	2022-06-27 09:08:23.340321+00	2022-08-02 20:26:22.82716+00	2022-08-02 20:26:22.827194+00	PERSONAL	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "Postman Field": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+3	sravan.kumar@fyle.in	Food	\N	Bebe Rexha	txGilVGolf60	E/2022/06/T/1	C/2022/06/R/1	10	USD	\N	\N	setlpIUKpdvsT	t	PAYMENT_PROCESSING	\N	Adidas	\N	rpKuJtEv6h0n	2020-01-01 17:00:00+00	2022-06-08 04:28:30.61+00	2022-06-08 04:27:35.274447+00	2022-06-08 04:28:51.237261+00	2022-08-02 20:26:22.835984+00	2022-08-02 20:26:22.83608+00	PERSONAL	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+4	sravan.kumar@fyle.in	Food	\N	\N	txjIqTCtkkC8	E/2022/05/T/21	C/2022/05/R/18	100	USD	\N	\N	set3ZMFXrDPL3	f	PAYMENT_PROCESSING	\N	\N	\N	rpLawO11bFib	2022-05-25 17:00:00+00	2022-05-25 08:59:25.649+00	2022-05-25 08:59:07.718891+00	2022-05-25 09:04:05.66983+00	2022-08-02 20:26:22.844927+00	2022-08-02 20:26:22.844961+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+5	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	txUPRc3VwxOP	E/2022/05/T/19	C/2022/05/R/17	101	USD	\N	\N	setb1pSLMIok8	f	PAYMENT_PROCESSING	\N	Adidas	\N	rpv1txzAsgr3	2021-01-01 17:00:00+00	2022-05-25 07:24:12.987+00	2022-05-25 07:21:40.598113+00	2022-05-25 07:25:00.848892+00	2022-08-02 20:26:22.857516+00	2022-08-02 20:26:22.857675+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+6	ashwin.t@fyle.in	Food	\N	\N	txUDvDmEV4ep	E/2022/05/T/18	C/2022/05/R/16	5	USD	\N	\N	set33iAVXO7BA	t	PAYMENT_PROCESSING	\N	\N	\N	rpE2JyATZhDe	2020-05-25 17:00:00+00	2022-05-25 06:05:23.362+00	2022-05-25 06:04:46.557927+00	2022-05-25 06:05:47.36985+00	2022-08-02 20:26:22.870854+00	2022-08-02 20:26:22.87089+00	PERSONAL	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+7	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	tx1FW3uxYZG6	E/2022/05/T/16	C/2022/05/R/15	151	USD	\N	\N	setzFn3FK5t80	f	PAYMENT_PROCESSING	\N	Adidas	\N	rprwGgzOZyfR	2022-05-25 17:00:00+00	2022-05-25 03:41:49.042+00	2022-05-25 03:41:28.839711+00	2022-05-25 03:42:10.145663+00	2022-08-02 20:26:22.882803+00	2022-08-02 20:26:22.882836+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+8	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	txVXhyVB8mgK	E/2022/05/T/15	C/2022/05/R/14	45	USD	\N	\N	setsN8cLD9KIn	f	PAYMENT_PROCESSING	\N	Adidas	\N	rpnG3lZYDsHU	2022-05-25 17:00:00+00	2022-05-25 02:48:53.791+00	2022-05-25 02:48:37.432989+00	2022-05-25 02:49:18.189037+00	2022-08-02 20:26:22.894793+00	2022-08-02 20:26:22.894827+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+9	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	txBMQRkBQciI	E/2022/05/T/14	C/2022/05/R/13	10	USD	\N	\N	setanDKqMZfXB	f	PAYMENT_PROCESSING	\N	Adidas	\N	rpVvNQvE2wbm	2022-05-25 17:00:00+00	2022-05-25 02:38:40.858+00	2022-05-25 02:38:25.832419+00	2022-05-25 02:39:08.208877+00	2022-08-02 20:26:22.908632+00	2022-08-02 20:26:22.908661+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
+10	sravan.kumar@fyle.in	WIP	\N	Bebe Rexha	txkw3dt3umkN	E/2022/05/T/12	C/2022/05/R/12	101	USD	\N	\N	setBe6qAlNXPU	f	PAYMENT_PROCESSING	\N	Adidas	\N	rp5lITpxFLxE	2022-05-24 17:00:00+00	2022-05-24 15:59:13.26+00	2022-05-24 15:55:50.369024+00	2022-05-24 16:00:27.982+00	2022-08-02 20:26:22.921466+00	2022-08-02 20:26:22.9215+00	CCC	\N	{"Card": "", "Killua": "", "Classes": "", "avc_123": null, "New Field": "", "Multi field": "", "Testing This": "", "abc in [123]": null, "POSTMAN FIELD": "", "Netsuite Class": ""}	f	orPJvXuoLqvJ	{}	\N	\N	\N	f	\N
 \.
 
 
@@ -4844,8 +4850,8 @@ COPY public.workspaces_user (id, workspace_id, user_id) FROM stdin;
 -- Data for Name: xero_credentials; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.xero_credentials (id, refresh_token, created_at, updated_at, workspace_id, country) FROM stdin;
-1	cf7e4a4343f1c6f96125d1fb9ca84729b295a3520ba2c7a6b5ecda2883412f25	2022-08-02 20:24:56.04499+00	2022-08-02 20:28:18.97994+00	1	CA
+COPY public.xero_credentials (id, refresh_token, created_at, updated_at, workspace_id, country, is_expired) FROM stdin;
+1	cf7e4a4343f1c6f96125d1fb9ca84729b295a3520ba2c7a6b5ecda2883412f25	2022-08-02 20:24:56.04499+00	2022-08-02 20:28:18.97994+00	1	CA	f
 \.
 
 
@@ -4923,7 +4929,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 37, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 123, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 126, true);
 
 
 --

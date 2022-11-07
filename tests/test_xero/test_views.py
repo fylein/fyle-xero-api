@@ -18,7 +18,7 @@ def test_get_token_health(api_client, test_connection):
     response = api_client.get(url)
     assert response.status_code == 200
 
-    xero_credential = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credential = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_credential.delete()
 
     response = api_client.get(url)
@@ -27,17 +27,17 @@ def test_get_token_health(api_client, test_connection):
     response = json.loads(response.content)
     assert response['message'] == 'Xero credentials not found in workspace'
 
-    with mock.patch('apps.workspaces.models.XeroCredentials.objects.get') as mock_call:
+    with mock.patch('apps.xero.utils.XeroConnector') as mock_call:
         mock_call.side_effect = InvalidGrant(msg='Invalid grant')
         response = api_client.get(url)
         assert response.status_code == 400
 
-    with mock.patch('apps.workspaces.models.XeroCredentials.objects.get') as mock_call:
+    with mock.patch('apps.xero.utils.XeroConnector') as mock_call:
         mock_call.side_effect = InvalidTokenError(msg='Invalid token error')
         response = api_client.get(url)
         assert response.status_code == 400
 
-    with mock.patch('apps.workspaces.models.XeroCredentials.objects.get') as mock_call:
+    with mock.patch('apps.xero.utils.XeroConnector') as mock_call:
         mock_call.side_effect = UnsuccessfulAuthentication(msg='Auth error')
         response = api_client.get(url)
         assert response.status_code == 400
@@ -76,7 +76,7 @@ def test_post_account_view(mocker, api_client, test_connection):
     response = json.loads(response.content)
     assert len(response) == 0
      
-    xero_credential = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credential = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_credential.delete()
 
     response = api_client.post(url)
@@ -153,7 +153,7 @@ def test_post_tracking_categories_view(mocker, api_client, test_connection):
     response = json.loads(response.content)
     assert len(response) == 0
 
-    xero_credential = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credential = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_credential.delete()
 
     response = api_client.post(url)
@@ -196,7 +196,7 @@ def test_post_contact_view(mocker, api_client, test_connection):
     response = json.loads(response.content)
     assert len(response) == 0
      
-    xero_credential = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credential = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_credential.delete()
 
     response = api_client.post(url)
@@ -239,7 +239,7 @@ def test_post_item_view(mocker, api_client, test_connection):
     response = json.loads(response.content)
     assert len(response) == 0
      
-    xero_credential = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credential = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_credential.delete()
 
     response = api_client.post(url)
@@ -282,7 +282,7 @@ def test_post_tenant_view(mocker, api_client, test_connection):
     response = json.loads(response.content)
     assert len(response) == 0
      
-    xero_credential = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credential = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_credential.delete()
 
     response = api_client.post(url)
@@ -427,7 +427,7 @@ def test_post_refresh_dimensions(mocker, api_client, test_connection):
     response = api_client.post(url)
     assert response.status_code == 200
          
-    xero_credential = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credential = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_credential.delete()
 
     response = api_client.post(url)

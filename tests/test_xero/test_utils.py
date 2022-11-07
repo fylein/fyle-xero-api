@@ -23,7 +23,7 @@ def test_get_or_create_contact(mocker, db):
 
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     contact_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CONTACT').count()
@@ -48,7 +48,7 @@ def test_sync_tenants(mocker, db):
         return_value=data['get_all_tenants']
     )
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     xero_connection.sync_tenants()
@@ -60,7 +60,7 @@ def test_sync_tenants(mocker, db):
 def test_get_tax_inclusive_amount(db):
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     tax_inclusive_amount = xero_connection.get_tax_inclusive_amount(100, 4)
@@ -75,7 +75,7 @@ def test_sync_tax_codes(mocker, db):
         return_value=data['get_all_tax_codes']
     )
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     tax_code_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='TAX_CODE').count()
@@ -94,7 +94,7 @@ def test_sync_accounts(mocker, db):
         'xerosdk.apis.Accounts.get_all'
     )
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     account_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='ACCOUNT').count()
@@ -113,7 +113,7 @@ def test_sync_contacts(mocker, db):
     )
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     contact_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CONTACT').count()
@@ -133,7 +133,7 @@ def test_sync_customers(mocker, db):
         return_value=data['get_all_contacts']
     )
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     customers_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CUSTOMER').count()
@@ -153,7 +153,7 @@ def test_sync_tracking_categories(mocker, db):
         return_value=data['get_all_tracking_categories']
     )
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     tracking_categories_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='tracking_categories').count()
@@ -172,7 +172,7 @@ def test_sync_items(mocker, db):
         'xerosdk.apis.Items.get_all',
         return_value=data['get_all_items']
     )
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     items_count = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='ITEM').count()
@@ -191,7 +191,7 @@ def test_get_bill(mocker, db):
     )
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     bill = xero_connection.get_bill(146)
@@ -214,7 +214,7 @@ def test_sync_dimensions(mocker, db):
     assert project_count == 0
     assert categoty_count == 0
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
     xero_connection.sync_dimensions(workspace_id)
 
@@ -230,7 +230,7 @@ def test_sync_dimensions(mocker, db):
 def test_sync_dimensions_exception(db):
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     with mock.patch('xerosdk.apis.Accounts.get_all') as mock_call:
@@ -257,7 +257,7 @@ def test_sync_dimensions_exception(db):
 def test_post_bill_exception(db):
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     bill = Bill.objects.filter(expense_group_id=4).first()
@@ -281,7 +281,7 @@ def test_post_bill_exception(db):
 def test_post_bank_transaction_exception(db):
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     bank_transaction = BankTransaction.objects.filter(expense_group_id=5).first()
@@ -310,7 +310,7 @@ def test_post_attachments(mocker, db):
 
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     attachments = xero_connection.post_attachments(ref_id='ref_id', ref_type='ref_type', attachments=[{
@@ -329,7 +329,7 @@ def test_post_payment(mocker, db):
 
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
 
     created_payment = xero_connection.post_payment(payment=Payment(
