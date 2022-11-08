@@ -404,6 +404,31 @@ data = {
             'user_id': 'usqywo0f3nBY',
         }
     },
+    'get_exsisting_org': {
+        'data': {
+            'org': {
+                'currency': 'USD',
+                'domain': 'fyleforqvd.com',
+                'id': 'orPJvXuoLqvJ',
+                'name': 'Fyle For MS Dynamics Demo',
+            },
+            'org_id': 'orPJvXuoLqvJ',
+            'roles': [
+                'FYLER',
+                'VERIFIER',
+                'PAYMENT_PROCESSOR',
+                'FINANCE',
+                'ADMIN',
+                'AUDITOR',
+            ],
+            'user': {
+                'email': 'ashwin.t@fyle.in',
+                'full_name': 'Joanna',
+                'id': 'usqywo0f3nBY'
+            },
+            'user_id': 'usqywo0f3nBY',
+        }
+    },
     'get_all_employees': [{'data': [
         {
             'approver_user_ids': [],
