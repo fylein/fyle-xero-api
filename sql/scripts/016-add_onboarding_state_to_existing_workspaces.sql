@@ -100,7 +100,7 @@ select
     'XC=FALSE, C=TRUE, GM=FALSE' as settings, count(*) 
 from all_settings_view 
 where 
-    configuration_id is not null and general_mappings_id is not null and xero_creds_id is null;
+    configuration_id is not null and general_mappings_id is null and xero_creds_id is null;
 
 --- Update all of the above to have onboarding state set to 'EXPORT_SETTINGS'
 update workspaces 
