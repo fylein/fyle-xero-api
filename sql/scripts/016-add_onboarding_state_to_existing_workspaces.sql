@@ -51,7 +51,7 @@ where id in (
         workspace_id 
     from all_settings_view 
     where 
-        configuration_id is not null and general_mappings_id is not null and xero_creds_id is not null
+        configuration_id is not null and general_mappings_id is null and xero_creds_id is not null
 );
 
 
@@ -71,7 +71,7 @@ where id in (
         workspace_id 
     from all_settings_view 
     where 
-        configuration_id is null and general_mappings_id is not null and xero_creds_id is not null
+        configuration_id is null and general_mappings_id is null and xero_creds_id is not null
 );
 
 
