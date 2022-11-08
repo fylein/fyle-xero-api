@@ -1,22 +1,36 @@
 rollback;
 begin;
 
+with ws as (
+  select 
+    expense_attributes.detail ->> 'full_name' as expense_attributes_full_name,
+    expense_attributes.workspace_id as expense_attributes_workspace_id
+  from 
+    expense_groups 
+    inner join expense_attributes on expense_attributes.value = expense_groups.description ->> 'employee_email' 
+  where 
+    expense_groups.workspace_id = expense_attributes.workspace_id
+) 
 update 
   expense_groups 
 set 
-  employee_name = (select distinct expense_attributes.detail ->> 'full_name' 
+  employee_name = ws.expense_attributes_full_name 
 from 
-    expense_attributes where expense_groups.description ->> 'employee_email' = expense_attributes.value);
+  ws 
+where 
+  workspace_id = ws.expense_attributes_workspace_id;
 
 -- Run this in after running the above query.
-update 
-  expenses 
-set 
-  employee_name = (
+with ex as (
     select 
-      distinct expense_groups.employee_name 
+      expense_groups.employee_name as employee_name
     from 
       expense_groups 
       inner join expense_groups_expenses on expense_groups.id = expense_groups_expenses.expensegroup_id 
       inner join expenses on expense_groups_expenses.expense_id = expenses.id
-  )
+)
+update 
+  expenses 
+set 
+  employee_name = ex.employee_name
+from ex;
