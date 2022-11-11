@@ -130,6 +130,12 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
         if not data.get('general_mappings'):
             raise serializers.ValidationError('General mappings are required')
 
+        if not data['general_mappings']['payment_account']['id']:
+            raise serializers.ValidationError('Payment account id is required')
+
+        if not data['general_mappings']['payment_account']['name']:
+            raise serializers.ValidationError('Payment account name is required')
+
         if not data.get('workspace_schedules'):
             raise serializers.ValidationError('Workspace Schedules are required')
 
