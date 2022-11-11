@@ -163,10 +163,12 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
         if not data.get('general_mappings'):
             raise serializers.ValidationError('General mappings are required')
 
-        if not data['general_mappings']['bank_account']['id']:
+        if data['workspace_general_settings']['corporate_credit_card_expenses_object'] == 'BANK TRANSACTION' \
+            and not data['general_mappings']['bank_account']['id']:
             raise serializers.ValidationError('Bank account id is required')
 
-        if not data['general_mappings']['bank_account']['name']:
+        if data['workspace_general_settings']['corporate_credit_card_expenses_object'] == 'BANK TRANSACTION' \
+            and not data['general_mappings']['bank_account']['name']:
             raise serializers.ValidationError('Bank account name is required')
 
         if data.get('workspace_general_settings').get('auto_map_employees') and \
