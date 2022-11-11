@@ -4,7 +4,8 @@ data = {
             "change_accounting_period": True,
             "sync_fyle_to_xero_payments": False,
             "sync_xero_to_fyle_payments": True,
-            "auto_create_destination_entity": True
+            "auto_create_destination_entity": True,
+            "auto_create_merchant_destination_entity": True
         },
         "general_mappings": {
             "payment_account": {
@@ -22,7 +23,8 @@ data = {
             "change_accounting_period": True,
             "sync_fyle_to_xero_payments": False,
             "sync_xero_to_fyle_payments": True,
-            "auto_create_destination_entity": True
+            "auto_create_destination_entity": True,
+            "auto_create_merchant_destination_entity": True
         },
         "general_mappings": {
             "payment_account": {
