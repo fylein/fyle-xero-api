@@ -130,13 +130,11 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
         if not data.get('general_mappings'):
             raise serializers.ValidationError('General mappings are required')
 
-        if (data['workspace_general_settings']['sync_fyle_to_xero_payments'] or \
-            data['workspace_general_settings']['sync_xero_to_fyle_payments'])\
+        if data['workspace_general_settings']['sync_fyle_to_xero_payments']\
             and not data['general_mappings']['payment_account']['id']:
             raise serializers.ValidationError('Payment account id is required')
 
-        if (data['workspace_general_settings']['sync_fyle_to_xero_payments'] or \
-            data['workspace_general_settings']['sync_xero_to_fyle_payments'])\
+        if data['workspace_general_settings']['sync_fyle_to_xero_payments']\
             and not data['general_mappings']['payment_account']['name']:
             raise serializers.ValidationError('Payment account name is required')
 
