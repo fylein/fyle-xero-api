@@ -363,7 +363,7 @@ class ConnectXeroView(viewsets.ViewSet):
         Get Xero Credentials in Workspace
         """
         try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'], is_expired=False)
+            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'], is_expired=False, refresh_token__isnull=False)
 
             return Response(
                 data=XeroCredentialSerializer(xero_credentials).data,
