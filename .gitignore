@@ -12,6 +12,7 @@ __pycache__/
 
 # Test files
 test.py
+debugger
 
 # Cache
 demo_cache.sqlite
