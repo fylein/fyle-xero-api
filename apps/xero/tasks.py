@@ -95,13 +95,20 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
             'message': detail['message']['Message'],
             'error': detail['message']
         })
+
+        error_detail = 'Something unexcepted happen'
+        if 'Elements' in detail['message'] and len(detail['message']['Elements']) > 0 and\
+            'ValidationErrors' in detail['message']['Elements'][0] and len(detail['message']['Elements'][0]['ValidationErrors']) > 0 and\
+            'Message' in detail['message']['Elements'][0]['ValidationErrors'][0]:
+            error_detail = detail['message']['Elements'][0]['ValidationErrors'][0]['Message']
+
         Error.objects.update_or_create(
             workspace_id=expense_group.workspace_id,
             expense_group=expense_group,
             defaults={
                 'type': 'XERO_ERROR',
                 'error_title': detail['message']['Message'],
-                'error_detail': detail['message'],
+                'error_detail': error_detail,
                 'is_resolved': False
             }
         )

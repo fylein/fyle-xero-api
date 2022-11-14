@@ -20,15 +20,24 @@ class TasksView(generics.ListAPIView):
         """
         Return task logs in workspace
         """
-        task_status = self.request.query_params.getlist('status')
+        task_type = self.request.query_params.get('task_type')
+        expense_group_ids = self.request.query_params.get('expense_group_ids')
+        task_status = self.request.query_params.get('status')
 
-        if len(task_status) == 1 and task_status[0] == 'ALL':
-            task_status = ['ENQUEUED', 'IN_PROGRESS', 'FAILED', 'COMPLETE']
+        filters = {
+            'workspace_id': self.kwargs['workspace_id']
+        }
 
-        task_logs = TaskLog.objects.filter(~Q(type='CREATING_PAYMENT'),
-            workspace_id=self.kwargs['workspace_id'], status__in=task_status).order_by('-updated_at').all()
+        if task_type:
+            filters['type__in'] = task_type.split(',')
 
-        return task_logs
+        if expense_group_ids:
+            filters['expense_group_id__in'] = expense_group_ids.split(',')
+
+        if task_status:
+            filters['status__in'] = task_status.split(',')
+
+        return TaskLog.objects.filter(**filters).order_by('-updated_at').all()
 
 
 class TasksByIdView(generics.RetrieveAPIView):
