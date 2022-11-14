@@ -101,7 +101,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
             defaults={
                 'type': 'XERO_ERROR',
                 'error_title': detail['message']['Message'],
-                'error_detail': detail['message'],
+                'error_detail': detail['message']['Elements'][0]['ValidationErrors'][0]['Message'],
                 'is_resolved': False
             }
         )
