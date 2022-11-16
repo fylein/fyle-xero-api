@@ -29,7 +29,15 @@ class ImportSettingsTrigger:
             import_categories=self.__workspace_general_settings.get('import_categories'),
             workspace_id=self.__workspace_id
         )
-    
+
+        if not self.__workspace_general_settings.get('import_customers'):
+            MappingSetting.objects.filter(
+                workspace_id=self.__workspace_id, 
+                source_field='PROJECT',
+                destination_field='CUSTOMER'
+            ).delete()
+            schedule_projects_creation(False, self.__workspace_id)
+
     def pre_save_mapping_settings(self):
         """
         Post save action for mapping settings
