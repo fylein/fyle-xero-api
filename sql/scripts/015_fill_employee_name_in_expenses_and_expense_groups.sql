@@ -24,6 +24,7 @@ where
 with ex as (
     select 
       expense_groups.employee_name as employee_name
+      expenses.id as expense_id
     from 
       expense_groups 
       inner join expense_groups_expenses on expense_groups.id = expense_groups_expenses.expensegroup_id 
@@ -32,5 +33,5 @@ with ex as (
 update 
   expenses 
 set 
-  employee_name = ex.employee_name
+  employee_name = ex.employee_name where id = ex.expense_id
 from ex;
