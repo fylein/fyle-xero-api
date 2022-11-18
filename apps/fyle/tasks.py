@@ -96,7 +96,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
                     source_account_type=['PERSONAL_CASH_ACCOUNT'],
                     state=expense_group_settings.reimbursable_expense_state,
                     settled_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAYMENT_PROCESSING' else None,
-                    filter_credit_expenses=False,
+                    filter_credit_expenses=True,
                     last_paid_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAID' else None
                 ))
 
