@@ -276,6 +276,9 @@ def test_create_bill_exceptions(db):
             }, response='Invalid params')
         create_bill(expense_group.id, task_log.id, xero_connection, False)
 
+        mock_call.side_effect = WrongParamsError({'ErrorNumber': 10, 'Type': 'ValidationException', 'Message': 'A validation exception occurred', 'Elements': [{'BankAccount': {'AccountID': '562555f2-8cde-4ce9-8203-0363922537a4', 'Code': '090', 'ValidationErrors': []}, 'Type': 'SPEND', 'Reference': 'E/2022/03/T/1', 'Url': 'None/app/admin/#/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn', 'IsReconciled': False, 'Contact': {'ContactID': '73e6b7fb-ba7e-4b0a-a08b-f971b8ebbed8', 'Addresses': [], 'Phones': [], 'ContactGroups': [], 'ContactPersons': [], 'HasValidationErrors': False, 'ValidationErrors': []}, 'DateString': '2022-03-30T00:00:00', 'Date': '/Date(1648598400000+0000)/', 'Status': 'AUTHORISED', 'LineAmountTypes': 'Exclusive', 'LineItems': [{'Description': 'ashwin.t@fyle.in, category - Food spent on 2022-03-30, report number - C/2022/03/R/1  - https://staging.fyle.tech/app/main/#/enterprise/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn', 'UnitAmount': 92.38, 'TaxType': 'OUTPUT', 'TaxAmount': 7.62, 'LineAmount': 92.38, 'AccountCode': '425', 'Tracking': [], 'Quantity': 1.0, 'AccountID': 'c4b1c463-9913-4672-a8b8-01a3b546126f', 'ValidationErrors': []}], 'SubTotal': 92.38, 'TotalTax': 7.62, 'Total': 100.0, 'CurrencyCode': 'USD', 'ValidationErrors': [{'Message': 'Url must be a valid absolute url'}]}]})
+        create_bill(expense_group.id, task_log.id, xero_connection, False)
+
         task_log = TaskLog.objects.get(id=task_log.id)
         assert task_log.status == 'FAILED'
 
@@ -449,6 +452,9 @@ def test_create_bank_transactions_exceptions(db):
         mock_call.side_effect = WrongParamsError(msg={
                 'Message': 'Invalid parametrs'
             }, response='Invalid params')
+        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False)
+
+        mock_call.side_effect = WrongParamsError({'ErrorNumber': 10, 'Type': 'ValidationException', 'Message': 'A validation exception occurred', 'Elements': [{'BankAccount': {'AccountID': '562555f2-8cde-4ce9-8203-0363922537a4', 'Code': '090', 'ValidationErrors': []}, 'Type': 'SPEND', 'Reference': 'E/2022/03/T/1', 'Url': 'None/app/admin/#/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn', 'IsReconciled': False, 'Contact': {'ContactID': '73e6b7fb-ba7e-4b0a-a08b-f971b8ebbed8', 'Addresses': [], 'Phones': [], 'ContactGroups': [], 'ContactPersons': [], 'HasValidationErrors': False, 'ValidationErrors': []}, 'DateString': '2022-03-30T00:00:00', 'Date': '/Date(1648598400000+0000)/', 'Status': 'AUTHORISED', 'LineAmountTypes': 'Exclusive', 'LineItems': [{'Description': 'ashwin.t@fyle.in, category - Food spent on 2022-03-30, report number - C/2022/03/R/1  - https://staging.fyle.tech/app/main/#/enterprise/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn', 'UnitAmount': 92.38, 'TaxType': 'OUTPUT', 'TaxAmount': 7.62, 'LineAmount': 92.38, 'AccountCode': '425', 'Tracking': [], 'Quantity': 1.0, 'AccountID': 'c4b1c463-9913-4672-a8b8-01a3b546126f', 'ValidationErrors': []}], 'SubTotal': 92.38, 'TotalTax': 7.62, 'Total': 100.0, 'CurrencyCode': 'USD', 'ValidationErrors': [{'Message': 'Url must be a valid absolute url'}]}]})
         create_bank_transaction(expense_group.id, task_log.id, xero_connection, False)
 
         task_log = TaskLog.objects.get(id=task_log.id)

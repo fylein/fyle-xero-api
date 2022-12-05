@@ -43,7 +43,8 @@ class WorkspaceGeneralSettingsSerializer(serializers.ModelSerializer):
             'change_accounting_period',
             'sync_fyle_to_xero_payments',
             'sync_xero_to_fyle_payments',
-            'auto_create_destination_entity'
+            'auto_create_destination_entity',
+            'auto_create_merchant_destination_entity'
         ]
 
 
@@ -95,7 +96,8 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
                 'change_accounting_period' : workspace_general_settings.get('change_accounting_period'),
                 'sync_fyle_to_xero_payments': workspace_general_settings.get('sync_fyle_to_xero_payments'),
                 'sync_xero_to_fyle_payments' : workspace_general_settings.get('sync_xero_to_fyle_payments'),
-                'auto_create_destination_entity' : workspace_general_settings.get('auto_create_destination_entity')
+                'auto_create_destination_entity' : workspace_general_settings.get('auto_create_destination_entity'),
+                'auto_create_merchant_destination_entity': workspace_general_settings.get('auto_create_merchant_destination_entity')
             }
         )
 
@@ -127,6 +129,14 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
 
         if not data.get('general_mappings'):
             raise serializers.ValidationError('General mappings are required')
+
+        if data['workspace_general_settings']['sync_fyle_to_xero_payments']\
+            and not data['general_mappings']['payment_account']['id']:
+            raise serializers.ValidationError('Payment account id is required')
+
+        if data['workspace_general_settings']['sync_fyle_to_xero_payments']\
+            and not data['general_mappings']['payment_account']['name']:
+            raise serializers.ValidationError('Payment account name is required')
 
         if not data.get('workspace_schedules'):
             raise serializers.ValidationError('Workspace Schedules are required')
