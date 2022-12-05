@@ -312,7 +312,6 @@ def test_fyle_sync_dimension(api_client, test_connection, mocker):
     assert response.status_code == 200
 
 
-# Todo : merge the two sync functions
 def test_fyle_sync_dimension_fail(api_client, test_connection):
     access_token = test_connection.access_token
 
@@ -379,3 +378,29 @@ def test_fyle_refresh_dimension(api_client, test_connection, mocker):
 
     assert response.status_code == 400
     assert response.data['message'] == 'Fyle credentials not found in workspace'
+
+
+def test_expense_group_sync(api_client, test_connection, mocker):
+    mocker.patch(
+        'fyle_integrations_platform_connector.apis.Expenses.get',
+        return_value=data['expenses']
+    )
+    access_token = test_connection.access_token
+
+    url = '/api/workspaces/1/fyle/expense_groups/sync/'
+
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(access_token))
+    
+    response = api_client.post(url)
+    assert response.status_code == 200
+
+
+def test_exportable_expense_group(api_client, test_connection, mocker):
+    access_token = test_connection.access_token
+
+    url = '/api/workspaces/1/fyle/exportable_expense_groups/'
+
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(access_token))
+    
+    response = api_client.get(url)
+    assert response.status_code == 200
