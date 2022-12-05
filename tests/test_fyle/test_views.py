@@ -380,7 +380,7 @@ def test_fyle_refresh_dimension(api_client, test_connection, mocker):
     assert response.data['message'] == 'Fyle credentials not found in workspace'
 
 
-def test_fyle_refresh_dimension(api_client, test_connection, mocker):
+def test_expense_group_sync(api_client, test_connection, mocker):
     mocker.patch(
         'fyle_integrations_platform_connector.apis.Expenses.get',
         return_value=data['expenses']

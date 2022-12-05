@@ -1,6 +1,6 @@
 from datetime import datetime
 from apps.fyle.models import ExpenseGroup
-from fyle_accounting_mappings.models import MappingSetting
+from fyle_accounting_mappings.models import MappingSetting, Mapping
 from apps.xero.models import Bill, BillLineItem, get_tax_code_id_or_none, get_customer_id_or_none, get_tracking_category, \
     get_expense_purpose, get_transaction_date, get_item_code_or_none, BankTransaction, BankTransactionLineItem, Payment
 
@@ -54,8 +54,8 @@ def test_get_item_code_or_none(db):
     expenses = expense_group.expenses.all()
     
     mapping_setting = MappingSetting.objects.filter( 
-        workspace_id=expense_group.workspace_id, 
-    ).first() 
+        workspace_id=expense_group.workspace_id,
+    ).first()
 
     mapping_setting.destination_field = 'ITEM'
     mapping_setting.save()
@@ -64,15 +64,23 @@ def test_get_item_code_or_none(db):
         item_code = get_item_code_or_none(expense_group, lineitem)
         assert item_code == None
     
-    mapping_setting.source_field == 'PROJECT'
+    mapping_setting.source_field = 'PROJECT'
     mapping_setting.save()
+
+    mapping = Mapping.objects.filter( 
+        source_type='PROJECT', 
+        workspace_id=expense_group.workspace_id,
+    ).first()
+
+    mapping.destination_type = 'ITEM'
+    mapping.save()
 
     for lineitem in expenses:
         lineitem.project = 'Bank West'
         item_code = get_item_code_or_none(expense_group, lineitem)
-        assert item_code == None
+        assert item_code == 'Bank West'
 
-    mapping_setting.source_field == 'COST_CENTER'
+    mapping_setting.source_field = 'COST_CENTER'
     mapping_setting.save()
 
     for lineitem in expenses:

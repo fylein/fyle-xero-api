@@ -2,6 +2,7 @@ import json
 from unittest import mock
 from datetime import datetime
 from apps.mappings.models import TenantMapping
+from fyle_accounting_mappings.models import Mapping 
 from fyle_xero_api import settings
 from django.contrib.auth import get_user_model
 from fyle_rest_auth.utils import AuthUtils
@@ -323,9 +324,10 @@ def test_revoke_xero_connection(mocker, api_client, test_connection):
         'xerosdk.apis.Connections.remove_connection',
         return_value=None
     )
+
     workspace_id = 1
     workspace = Workspace.objects.filter(id=workspace_id).first()
-    workspace.onboarding_state = 'COMPLETE'
+    workspace.onboarding_state = 'CONNECTION'
     workspace.save()
     
     url = '/api/workspaces/{}/connection/xero/revoke/'.format(workspace_id)
@@ -335,6 +337,8 @@ def test_revoke_xero_connection(mocker, api_client, test_connection):
     tenant_mapping = TenantMapping.objects.get(workspace_id=workspace_id)
     tenant_mapping.connection_id = 'sdfghjkl'
     tenant_mapping.save()
+
+    Mapping.objects.filter(workspace_id=workspace_id).delete()
 
     response = api_client.post(url)
     assert response.status_code == 200
@@ -384,6 +388,10 @@ def test_get_general_settings_detail(api_client, test_connection):
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
 
+    workspace_general_setting = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    workspace_general_setting.import_customers = True
+    workspace_general_setting.save()
+
     response = api_client.get(url)
     assert response.status_code == 200
 
@@ -407,7 +415,6 @@ def test_get_general_settings_detail(api_client, test_connection):
     )
     assert response.status_code == 200
 
-    workspace_general_setting = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     workspace_general_setting.delete()
 
     response = api_client.get(url)

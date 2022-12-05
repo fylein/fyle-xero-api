@@ -2497,6 +2497,7 @@ COPY public.employee_mappings (id, created_at, updated_at, destination_card_acco
 --
 
 COPY public.errors (id, type, is_resolved, error_title, error_detail, created_at, updated_at, expense_attribute_id, expense_group_id, workspace_id) FROM stdin;
+18	CATEGORY_MAPPING	t	Software	Category mapping is missing	2022-05-23 13:01:02.210349+00	2022-05-23 13:01:59.787365+00	112	\N	1
 \.
 
 
