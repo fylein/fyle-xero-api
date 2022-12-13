@@ -352,8 +352,11 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
     except NoPrivilegeError as exception:
-        # Deleting xero credentials since the account got disconnected
-        XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).delete()
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).first()
+        xero_credentials.refresh_token = None
+        xero_credentials.country = None
+        xero_credentials.is_expired = True
+        xero_credentials.save()
         logger.error(exception.message)
         task_log.status = 'FAILED'
         task_log.detail = None
@@ -625,8 +628,11 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
     except NoPrivilegeError as exception:
-        # Deleting xero credentials since the account got disconnected
-        XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).delete()
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).first()
+        xero_credentials.refresh_token = None
+        xero_credentials.country = None
+        xero_credentials.is_expired = True
+        xero_credentials.save()
         logger.error(exception.message)
         task_log.status = 'FAILED'
         task_log.detail = None
