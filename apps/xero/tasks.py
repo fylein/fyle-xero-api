@@ -935,6 +935,33 @@ def create_payment(workspace_id):
 
                 task_log.save()
 
+            except NoPrivilegeError as exception:
+                xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
+                xero_credentials.refresh_token = None
+                xero_credentials.country = None
+                xero_credentials.is_expired = True
+                xero_credentials.save()
+                logger.error(exception.message)
+                task_log.status = 'FAILED'
+                task_log.detail = None
+                task_log.xero_errors = [
+                    {
+                        'error': {
+                            'Elements': [
+                                {
+                                    'ValidationErrors': [
+                                        {
+                                            'Message': 'Xero account got disconnected, please go Configurations -> Tenant page and connect to Xero again'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+
+                task_log.save()
+
             except Exception:
                 error = traceback.format_exc()
                 task_log.detail = {
