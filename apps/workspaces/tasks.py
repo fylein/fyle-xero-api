@@ -6,7 +6,7 @@ from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
 from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation, create_chain_and_export
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings,LastExportDetail
+from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, FyleCredential
 
 
 def schedule_sync(workspace_id: int, schedule_enabled: bool, hours: int):
@@ -92,3 +92,9 @@ def export_to_xero(workspace_id, export_mode='MANUAL'):
         last_export_detail.last_exported_at = last_exported_at
         last_export_detail.export_mode = export_mode
         last_export_detail.save()
+
+def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
+    fyle_credentials = FyleCredential.objects.get(workspace__fyle_org_id=fyle_org_id)
+    if fyle_credentials:
+        fyle_credentials.refresh_token = refresh_token
+        fyle_credentials.save()
