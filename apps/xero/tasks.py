@@ -86,7 +86,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
 
     else:
         all_details = []
-        logger.exception(exception)
+        logger.info(exception)
         detail = json.dumps(exception.__dict__)
         detail = json.loads(detail)
 
