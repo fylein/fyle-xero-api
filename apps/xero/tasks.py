@@ -13,7 +13,7 @@ from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, DestinationAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 
-from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError
+from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError, UnsuccessfulAuthentication
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.tasks.models import Error
@@ -57,7 +57,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
     :params export_type: export_type
     """
     if type(exception).__name__ == 'RateLimitError':
-        logger.error(exception.message)
+        logger.info(exception.message)
         task_log.xero_errors = [
             {
                 'error': {
@@ -147,7 +147,7 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str, auto_cre
         try:
             contact = xero_connection.get_or_create_contact(merchant, create=False)
         except WrongParamsError as bad_request:
-            logger.error(bad_request.message)
+            logger.info(bad_request.message)
 
         if not contact and auto_create_merchant_destination_entity:
             merchant = merchant
@@ -159,7 +159,7 @@ def get_or_create_credit_card_contact(workspace_id: int, merchant: str, auto_cre
     try:
         contact = xero_connection.get_or_create_contact(merchant, create=True)
     except WrongParamsError as bad_request:
-        logger.error(bad_request.message)
+        logger.info(bad_request.message)
 
     return contact
 
@@ -339,7 +339,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
     except InvalidGrant as exception:
-        logger.exception(exception.message)
+        logger.info(exception.message)
         task_log.status = 'FAILED'
         task_log.detail = None
         task_log.xero_errors = {
@@ -357,7 +357,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         xero_credentials.country = None
         xero_credentials.is_expired = True
         xero_credentials.save()
-        logger.error(exception.message)
+        logger.info(exception.message)
         task_log.status = 'FAILED'
         task_log.detail = None
         task_log.xero_errors = [
@@ -379,7 +379,7 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         task_log.save()
 
     except XeroSDKError as exception:
-        logger.exception(exception.response)
+        logger.info(exception.response)
         detail = exception.response
         task_log.status = 'FAILED'
         task_log.detail = None
@@ -408,21 +408,24 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
     :param workspace_id:
     :return: None
     """
-    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-    xero_connection = XeroConnector(xero_credentials, workspace_id)
+    try:
+        xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+        xero_connection = XeroConnector(xero_credentials, workspace_id)
 
-    chain = Chain()
+        chain = Chain()
 
-    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    chain.append('apps.fyle.tasks.sync_dimensions', fyle_credentials)
+        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+        chain.append('apps.fyle.tasks.sync_dimensions', fyle_credentials)
 
-    for group in chaining_attributes:
-        trigger_function = 'apps.xero.tasks.create_{}'.format(group['export_type'])
-        chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection, group['last_export'])
+        for group in chaining_attributes:
+            trigger_function = 'apps.xero.tasks.create_{}'.format(group['export_type'])
+            chain.append(trigger_function, group['expense_group_id'], group['task_log_id'], xero_connection, group['last_export'])
 
-    if chain.length() > 1:
-        chain.run()
+        if chain.length() > 1:
+            chain.run()
 
+    except UnsuccessfulAuthentication:
+        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
 def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> list:
     """
@@ -527,7 +530,7 @@ def attach_customer_to_export(xero_connection: XeroConnector, task_log: TaskLog)
 
         except Exception as exception:
             # Silently ignoring the error, since the export should be already created
-            logger.exception('Something unexpected happened during attaching customer to export', exception)
+            logger.info('Something unexpected happened during attaching customer to export', exception)
 
 
 def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector, last_export: bool):
@@ -620,7 +623,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
     except InvalidGrant as exception:
-        logger.exception(exception.message)
+        logger.info(exception.message)
         task_log.status = 'FAILED'
         task_log.detail = None
         task_log.xero_errors = {
@@ -632,13 +635,13 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
     except RateLimitError as exception:
         handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
 
-    except NoPrivilegeError as exception:
+    except (NoPrivilegeError, UnsuccessfulAuthentication) as exception:
         xero_credentials = XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).first()
         xero_credentials.refresh_token = None
         xero_credentials.country = None
         xero_credentials.is_expired = True
         xero_credentials.save()
-        logger.error(exception.message)
+        logger.info(exception.message)
         task_log.status = 'FAILED'
         task_log.detail = None
         task_log.xero_errors = [
@@ -660,7 +663,7 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         task_log.save()
 
     except XeroSDKError as exception:
-        logger.exception(exception.response)
+        logger.info(exception.response)
         detail = exception.response
         task_log.status = 'FAILED'
         task_log.detail = None
@@ -940,13 +943,13 @@ def create_payment(workspace_id):
 
                 task_log.save()
 
-            except NoPrivilegeError as exception:
+            except (NoPrivilegeError, UnsuccessfulAuthentication) as exception:
                 xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
                 xero_credentials.refresh_token = None
                 xero_credentials.country = None
                 xero_credentials.is_expired = True
                 xero_credentials.save()
-                logger.error(exception.message)
+                logger.info(exception.message)
                 task_log.status = 'FAILED'
                 task_log.detail = None
                 task_log.xero_errors = [
@@ -1050,6 +1053,12 @@ def check_xero_object_status(workspace_id):
     except XeroCredentials.DoesNotExist:
         logger.info(
             'Xero Credentials not found for workspace_id %s',
+            workspace_id,
+        )
+
+    except UnsuccessfulAuthentication:
+        logger.info(
+            'Xero refresh token expired for workspace_id %s',
             workspace_id,
         )
 
@@ -1158,6 +1167,12 @@ def create_missing_currency(workspace_id: int):
             })
             logger.info('Created missing currency %s in Xero', fyle_currency)
 
+    except UnsuccessfulAuthentication:
+        logger.info(
+            'Xero refresh token expired for workspace_id %s',
+            workspace_id,
+        )
+
     except Exception as exception:
         logger.exception('Error creating currency in Xero', exception)
 
@@ -1181,6 +1196,12 @@ def update_xero_short_code(workspace_id: int):
         workspace.save()
 
         logger.info('Updated Xero short code')
+
+    except UnsuccessfulAuthentication:
+        logger.info(
+            'Xero refresh token expired for workspace_id %s',
+            workspace_id,
+        )
 
     except Exception as exception:
         logger.exception('Error updating Xero short code', exception)

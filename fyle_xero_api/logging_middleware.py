@@ -6,6 +6,12 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+VALID_ERROR_MESSAGES = [
+    'Invalid access token',
+    'Invalid authorization code',
+    'Error in syncing Dimensions'
+]
+
 
 class ErrorHandlerMiddleware:
 
@@ -15,7 +21,7 @@ class ErrorHandlerMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         if response.status_code >= 400:
-            if 'data' in response.__dict__:
+            if 'data' in response.__dict__ and not any(message in str(response.data) for message in VALID_ERROR_MESSAGES):
                 logger.error('%s %s', request.build_absolute_uri(), str(response.data).replace('\n', ''))
         return response
 

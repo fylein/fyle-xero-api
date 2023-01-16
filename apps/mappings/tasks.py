@@ -12,6 +12,8 @@ from fyle_accounting_mappings.models import Mapping, MappingSetting, Destination
 
 from fyle.platform.exceptions import WrongParamsError
 
+from xerosdk.exceptions import UnsuccessfulAuthentication
+
 from apps.xero.utils import XeroConnector
 from apps.tasks.models import Error
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
@@ -143,10 +145,13 @@ def upload_categories_to_fyle(workspace_id):
         return xero_attributes
 
     except XeroCredentials.DoesNotExist:
-        logger.error(
+        logger.info(
             'Xero Credentials not found for workspace_id %s',
             workspace_id,
         )
+
+    except UnsuccessfulAuthentication:
+        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
 
 def auto_create_category_mappings(workspace_id):
@@ -220,11 +225,13 @@ def async_auto_map_employees(workspace_id: int):
         resolve_expense_attribute_errors(source_attribute_type='EMPLOYEE', workspace_id=workspace_id)
 
     except XeroCredentials.DoesNotExist:
-        logger.error(
+        logger.info(
             'Xero Credentials not found for workspace_id %s',
             workspace_id,
         )
 
+    except UnsuccessfulAuthentication:
+        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
 def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
     if employee_mapping_preference:
@@ -340,6 +347,9 @@ def auto_create_cost_center_mappings(workspace_id: int):
             workspace_id, exception.message, {'error': exception.response}
         )
 
+    except UnsuccessfulAuthentication:
+        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
+
     except Exception:
         error = traceback.format_exc()
         error = {
@@ -445,6 +455,9 @@ def auto_create_project_mappings(workspace_id: int):
             'Error while creating projects workspace_id - %s in Fyle %s %s',
             workspace_id, exception.message, {'error': exception.response}
         )
+
+    except UnsuccessfulAuthentication:
+        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
     except Exception:
         error = traceback.format_exc()
@@ -603,12 +616,15 @@ def async_auto_create_custom_field_mappings(workspace_id: str):
     ).all()
 
     for mapping_setting in mapping_settings:
-        if mapping_setting.import_to_fyle:
-            sync_xero_attributes(mapping_setting.destination_field, workspace_id)
-            auto_create_expense_fields_mappings(
-                workspace_id, mapping_setting.destination_field, mapping_setting.source_field,
-                mapping_setting.source_placeholder
-            )
+        try:
+            if mapping_setting.import_to_fyle:
+                sync_xero_attributes(mapping_setting.destination_field, workspace_id)
+                auto_create_expense_fields_mappings(
+                    workspace_id, mapping_setting.destination_field, mapping_setting.source_field,
+                    mapping_setting.source_placeholder
+                )
+        except UnsuccessfulAuthentication:
+            logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
 
 def schedule_fyle_attributes_creation(workspace_id: int):
@@ -697,12 +713,15 @@ def auto_create_tax_codes_mappings(workspace_id: int):
             workspace_id, exception.message, {'error': exception.response}
         )
 
+    except UnsuccessfulAuthentication:
+        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
+
     except Exception:
         error = traceback.format_exc()
         error = {
             'error': error
         }
-        logger.error(
+        logger.exception(
             'Error while creating tax groups workspace_id - %s error: %s',
             workspace_id, error
         )

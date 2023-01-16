@@ -156,7 +156,7 @@ class Expense(models.Model):
                 eliminated_expenses.append(expense['id'])
 
         if eliminated_expenses:
-            logger.error('Expenses with ids {} are not eligible for import'.format(eliminated_expenses))
+            logger.info('Expenses with ids {} are not eligible for import'.format(eliminated_expenses))
 
         return expense_objects
 
