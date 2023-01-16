@@ -21,7 +21,8 @@ class ErrorHandlerMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         if response.status_code >= 400:
-            if 'data' in response.__dict__ and not any(message in str(response.data) for message in VALID_ERROR_MESSAGES):
+            if 'data' in response.__dict__ and \
+                not any(message in str(response.data) for message in VALID_ERROR_MESSAGES):
                 logger.error('%s %s', request.build_absolute_uri(), str(response.data).replace('\n', ''))
         return response
 
