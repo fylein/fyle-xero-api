@@ -339,6 +339,9 @@ def auto_create_cost_center_mappings(workspace_id: int):
 
         post_cost_centers_in_batches(platform, workspace_id, mapping_setting.destination_field)
 
+    except XeroCredentials.DoesNotExist:
+        logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
+
     except WrongParamsError as exception:
         logger.error(
             'Error while creating cost centers workspace_id - %s in Fyle %s %s',
@@ -447,6 +450,9 @@ def auto_create_project_mappings(workspace_id: int):
         sync_xero_attributes(mapping_setting.destination_field, workspace_id)
 
         post_projects_in_batches(platform, workspace_id, mapping_setting.destination_field)
+
+    except XeroCredentials.DoesNotExist:
+        logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
 
     except WrongParamsError as exception:
         logger.error(
@@ -708,6 +714,9 @@ def auto_create_tax_codes_mappings(workspace_id: int):
         sync_xero_attributes('TAX_CODE', workspace_id)
 
         upload_tax_groups_to_fyle(platform, workspace_id)
+
+    except XeroCredentials.DoesNotExist:
+        logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
 
     except WrongParamsError as exception:
         logger.error(
