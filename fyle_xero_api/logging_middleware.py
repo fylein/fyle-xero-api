@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 VALID_ERROR_MESSAGES = [
     'Invalid access token',
     'Invalid authorization code',
-    'Error in syncing Dimensions'
+    'Error in syncing Dimensions',
+    # TODO: check all safety 4xx errors
 ]
 
 

@@ -12,7 +12,7 @@ from fyle_accounting_mappings.models import Mapping, MappingSetting, Destination
 
 from fyle.platform.exceptions import WrongParamsError
 
-from xerosdk.exceptions import UnsuccessfulAuthentication
+from xerosdk.exceptions import UnsuccessfulAuthentication, InvalidGrant
 
 from apps.xero.utils import XeroConnector
 from apps.tasks.models import Error
@@ -150,7 +150,7 @@ def upload_categories_to_fyle(workspace_id):
             workspace_id,
         )
 
-    except UnsuccessfulAuthentication:
+    except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
 
@@ -230,7 +230,7 @@ def async_auto_map_employees(workspace_id: int):
             workspace_id,
         )
 
-    except UnsuccessfulAuthentication:
+    except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
 def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
@@ -347,7 +347,7 @@ def auto_create_cost_center_mappings(workspace_id: int):
             workspace_id, exception.message, {'error': exception.response}
         )
 
-    except UnsuccessfulAuthentication:
+    except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
     except Exception:
@@ -456,7 +456,7 @@ def auto_create_project_mappings(workspace_id: int):
             workspace_id, exception.message, {'error': exception.response}
         )
 
-    except UnsuccessfulAuthentication:
+    except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
     except Exception:
@@ -623,7 +623,7 @@ def async_auto_create_custom_field_mappings(workspace_id: str):
                     workspace_id, mapping_setting.destination_field, mapping_setting.source_field,
                     mapping_setting.source_placeholder
                 )
-        except UnsuccessfulAuthentication:
+        except (UnsuccessfulAuthentication, InvalidGrant):
             logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
 
@@ -713,7 +713,7 @@ def auto_create_tax_codes_mappings(workspace_id: int):
             workspace_id, exception.message, {'error': exception.response}
         )
 
-    except UnsuccessfulAuthentication:
+    except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
     except Exception:
