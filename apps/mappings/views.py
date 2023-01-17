@@ -56,11 +56,11 @@ class TenantMappingView(generics.ListCreateAPIView):
                     tenant_mapping.connection_id = connection[0]['id']
                     tenant_mapping.save()
 
-        except Exception:
-            logger.info('Error while fetching company information')
-
         except UnsuccessfulAuthentication:
             logger.info('Xero refresh token is invalid for workspace_id - %s', kwargs['workspace_id'])
+
+        except Exception:
+            logger.info('Error while fetching company information')
 
         return Response(
             data=self.serializer_class(tenant_mapping_object).data,
