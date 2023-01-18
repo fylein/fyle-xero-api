@@ -2417,6 +2417,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 125	workspaces	0030_auto_20221102_1924	2022-11-03 06:28:39.245951+00
 126	fyle	0015_auto_20221104_1049	2022-11-04 11:04:25.882513+00
 127	workspaces	0031_workspacegeneralsettings_is_simplify_report_closure_enabled	2023-01-11 06:28:22.8634+00
+128	fyle	0016_auto_20230117_0616	2023-01-18 09:08:24.092416+00
 \.
 
 
@@ -4931,7 +4932,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 37, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 127, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 128, true);
 
 
 --
