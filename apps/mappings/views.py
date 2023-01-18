@@ -7,6 +7,8 @@ from rest_framework.views import status
 
 from fyle_xero_api.utils import assert_valid
 
+from xerosdk.exceptions import UnsuccessfulAuthentication
+
 from .serializers import TenantMappingSerializer, GeneralMappingSerializer
 from .models import TenantMapping, GeneralMapping
 from apps.workspaces.models import XeroCredentials
@@ -54,8 +56,11 @@ class TenantMappingView(generics.ListCreateAPIView):
                     tenant_mapping.connection_id = connection[0]['id']
                     tenant_mapping.save()
 
-        except:
-            logger.error('Error while fetching company information')
+        except UnsuccessfulAuthentication:
+            logger.info('Xero refresh token is invalid for workspace_id - %s', kwargs['workspace_id'])
+
+        except Exception:
+            logger.info('Error while fetching company information')
 
         return Response(
             data=self.serializer_class(tenant_mapping_object).data,

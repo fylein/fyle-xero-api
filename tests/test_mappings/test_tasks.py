@@ -175,9 +175,9 @@ def test_upload_categories_to_fyle(db, mocker):
     xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
     xero_credentials.delete()
 
-    xero_attributes = upload_categories_to_fyle(workspace_id=workspace_id)
-    assert xero_attributes == None
-
+    # Expect XeroCredentials.DoesNotExist exception since we've deleted the credentials
+    with pytest.raises(XeroCredentials.DoesNotExist):
+        xero_attributes = upload_categories_to_fyle(workspace_id=workspace_id)
 
 def test_create_fyle_category_payload(mocker, db):
     workspace_id = 1
