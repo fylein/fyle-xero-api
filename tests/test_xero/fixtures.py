@@ -854,7 +854,7 @@ data = {
         "DateTimeUTC": "/Date(1661860692349)/",
         "TrackingCategories": [
             {
-                "Name": "Region",
+                "Name": "customer",
                 "Status": "ACTIVE",
                 "TrackingCategoryID": "fa437cfd-f005-4538-ae84-943857da5c8c",
                 "Options": [

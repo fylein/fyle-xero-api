@@ -1,3 +1,4 @@
+from datetime import datetime
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import MappingSetting, Mapping
 from apps.mappings.models import TenantMapping
@@ -100,6 +101,10 @@ def test_run_pre_mapping_settings_triggers(db, mocker, test_connection):
     
     custom_mappings = Mapping.objects.filter(workspace_id=workspace_id, source_type='CUSTOM_INTENTs').count()
     assert custom_mappings == 0
+
+    mapping = Mapping.objects.filter(workspace_id=workspace_id, source_type='CATEGORY', source_id=112).first()
+    mapping.created_at = datetime.now()
+    mapping.save()
 
 
 def test_run_post_tenant_mapping_trigger(db, test_connection):

@@ -266,13 +266,13 @@ def test_post_bill_exception(db):
 
     try:
         with mock.patch('xerosdk.apis.Invoices.post') as mock_call:
-            mock_call.side_effect = WrongParamsError(msg={
+            mock_call.side_effect = [WrongParamsError(msg={
                 'Elements': [{
                     'ValidationErrors': [{
                         'Message': ['The document date cannot be before the end of year lock date']
                     }]
                 }]
-            }, response='wrong params')
+            }, response='wrong params'), data['bill_object']]
             xero_connection.post_bill(bill, bill_lineitems, workspace_general_setting)
     except:
         logger.info("Account period error")
@@ -290,13 +290,13 @@ def test_post_bank_transaction_exception(db):
 
     try:
         with mock.patch('xerosdk.apis.BankTransactions.post') as mock_call:
-            mock_call.side_effect = WrongParamsError(msg={
+            mock_call.side_effect = [WrongParamsError(msg={
                 'Elements': [{
                     'ValidationErrors': [{
                         'Message': ['The document date cannot be before the end of year lock date']
                     }]
                 }]
-            }, response='wrong params')
+            }, response='wrong params'), data['bank_transaction_object']]
             xero_connection.post_bank_transaction(bank_transaction, bank_transaction_lineitems, workspace_general_setting)
     except:
         logger.info("Account period error")

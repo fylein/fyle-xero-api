@@ -327,6 +327,14 @@ class SyncXeroDimensionView(generics.ListCreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        except (InvalidGrant, UnsuccessfulAuthentication, InvalidTokenError):
+            return Response(
+                data={
+                    'message': 'Xero Credentials are invalid'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class RefreshXeroDimensionView(generics.ListCreateAPIView):
     """
@@ -358,6 +366,13 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        except (InvalidGrant, UnsuccessfulAuthentication, InvalidTokenError):
+            return Response(
+                data={
+                    'message': 'Xero credentials are invalid'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class PaymentView(generics.CreateAPIView):
     """

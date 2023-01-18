@@ -4,19 +4,18 @@ from unittest import mock
 from django_q.models import Schedule
 from apps.tasks.models import TaskLog
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
-from apps.xero.tasks import get_or_create_credit_card_contact, create_bill, create_bank_transaction, create_payment, \
-    check_xero_object_status, schedule_reimbursements_sync, process_reimbursements, create_or_update_employee_mapping, \
-        schedule_payment_creation, schedule_bank_transaction_creation, schedule_bills_creation, schedule_xero_objects_status_sync, \
-            create_missing_currency, update_xero_short_code, create_chain_and_export, load_attachments, attach_customer_to_export
+from apps.xero.tasks import *
+from apps.xero.tasks import __validate_expense_group
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute
-from apps.workspaces.models import XeroCredentials
+from apps.workspaces.models import XeroCredentials, LastExportDetail
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 from .fixtures import data
-from ..test_fyle.fixtures import data as fyle_data
+from tests.test_fyle.fixtures import data as fyle_data
+from tests.test_xero.fixtures import data as xero_data
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +27,34 @@ def test_get_or_create_credit_card_contact(mocker, db):
     )
     workspace_id = 1
 
-    contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant', True)
+    contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant', False)
+    assert contact == []
 
-    assert contact != None
+    contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant', True)
+    assert contact == []
+
+    try:
+        with mock.patch('apps.xero.utils.XeroConnector.get_or_create_contact') as mock_call:
+            mock_call.side_effect = [None, WrongParamsError(msg='wrong parameters', response='wrong parameters')]
+            contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant', False)
+    except:
+        logger.info('wrong parameters')
+
+    contact = get_or_create_credit_card_contact(workspace_id, '', True)
+    assert contact == []
+
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.get_or_create_contact',
+        return_value={'name': 'Books by Bessie'}
+    )
+
+    contact = get_or_create_credit_card_contact(workspace_id, 'Books by Bessie', True)
+    assert contact == {'name': 'Books by Bessie'}
 
     try:
         with mock.patch('apps.xero.utils.XeroConnector.get_or_create_contact') as mock_call:
             mock_call.side_effect = WrongParamsError(msg='wrong parameters', response='wrong parameters')
-            contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant', True)
+            contact = get_or_create_credit_card_contact(workspace_id, 'samp_merchant', False)
     except:
         logger.info('wrong parameters')
 
@@ -169,6 +188,34 @@ def test_post_bill_success(mocker, create_task_logs, db):
     assert task_log.status=='COMPLETE'
     assert bill.currency == 'USD'
 
+    task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
+    task_log.status = 'READY'
+    task_log.type = 'CREATING_BILL'
+    task_log.save()
+
+    expense_group = ExpenseGroup.objects.get(id=3)
+    expenses = expense_group.expenses.all()
+
+    expense_group.id = random.randint(100, 1500000)
+    expense_group.save()
+
+    for expense in expenses:
+        expense.expense_group_id = expense_group.id
+        expense.save()
+
+        bill_lineitems = BillLineItem.objects.get(expense_id=expense.id)
+        bill_lineitems.delete()
+
+    expense_group.expenses.set(expenses)
+
+    create_bill(expense_group.id, task_log.id, xero_connection, False)
+    
+    task_log = TaskLog.objects.get(pk=task_log.id)
+    bill = Bill.objects.get(expense_group_id=expense_group.id)
+
+    assert task_log.status=='COMPLETE'
+    assert bill.currency == 'USD'
+
 
 def test_create_bill_exceptions(db):
     workspace_id = 1
@@ -196,7 +243,7 @@ def test_create_bill_exceptions(db):
 
     expense_group.expenses.set(expenses)
     
-    with mock.patch('apps.xero.models.Bill.create_bill') as mock_call:
+    with mock.patch('apps.xero.utils.XeroConnector.post_bill') as mock_call:
         mock_call.side_effect = XeroCredentials.DoesNotExist()
         create_bill(expense_group.id, task_log.id, xero_connection, False)
 
@@ -283,8 +330,30 @@ def test_post_create_bank_transaction_success(mocker, db):
     expense_group = ExpenseGroup.objects.get(id=5)
     expenses = expense_group.expenses.all()
 
-    expense_group.id = 5
-    expense_group.save()
+    for expense in expenses:
+        expense.expense_group_id = expense_group.id
+        expense.save()
+        
+        bank_transaction_lineitems = BankTransactionLineItem.objects.get(expense_id=expense.id)
+        bank_transaction_lineitems.delete()
+    
+    expense_group.expenses.set(expenses)
+    
+    create_bank_transaction(expense_group.id, task_log.id, xero_connection, False)
+    
+    task_log = TaskLog.objects.get(pk=task_log.id)
+    bank_transaction = BankTransaction.objects.get(expense_group_id=expense_group.id)
+
+    assert task_log.status=='COMPLETE'
+    assert bank_transaction.currency == 'USD'
+
+    task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
+    task_log.status = 'READY'
+    task_log.type = 'CREATING_BANK_TRANSACTION'
+    task_log.save()
+
+    expense_group = ExpenseGroup.objects.get(id=6)
+    expenses = expense_group.expenses.all()
 
     for expense in expenses:
         expense.expense_group_id = expense_group.id
@@ -348,8 +417,14 @@ def test_create_bank_transactions_exceptions(db):
         bank_transaction_lineitems.delete()
     
     expense_group.expenses.set(expenses)
+
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
+    general_settings.map_merchant_to_contact = False
+    general_settings.auto_map_employees = True
+    general_settings.auto_create_destination_entity = True
+    general_settings.save()
     
-    with mock.patch('apps.workspaces.models.XeroCredentials.objects.get') as mock_call:
+    with mock.patch('apps.xero.utils.XeroConnector.post_bank_transaction') as mock_call:
         mock_call.side_effect = XeroCredentials.DoesNotExist()
         create_bank_transaction(expense_group.id, task_log.id, xero_connection, False)
 
@@ -598,7 +673,15 @@ def test_schedule_xero_objects_status_sync(db):
     assert schedule_count == 0
 
 
-def test_create_missing_currency(db):
+def test_create_missing_currency(db, mocker):
+    mocker.patch(
+        'xerosdk.apis.Currencies.get_all',
+        return_value={'Currencies': [{'Code': 'INR'}]}
+    )
+    mocker.patch(
+        'xerosdk.apis.Currencies.post',
+        return_value=[]
+    )
     workspace_id = 1
 
     create_missing_currency(workspace_id)
@@ -609,7 +692,11 @@ def test_create_missing_currency(db):
     create_missing_currency(workspace_id)
 
 
-def test_update_xero_short_code(db):
+def test_update_xero_short_code(db, mocker):
+    mocker.patch(
+        'xerosdk.apis.Organisations.get_all',
+        return_value=xero_data['get_all_organisations']
+    )
     workspace_id = 1
 
     update_xero_short_code(workspace_id)
@@ -625,3 +712,82 @@ def test_create_chain_and_export(db):
 
     chaining_attributes = [{'expense_group_id': 4, 'export_type': 'bill', 'task_log_id': 3, 'last_export': False}]
     create_chain_and_export(chaining_attributes, workspace_id)
+
+
+def test_update_last_export_details(db):
+    workspace_id = 1
+
+    last_export_detail = LastExportDetail.objects.create(workspace_id=workspace_id)
+    last_export_detail.last_exported_at = datetime.now()
+    last_export_detail.total_expense_groups_count = 1
+    last_export_detail.save()
+
+    last_export_detail = update_last_export_details(workspace_id=workspace_id)
+
+    assert last_export_detail.total_expense_groups_count == 0
+
+
+def test__validate_expense_group(mocker, db):
+    workspace_id = 1
+
+    expense_group = ExpenseGroup.objects.filter(fund_source='PERSONAL').first()
+
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    general_settings.corporate_credit_card_expenses_object = 'BANK TRANSACTION'
+    general_settings.import_tax_codes = True
+    general_settings.save()
+
+    general_mapping = GeneralMapping.objects.get(workspace_id=workspace_id)
+    general_mapping.default_tax_code_id = ''
+    general_mapping.default_tax_code_name = ''
+    general_mapping.save()
+
+    employee_attribute = ExpenseAttribute.objects.filter(
+        value=expense_group.description.get('employee_email'),
+        workspace_id=expense_group.workspace_id,
+        attribute_type='EMPLOYEE'
+    ).first()
+
+    mapping = Mapping.objects.get(
+        destination_type='CONTACT',
+        source_type='EMPLOYEE',
+        source=employee_attribute,
+        workspace_id=expense_group.workspace_id
+    )
+
+    mapping.delete()
+
+    try:
+        __validate_expense_group(expense_group)
+    except BulkError as exception:
+        logger.info(exception.response)
+    
+    lineitem = expense_group.expenses.first()
+    category = lineitem.category if (lineitem.category == lineitem.sub_category or lineitem.sub_category == None) else '{0} / {1}'.format(
+    lineitem.category, lineitem.sub_category)
+
+    category_attribute = ExpenseAttribute.objects.filter(
+        value=category,
+        workspace_id=expense_group.workspace_id,
+        attribute_type='CATEGORY'
+    ).first()
+
+    account = Mapping.objects.filter(
+        source_type='CATEGORY',
+        source=category_attribute,
+        workspace_id=expense_group.workspace_id
+    ).first()
+
+    account.delete()
+
+    try:
+        __validate_expense_group(expense_group)
+    except:
+        logger.info('Mappings are missing')
+
+    general_mapping = GeneralMapping.objects.get(workspace_id=expense_group.workspace_id)
+    general_mapping.delete()
+    try:
+        __validate_expense_group(expense_group)
+    except:
+        logger.info('Mappings are missing')

@@ -19,6 +19,20 @@ def test_post_request(mocker):
         post_request(url='sdfghjk', body={}, refresh_token='srtyu')
     except:
         logger.info('Error in post request')
+    
+    mocker.patch(
+        'apps.fyle.helpers.requests.post',
+        return_value=Response(
+            {
+                'message': 'Post request'
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    )
+    try:
+        post_request(url='sdfghjk', body={}, refresh_token='srtyu')
+    except:
+        logger.info('Error in post request')
 
 
 def test_get_request(mocker):
@@ -32,7 +46,21 @@ def test_get_request(mocker):
         )
     )
     try:
-        get_request(url='sdfghjk', params={}, refresh_token='srtyu')
+        get_request(url='sdfghjk', params={'key': 'sample'}, refresh_token='srtyu')
+    except:
+        logger.info('Error in post request')
+    
+    mocker.patch(
+        'apps.fyle.helpers.requests.get',
+        return_value=Response(
+            {
+                'message': 'Get request'
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    )
+    try:
+        get_request(url='sdfghjk', params={'sample': True}, refresh_token='srtyu')
     except:
         logger.info('Error in post request')
 
