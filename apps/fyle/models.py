@@ -170,7 +170,7 @@ def get_default_expense_state():
     return 'PAYMENT_PROCESSING'
 
 def get_default_ccc_expense_state():
-    return 'PAYMENT_PROCESSING'
+    return 'PAID'
 
 CCC_EXPENSE_STATE = (
     ('APPROVED', 'APPROVED'),
