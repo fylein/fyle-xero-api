@@ -88,11 +88,8 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
             if expense_group_settings.import_card_credits:
                 filter_credit_expenses = False
 
-            expenses, source_account_type = [], []
+            expenses = []
             reimbursable_expenses_count = 0
-
-            for source in fund_source:
-                source_account_type.append(SOURCE_ACCOUNT_MAP[source])
 
             if 'PERSONAL' in fund_source:
                 expenses.extend(platform.expenses.get(
