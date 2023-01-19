@@ -2,9 +2,11 @@ data = {
     'export_settings': {
         "expense_group_settings": {
             "reimbursable_expense_state": "PAYMENT_PROCESSING",
-            "reimbursable_export_date_type": "current_date",
+            "reimbursable_export_date_type": "",
             "ccc_expense_state": "PAYMENT_PROCESSING",
-            "import_card_credits": True
+            "import_card_credits": True,
+            "ccc_export_date_type": "",
+            "expense_state": ""
         },
         "workspace_general_settings": {
             "reimbursable_expenses_object": "PURCHASE BILL",
@@ -63,8 +65,8 @@ data = {
         "workspace_id": 1
     },
     'export_settings_missing_values': {
-        'expense_group_settings': {},
-        'workspace_general_settings': {},
-        'general_mappings': {}
+        'expense_group_settings': "",
+        'workspace_general_settings': "",
+        'general_mappings': ""
     },
 }

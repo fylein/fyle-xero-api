@@ -5,7 +5,7 @@ from requests import Response
 from unittest import mock
 from xerosdk import InvalidTokenError, InternalServerError, XeroSDK
 from apps.workspaces.utils import generate_token, revoke_token, generate_xero_identity, generate_xero_refresh_token
-
+from tests.test_xero.fixtures import data as xero_data
 
 def test_generate_token(mocker, db):
     mocker.patch(
@@ -35,6 +35,15 @@ def test_generate_xero_identity(mocker, db):
             'xerosdk.XeroSDK.__init__',
             return_value=None
         )
+        mocker.patch(
+            'xerosdk.apis.Tenants.get_all',
+            return_value=xero_data['get_all_tenants']
+        )
+        mocker.patch(
+            'apps.workspaces.utils.revoke_token',
+            return_value=None
+        )
+
         generate_xero_identity(authorization_code='asdfgh', redirect_uri='sdfghj')
     except:
         logger.info('Wrong client secret or/and refresh token')

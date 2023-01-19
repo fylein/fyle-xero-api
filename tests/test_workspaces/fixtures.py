@@ -13,12 +13,12 @@ data = {
         'auto_create_destination_entity':True,
         'skip_cards_mapping':False,
         'import_tax_codes':True,
-        'import_customers':True,
+        'import_customers':False,
         'created_at':'2022-08-02T20:25:24.644164Z',
         'updated_at':'2022-08-02T20:25:24.644209Z',
         'auto_create_merchant_destination_entity': False,
         'charts_of_accounts':[
-            'EXPENSE'
+            'EXPENSE', 'SAMPLE'
         ],
         'workspace':2
     },

@@ -308,8 +308,8 @@ class ConnectXeroView(viewsets.ViewSet):
                     xero_credentials.country = company_info['CountryCode']
                     xero_credentials.save()
 
-                except xero_exc.WrongParamsError as exception:
-                    logger.error(exception.response)
+                except (xero_exc.WrongParamsError, xero_exc.UnsuccessfulAuthentication) as exception:
+                    logger.info(exception.response)
             
             if workspace.onboarding_state == 'CONNECTION':
                 workspace.onboarding_state = 'EXPORT_SETTINGS'
@@ -319,12 +319,7 @@ class ConnectXeroView(viewsets.ViewSet):
                 data=XeroCredentialSerializer(xero_credentials).data,
                 status=status.HTTP_200_OK
             )
-        except xero_exc.InvalidClientError as e:
-            return Response(
-                json.loads(e.response),
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except xero_exc.InvalidGrant as e:
+        except (xero_exc.InvalidClientError, xero_exc.InvalidGrant, xero_exc.UnsuccessfulAuthentication) as e:
             return Response(
                 json.loads(e.response),
                 status=status.HTTP_400_BAD_REQUEST

@@ -96,7 +96,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
                     source_account_type=['PERSONAL_CASH_ACCOUNT'],
                     state=expense_group_settings.reimbursable_expense_state,
                     settled_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAYMENT_PROCESSING' else None,
-                    filter_credit_expenses=filter_credit_expenses,
+                    filter_credit_expenses=True,
                     last_paid_at=last_synced_at if expense_group_settings.reimbursable_expense_state == 'PAID' else None
                 ))
 
@@ -145,3 +145,7 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
         task_log.status = 'FATAL'
         task_log.save()
         logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
+
+def sync_dimensions(fyle_credentials):
+    platform = PlatformConnector(fyle_credentials)
+    platform.import_fyle_dimensions()

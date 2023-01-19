@@ -363,32 +363,32 @@ class XeroConnector:
         try:
             self.sync_accounts()
         except Exception as exception:
-            logger.exception(exception)
+            logger.info(exception)
 
         try:
             self.sync_contacts()
         except Exception as exception:
-            logger.exception(exception)
+            logger.info(exception)
 
         try:
             self.sync_customers()
         except Exception as exception:
-            logger.exception(exception)
+            logger.info(exception)
 
         try:
             self.sync_items()
         except Exception as exception:
-            logger.exception(exception)
+            logger.info(exception)
 
         try:
             self.sync_tracking_categories()
         except Exception as exception:
-            logger.exception(exception)
+            logger.info(exception)
 
         try:
             self.sync_tax_codes()
         except Exception as exception:
-            logger.exception(exception)
+            logger.info(exception)
 
     def post_contact(self, contact_name: str, email: str):
         """
