@@ -28,8 +28,7 @@ data = {
         "workspace_general_settings": {
             "reimbursable_expenses_object": "PURCHASE BILL",
             "corporate_credit_card_expenses_object": "BANK TRANSACTION",
-            "auto_map_employees": "EMAIL",
-            'is_simplify_report_closure_enabled': True
+            "auto_map_employees": "EMAIL"
         },
         "expense_group_settings": {
             "reimbursable_expense_group_fields": [

@@ -3,7 +3,6 @@ data = {
         'id':2,
         'reimbursable_expenses_object':'PURCHASE BILL',
         'corporate_credit_card_expenses_object':'BANK TRANSACTION',
-        'is_simplify_report_closure_enabled': True,
         'sync_fyle_to_xero_payments':False,
         'sync_xero_to_fyle_payments':True,
         'map_merchant_to_contact':True,
