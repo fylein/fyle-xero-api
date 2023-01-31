@@ -9,7 +9,7 @@ class ExportSettingsTrigger:
     Class containing all triggers for Export Settings
     """
     @staticmethod
-    def run_workspace_general_settings_triggers(workspace_general_settings_instance: WorkspaceGeneralSettings, import_card_credits):
+    def run_workspace_general_settings_triggers(workspace_general_settings_instance: WorkspaceGeneralSettings):
         """
         Run workspace general settings triggers
         """
@@ -24,7 +24,7 @@ class ExportSettingsTrigger:
             }
         )
 
-        delete_cards_mapping_settings(workspace_general_settings_instance,import_card_credits)
+        delete_cards_mapping_settings(workspace_general_settings_instance)
 
         schedule_auto_map_employees(workspace_general_settings_instance.auto_map_employees,
             workspace_general_settings_instance.workspace_id)

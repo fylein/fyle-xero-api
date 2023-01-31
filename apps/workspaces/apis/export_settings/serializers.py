@@ -127,7 +127,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
             )
             expense_group_settings['import_card_credits'] = True
 
-        ExportSettingsTrigger.run_workspace_general_settings_triggers(workspace_general_settings_instance, expense_group_settings['import_card_credits'])
+        ExportSettingsTrigger.run_workspace_general_settings_triggers(workspace_general_settings_instance)
 
         expense_group_settings_instance = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
         expense_group_settings['expense_state'] = expense_group_settings_instance.expense_state
