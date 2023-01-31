@@ -233,3 +233,14 @@ def generate_xero_identity(authorization_code: str, redirect_uri: str) -> str:
 
     elif response.status_code == 500:
         raise InternalServerError('Internal server error', response.text)
+
+
+def delete_cards_mapping_settings(workspace_general_settings: WorkspaceGeneralSettings, expense_group_settings: ExpenseGroupSettings):
+    if not expense_group_settings.import_card_credits or not workspace_general_settings.corporate_credit_card_expenses_object:
+        mapping_setting = MappingSetting.objects.filter(
+            workspace_id=workspace_general_settings.workspace_id,
+            source_field='CORPORATE_CARD',
+            destination_field='BANK_ACCOUNT'
+        ).first()
+        if mapping_setting:
+            mapping_setting.delete()
