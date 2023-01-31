@@ -13,9 +13,6 @@ from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute, Ma
 from apps.tasks.models import Error
 from apps.mappings.tasks import schedule_projects_creation, schedule_cost_centers_creation, schedule_fyle_attributes_creation,\
                         upload_attributes_to_fyle
-from apps.workspaces.models import WorkspaceGeneralSettings
-from apps.workspaces.utils import delete_cards_mapping_settings
-from apps.fyle.models import ExpenseGroupSettings
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -49,10 +46,6 @@ def run_post_mapping_settings_triggers(sender, instance: MappingSetting, **kwarg
     if instance.is_custom:
         schedule_fyle_attributes_creation(int(instance.workspace_id))
 
-    workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=instance.workspace_id).first()
-    expense_group_settings = ExpenseGroupSettings.objects.filter(workspace_id=instance.workspace_id).first()
-    if workspace_general_settings:
-        delete_cards_mapping_settings(workspace_general_settings, expense_group_settings)
 
 
 @receiver(pre_save, sender=MappingSetting)
