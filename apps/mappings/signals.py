@@ -47,7 +47,6 @@ def run_post_mapping_settings_triggers(sender, instance: MappingSetting, **kwarg
         schedule_fyle_attributes_creation(int(instance.workspace_id))
 
 
-
 @receiver(pre_save, sender=MappingSetting)
 def run_pre_mapping_settings_triggers(sender, instance: MappingSetting, **kwargs):
     """
