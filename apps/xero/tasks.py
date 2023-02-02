@@ -192,7 +192,7 @@ def load_attachments(xero_connection: XeroConnector, ref_id: str, ref_type: str,
 
     except Exception:
         error = traceback.format_exc()
-        logger.exception(
+        logger.info(
             'Attachment failed for expense group id %s / workspace id %s \n Error: %s',
             expense_group.id, expense_group.workspace_id, {'error': error}
         )
