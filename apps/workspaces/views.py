@@ -519,14 +519,23 @@ class XeroExternalSignUpsView(viewsets.ViewSet):
         """
         Post Xero External Sign Ups
         """
-        authorization_code = request.data.get('code')
-        redirect_uri = request.data.get('redirect_uri')
-        identity = generate_xero_identity(authorization_code, redirect_uri)
+        try:
+            authorization_code = request.data.get('code')
+            redirect_uri = request.data.get('redirect_uri')
+            identity = generate_xero_identity(authorization_code, redirect_uri)
 
-        return Response(
-            data=identity,
-            status=status.HTTP_200_OK
-        )
+            return Response(
+                data=identity,
+                status=status.HTTP_200_OK
+            )
+        except Exception as exception:
+            logger.info('Error while generating xero identity: %s', exception.__dict__)
+            return Response(
+                data={
+                    'message': 'Error while generating xero identity'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class ExportToXeroView(viewsets.ViewSet):

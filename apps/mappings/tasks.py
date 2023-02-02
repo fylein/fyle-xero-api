@@ -277,11 +277,11 @@ def create_fyle_cost_centers_payload(xero_attributes: List[DestinationAttribute]
     :param fyle_attribute: Fyle Attribute
     :return: Fyle Cost Centers Payload
     """
-
+    existing_fyle_cost_centers = [cost_center.lower() for cost_center in existing_fyle_cost_centers]
     fyle_cost_centers_payload = []
 
     for xero_attribute in xero_attributes:
-        if xero_attribute.value not in existing_fyle_cost_centers:
+        if xero_attribute.value.lower() not in existing_fyle_cost_centers:
             fyle_cost_centers_payload.append({
                 'name': xero_attribute.value,
                 'is_enabled': True if xero_attribute.active is None else xero_attribute.active,
@@ -390,9 +390,10 @@ def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_
     :return: Fyle Projects Payload
     """
     payload = []
+    existing_project_names = [project_name.lower() for project_name in existing_project_names]
 
     for project in projects:
-        if project.value not in existing_project_names:
+        if project.value.lower() not in existing_project_names:
             payload.append({
                 'name': project.value,
                 'code': project.destination_id,
@@ -686,9 +687,11 @@ def create_fyle_tax_group_payload(xero_attributes: List[DestinationAttribute], e
     :return: Fyle tax Group Payload
     """
 
+    existing_fyle_tax_groups = [tax_group.lower() for tax_group in existing_fyle_tax_groups]
+
     fyle_tax_group_payload = []
     for xero_attribute in xero_attributes:
-        if xero_attribute.value not in existing_fyle_tax_groups:
+        if xero_attribute.value.lower() not in existing_fyle_tax_groups:
             fyle_tax_group_payload.append(
                 {
                     'name': xero_attribute.value,
