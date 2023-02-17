@@ -36,7 +36,7 @@ spec:
           image: docker.io/{{DOCKERHUB_USERNAME}}/fyle_xero-api:{{RELEASE_VERSION}}
           resources:
             limits:
-              memory: 450Mi
+              memory: 300Mi
             requests:
               memory: 200Mi
           env:
