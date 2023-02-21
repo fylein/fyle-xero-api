@@ -14,7 +14,7 @@ from xerosdk import InvalidTokenError, InternalServerError, XeroSDK
 
 from fyle_accounting_mappings.models import MappingSetting
 
-from apps.mappings.tasks import schedule_categories_creation, schedule_auto_map_employees, schedule_tax_groups_creation
+from apps.mappings.tasks import schedule_auto_map_employees, schedule_tax_groups_creation
 from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
 
 from fyle_xero_api.utils import assert_valid
@@ -185,8 +185,6 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
         sync_xero_to_fyle_payments=general_settings.sync_xero_to_fyle_payments,
         workspace_id=workspace_id
     )
-
-    schedule_categories_creation(import_categories=general_settings.import_categories, workspace_id=workspace_id)
 
     schedule_auto_map_employees(general_settings_payload['auto_map_employees'], workspace_id)
 

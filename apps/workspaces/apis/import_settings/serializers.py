@@ -99,7 +99,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
         mapping_settings = validated.pop('mapping_settings')
 
         with transaction.atomic():
-            WorkspaceGeneralSettings.objects.update_or_create(
+            workspace_general_settings_instance, _ = WorkspaceGeneralSettings.objects.update_or_create(
                 workspace=instance,
                 defaults={
                     'import_categories': workspace_general_settings.get('import_categories'),
@@ -123,7 +123,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                 workspace_id=instance.id
             )
 
-            trigger.post_save_workspace_general_settings()
+            trigger.post_save_workspace_general_settings(workspace_general_settings_instance)
             trigger.pre_save_mapping_settings()
             
             if workspace_general_settings['import_tax_codes']:
@@ -162,7 +162,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                     }
                 )
         
-            trigger.post_save_mapping_settings()
+            trigger.post_save_mapping_settings(workspace_general_settings_instance)
 
         if instance.onboarding_state == 'IMPORT_SETTINGS':
             instance.onboarding_state = 'ADVANCED_SETTINGS'

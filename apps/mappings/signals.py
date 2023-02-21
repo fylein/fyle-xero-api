@@ -11,13 +11,15 @@ from django_q.tasks import async_task
 
 from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute, Mapping
 from apps.tasks.models import Error
-from apps.mappings.tasks import schedule_projects_creation, schedule_cost_centers_creation, schedule_fyle_attributes_creation,\
-                        upload_attributes_to_fyle
+from apps.mappings.tasks import schedule_cost_centers_creation, schedule_fyle_attributes_creation,\
+    upload_attributes_to_fyle
+from apps.workspaces.models import WorkspaceGeneralSettings
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from .models import TenantMapping
+from .helpers import schedule_or_delete_fyle_import_tasks
 
 @receiver(post_save, sender=Mapping)
 def resolve_post_mapping_errors(sender, instance: Mapping, **kwargs):
@@ -37,8 +39,9 @@ def run_post_mapping_settings_triggers(sender, instance: MappingSetting, **kwarg
     :param instance: Row instance of Sender Class
     :return: None
     """
+    workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=instance.workspace_id).first()
     if instance.source_field == 'PROJECT':
-        schedule_projects_creation(instance.import_to_fyle, int(instance.workspace_id))
+        schedule_or_delete_fyle_import_tasks(workspace_general_settings)
 
     if instance.source_field == 'COST_CENTER':
         schedule_cost_centers_creation(instance.import_to_fyle, int(instance.workspace_id))
