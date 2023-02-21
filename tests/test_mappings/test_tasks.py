@@ -435,3 +435,15 @@ def test_resolve_expense_attribute_errors(db):
 
     resolve_expense_attribute_errors('EMPLOYEE', workspace_id, 'CONTACT')
     assert Error.objects.get(id=error.id).is_resolved == True
+
+def test_auto_import_and_map_fyle_fields(db):
+    workspace_id = 1
+
+    auto_import_and_map_fyle_fields(workspace_id=workspace_id)
+
+    schedule = Schedule.objects.filter(
+        func='apps.mappings.tasks.auto_import_and_map_fyle_fields',
+        args='{}'.format(workspace_id),
+    ).first()
+
+    assert schedule == None

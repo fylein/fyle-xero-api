@@ -2,7 +2,7 @@ from datetime import datetime
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import MappingSetting, Mapping
 from apps.mappings.models import TenantMapping
-from apps.workspaces.models import Workspace
+from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from ..test_fyle.fixtures import data as fyle_data
 
 
@@ -70,6 +70,31 @@ def test_run_post_mapping_settings_triggers(db, mocker, test_connection):
 
     assert schedule.func == 'apps.mappings.tasks.async_auto_create_custom_field_mappings'
     assert schedule.args == '1'
+
+    mapping_setting = MappingSetting.objects.filter(
+        source_field='PROJECT',
+        workspace_id=workspace_id
+    ).delete()
+    workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
+    workspace_general_settings.import_categories = False
+    workspace_general_settings.import_vendors_as_merchants = False
+    workspace_general_settings.save()
+
+    mapping_setting = MappingSetting(
+        source_field='LOLOOO',
+        destination_field='HEHEHE',
+        workspace_id=workspace_id,
+        import_to_fyle=True,
+        is_custom=False
+    )
+    mapping_setting.save()
+
+    schedule = Schedule.objects.filter(
+        func='apps.mappings.tasks.auto_import_and_map_fyle_fields',
+        args='{}'.format(workspace_id),
+    ).first()
+
+    assert schedule.func == 'apps.mappings.tasks.auto_import_and_map_fyle_fields'
 
 
 def test_run_pre_mapping_settings_triggers(db, mocker, test_connection):

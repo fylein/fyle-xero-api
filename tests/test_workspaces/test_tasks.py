@@ -1,7 +1,9 @@
 from datetime import datetime
 from apps.tasks.models import TaskLog
-from apps.workspaces.tasks import run_sync_schedule, schedule_sync
-from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail
+from apps.workspaces.tasks import run_sync_schedule, schedule_sync, async_update_fyle_credentials
+from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, \
+    FyleCredential
+
 from .fixtures import data
 
 
@@ -58,3 +60,13 @@ def test_run_sync_schedule(mocker,db):
     ).first()
     
     assert task_log.status == 'COMPLETE'
+
+def test_async_update_fyle_credentials(db):
+    workspace_id = 1
+    refresh_token = 'hehehuhu'
+
+    async_update_fyle_credentials('orPJvXuoLqvJ', refresh_token)
+
+    fyle_credentials = FyleCredential.objects.filter(workspace_id=workspace_id).first()
+
+    assert fyle_credentials.refresh_token == refresh_token
