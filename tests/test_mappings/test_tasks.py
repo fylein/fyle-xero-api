@@ -117,29 +117,6 @@ def test_auto_create_project_mappings(db, mocker):
         mock_call.side_effect = Exception()
         response = auto_create_project_mappings(workspace_id=workspace_id)
 
-
-@pytest.mark.django_db
-def test_schedule_projects_creation(db):
-    workspace_id = 1
-    schedule_projects_creation(import_to_fyle=True, workspace_id=workspace_id)
-
-    schedule = Schedule.objects.filter(
-        func='apps.mappings.tasks.auto_create_project_mappings',
-        args='{}'.format(workspace_id),
-    ).first()
-    
-    assert schedule.func == 'apps.mappings.tasks.auto_create_project_mappings'
-
-    schedule_projects_creation(import_to_fyle=False, workspace_id=workspace_id)
-
-    schedule = Schedule.objects.filter(
-        func='apps.mappings.tasks.auto_create_project_mappings',
-        args='{}'.format(workspace_id),
-    ).first()
-
-    assert schedule == None
-
-
 def test_remove_duplicates(db):
 
     attributes = DestinationAttribute.objects.filter(attribute_type='EMPLOYEE')
@@ -235,28 +212,6 @@ def test_auto_create_category_mappings(db, mocker):
     response = auto_create_category_mappings(workspace_id=workspace_id)
 
     assert response == None
-
-
-def test_schedule_categories_creation(db):
-    workspace_id = 1
-    schedule_categories_creation(import_categories=True, workspace_id=workspace_id)
-
-    schedule = Schedule.objects.filter(
-        func='apps.mappings.tasks.auto_create_category_mappings',
-        args='{}'.format(workspace_id),
-    ).first()
-    
-    assert schedule.func == 'apps.mappings.tasks.auto_create_category_mappings'
-
-    schedule_categories_creation(import_categories=False, workspace_id=workspace_id)
-
-    schedule = Schedule.objects.filter(
-        func='apps.mappings.tasks.auto_create_category_mappings',
-        args='{}'.format(workspace_id),
-    ).first()
-
-    assert schedule == None
-
 
 def test_async_auto_map_employees(mocker, db):
     workspace_id = 1
@@ -480,3 +435,15 @@ def test_resolve_expense_attribute_errors(db):
 
     resolve_expense_attribute_errors('EMPLOYEE', workspace_id, 'CONTACT')
     assert Error.objects.get(id=error.id).is_resolved == True
+
+def test_auto_import_and_map_fyle_fields(db):
+    workspace_id = 1
+
+    auto_import_and_map_fyle_fields(workspace_id=workspace_id)
+
+    schedule = Schedule.objects.filter(
+        func='apps.mappings.tasks.auto_import_and_map_fyle_fields',
+        args='{}'.format(workspace_id),
+    ).first()
+
+    assert schedule == None

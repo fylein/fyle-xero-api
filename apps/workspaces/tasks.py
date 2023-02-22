@@ -94,7 +94,7 @@ def export_to_xero(workspace_id, export_mode='MANUAL'):
         last_export_detail.save()
 
 def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
-    fyle_credentials = FyleCredential.objects.get(workspace__fyle_org_id=fyle_org_id)
+    fyle_credentials = FyleCredential.objects.filter(workspace__fyle_org_id=fyle_org_id).first()
     if fyle_credentials:
         fyle_credentials.refresh_token = refresh_token
         fyle_credentials.save()

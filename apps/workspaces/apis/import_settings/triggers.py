@@ -1,7 +1,10 @@
 from typing import Dict, List
 from django.db.models import Q
 
-from apps.mappings.tasks import schedule_categories_creation, schedule_cost_centers_creation, schedule_tax_groups_creation, schedule_projects_creation, schedule_fyle_attributes_creation
+from apps.mappings.tasks import schedule_cost_centers_creation, schedule_tax_groups_creation,\
+    schedule_fyle_attributes_creation
+from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
+from apps.workspaces.models import WorkspaceGeneralSettings
 from fyle_accounting_mappings.models import MappingSetting
 
 
@@ -14,7 +17,7 @@ class ImportSettingsTrigger:
         self.__mapping_settings = mapping_settings
         self.__workspace_id = workspace_id
 
-    def post_save_workspace_general_settings(self):
+    def post_save_workspace_general_settings(self, workspace_general_settings_instance: WorkspaceGeneralSettings):
         """
         Post save action for workspace general settings
         """
@@ -24,19 +27,14 @@ class ImportSettingsTrigger:
             workspace_id=self.__workspace_id
         )
 
-        #This will take care of auto creating category mappings
-        schedule_categories_creation(
-            import_categories=self.__workspace_general_settings.get('import_categories'),
-            workspace_id=self.__workspace_id
-        )
-
         if not self.__workspace_general_settings.get('import_customers'):
             MappingSetting.objects.filter(
                 workspace_id=self.__workspace_id, 
                 source_field='PROJECT',
                 destination_field='CUSTOMER'
             ).delete()
-            schedule_projects_creation(False, self.__workspace_id)
+
+        schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
 
     def pre_save_mapping_settings(self):
         """
@@ -44,27 +42,20 @@ class ImportSettingsTrigger:
         """
         mapping_settings = self.__mapping_settings
 
-        projects_mapping_available = False
         cost_center_mapping_available = False
 
         #Here we are checking if any of the mappings have PROJECT and COST_CENTER mapping
         for setting in mapping_settings:
-            if setting['source_field'] == 'PROJECT':
-                projects_mapping_available = True
-            elif setting['source_field'] == 'COST_CENTER':
+            if setting['source_field'] == 'COST_CENTER':
                 cost_center_mapping_available = True
-
-        #Based on the value if PROJECT and COST_CENTER mapping is not present we are clearing out the schedules from the DB.
-        if not projects_mapping_available:
-            schedule_projects_creation(False, self.__workspace_id)
         
         if not cost_center_mapping_available:
             schedule_cost_centers_creation(False, self.__workspace_id)
         
-        #Schdule for auto craeting custom field mappings
+        #Schdule for auto creating custom field mappings
         schedule_fyle_attributes_creation(self.__workspace_id)
 
-    def post_save_mapping_settings(self):
+    def post_save_mapping_settings(self, workspace_general_settings_instance: WorkspaceGeneralSettings):
         """
         Post save actions for mapping settings
         Here we need to clear out the data from the mapping-settings table for consecutive runs.
@@ -84,3 +75,5 @@ class ImportSettingsTrigger:
             ~Q(destination_field__in=destination_fields),
             workspace_id=self.__workspace_id
         ).delete()
+
+        schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
