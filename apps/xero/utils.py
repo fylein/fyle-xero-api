@@ -435,7 +435,7 @@ class XeroConnector:
                 tax_type = general_mappings.default_tax_code_id
 
             tax_amount = 0.00
-            if line.tax_code and line.tax_amount:
+            if line.tax_code and line.tax_amount is not None:
                 tax_amount = line.tax_amount
             elif general_mappings:
                 tax_amount = round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2)
@@ -524,7 +524,7 @@ class XeroConnector:
                 unit_amount = self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id)
 
             tax_type = None
-            if (line.tax_code and line.tax_amount):
+            if (line.tax_code and line.tax_amount is not None):
                 tax_type = line.tax_code
             elif general_settings.import_tax_codes and general_mappings != None:
                 tax_type = general_mappings.default_tax_code_id
