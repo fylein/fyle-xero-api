@@ -79,16 +79,14 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
             payload.append({
                 'name': category.value,
                 'code': category.destination_id,
-                'is_enabled': True,
-                'restricted_project_ids': None
+                'is_enabled': True
             })
         else:
             payload.append({
                 'id': category_map[category.value.lower()]['id'],
                 'name': category.value,
                 'code': category.destination_id,
-                'is_enabled': category_map[category.value.lower()]['is_enabled'],
-                'restricted_project_ids': None
+                'is_enabled': category_map[category.value.lower()]['is_enabled']
             })
     return payload
 
