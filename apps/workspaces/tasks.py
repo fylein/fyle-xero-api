@@ -1,13 +1,26 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import List
+import logging
 
 from django_q.models import Schedule
+
+from django.template import loader
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.db.models import Q
+from django.utils.safestring import mark_safe
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
 from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation, create_chain_and_export
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, FyleCredential
+from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, FyleCredential, XeroCredentials
+from apps.tasks.models import Error
+from fyle_accounting_mappings.models import ExpenseAttribute
+
+logger = logging.getLogger(__name__)
+logger.level = logging.INFO
 
 
 def schedule_email_notification(workspace_id: int, schedule_enabled: bool, hours: int):
@@ -126,3 +139,76 @@ def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
     if fyle_credentials:
         fyle_credentials.refresh_token = refresh_token
         fyle_credentials.save()
+
+def run_email_notification(workspace_id):
+    expense_data = []
+    expense_html = ''
+    ws_schedule = WorkspaceSchedule.objects.get(
+        workspace_id=workspace_id, enabled=True
+    )
+
+    task_logs = TaskLog.objects.filter(
+        ~Q(type__in=['CREATING_BILL_PAYMENT', 'FETCHING_EXPENSES']),
+        workspace_id=workspace_id,
+        status='FAILED',
+    )
+    workspace = Workspace.objects.get(id=workspace_id)
+    try:
+        xero = XeroCredentials.get_active_xero_credentials(workspace_id)
+        errors = Error.objects.filter(workspace_id=workspace_id,is_resolved=False).order_by('id')[:10]
+        for error in errors:
+            expense_template = loader.get_template('error_row.html')
+            html = expense_template.render({
+                'error': error,
+                'expense_data': expense_data
+            })
+            expense_html += html
+
+            error_type = error.type.lower().title().replace('_', ' ')
+            expense_data = list(expense_data)
+            expense_data.append(error_type)
+
+        expense_data = set(expense_data)
+        expense_data = ', '.join([str(data) for data in expense_data])
+        for admin_email in ws_schedule.emails_selected:
+            attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value=admin_email).first()
+
+            if attribute:
+                admin_name = attribute.detail['full_name']
+            else:
+                for data in ws_schedule.additional_email_options:
+                    if data['email'] == admin_email:
+                        admin_name = data['name']
+
+            if task_logs and (ws_schedule.error_count is None or len(task_logs) > ws_schedule.error_count):
+                context = {
+                    'name': admin_name,
+                    'errors': len(task_logs),
+                    'fyle_company': workspace.name,
+                    'xero_company': xero.company_name,
+                    'export_time': workspace.last_synced_at.strftime("%d %b %Y | %H:%M"),
+                    'year': date.today().year,
+                    'app_url': "{0}/workspaces/main/dashboard".format(settings.FYLE_APP_URL),
+                    'task_logs': mark_safe(expense_html),
+                    'error_type': expense_data
+                }
+                message = render_to_string("mail_template.html", context)
+
+                mail = EmailMessage(
+                    subject="Export To QuickBooks Online Failed",
+                    body=message,
+                    from_email=settings.EMAIL,
+                    to=[admin_email],
+                )
+
+                mail.content_subtype = "html"
+                mail.send()
+
+        ws_schedule.error_count = len(task_logs)
+        ws_schedule.save()
+
+    except XeroCredentials.DoesNotExist:
+        logger.info(
+            'Xero Credentials not found for workspace_id %s',
+            workspace_id
+        )
