@@ -278,6 +278,12 @@ XERO_REDIRECT_URI = os.environ.get('XERO_REDIRECT_URI')
 XERO_TOKEN_URI = os.environ.get('XERO_TOKEN_URI')
 
 # Cache Settings
+SENDGRID_SANDBOX_MODE_IN_DEBUG=False
+
+SENDGRID_API_KEY = os.environ.get('SENDGRID_KEY')
+EMAIL = os.environ.get('SENDGRID_EMAIL')
+EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+
 CACHE_EXPIRY = 3600
 
 CORS_ORIGIN_ALLOW_ALL = True
