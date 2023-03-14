@@ -58,7 +58,7 @@ services:
       XERO_TOKEN_URI: https://identity.xero.com/connect/token
 
   db:
-    image: "postgres:latest"
+    image: "postgres:15"
     environment: 
       POSTGRES_PASSWORD: postgres
     volumes:
