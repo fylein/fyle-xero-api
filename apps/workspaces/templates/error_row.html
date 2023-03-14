@@ -8,7 +8,7 @@
   <tr>
     <td>Xero Online Error</td>
 {% endif %}
-{% set error_type = error.type.lower().title().replace('_', ' ') %}
+{% set error_type = error.type.title().replace('_', ' ') %}
 {% set expense_data = expense_data.append(error_type) %}
 {% if error.type == 'XERO_ERROR' %}
   <td>{{ error.error_title }}</td>

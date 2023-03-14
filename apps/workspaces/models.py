@@ -2,7 +2,8 @@
 Workspace Models
 """
 from django.db import models
-from django.contrib.postgres.fields import JSONField, ArrayField
+from django.db.models import JSONField
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth import get_user_model
 from django_q.models import Schedule
 

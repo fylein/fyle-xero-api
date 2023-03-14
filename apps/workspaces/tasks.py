@@ -164,12 +164,11 @@ def run_email_notification(workspace_id):
             })
             expense_html += html
 
-            error_type = error.type.lower().title().replace('_', ' ')
-            expense_data = list(expense_data)
+            error_type = error.type.title().replace('_', ' ')
+            expense_data = expense_data
             expense_data.append(error_type)
 
-        expense_data = set(expense_data)
-        expense_data = ', '.join([str(data) for data in expense_data])
+            expense_data = ', '.join(list(set(expense_data)))
         for admin_email in ws_schedule.emails_selected:
             attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value=admin_email).first()
 
