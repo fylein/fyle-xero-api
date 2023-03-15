@@ -141,55 +141,40 @@ def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
         fyle_credentials.save()
 
 def run_email_notification(workspace_id):
-    expense_data = []
-    expense_html = ''
     ws_schedule = WorkspaceSchedule.objects.get(
         workspace_id=workspace_id, enabled=True
     )
 
-    task_logs = TaskLog.objects.filter(
+    task_logs_count = TaskLog.objects.filter(
         ~Q(type__in=['CREATING_BILL_PAYMENT', 'FETCHING_EXPENSES']),
         workspace_id=workspace_id,
         status='FAILED',
-    )
+    ).count()
     workspace = Workspace.objects.get(id=workspace_id)
     try:
         xero = XeroCredentials.get_active_xero_credentials(workspace_id)
-        errors = Error.objects.filter(workspace_id=workspace_id,is_resolved=False).order_by('id')[:10]
-        for error in errors:
-            expense_template = loader.get_template('error_row.html')
-            html = expense_template.render({
-                'error': error,
-                'expense_data': expense_data
-            })
-            expense_html += html
+        if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
+            errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False).order_by('id')[:10]
+            for admin_email in ws_schedule.emails_selected:
+                attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value=admin_email).first()
 
-            error_type = error.type.title().replace('_', ' ')
-            expense_data = expense_data
-            expense_data.append(error_type)
-
-            expense_data = ', '.join(list(set(expense_data)))
-        for admin_email in ws_schedule.emails_selected:
-            attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value=admin_email).first()
-
-            if attribute:
-                admin_name = attribute.detail['full_name']
-            else:
-                for data in ws_schedule.additional_email_options:
-                    if data['email'] == admin_email:
-                        admin_name = data['name']
-
-            if task_logs and (ws_schedule.error_count is None or len(task_logs) > ws_schedule.error_count):
+                if attribute:
+                    admin_name = attribute.detail['full_name']
+                else:
+                    for data in ws_schedule.additional_email_options:
+                        if data['email'] == admin_email:
+                            admin_name = data['name']
+                error_types = {error.type.lower().title().replace('_', ' ') for error in errors}
                 context = {
                     'name': admin_name,
-                    'errors': len(task_logs),
+                    'errors_count': task_logs_count,
                     'fyle_company': workspace.name,
                     'xero_company': xero.company_name,
                     'export_time': workspace.last_synced_at.strftime("%d %b %Y | %H:%M"),
                     'year': date.today().year,
                     'app_url': "{0}/workspaces/main/dashboard".format(settings.FYLE_APP_URL),
-                    'task_logs': mark_safe(expense_html),
-                    'error_type': expense_data
+                    'errors': errors,
+                    'error_type': ', '.join(error_types)
                 }
                 message = render_to_string("mail_template.html", context)
 
@@ -203,8 +188,8 @@ def run_email_notification(workspace_id):
                 mail.content_subtype = "html"
                 mail.send()
 
-        ws_schedule.error_count = len(task_logs)
-        ws_schedule.save()
+            ws_schedule.error_count = task_logs_count
+            ws_schedule.save()
 
     except XeroCredentials.DoesNotExist:
         logger.info(

@@ -138,7 +138,7 @@
                       </tr>
                       <tr>
                         <td style="font-size: 15px; line-height: 18px; padding-top: 15px; color: #2C304E;">
-                          {{ errors }} transactions failed to export automatically
+                          {{ errors_count }} transactions failed to export automatically
                           from your Fyle org to Xero Online company due to the following errors.
                         </td>
                       </tr>
@@ -172,12 +172,32 @@
           <tr>
             <td style="padding-left: 8px;padding-right:8px;border-radius: 15px !important;">
               <table id="task-logs">
-                <tr id="header" style="border: radius 10px;">
+                <tr id="header" style="border-radius: 10px;">
                   <th>Error Type</th>
-                  <th>Error </th>
+                  <th>Error</th>
                   <th>Error value / Message</th>
                 </tr>
-                {{ task_logs }}
+                {% for error in errors %}
+                  {% if error.type == 'EMPLOYEE_MAPPING' or error.type == 'CATEGORY_MAPPING' %}
+                      <tr>
+                          <td>Mapping Error </td>
+                          <td>{{ error_type }}</td>
+                          <td style="padding-right: 8px">{{ error.error_title }}</td>
+                      </tr>
+                  {% elif error.type == 'TAX_MAPPING' %}
+                      <tr>
+                          <td>Tax Mapping Error </td>
+                          <td>{{ error_type }}</td>
+                          <td style="padding-right: 8px">{{ error.error_title }}</td>
+                      </tr>
+                  {% elif error.type == 'XERO_ERROR' %}
+                      <tr>
+                          <td>Xero Error </td>
+                          <td>{{ error_type }}</td>
+                          <td>{{ error.error_detail }}</td>
+                      </tr>
+                  {% endif %}
+                {% endfor %}
               </table>
             </td>
           </tr>
