@@ -5,12 +5,11 @@ import logging
 from django_q.models import Schedule
 
 from django.template import loader
-from django.core.mail import EmailMessage, get_connection
+from django.core.mail import EmailMessage
 from django.contrib import messages
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.db.models import Q
-from django.utils.safestring import mark_safe
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
@@ -115,6 +114,7 @@ def run_sync_schedule(workspace_id):
     if task_log.status == 'COMPLETE':
         export_to_xero(workspace_id, 'AUTO')
 
+
 def export_to_xero(workspace_id, export_mode='MANUAL'):
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
@@ -135,11 +135,13 @@ def export_to_xero(workspace_id, export_mode='MANUAL'):
         last_export_detail.export_mode = export_mode
         last_export_detail.save()
 
+
 def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
     fyle_credentials = FyleCredential.objects.filter(workspace__fyle_org_id=fyle_org_id).first()
     if fyle_credentials:
         fyle_credentials.refresh_token = refresh_token
         fyle_credentials.save()
+
 
 def run_email_notification(workspace_id):
     ws_schedule = WorkspaceSchedule.objects.get(
@@ -156,8 +158,6 @@ def run_email_notification(workspace_id):
         xero = XeroCredentials.get_active_xero_credentials(workspace_id)
         if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
             errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False).order_by('id')[:10]
-            connection = get_connection()
-            connection.open()
             for admin_email in ws_schedule.emails_selected:
                 attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value=admin_email).first()
 
@@ -194,9 +194,6 @@ def run_email_notification(workspace_id):
 
             ws_schedule.error_count = task_logs_count
             ws_schedule.save()
-
-            connection.send_messages(messages)
-            connection.close()
 
     except XeroCredentials.DoesNotExist:
         logger.info(
