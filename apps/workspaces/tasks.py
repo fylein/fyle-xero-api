@@ -5,7 +5,8 @@ import logging
 from django_q.models import Schedule
 
 from django.template import loader
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, get_connection
+from django.contrib import messages
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.db.models import Q
@@ -155,6 +156,8 @@ def run_email_notification(workspace_id):
         xero = XeroCredentials.get_active_xero_credentials(workspace_id)
         if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
             errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False).order_by('id')[:10]
+            connection = get_connection()
+            connection.open()
             for admin_email in ws_schedule.emails_selected:
                 attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value=admin_email).first()
 
@@ -186,10 +189,14 @@ def run_email_notification(workspace_id):
                 )
 
                 mail.content_subtype = "html"
+                messages.append(mail)
                 mail.send()
 
             ws_schedule.error_count = task_logs_count
             ws_schedule.save()
+
+            connection.send_messages(messages)
+            connection.close()
 
     except XeroCredentials.DoesNotExist:
         logger.info(
