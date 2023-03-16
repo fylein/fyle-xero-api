@@ -183,7 +183,7 @@ def run_email_notification(workspace_id):
                 message = render_to_string("mail_template.html", context)
 
                 mail = EmailMessage(
-                    subject="Export To QuickBooks Online Failed",
+                    subject="Export To Xero Failed",
                     body=message,
                     from_email=settings.EMAIL,
                     to=[admin_email],
