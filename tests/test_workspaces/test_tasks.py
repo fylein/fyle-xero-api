@@ -1,10 +1,13 @@
 from datetime import datetime
+from apps.mappings.models import TenantMapping
 from apps.tasks.models import TaskLog
 from apps.workspaces.tasks import run_email_notification, run_sync_schedule, schedule_sync, async_update_fyle_credentials
 from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, \
     FyleCredential
 
 from .fixtures import data
+
+import pytest
 
 from fyle_accounting_mappings.models import ExpenseAttribute
 
@@ -102,3 +105,14 @@ def test_email_notification(db):
         run_email_notification(workspace_id=workspace_id)
     else:
         assert ws_schedule == None
+
+def test_run_email_notification_with_invalid_workspace_id(db):
+    workspace_id = None
+    with pytest.raises(Exception):
+        run_email_notification(workspace_id)
+
+def test_run_email_notification_retrieves_workspace_schedule(db):
+    workspace_id = 1
+    ws_schedule = WorkspaceSchedule.objects.create(workspace_id=workspace_id, enabled=True)
+    result = run_email_notification(workspace_id)
+    assert ws_schedule == WorkspaceSchedule.objects.get(id=ws_schedule.id)
