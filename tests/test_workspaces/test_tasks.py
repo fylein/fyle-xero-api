@@ -1,11 +1,12 @@
 from datetime import datetime
 from apps.tasks.models import TaskLog
-from apps.workspaces.tasks import run_sync_schedule, schedule_sync, async_update_fyle_credentials
+from apps.workspaces.tasks import run_email_notification, run_sync_schedule, schedule_sync, async_update_fyle_credentials
 from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, \
     FyleCredential
 
 from .fixtures import data
 
+from fyle_accounting_mappings.models import ExpenseAttribute
 
 def test_schedule_sync(db):
     workspace_id = 1
@@ -70,3 +71,29 @@ def test_async_update_fyle_credentials(db):
     fyle_credentials = FyleCredential.objects.filter(workspace_id=workspace_id).first()
 
     assert fyle_credentials.refresh_token == refresh_token
+
+def test_email_notification(db):
+    workspace_id = 1
+    ws_schedule = WorkspaceSchedule.objects.filter( 
+        workspace_id=workspace_id 
+    ).first() 
+    ws_schedule.enabled = True
+    ws_schedule.emails_selected = ['anishkumar.s@fyle.in']
+    ws_schedule.save()
+
+    run_email_notification(workspace_id=workspace_id)
+
+    workspace_id = 1
+    ws_schedule = WorkspaceSchedule.objects.filter( 
+        workspace_id=workspace_id 
+    ).first() 
+    ws_schedule.enabled = True
+    ws_schedule.emails_selected = ['anishkumar.s@fyle.in']
+    ws_schedule.additional_email_options = [{'email': 'anishkumar.s@fyle.in', 'name': 'Anish'}]
+    ws_schedule.save()
+
+    attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value='anishkumar.s@fyle.in').first()
+    attribute.value = 'anishh@fyle.in'
+    attribute.save()
+
+    run_email_notification(workspace_id=workspace_id)
