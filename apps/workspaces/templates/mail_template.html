@@ -81,7 +81,7 @@
                   <td align="right">
                     <img
                       src="https://xero.fyleapps.tech/assets/images/pngs/xero-logo.png"
-                      alt="{{org_logo.title}}" title="{{org_logo.title}}" height="60" width="145px"
+                      alt="{{org_logo.title}}" title="{{org_logo.title}}" height="60" width="60px"
                       style="padding-top:6px" />
                   </td>
                 </tr>
@@ -94,13 +94,13 @@
                 <tr align="center">
                   <td>
                     <img style="height: 150px;"
-                      src="images/icon.png">
+                      src="https://raw.githubusercontent.com/fylein/fyle-qbo-api/qbo-email-notification1/apps/workspaces/templates/images/icon.png">
                   </td>
                 </tr>
                 <tr align="center">
                   <td
                     style="font-size: 20px; padding-bottom: 30px; color: #161528; font-weight:900; padding-top: 40px;">
-                    {{ errors }} Transactions Failed To Export
+                    {{ errors_count }} Transactions Failed To Export
                   </td>
                 </tr>
                 <tr>
@@ -123,7 +123,7 @@
                           line-height: 20px;   
                           color: #161528;">
                         <td style="width: 50%;">{{ fyle_company }}</td>
-                        <td style="width: 50%;">{{ xero_company }}</td>
+                        <td style="width: 50%;">{{ xero_tenant }}</td>
                       </tr>
                     </table>
                   </td>
@@ -181,20 +181,20 @@
                   {% if error.type == 'EMPLOYEE_MAPPING' or error.type == 'CATEGORY_MAPPING' %}
                       <tr>
                           <td>Mapping Error </td>
-                          <td>{{ error_type }}</td>
+                          <td>{{ error.type |title }}</td>
                           <td style="padding-right: 8px">{{ error.error_title }}</td>
                       </tr>
                   {% elif error.type == 'TAX_MAPPING' %}
                       <tr>
                           <td>Tax Mapping Error </td>
-                          <td>{{ error_type }}</td>
+                          <td>{{ error.type |title }}</td>
                           <td style="padding-right: 8px">{{ error.error_title }}</td>
                       </tr>
                   {% elif error.type == 'XERO_ERROR' %}
                       <tr>
                           <td>Xero Error </td>
-                          <td>{{ error_type }}</td>
-                          <td>{{ error.error_detail }}</td>
+                          <td>{{ error.type |title }}</td>
+                          <td style="padding-right: 8px">{{ error.error_detail }}</td>
                       </tr>
                   {% endif %}
                 {% endfor %}
@@ -211,7 +211,7 @@
                       justify-content: center;align-items: center;padding: 12px 24px;gap: 8px;border-radius: 4px;">
                       <span style="margin-right: 10px;">Visit Integrations to Resolve</span>
                       <img
-                        src="images/redirect-icon.png" width="16" height="16">
+                        src="https://raw.githubusercontent.com/fylein/fyle-qbo-api/qbo-email-notification1/apps/workspaces/templates/images/redirect-icon.png" width="16" height="16">
                     </a>
                   </td>
                 </tr>
@@ -243,13 +243,13 @@
                   <td style="padding: 0px 5px;">
                     <a href="https://itunes.apple.com/in/app/fyle-track-report-expenses/id1137906166">
                       <img alt="Appstore" title="Appstore"
-                        src="images/Apple_logo_grey.svg.png"
+                        src="https://raw.githubusercontent.com/fylein/fyle-qbo-api/qbo-email-notification1/apps/workspaces/templates/images/Apple_logo_grey.svg.png"
                         height="18" width="16">
                     </a>
                   <td style="padding: 0px 5px;">
                     <a href="https://play.google.com/store/apps/details?id=com.ionicframework.fyle595781">
                       <img alt="Playstore" title="Playstore"
-                        src="images/playstore.png"
+                        src="https://raw.githubusercontent.com/fylein/fyle-qbo-api/qbo-email-notification1/apps/workspaces/templates/images/playstore.png"
                         height="16" width="16">
                     </a>
 
@@ -260,7 +260,7 @@
                     <a
                       href="https://chrome.google.com/webstore/detail/fyle-expense-tracking-rep/abggpefphmldapcoknbcaadbpdjjmjgk">
                       <img alt="Gmail" title="Gmail"
-                        src="images/gmail.png"
+                        src="https://raw.githubusercontent.com/fylein/fyle-qbo-api/qbo-email-notification1/apps/workspaces/templates/images/gmail.png"
                         height="18" width="20">
                     </a>
 
@@ -268,7 +268,7 @@
                   <td style="padding: 0px 5px;">
                     <a href="https://appsource.microsoft.com/en-us/product/office/WA104380673">
                       <img alt="Outlook" title="Outlook"
-                        src="images/outlool.png"
+                        src="https://raw.githubusercontent.com/fylein/fyle-qbo-api/qbo-email-notification1/apps/workspaces/templates/images/outlool.png"
                         height="18" width="16">
                     </a>
                   </td>
@@ -278,7 +278,7 @@
           </tr>
           <tr>
             <td
-              background="images/background.png"
+              background="https://raw.githubusercontent.com/fylein/fyle-qbo-api/qbo-email-notification1/apps/workspaces/templates/images/background.png"
               style="padding: 10px 10px 8px 5px; background-color: #f3f5f6;">
               <table align="center">
                 <tr>

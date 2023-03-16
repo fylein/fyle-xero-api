@@ -13,6 +13,7 @@ from django.db.models import Q
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
+from apps.mappings.models import TenantMapping
 from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation, create_chain_and_export
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, FyleCredential, XeroCredentials
@@ -155,7 +156,7 @@ def run_email_notification(workspace_id):
     ).count()
     workspace = Workspace.objects.get(id=workspace_id)
     try:
-        xero = XeroCredentials.get_active_xero_credentials(workspace_id)
+        tenant_detail = TenantMapping.get_tenant_details(workspace_id)
         if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
             errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False).order_by('id')[:10]
             for admin_email in ws_schedule.emails_selected:
@@ -172,7 +173,7 @@ def run_email_notification(workspace_id):
                     'name': admin_name,
                     'errors_count': task_logs_count,
                     'fyle_company': workspace.name,
-                    'xero_company': xero.company_name,
+                    'xero_tenant': tenant_detail.tenant_name,
                     'export_time': workspace.last_synced_at.strftime("%d %b %Y | %H:%M"),
                     'year': date.today().year,
                     'app_url': "{0}/workspaces/main/dashboard".format(settings.FYLE_APP_URL),
@@ -189,7 +190,6 @@ def run_email_notification(workspace_id):
                 )
 
                 mail.content_subtype = "html"
-                messages.append(mail)
                 mail.send()
 
             ws_schedule.error_count = task_logs_count

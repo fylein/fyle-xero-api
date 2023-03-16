@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'apps.tasks',
     'apps.mappings',
     'apps.xero',
-    'django_q'
+    'django_q',
 ]
 
 MIDDLEWARE = [
@@ -281,7 +281,7 @@ XERO_TOKEN_URI = os.environ.get('XERO_TOKEN_URI')
 # Sendgrid Settings
 SENDGRID_SANDBOX_MODE_IN_DEBUG=False
 
-SENDGRID_API_KEY = os.environ.get('SENDGRID_KEY')
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
 EMAIL = os.environ.get('SENDGRID_EMAIL')
 EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
 
