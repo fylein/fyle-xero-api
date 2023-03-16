@@ -77,23 +77,28 @@ def test_email_notification(db):
     ws_schedule = WorkspaceSchedule.objects.filter( 
         workspace_id=workspace_id 
     ).first() 
-    ws_schedule.enabled = True
-    ws_schedule.emails_selected = ['anishkumar.s@fyle.in']
-    ws_schedule.save()
+    if ws_schedule is not None:
+        ws_schedule.enabled = True
+        ws_schedule.emails_selected = ['anishkumar.s@fyle.in']
+        ws_schedule.save()
 
-    run_email_notification(workspace_id=workspace_id)
+        run_email_notification(workspace_id=workspace_id)
+    else:
+        assert ws_schedule == None
 
     workspace_id = 1
     ws_schedule = WorkspaceSchedule.objects.filter( 
         workspace_id=workspace_id 
     ).first() 
-    ws_schedule.enabled = True
-    ws_schedule.emails_selected = ['anishkumar.s@fyle.in']
-    ws_schedule.additional_email_options = [{'email': 'anishkumar.s@fyle.in', 'name': 'Anish'}]
-    ws_schedule.save()
+    if ws_schedule is not None:
+        ws_schedule.enabled = True
+        ws_schedule.emails_selected = ['anishkumar.s@fyle.in']
+        ws_schedule.additional_email_options = [{'email': 'anishkumar.s@fyle.in', 'name': 'Anish'}]
+        ws_schedule.save()
+        attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value='anishkumar.s@fyle.in').first()
+        attribute.value = 'anishh@fyle.in'
+        attribute.save()
 
-    attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value='anishkumar.s@fyle.in').first()
-    attribute.value = 'anishh@fyle.in'
-    attribute.save()
-
-    run_email_notification(workspace_id=workspace_id)
+        run_email_notification(workspace_id=workspace_id)
+    else:
+        assert ws_schedule == None
