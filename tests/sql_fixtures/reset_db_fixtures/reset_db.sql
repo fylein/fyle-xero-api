@@ -1404,7 +1404,10 @@ CREATE TABLE public.workspace_schedules (
     start_datetime timestamp with time zone,
     interval_hours integer,
     schedule_id integer,
-    workspace_id integer NOT NULL
+    workspace_id integer NOT NULL,
+    additional_email_options jsonb,
+    emails_selected character varying(255)[],
+    error_count integer
 );
 
 
@@ -2416,9 +2419,10 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 124	mappings	0007_auto_20221102_0630	2022-11-03 06:28:39.216754+00
 125	workspaces	0030_auto_20221102_1924	2022-11-03 06:28:39.245951+00
 126	fyle	0015_auto_20221104_1049	2022-11-04 11:04:25.882513+00
-127	workspaces	0031_workspacegeneralsettings_is_simplify_report_closure_enabled	2023-01-11 06:28:22.8634+00
+127	workspaces	0031_auto_20221116_0649	2023-01-11 06:28:22.8634+00
 128	fyle	0016_auto_20230117_0616	2023-01-18 09:08:24.092416+00
-129	workspaces	0031_auto_20221116_0649	2023-03-14 08:52:43.983448+00
+129	workspaces	0032_workspacegeneralsettings_is_simplify_report_closure_enabled	2023-03-14 08:52:43.983448+00
+130	workspaces	0033_auto_20230315_1034	2023-03-16 10:30:47.143545+00
 \.
 
 
@@ -4829,7 +4833,7 @@ COPY public.workspace_general_settings (id, reimbursable_expenses_object, corpor
 -- Data for Name: workspace_schedules; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, schedule_id, workspace_id) FROM stdin;
+COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, schedule_id, workspace_id, additional_email_options, emails_selected, error_count) FROM stdin;
 \.
 
 
@@ -4934,7 +4938,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 37, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 129, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 130, true);
 
 
 --
