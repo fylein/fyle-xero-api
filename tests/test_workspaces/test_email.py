@@ -1,11 +1,8 @@
 from apps.workspaces.models import Workspace
-from typing import List
 from datetime import date, datetime
 
 from django.template.loader import render_to_string
 from django.conf import settings
-from django.db.models import Q
-from django.core.mail import outbox
 
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceSchedule
