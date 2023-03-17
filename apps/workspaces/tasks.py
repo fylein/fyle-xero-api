@@ -14,6 +14,7 @@ from django.db.models import Q
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
 from apps.mappings.models import TenantMapping
+from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
 from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation, create_chain_and_export
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, FyleCredential, XeroCredentials
@@ -149,25 +150,16 @@ def run_email_notification(workspace_id):
         workspace_id=workspace_id, enabled=True
     )
 
-    task_logs_count = TaskLog.objects.filter(
-        ~Q(type__in=['CREATING_BILL_PAYMENT', 'FETCHING_EXPENSES']),
-        workspace_id=workspace_id,
-        status='FAILED',
-    ).count()
+    task_logs_count = get_failed_task_logs_count(workspace_id)
+
     workspace = Workspace.objects.get(id=workspace_id)
     try:
         tenant_detail = TenantMapping.get_tenant_details(workspace_id)
-        if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
-            errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False).order_by('id')[:10]
+        if True:
+        # if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
+            errors = get_errors(workspace_id)
             for admin_email in ws_schedule.emails_selected:
-                attribute = ExpenseAttribute.objects.filter(workspace_id=workspace_id, value=admin_email).first()
-
-                if attribute:
-                    admin_name = attribute.detail['full_name']
-                else:
-                    for data in ws_schedule.additional_email_options:
-                        if data['email'] == admin_email:
-                            admin_name = data['name']
+                admin_name = get_admin_name(workspace_id, admin_email, ws_schedule)
                 error_types = {error.type.lower().title().replace('_', ' ') for error in errors}
                 context = {
                     'name': admin_name,
@@ -180,17 +172,8 @@ def run_email_notification(workspace_id):
                     'errors': errors,
                     'error_type': ', '.join(error_types)
                 }
-                message = render_to_string("mail_template.html", context)
-
-                mail = EmailMessage(
-                    subject="Export To Xero Failed",
-                    body=message,
-                    from_email=settings.EMAIL,
-                    to=[admin_email],
-                )
-
-                mail.content_subtype = "html"
-                mail.send()
+                message = render_email_template(context)
+                send_email_notification(admin_email, message)
 
             ws_schedule.error_count = task_logs_count
             ws_schedule.save()

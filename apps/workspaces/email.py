@@ -28,7 +28,6 @@ def get_admin_name(workspace_id: int, admin_email: str, ws_schedule: WorkspaceSc
         for data in ws_schedule.additional_email_options:
             if data['email'] == admin_email:
                 return data['name']
-    return ""
 
 
 def get_errors(workspace_id: int) -> List[Error]:
