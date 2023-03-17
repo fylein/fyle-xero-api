@@ -3,12 +3,10 @@ from apps.tasks.models import TaskLog
 from apps.workspaces.tasks import run_email_notification, run_sync_schedule, schedule_sync, async_update_fyle_credentials
 from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, \
     FyleCredential
-from django.conf import settings
     
 from .fixtures import data
 
 import pytest
-
 
 def test_schedule_sync(db):
     workspace_id = 1
@@ -74,6 +72,33 @@ def test_async_update_fyle_credentials(db):
     fyle_credentials = FyleCredential.objects.filter(workspace_id=workspace_id).first()
 
     assert fyle_credentials.refresh_token == refresh_token
+
+
+def test_email_notification(db):
+    workspace_id = 1
+
+    ws_schedule, _ = WorkspaceSchedule.objects.update_or_create(
+        workspace_id=workspace_id,
+        defaults={
+            'enabled': True
+        }
+    )
+    ws_schedule.enabled = True
+    ws_schedule.emails_selected = ['anishkumar.s@fyle.in']
+    ws_schedule.save()
+
+    run_email_notification(1)
+
+    workspace_id = 1
+    ws_schedule, _ = WorkspaceSchedule.objects.update_or_create(
+        workspace_id=workspace_id 
+    ) 
+    ws_schedule.enabled = True
+    ws_schedule.emails_selected = ['anishkumar.s@fyle.in']
+    ws_schedule.additional_email_options = [{'email': 'anishkumar.s@fyle.in', 'name': 'Anish'}]
+    ws_schedule.save()
+
+    run_email_notification(1)
 
 
 def test_run_email_notification_with_invalid_workspace_id(db):
