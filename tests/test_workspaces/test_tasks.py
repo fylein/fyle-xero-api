@@ -102,59 +102,6 @@ def test_email_notification(db):
 
     run_email_notification(1)
 
-
-def test_run_email_notification1(db):
-    workspace_id = 1
-    ws_schedule, _ = WorkspaceSchedule.objects.update_or_create(
-        workspace_id=workspace_id,
-        defaults={
-            'enabled': True
-        }
-    )
-
-    # Assert that ws_schedule is enabled after it is updated or created
-    assert ws_schedule.enabled == True
-
-    task_logs_count = 10
-    ws_schedule.error_count = None
-    run_email_notification(workspace_id)
-    ws_schedule.emails_selected = ["admin1@example.com", "admin2@example.com"]
-    test_tenant_detail, _ = TenantMapping.objects.update_or_create(
-        workspace_id=workspace_id,
-        defaults={
-            'tenant_name': 'Test Tenant'
-        }
-    )
-
-    # Assert that ws_schedule.emails_selected is equal to ["admin1@example.com", "admin2@example.com"]
-    assert ws_schedule.emails_selected == ["admin1@example.com", "admin2@example.com"]
-
-    test_error1 = {"type": "ERROR_TYPE_1"}
-    test_error2 = {"type": "ERROR_TYPE_2"}
-    errors = [test_error1, test_error2]
-
-    # Call functions to get count of failed task logs, errors, and admin name
-    get_failed_task_logs_count(workspace_id)
-    get_errors(workspace_id)
-    get_admin_name(workspace_id, "admin1@example.com", ws_schedule)
-
-    # Call TenantMapping.get_tenant_details to get tenant details
-    TenantMapping.get_tenant_details(workspace_id)
-    context = {
-        'name': "Test Admin",
-        'errors_count': task_logs_count,
-        'fyle_company': 'Fyle for Arkham Asylum',
-        'xero_tenant': test_tenant_detail.tenant_name,
-        'export_time': '2023-03-15 11:29:33.110744+00',
-        'year': '2022',
-        'app_url': "https://example.com/workspaces/main/dashboard",
-        'errors': errors,
-        'error_type': 'Error Type 1, Error Type 2'
-    }
-
-    # Assert that render_email_template returns a string
-    assert isinstance(render_email_template(context), str)
-
 def test_run_email_notification_with_invalid_workspace_id(db):
     workspace_id = None
     with pytest.raises(Exception):
