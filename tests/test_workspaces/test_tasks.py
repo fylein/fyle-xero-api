@@ -1,5 +1,7 @@
 from datetime import datetime
+from apps.mappings.models import TenantMapping
 from apps.tasks.models import TaskLog
+from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
 from apps.workspaces.tasks import run_email_notification, run_sync_schedule, schedule_sync, async_update_fyle_credentials
 from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, \
     FyleCredential
@@ -99,6 +101,49 @@ def test_email_notification(db):
     ws_schedule.save()
 
     run_email_notification(1)
+
+
+def test_run_email_notification1(db):
+    workspace_id = 1
+    ws_schedule, _ = WorkspaceSchedule.objects.update_or_create(
+        workspace_id=workspace_id,
+        defaults={
+            'enabled': True
+        }
+    )
+
+    task_logs_count = 10
+    ws_schedule.error_count = None
+    ws_schedule.emails_selected = ["admin1@example.com", "admin2@example.com"]
+    test_tenant_detail, _ = TenantMapping.objects.update_or_create(
+        workspace_id=workspace_id,
+        defaults={
+            'tenant_name': 'Test Tenant'
+        }
+        )
+    test_error1 = {"type": "ERROR_TYPE_1"}
+    test_error2 = {"type": "ERROR_TYPE_2"}
+    errors = [test_error1, test_error2]
+    get_failed_task_logs_count(workspace_id)
+    get_errors(workspace_id)
+    get_admin_name(workspace_id, "admin1@example.com", ws_schedule)
+    TenantMapping.get_tenant_details(workspace_id)
+    context = {
+        'name': "Test Admin",
+        'errors_count': task_logs_count,
+        'fyle_company': 'Fyle for Arkham Asylum',
+        'xero_tenant': test_tenant_detail.tenant_name,
+        'export_time': '2023-03-15 11:29:33.110744+00',
+        'year': '2022',
+        'app_url': "https://example.com/workspaces/main/dashboard",
+        'errors': errors,
+        'error_type': 'Error Type 1, Error Type 2'
+    }
+    render_email_template(context)
+    send_email_notification("admin1@example.com", "")
+    send_email_notification("admin2@example.com", "")
+    ws_schedule.error_count = task_logs_count
+    ws_schedule.save()
 
 
 def test_run_email_notification_with_invalid_workspace_id(db):
