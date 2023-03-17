@@ -2,13 +2,15 @@ from apps.workspaces.models import Workspace
 from datetime import date, datetime
 
 from django.template.loader import render_to_string
-from django.conf import settings
+from fyle_xero_api import settings
+from django.core.mail import EmailMessage
 
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceSchedule
 from apps.tasks.models import Error
 from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
 
+import pytest
 
 def test_get_failed_task_logs_count(db):
     # Create a test workspace
@@ -106,3 +108,9 @@ def test_get_errors_returns_unresolved_errors_for_given_workspace(db):
     assert all(isinstance(error, Error) for error in errors)
     assert all(error.workspace_id == workspace.id for error in errors)
     assert all(not error.is_resolved for error in errors)
+
+
+def test_send_email_notification(db):
+    admin_email = 'test@example.com'
+    message = 'Test email message'
+    send_email_notification(admin_email, message)
