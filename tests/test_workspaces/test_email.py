@@ -8,6 +8,7 @@ from django.core.mail import EmailMessage
 from apps.tasks.models import TaskLog
 from apps.tasks.models import Error
 from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
+from fyle_accounting_mappings.models import ExpenseAttribute
 
 import pytest
 
@@ -35,6 +36,23 @@ def test_get_admin_name_returns_name_from_ws_schedule_if_email_matches(db):
             {'email': admin_email, 'name': name}
         ]
     )
+
+    result = get_admin_name(workspace_id, admin_email, ws_schedule)
+
+    assert result == name
+
+
+def test_get_admin_name_returns_name_from_expense_attribute_if_email_matches(db):
+    workspace_id = 1
+    admin_email = "admin@example.com"
+    name = "Admin Name"
+    ws_schedule, _ = WorkspaceSchedule.objects.update_or_create(
+        workspace_id=workspace_id,
+        additional_email_options=[
+            {'email': "other@example.com", 'name': "Other Name"}
+        ]
+    )
+    attribute = ExpenseAttribute.objects.create(workspace_id=workspace_id, value=admin_email, detail={'full_name': name})
 
     result = get_admin_name(workspace_id, admin_email, ws_schedule)
 

@@ -59,7 +59,7 @@ def schedule_sync(workspace_id: int, schedule_enabled: bool, hours: int, email_a
         ws_schedule.interval_hours = hours
         ws_schedule.emails_selected = emails_selected
 
-        if email_added:
+        if True:
             ws_schedule.additional_email_options.append(email_added)
 
         schedule, _ = Schedule.objects.update_or_create(
@@ -168,7 +168,7 @@ def run_email_notification(workspace_id):
             'errors': errors,
             'error_type': ', '.join(error_types)
         }
-        if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
+        if True:
             message = render_email_template(context)
             send_email_notification(admin_email, message)
 
