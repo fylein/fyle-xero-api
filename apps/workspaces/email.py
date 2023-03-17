@@ -2,7 +2,7 @@ from typing import List
 
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
-from fyle_xero_api import settings
+from django.conf import settings
 from django.db.models import Q
 
 from apps.tasks.models import TaskLog

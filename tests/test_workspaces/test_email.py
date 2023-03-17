@@ -2,7 +2,7 @@ from apps.workspaces.models import Workspace
 from datetime import date, datetime
 
 from django.template.loader import render_to_string
-from fyle_xero_api import settings
+from django.conf import settings
 from django.core.mail import EmailMessage
 
 from apps.tasks.models import TaskLog

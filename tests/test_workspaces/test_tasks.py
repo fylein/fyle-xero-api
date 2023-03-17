@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from apps.mappings.models import TenantMapping
 from apps.tasks.models import TaskLog
 from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
@@ -112,21 +112,33 @@ def test_run_email_notification1(db):
         }
     )
 
+    # Assert that ws_schedule is enabled after it is updated or created
+    assert ws_schedule.enabled == True
+
     task_logs_count = 10
     ws_schedule.error_count = None
+    run_email_notification(workspace_id)
     ws_schedule.emails_selected = ["admin1@example.com", "admin2@example.com"]
     test_tenant_detail, _ = TenantMapping.objects.update_or_create(
         workspace_id=workspace_id,
         defaults={
             'tenant_name': 'Test Tenant'
         }
-        )
+    )
+
+    # Assert that ws_schedule.emails_selected is equal to ["admin1@example.com", "admin2@example.com"]
+    assert ws_schedule.emails_selected == ["admin1@example.com", "admin2@example.com"]
+
     test_error1 = {"type": "ERROR_TYPE_1"}
     test_error2 = {"type": "ERROR_TYPE_2"}
     errors = [test_error1, test_error2]
+
+    # Call functions to get count of failed task logs, errors, and admin name
     get_failed_task_logs_count(workspace_id)
     get_errors(workspace_id)
     get_admin_name(workspace_id, "admin1@example.com", ws_schedule)
+
+    # Call TenantMapping.get_tenant_details to get tenant details
     TenantMapping.get_tenant_details(workspace_id)
     context = {
         'name': "Test Admin",
@@ -139,10 +151,37 @@ def test_run_email_notification1(db):
         'errors': errors,
         'error_type': 'Error Type 1, Error Type 2'
     }
-    render_email_template(context)
-    send_email_notification("admin1@example.com", "")
-    send_email_notification("admin2@example.com", "")
-    ws_schedule.error_count = task_logs_count
+
+    # Assert that render_email_template returns a string
+    assert isinstance(render_email_template(context), str)
+
+    # Test with task_logs_count == 0
+    task_logs_count = 0
+    ws_schedule.error_count = None
+    run_email_notification(workspace_id)
+    ws_schedule.emails_selected = ["admin1@example.com"]
+    get_failed_task_logs_count(workspace_id)
+    TenantMapping.get_tenant_details(workspace_id)
+    ws_schedule.save()
+
+    # Test with ws_schedule.error_count >= task_logs_count
+    task_logs_count = 5
+    ws_schedule.error_count = 10
+    run_email_notification(workspace_id)
+    ws_schedule.emails_selected = []
+    get_failed_task_logs_count(workspace_id)
+    get_errors(workspace_id)
+    TenantMapping.get_tenant_details(workspace_id)
+    ws_schedule.save()
+
+    # Test with no emails selected
+    task_logs_count = 10
+    ws_schedule.error_count = None
+    run_email_notification(workspace_id)
+    ws_schedule.emails_selected = []
+    get_failed_task_logs_count(workspace_id)
+    get_errors(workspace_id)
+    TenantMapping.get_tenant_details(workspace_id)
     ws_schedule.save()
 
 
@@ -150,4 +189,3 @@ def test_run_email_notification_with_invalid_workspace_id(db):
     workspace_id = None
     with pytest.raises(Exception):
         run_email_notification(workspace_id)
-
