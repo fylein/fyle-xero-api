@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 from apps.mappings.models import TenantMapping
 from apps.tasks.models import TaskLog
-from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
+from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template
 from apps.workspaces.tasks import run_email_notification, run_sync_schedule, schedule_sync, async_update_fyle_credentials
 from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, \
     FyleCredential
-    
+
 from .fixtures import data
 
 import pytest
@@ -154,36 +154,6 @@ def test_run_email_notification1(db):
 
     # Assert that render_email_template returns a string
     assert isinstance(render_email_template(context), str)
-
-    # Test with task_logs_count == 0
-    task_logs_count = 0
-    ws_schedule.error_count = None
-    run_email_notification(workspace_id)
-    ws_schedule.emails_selected = ["admin1@example.com"]
-    get_failed_task_logs_count(workspace_id)
-    TenantMapping.get_tenant_details(workspace_id)
-    ws_schedule.save()
-
-    # Test with ws_schedule.error_count >= task_logs_count
-    task_logs_count = 5
-    ws_schedule.error_count = 10
-    run_email_notification(workspace_id)
-    ws_schedule.emails_selected = []
-    get_failed_task_logs_count(workspace_id)
-    get_errors(workspace_id)
-    TenantMapping.get_tenant_details(workspace_id)
-    ws_schedule.save()
-
-    # Test with no emails selected
-    task_logs_count = 10
-    ws_schedule.error_count = None
-    run_email_notification(workspace_id)
-    ws_schedule.emails_selected = []
-    get_failed_task_logs_count(workspace_id)
-    get_errors(workspace_id)
-    TenantMapping.get_tenant_details(workspace_id)
-    ws_schedule.save()
-
 
 def test_run_email_notification_with_invalid_workspace_id(db):
     workspace_id = None

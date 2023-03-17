@@ -1,4 +1,4 @@
-from apps.workspaces.models import Workspace
+from apps.workspaces.models import Workspace, WorkspaceSchedule
 from datetime import date, datetime
 
 from django.template.loader import render_to_string
@@ -6,7 +6,6 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import WorkspaceSchedule
 from apps.tasks.models import Error
 from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
 
