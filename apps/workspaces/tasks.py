@@ -153,32 +153,25 @@ def run_email_notification(workspace_id):
     task_logs_count = get_failed_task_logs_count(workspace_id)
 
     workspace = Workspace.objects.get(id=workspace_id)
-    try:
-        tenant_detail = TenantMapping.get_tenant_details(workspace_id)
-        if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
-            errors = get_errors(workspace_id)
-            for admin_email in ws_schedule.emails_selected:
-                admin_name = get_admin_name(workspace_id, admin_email, ws_schedule)
-                error_types = {error.type.lower().title().replace('_', ' ') for error in errors}
-                context = {
-                    'name': admin_name,
-                    'errors_count': task_logs_count,
-                    'fyle_company': workspace.name,
-                    'xero_tenant': tenant_detail.tenant_name,
-                    'export_time': workspace.last_synced_at.strftime("%d %b %Y | %H:%M"),
-                    'year': date.today().year,
-                    'app_url': "{0}/workspaces/main/dashboard".format(settings.FYLE_APP_URL),
-                    'errors': errors,
-                    'error_type': ', '.join(error_types)
-                }
-                message = render_email_template(context)
-                send_email_notification(admin_email, message)
+    tenant_detail = TenantMapping.get_tenant_details(workspace_id)
+    if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
+        errors = get_errors(workspace_id)
+        for admin_email in ws_schedule.emails_selected:
+            admin_name = get_admin_name(workspace_id, admin_email, ws_schedule)
+            error_types = {error.type.lower().title().replace('_', ' ') for error in errors}
+            context = {
+                'name': admin_name,
+                'errors_count': task_logs_count,
+                'fyle_company': workspace.name,
+                'xero_tenant': tenant_detail.tenant_name,
+                'export_time': workspace.last_synced_at.strftime("%d %b %Y | %H:%M"),
+                'year': date.today().year,
+                'app_url': "{0}/workspaces/main/dashboard".format(settings.FYLE_APP_URL),
+                'errors': errors,
+                'error_type': ', '.join(error_types)
+            }
+            message = render_email_template(context)
+            send_email_notification(admin_email, message)
 
-            ws_schedule.error_count = task_logs_count
-            ws_schedule.save()
-
-    except XeroCredentials.DoesNotExist:
-        logger.info(
-            'Xero Credentials not found for workspace_id %s',
-            workspace_id
-        )
+        ws_schedule.error_count = task_logs_count
+        ws_schedule.save()
