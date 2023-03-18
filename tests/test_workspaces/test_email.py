@@ -1,13 +1,13 @@
+from apps.mappings.models import TenantMapping
 from apps.workspaces.models import Workspace, WorkspaceSchedule
 from datetime import date, datetime
 
 from django.template.loader import render_to_string
 from django.conf import settings
-from django.core.mail import EmailMessage
 
 from apps.tasks.models import TaskLog
 from apps.tasks.models import Error
-from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
+from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification, send_failure_notification_email
 from fyle_accounting_mappings.models import ExpenseAttribute
 
 import pytest
@@ -131,3 +131,30 @@ def test_send_email_notification(db):
     admin_email = 'test@example.com'
     message = 'Test email message'
     send_email_notification(admin_email, message)
+
+
+def test_send_failure_notification_email(db, mocker):
+    # Mock the render_email_template and send_email_notification functions
+    mocker.patch('apps.workspaces.email.render_email_template')
+    mocker.patch('apps.workspaces.email.send_email_notification')
+
+    # Create sample data for the function
+    admin_name = "John Doe"
+    admin_email = "john.doe@example.com"
+    task_logs_count = 3
+    workspace = Workspace(id=1, name="Test Workspace", last_synced_at=datetime(2022, 12, 1, 10, 0, 0))
+    tenant_detail = TenantMapping(id=1, tenant_name="Test Tenant")
+    errors = [
+        Error(id=1, type="Type 1", workspace_id=1, is_resolved=False),
+        Error(id=2, type="Type 2", workspace_id=1, is_resolved=False),
+    ]
+
+    # Call the send_failure_notification_email function
+    send_failure_notification_email(
+        admin_name=admin_name,
+        admin_email=admin_email,
+        task_logs_count=task_logs_count,
+        workspace=workspace,
+        tenant_detail=tenant_detail,
+        errors=errors,
+    )

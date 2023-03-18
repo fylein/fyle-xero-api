@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
-from apps.mappings.models import TenantMapping
+from datetime import datetime
 from apps.tasks.models import TaskLog
-from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template
+from apps.workspaces.email import send_failure_notification_email
 from apps.workspaces.tasks import run_email_notification, run_sync_schedule, schedule_sync, async_update_fyle_credentials
 from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, \
     FyleCredential
@@ -11,6 +10,7 @@ from fyle_accounting_mappings.models import ExpenseAttribute
 from .fixtures import data
 
 import pytest
+
 
 def test_schedule_sync(db):
     workspace_id = 1
@@ -78,8 +78,11 @@ def test_async_update_fyle_credentials(db):
     assert fyle_credentials.refresh_token == refresh_token
 
 
-def test_email_notification(db):
+def test_email_notification(db, mocker):
     workspace_id = 1
+
+    # Mock the send_failure_notification_email function
+    mocker.patch('apps.workspaces.tasks.send_failure_notification_email')
 
     # Create failed task logs
     TaskLog.objects.create(workspace_id=workspace_id, status='FAILED', type='IMPORTING_EXPENSES')
@@ -104,19 +107,16 @@ def test_email_notification(db):
     ws_schedule.error_count = None
     ws_schedule.save()
     run_email_notification(workspace_id)
-    
 
     # Check that email is sent when there are failed task logs and error count is less than task_logs_count
     ws_schedule.error_count = 1
     ws_schedule.save()
     run_email_notification(workspace_id)
-    
 
     # Check that email is not sent when there are failed task logs but error count is greater than task_logs_count
     ws_schedule.error_count = 3
     ws_schedule.save()
     run_email_notification(workspace_id)
-    
 
     # Check that email is sent to admin name from ExpenseAttribute
     ExpenseAttribute.objects.create(workspace_id=workspace_id, value='anishkumar.s@fyle.in', detail={'full_name': 'Anish Kumar'})

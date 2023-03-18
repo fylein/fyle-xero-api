@@ -1,14 +1,17 @@
+from datetime import date
 from typing import List
 
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.db.models import Q
+from apps.mappings.models import TenantMapping
 
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceSchedule
 from apps.tasks.models import Error
 from fyle_accounting_mappings.models import ExpenseAttribute
+from apps.workspaces.models import Workspace
 
 
 def get_failed_task_logs_count(workspace_id: int) -> int:
@@ -88,8 +91,32 @@ def send_email_notification(admin_email: str, message: str):
         subject="Export To Xero Failed",
         body=message,
         from_email=settings.EMAIL,
-        to=[admin_email],
+        to=[admin_email]
     )
 
     mail.content_subtype = "html"
     mail.send()
+
+
+def send_failure_notification_email(
+    admin_name: str,
+    admin_email: str,
+    task_logs_count: int,
+    workspace: Workspace,
+    tenant_detail: TenantMapping,
+    errors: List[Error],
+):
+    error_types = {error.type.title().replace('_', ' ') for error in errors}
+    context = {
+        'name': admin_name,
+        'errors_count': task_logs_count,
+        'fyle_company': workspace.name,
+        'xero_tenant': tenant_detail.tenant_name,
+        'export_time': workspace.last_synced_at.strftime("%d %b %Y | %H:%M"),
+        'year': date.today().year,
+        'app_url': "{0}/workspaces/main/dashboard".format(settings.FYLE_APP_URL),
+        'errors': errors,
+        'error_type': ', '.join(error_types)
+    }
+    message = render_email_template(context)
+    send_email_notification(admin_email, message)

@@ -1,25 +1,16 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import List
 import logging
 
 from django_q.models import Schedule
 
-from django.template import loader
-from django.core.mail import EmailMessage
-from django.contrib import messages
-from django.template.loader import render_to_string
-from django.conf import settings
-from django.db.models import Q
-
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
 from apps.mappings.models import TenantMapping
-from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, render_email_template, send_email_notification
+from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, send_failure_notification_email
 from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation, create_chain_and_export
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, FyleCredential, XeroCredentials
-from apps.tasks.models import Error
-from fyle_accounting_mappings.models import ExpenseAttribute
+from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, FyleCredential
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -153,24 +144,12 @@ def run_email_notification(workspace_id):
     task_logs_count = get_failed_task_logs_count(workspace_id)
     workspace = Workspace.objects.get(id=workspace_id)
     tenant_detail = TenantMapping.get_tenant_details(workspace_id)
+    
     if task_logs_count and (ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count):
         errors = get_errors(workspace_id)
         for admin_email in ws_schedule.emails_selected:
             admin_name = get_admin_name(workspace_id, admin_email, ws_schedule)
-            error_types = {error.type.title().replace('_', ' ') for error in errors}
-            context = {
-                'name': admin_name,
-                'errors_count': task_logs_count,
-                'fyle_company': workspace.name,
-                'xero_tenant': tenant_detail.tenant_name,
-                'export_time': workspace.last_synced_at.strftime("%d %b %Y | %H:%M"),
-                'year': date.today().year,
-                'app_url': "{0}/workspaces/main/dashboard".format(settings.FYLE_APP_URL),
-                'errors': errors,
-                'error_type': ', '.join(error_types)
-            }
-            message = render_email_template(context)
-            send_email_notification(admin_email, message)
+            send_failure_notification_email(admin_name, admin_email, task_logs_count, workspace, tenant_detail, errors)
 
         ws_schedule.error_count = task_logs_count
         ws_schedule.save()
