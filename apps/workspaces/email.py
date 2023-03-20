@@ -25,7 +25,7 @@ def get_failed_task_logs_count(workspace_id: int) -> int:
         int: The count of failed TaskLog objects.
     """
     return TaskLog.objects.filter(
-        ~Q(type__in=['CREATING_BILL_PAYMENT', 'FETCHING_EXPENSES']),
+        ~Q(type__in=['CREATING_PAYMENT', 'FETCHING_EXPENSES']),
         workspace_id=workspace_id,
         status='FAILED',
     ).count()
@@ -76,7 +76,7 @@ def render_email_template(context: dict) -> str:
     Returns:
         str: The rendered template as a string.
     """
-    return render_to_string("mail_template.html", context)
+    return render_to_string('mail_template.html', context)
 
 
 def send_email_notification(admin_email: str, message: str):
