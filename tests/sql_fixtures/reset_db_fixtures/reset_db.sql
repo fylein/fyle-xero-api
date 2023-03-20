@@ -1405,7 +1405,7 @@ CREATE TABLE public.workspace_schedules (
     interval_hours integer,
     schedule_id integer,
     workspace_id integer NOT NULL,
-    additional_email_options jsonb,
+    additional_email_options jsonb NOT NULL,
     emails_selected character varying(255)[],
     error_count integer
 );
@@ -2423,6 +2423,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 128	fyle	0016_auto_20230117_0616	2023-01-18 09:08:24.092416+00
 129	workspaces	0032_workspacegeneralsettings_is_simplify_report_closure_enabled	2023-03-14 08:52:43.983448+00
 130	workspaces	0033_auto_20230315_1034	2023-03-16 10:30:47.143545+00
+131	workspaces	0034_auto_20230320_0805	2023-03-20 08:06:40.679962+00
 \.
 
 
@@ -4938,7 +4939,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 37, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 130, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 131, true);
 
 
 --
