@@ -143,7 +143,7 @@ class Expense(models.Model):
                         'fund_source': SOURCE_ACCOUNT_MAP[expense['source_account_type']],
                         'verified_at': expense['verified_at'],
                         'custom_properties': expense['custom_properties'],
-                        'tax_amount': expense['tax_amount'], 
+                        'tax_amount': expense['tax_amount'] if expense['tax_amount'] else 0, 
                         'tax_group_id': expense['tax_group_id'],
                         'billable': expense['billable'] if expense['billable'] else False
                     }
