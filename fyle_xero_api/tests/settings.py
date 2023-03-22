@@ -288,7 +288,7 @@ CORS_ALLOW_HEADERS = [
 # Sendgrid Settings
 SENDGRID_SANDBOX_MODE_IN_DEBUG=False
 
-SENDGRID_KEY = os.environ.get('SENDGRID_KEY')
+SENDGRID_API_KEY = os.environ.get('SENDGRID_KEY')
 EMAIL = os.environ.get('SENDGRID_EMAIL')
 EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
 
