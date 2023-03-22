@@ -21,6 +21,10 @@ class TenantMapping(models.Model):
         unique_together = ('tenant_name', 'workspace')
         db_table = 'tenant_mappings'
 
+    @staticmethod
+    def get_tenant_details(workspace_id):
+        return TenantMapping.objects.get(workspace_id=workspace_id)
+
 
 class GeneralMapping(models.Model):
     """

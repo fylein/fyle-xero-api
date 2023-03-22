@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'apps.tasks',
     'apps.mappings',
     'apps.xero',
-    'django_q'
+    'django_q',
 ]
 
 MIDDLEWARE = [
@@ -267,7 +267,7 @@ FYLE_TOKEN_URI = os.environ.get('FYLE_TOKEN_URI')
 FYLE_CLIENT_ID = os.environ.get('FYLE_CLIENT_ID')
 FYLE_CLIENT_SECRET = os.environ.get('FYLE_CLIENT_SECRET')
 FYLE_BASE_URL = os.environ.get('FYLE_BASE_URL')
-FYLE_APP_URL = os.environ.get('FYLE_APP_URL')
+FYLE_APP_URL = os.environ.get('APP_URL')
 
 
 # XERO Settings
@@ -276,6 +276,15 @@ XERO_CLIENT_ID = os.environ.get('XERO_CLIENT_ID')
 XERO_CLIENT_SECRET = os.environ.get('XERO_CLIENT_SECRET')
 XERO_REDIRECT_URI = os.environ.get('XERO_REDIRECT_URI')
 XERO_TOKEN_URI = os.environ.get('XERO_TOKEN_URI')
+
+
+# Sendgrid Settings
+SENDGRID_SANDBOX_MODE_IN_DEBUG=False
+
+SENDGRID_API_KEY = os.environ.get('SENDGRID_KEY')
+EMAIL = os.environ.get('SENDGRID_EMAIL')
+EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+
 
 # Cache Settings
 CACHE_EXPIRY = 3600

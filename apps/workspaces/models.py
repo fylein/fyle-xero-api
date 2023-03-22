@@ -2,7 +2,8 @@
 Workspace Models
 """
 from django.db import models
-from django.contrib.postgres.fields import JSONField, ArrayField
+from django.db.models import JSONField
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth import get_user_model
 from django_q.models import Schedule
 
@@ -146,6 +147,10 @@ class WorkspaceSchedule(models.Model):
     start_datetime = models.DateTimeField(help_text='Datetime for start of schedule', null=True)
     interval_hours = models.IntegerField(null=True)
     schedule = models.OneToOneField(Schedule, on_delete=models.PROTECT, null=True)
+    error_count = models.IntegerField(null=True, help_text='Number of errors in export')
+    additional_email_options = JSONField(default=list, help_text='Email and Name of person to send email')
+    emails_selected = ArrayField(base_field=models.CharField(max_length=255), null=True, 
+                                    help_text='Emails that has to be send mail')
 
     class Meta:
         db_table = 'workspace_schedules'

@@ -108,6 +108,9 @@ data = {
         'start_datetime':'2022-08-19T07:50:07.591198Z',
         'interval_hours':1,
         'workspace':1,
-        'schedule':7
+        'schedule':7,
+        'additional_email_options': [],
+        'emails_selected': None,
+        'error_count': None
     }
 }

@@ -15,7 +15,9 @@ data = {
         },
         "workspace_schedules": {
             "enabled": True,
-            "interval_hours": 1
+            "interval_hours": 1,
+            "additional_email_options": {},
+            "emails_selected": ['anishkumar.s@fyle.in']
         }
     },
     'advanced_settings_response': {
@@ -34,7 +36,9 @@ data = {
         },
         "workspace_schedules": {
             "enabled": True,
-            "interval_hours": 1
+            "interval_hours": 1,
+            "additional_email_options": {},
+            "emails_selected": ['anish.ks@fyle.in']
         },
         "workspace_id": 1
     },
