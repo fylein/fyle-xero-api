@@ -1,3 +1,4 @@
+{% load custom_filters %}
 <!DOCTYPE html>
 <html>
 
@@ -181,19 +182,19 @@
                   {% if error.type == 'EMPLOYEE_MAPPING' or error.type == 'CATEGORY_MAPPING' %}
                       <tr>
                           <td>Mapping Error </td>
-                          <td>{{ error.type |title }}</td>
+                          <td>{{ error.type | snake_to_space }}</td>
                           <td style="padding-right: 8px">{{ error.error_title }}</td>
                       </tr>
                   {% elif error.type == 'TAX_MAPPING' %}
                       <tr>
                           <td>Tax Mapping Error </td>
-                          <td>{{ error.type |title }}</td>
+                          <td>{{ error.type | snake_to_space }}</td>
                           <td style="padding-right: 8px">{{ error.error_title }}</td>
                       </tr>
                   {% elif error.type == 'XERO_ERROR' %}
                       <tr>
                           <td>Xero Error </td>
-                          <td>{{ error.type |title }}</td>
+                          <td>{{ error.type | snake_to_space }}</td>
                           <td style="padding-right: 8px">{{ error.error_detail }}</td>
                       </tr>
                   {% endif %}
