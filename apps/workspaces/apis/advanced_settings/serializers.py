@@ -24,7 +24,10 @@ class ReadWriteSerializerMethodField(serializers.SerializerMethodField):
 
 
 class WorkspaceScheduleSerializer(serializers.ModelSerializer):
-
+    emails_selected = serializers.ListField(
+        child=serializers.CharField(max_length=255),
+        allow_empty=True,  # Allow empty list for emails_selected field
+    )
 
     class Meta:
         model = WorkspaceSchedule
