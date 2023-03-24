@@ -263,9 +263,10 @@ FYLE_TOKEN_URI = os.environ.get('FYLE_TOKEN_URI')
 FYLE_CLIENT_ID = os.environ.get('FYLE_CLIENT_ID')
 FYLE_CLIENT_SECRET = os.environ.get('FYLE_CLIENT_SECRET')
 FYLE_BASE_URL = os.environ.get('FYLE_BASE_URL')
-FYLE_APP_URL = os.environ.get('APP_URL')
+FYLE_APP_URL = os.environ.get('FYLE_APP_URL')
 FYLE_REFRESH_TOKEN = os.environ.get('FYLE_REFRESH_TOKEN')
 FYLE_SERVER_URL = os.environ.get('FYLE_SERVER_URL')
+XERO_APP_URL = os.environ.get('APP_URL')
 
 # XERO Settings
 XERO_BASE_URL = os.environ.get('XERO_BASE_URL')
