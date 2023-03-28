@@ -5,6 +5,7 @@ blessed==1.16.1
 certifi==2022.12.7
 chardet==3.0.4
 charset-normalizer==2.0.8
+cryptography==3.3.2
 dj-database-url==0.5.0
 Django==3.1.14
 django-db-geventpool==4.0.1
