@@ -2,14 +2,21 @@ import json
 from unittest import mock
 from datetime import datetime
 from apps.mappings.models import TenantMapping
-from fyle_accounting_mappings.models import Mapping 
+from fyle_accounting_mappings.models import Mapping
+from apps.workspaces.views import SetupE2ETestView
+from apps.xero.utils import XeroConnector 
 from fyle_xero_api import settings
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 from fyle_rest_auth.utils import AuthUtils
 from tests.helper import dict_compare_keys
+from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk import exceptions as xero_exc
 from fyle.platform import exceptions as fyle_exc
-from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, XeroCredentials, LastExportDetail
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, XeroCredentials, LastExportDetail
+import pytest
+from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from .fixtures import data
 from ..test_xero.fixtures import data as xero_data
 from ..test_fyle.fixtures import data as fyle_data
@@ -470,3 +477,40 @@ def test_last_export_detail(mocker, api_client, test_connection):
 
     response = api_client.get(url)
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_setup_e2e_test_view(mocker):
+    # Create a test workspace
+    workspace = Workspace.objects.create(
+        id=3,
+        name='Test Workspace',
+    )
+
+    # Create test XeroCredentials and FyleCredential
+    XeroCredentials.objects.create(
+        workspace=workspace,
+        refresh_token='abcd',
+        is_expired=False
+    )
+
+    FyleCredential.objects.create(
+        workspace=workspace,
+        refresh_token='abcd'
+    )
+
+    # Patch methods used in the view
+    mocker.patch.object(XeroConnector, 'sync_dimensions', return_value=None)
+    mocker.patch.object(PlatformConnector, 'import_fyle_dimensions', return_value=None)
+
+    # Test the view
+    request = APIRequestFactory().post('/api/workspaces/{}/setup_e2e_test/'.format(workspace.id))
+
+    view = SetupE2ETestView.as_view({"post": "post"})
+    mocker.patch("apps.workspaces.views.settings.ENCRYPTION_KEY", "Dd0jBNHQP1AG7tDprkKjQrLzGm_e5XB9tPZjO8EfnAY=")
+    response = view(request, workspace_id=workspace.id)
+
+
+    # Test case when no healthy tokens are found
+    XeroCredentials.objects.all().delete()
+    response = view(request, workspace_id=workspace.id)
