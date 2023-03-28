@@ -1,17 +1,23 @@
 import json
 import logging
+from datetime import datetime
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.db import transaction, connection
 
 from rest_framework.response import Response
 from rest_framework.views import status
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+from apps.workspaces.permissions import IsAuthenticatedForTest
 
 from fyle.platform import exceptions as fyle_exc
 from apps.workspaces.signals import post_delete_xero_connection
+from django.conf import settings
 from xerosdk import exceptions as xero_exc
+
+from fyle_integrations_platform_connector import PlatformConnector
 
 from fyle_rest_auth.helpers import get_fyle_admin
 from fyle_rest_auth.utils import AuthUtils
@@ -546,7 +552,7 @@ class XeroExternalSignUpsView(viewsets.ViewSet):
 
 class ExportToXeroView(viewsets.ViewSet):
     """
-    Export Expenses to QBO
+    Export Expenses to Xero
     """
 
     def post(self, request, *args, **kwargs):
@@ -610,3 +616,85 @@ class WorkspaceAdminsView(viewsets.ViewSet):
                 data=admin_email,
                 status=status.HTTP_200_OK
             )
+
+
+class SetupE2ETestView(viewsets.ViewSet):
+    """
+    Xero Workspace
+    """
+    authentication_classes = []
+    permission_classes = [IsAuthenticatedForTest]
+
+    def post(self, request, **kwargs):
+        """
+        Setup end to end test for a given workspace
+        """
+        try:
+            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
+            error_message = 'Something unexpected has happened. Please try again later.'
+
+            # Filter out prod orgs
+            if 'fyle for' in workspace.name.lower():
+                # Grab the latest healthy refresh token, from a demo org with the specified realm id
+                healthy_tokens = XeroCredentials.objects.filter(
+                    workspace__name__icontains='fyle for',
+                    is_expired=False,
+                    realm_id=settings.E2E_TESTS_REALM_ID,
+                    refresh_token__isnull=False
+                ).order_by('-updated_at')
+                logger.info('Found {} healthy tokens'.format(healthy_tokens.count()))
+
+                for healthy_token in healthy_tokens:
+                    logger.info('Checking token health for workspace: {}'.format(healthy_token.workspace_id))
+                    # Token Health check
+                    try:
+                        xero_connector = XeroConnector(healthy_token, workspace_id=workspace.id)
+                        xero_connector.get_company_preference()
+                        logger.info('Yaay, token is healthly for workspace: {}'.format(healthy_token.workspace_id))
+                    except Exception:
+                        # If the token is expired, setting is_expired = True so that they are not used for future runs
+                        logger.info('Oops, token is dead for workspace: {}'.format(healthy_token.workspace_id))
+                        healthy_token.is_expired = True
+                        healthy_token.save()
+                        # Stop the execution here for the token since it's expired
+                        continue
+
+                    with transaction.atomic():
+                        if healthy_token:
+                            # Reset the workspace completely
+                            with connection.cursor() as cursor:
+                                cursor.execute('select reset_workspace(%s)', [workspace.id])
+
+                            # Store the latest healthy refresh token for the workspace
+                            XeroCredentials.objects.create(
+                                workspace=workspace,
+                                refresh_token=xero_connector.connection.refresh_token,
+                                realm_id=healthy_token.realm_id,
+                                is_expired=False,
+                                company_name=healthy_token.company_name,
+                                country=healthy_token.country
+                            )
+
+                            # Sync dimension for Xero and Fyle
+                            xero_connector.sync_dimensions()
+
+                            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
+                            platform = PlatformConnector(fyle_credentials)
+                            platform.import_fyle_dimensions(import_taxes=True)
+
+                            # Reset workspace details
+                            workspace.onboarding_state = 'MAP_EMPLOYEES'
+                            workspace.source_synced_at = datetime.now()
+                            workspace.destination_synced_at = datetime.now()
+                            workspace.xero_realm_id = healthy_token.realm_id
+                            workspace.last_synced_at = None
+                            workspace.save()
+
+                            return Response(status=status.HTTP_200_OK)
+
+                error_message = 'No healthy tokens found, please try again later.'
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': error_message})
+
+        except Exception as error:
+            logger.error(error)
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': error_message})

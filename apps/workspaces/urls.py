@@ -1,6 +1,6 @@
 from django.urls import path, include
 
-from .views import WorkspaceAdminsView, WorkspaceView, ReadyView, ConnectFyleView, ConnectXeroView, GeneralSettingsView, ScheduleView, \
+from .views import SetupE2ETestView, WorkspaceAdminsView, WorkspaceView, ReadyView, ConnectFyleView, ConnectXeroView, GeneralSettingsView, ScheduleView, \
     RevokeXeroConnectionView, XeroExternalSignUpsView, ExportToXeroView, LastExportDetailView
 
 urlpatterns = [
@@ -24,4 +24,5 @@ urlpatterns = [
     path('<int:workspace_id>/admins/', WorkspaceAdminsView.as_view({'get': 'get'}), name='admin'),
     path('external_signup/', XeroExternalSignUpsView.as_view({'post': 'post'})),
     path('<int:workspace_id>/export_detail/', LastExportDetailView.as_view({'get': 'get'}), name='export-detail'),
+    path('<int:workspace_id>/setup_e2e_test/', SetupE2ETestView.as_view({'post': 'post'}), name='setup-e2e-test')
 ]
