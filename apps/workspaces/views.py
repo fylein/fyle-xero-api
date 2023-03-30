@@ -625,76 +625,19 @@ class SetupE2ETestView(viewsets.ViewSet):
     authentication_classes = []
     permission_classes = [IsAuthenticatedForTest]
 
-    def post(self, request, **kwargs):
+    def post(self, request, workspace_id=None):
         """
         Sets up an end-to-end test for a given workspace.
         """
         try:
-            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
+            workspace = Workspace.objects.get(pk=workspace_id)
             error_message = 'Something unexpected has happened. Please try again later.'
 
             # Reset the workspace completely
             with connection.cursor() as cursor:
                 cursor.execute('select reset_workspace(%s)', [workspace.id])
 
-            # Filter out production organizations
-            if 'fyle for' in workspace.name.lower():
-                # Get the tenant mapping for the workspace
-                tenant_mapping = TenantMapping.get_tenant_details(workspace_id=workspace.id)
-
-                # Find all healthy Xero credentials for the workspace
-                healthy_tokens = XeroCredentials.objects.filter(
-                    workspace=workspace,
-                    is_expired=False,
-                    refresh_token__isnull=False,
-                ).order_by('-updated_at')
-                logger.info('Found {} healthy tokens'.format(healthy_tokens.count()))
-
-                # Try each healthy token until one works
-                for healthy_token in healthy_tokens:
-                    logger.info('Checking token health for workspace: {}'.format(healthy_token.workspace_id))
-
-                    # Check if the token is still valid
-                    try:
-                        xero_connector = XeroConnector(healthy_token, workspace_id=workspace.id)
-                        xero_connector.get_company_preference()
-                        logger.info('Yaay, token is healthy for workspace: {}'.format(healthy_token.workspace_id))
-                    except Exception:
-                        # If the token is expired, set is_expired = True so that it's not used in the future
-                        logger.info('Oops, token is dead for workspace: {}'.format(healthy_token.workspace_id))
-                        healthy_token.is_expired = True
-                        healthy_token.save()
-                        continue
-
-                    # Create a new XeroCredentials object for the workspace
-                    XeroCredentials.objects.create(
-                        workspace=workspace,
-                        refresh_token=xero_connector.connection.refresh_token,
-                        is_expired=False,
-                        company_name=healthy_token.company_name,
-                        country=healthy_token.country
-                    )
-
-                    # Sync dimensions for Xero and Fyle
-                    xero_connector.sync_dimensions()
-                    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
-                    platform = PlatformConnector(fyle_credentials)
-                    platform.import_fyle_dimensions(import_taxes=True)
-
-                    # Reset workspace details
-                    workspace.onboarding_state = 'MAP_EMPLOYEES'
-                    workspace.source_synced_at = datetime.now()
-                    workspace.destination_synced_at = datetime.now()
-                    workspace.xero_tenant_id = tenant_mapping.tenant_id
-                    workspace.last_synced_at = None
-                    workspace.save()
-
-                    # Return success response if the test was set up successfully
-                    return Response(status=status.HTTP_200_OK)
-
-                # Return error message if no healthy tokens were found
-                error_message = 'No healthy tokens found, please try again later.'
-            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': error_message})
+            return Response(status=status.HTTP_200_OK)
 
         except Exception as error:
             logger.error(error)
