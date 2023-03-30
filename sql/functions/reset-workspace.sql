@@ -11,7 +11,7 @@ BEGIN
   WHERE tl.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
   RAISE NOTICE 'Deleted % task_logs', rcount;
-  
+
   DELETE
   FROM errors er
   where er.workspace_id = _workspace_id;
@@ -22,7 +22,7 @@ BEGIN
 --   FROM last_export_details l
 --   where l.workspace_id = _workspace_id;
 --   GET DIAGNOSTICS rcount = ROW_COUNT;
---   RAISE NOTICE 'Deleted % errors', rcount;
+--   RAISE NOTICE 'Deleted % last_export_details', rcount;
 
   DELETE
   FROM bill_lineitems bl
@@ -43,94 +43,28 @@ BEGIN
   RAISE NOTICE 'Deleted % bills', rcount;
 
   DELETE
-  FROM xero_expense_lineitems qel
-  WHERE qel.xero_expense_id IN (
-      SELECT qe.id FROM xero_expenses qe WHERE qe.expense_group_id IN (
+  FROM bank_transaction_lineitems btl
+  WHERE btl.bank_transaction_id IN (
+      SELECT bt.id FROM bank_transactions bt WHERE bt.expense_group_id IN (
           SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
       )
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % xero_expense_lineitems', rcount;
+  RAISE NOTICE 'Deleted % bank_transaction_lineitems', rcount;
 
   DELETE
-  FROM xero_expenses qe
-  WHERE qe.expense_group_id IN (
+  FROM bank_transactions bt
+  WHERE bt.expense_group_id IN (
       SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % xero_expenses', rcount;
+  RAISE NOTICE 'Deleted % bank_transactions', rcount;
 
   DELETE
-  FROM cheque_lineitems cl
-  WHERE cl.cheque_id IN (
-      SELECT c.id FROM cheques c WHERE c.expense_group_id IN (
-          SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-      )
-  );
+  FROM payments p
+  WHERE p.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % cheque_lineitems', rcount;
-
-  DELETE
-  FROM cheques c
-  WHERE c.expense_group_id IN (
-      SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-  );
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % cheques', rcount;
-
-  DELETE
-  FROM credit_card_purchase_lineitems ccpl
-  WHERE ccpl.credit_card_purchase_id IN (
-      SELECT ccp.id FROM credit_card_purchases ccp WHERE ccp.expense_group_id IN (
-          SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-      )
-  );
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % credit_card_purchase_lineitems', rcount;
-
-  DELETE
-  FROM credit_card_purchases ccp
-  WHERE ccp.expense_group_id IN (
-      SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-  );
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % credit_card_purchases', rcount;
-
-  DELETE
-  FROM journal_entry_lineitems jel
-  WHERE jel.journal_entry_id IN (
-      SELECT c.id FROM journal_entries c WHERE c.expense_group_id IN (
-          SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-      )
-  );
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % journal_entry_lineitems', rcount;
-
-  DELETE
-  FROM journal_entries je
-  WHERE je.expense_group_id IN (
-      SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-  );
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % journal_entries', rcount;
-
-  DELETE
-  FROM bill_payment_lineitems bpl
-  WHERE bpl.bill_payment_id IN (
-      SELECT bp.id FROM bill_payments bp WHERE bp.expense_group_id IN (
-          SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-      )
-  );
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % bill_payment_lineitems', rcount;
-
-  DELETE
-  FROM bill_payments bp
-  WHERE bp.expense_group_id IN (
-      SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-  );
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % bill_payments', rcount;
+  RAISE NOTICE 'Deleted % payments', rcount;
 
   DELETE
   FROM reimbursements r
@@ -163,16 +97,10 @@ BEGIN
   RAISE NOTICE 'Deleted % expense_groups', rcount;
 
   DELETE
-  FROM employee_mappings em
-  WHERE em.workspace_id = _workspace_id;
+  FROM tenant_mappings tm
+  WHERE tm.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % employee_mappings', rcount;
-
-  DELETE
-  FROM category_mappings cm
-  WHERE cm.workspace_id = _workspace_id;
-  GET DIAGNOSTICS rcount = ROW_COUNT;
-  RAISE NOTICE 'Deleted % category_mappings', rcount;
+  RAISE NOTICE 'Deleted % tenant_mappings', rcount;
 
   DELETE
   FROM mappings m
@@ -211,8 +139,8 @@ BEGIN
 --   RAISE NOTICE 'Deleted % fyle_credentials', rcount;
 
   DELETE
-  FROM xero_credentials qc
-  WHERE qc.workspace_id = _workspace_id;
+  FROM xero_credentials xc
+  WHERE xc.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
   RAISE NOTICE 'Deleted % xero_credentials', rcount;
 
@@ -271,7 +199,7 @@ BEGIN
 --   RAISE NOTICE 'Deleted % workspaces', rcount;
 
     UPDATE workspaces
-    SET onboarding_state = 'CONNECTION', last_synced_at = null, destination_synced_at =  null, source_synced_at = null, xero_realm_id = null
+    SET onboarding_state = 'CONNECTION', last_synced_at = null, destination_synced_at =  null, source_synced_at = null
     WHERE id = _workspace_id;
 
     UPDATE last_export_details

@@ -279,7 +279,7 @@ XERO_REDIRECT_URI = os.environ.get('XERO_REDIRECT_URI')
 XERO_TOKEN_URI = os.environ.get('XERO_TOKEN_URI')
 ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
 E2E_TESTS_CLIENT_SECRET = os.environ.get('E2E_TESTS_CLIENT_SECRET')
-E2E_TESTS_REALM_ID = os.environ.get('E2E_TESTS_REALM_ID')
+E2E_TESTS_TENANT_ID = os.environ.get('E2E_TESTS_TENANT_ID')
 
 
 # Sendgrid Settings
