@@ -625,19 +625,14 @@ class SetupE2ETestView(viewsets.ViewSet):
     authentication_classes = []
     permission_classes = [IsAuthenticatedForTest]
 
-    def post(self, request, workspace_id=None):
+    def post(self, request, **kwargs):
         """
-        Sets up an end-to-end test for a given workspace.
+        Setup end to end test for a given workspace
         """
         try:
-            workspace = Workspace.objects.get(pk=workspace_id)
+            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
             error_message = 'Something unexpected has happened. Please try again later.'
 
-            # Reset the workspace completely
-            with connection.cursor() as cursor:
-                cursor.execute('select reset_workspace(%s)', [workspace.id])
-
-            return Response(status=status.HTTP_200_OK)
             # Filter out prod orgs
             if 'fyle for' in workspace.name.lower():
                 # Grab the latest healthy refresh token, from a demo org with the specified tenant_id

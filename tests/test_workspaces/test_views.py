@@ -475,19 +475,65 @@ def test_last_export_detail(mocker, api_client, test_connection):
     response = api_client.get(url)
     assert response.status_code == 200
 
-@pytest.mark.django_db
-def test_setup_e2e_test_view_post(api_client, test_connection):
-    # Set up test data and mocks
-    workspace_id = 1
 
-    # Set up the API client with necessary credentials
+def test_setup_e2e_test_view(mocker, db, api_client, test_connection):
+    # Set up test data
+    user, _ = get_user_model().objects.update_or_create(
+        email='test@example.com',
+        defaults={'full_name': 'anish'}
+    )
+    workspace, _ = Workspace.objects.update_or_create(
+        id=1,
+        defaults={
+            'name': 'Test Workspace',
+            'fyle_org_id': 'test_fyle_org_id'
+        }
+    )
+    workspace.user.set([user])  # Use set() method for many-to-many relationships
+
+    FyleCredential.objects.update_or_create(
+        workspace=workspace,
+        defaults={'refresh_token': 'test_fyle_refresh_token'}
+    )
+    XeroCredentials.objects.update_or_create(
+        workspace=workspace,
+        defaults={
+            'refresh_token': 'test_xero_refresh_token',
+            'is_expired': False
+        }
+    )
+    TenantMapping.objects.update_or_create(
+        workspace=workspace,
+        defaults={'tenant_id': 'test_xero_tenant_id'}
+    )
+
+    # Mock authentication and permission classes
+    mocker.patch('apps.workspaces.views.SetupE2ETestView.authentication_classes', new_callable=mock.PropertyMock)
+    mocker.patch('apps.workspaces.views.SetupE2ETestView.permission_classes', new_callable=mock.PropertyMock)
+
+    # Mock XeroConnector and related methods
+    xero_connector_mock = mocker.patch('apps.workspaces.views.XeroConnector')
+    xero_connector_instance = xero_connector_mock.return_value
+    xero_connector_instance.get_organisation.return_value = None
+    xero_connector_instance.sync_dimensions.return_value = None
+
+    # Mock PlatformConnector and related methods
+    platform_connector_mock = mocker.patch('apps.workspaces.views.PlatformConnector')
+    platform_connector_instance = platform_connector_mock.return_value
+    platform_connector_instance.import_fyle_dimensions.return_value = None
+
+    # Authenticate the api_client
+    api_client.force_authenticate(user=user)
+
+    # Create the request and call the view
+    workspace_id = 1
+    url = f'/api/workspaces/{workspace_id}/setup_e2e_test/'
+
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
 
-    # Call the post method to set up an end-to-end test for the given workspace
-    url = f'/api/workspaces/{workspace_id}/setup-e2e-test/'
     response = api_client.post(url)
 
-    # Test with a non-existent workspace
-    non_existent_workspace_id = 999
-    url = f'/api/workspaces/{non_existent_workspace_id}/setup-e2e-test/'
-    response = api_client.post(url)
+    # Check the response
+    assert response.status_code == status.HTTP_200_OK
+
+
