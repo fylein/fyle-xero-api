@@ -5,14 +5,10 @@ from rest_framework import status
 
 from apps.mappings.models import TenantMapping
 from fyle_accounting_mappings.models import Mapping
-from apps.workspaces.views import SetupE2ETestView
-from apps.xero.utils import XeroConnector 
 from fyle_xero_api import settings
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from fyle_rest_auth.utils import AuthUtils
 from tests.helper import dict_compare_keys
-from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk import exceptions as xero_exc
 from fyle.platform import exceptions as fyle_exc
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, XeroCredentials, LastExportDetail

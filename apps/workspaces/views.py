@@ -638,6 +638,67 @@ class SetupE2ETestView(viewsets.ViewSet):
                 cursor.execute('select reset_workspace(%s)', [workspace.id])
 
             return Response(status=status.HTTP_200_OK)
+            # Filter out prod orgs
+            if 'fyle for' in workspace.name.lower():
+                # Grab the latest healthy refresh token, from a demo org with the specified tenant_id
+                tenant_mappings = TenantMapping.objects.filter(
+                    workspace__name__icontains='fyle for',
+                    tenant_id=settings.E2E_TESTS_TENANT_ID
+                )
+
+                healthy_tokens = XeroCredentials.objects.filter(
+                    workspace__in=[tm.workspace for tm in tenant_mappings],
+                    is_expired=False,
+                    refresh_token__isnull=False
+                ).order_by('-updated_at')
+                logger.info('Found {} healthy tokens'.format(healthy_tokens.count()))
+
+                for healthy_token in healthy_tokens:
+                    logger.info('Checking token health for workspace: {}'.format(healthy_token.workspace_id))
+                    # Token Health check
+                    try:
+                        xero_connector = XeroConnector(healthy_token, workspace_id=workspace.id)
+                        xero_connector.get_organisation()
+                        logger.info('Yaay, token is healthly for workspace: {}'.format(healthy_token.workspace_id))
+                    except Exception:
+                        # If the token is expired, setting is_expired = True so that they are not used for future runs
+                        logger.info('Oops, token is dead for workspace: {}'.format(healthy_token.workspace_id))
+                        healthy_token.is_expired = True
+                        healthy_token.save()
+                        # Stop the execution here for the token since it's expired
+                        continue
+
+                    with transaction.atomic():
+                        if healthy_token:
+                            # Reset the workspace completely
+                            with connection.cursor() as cursor:
+                                cursor.execute('select reset_workspace(%s)', [workspace.id])
+
+                            # Store the latest healthy refresh token for the workspace
+                            XeroCredentials.objects.create(
+                                workspace=workspace,
+                                refresh_token=xero_connector.connection.refresh_token,
+                                is_expired=False
+                            )
+
+                            # Sync dimension for Xero and Fyle
+                            xero_connector.sync_dimensions()
+
+                            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
+                            platform = PlatformConnector(fyle_credentials)
+                            platform.import_fyle_dimensions(import_taxes=True)
+
+                            # Reset workspace details
+                            workspace.onboarding_state = 'MAP_EMPLOYEES'
+                            workspace.source_synced_at = datetime.now()
+                            workspace.destination_synced_at = datetime.now()
+                            workspace.last_synced_at = None
+                            workspace.save()
+
+                            return Response(status=status.HTTP_200_OK)
+
+                error_message = 'No healthy tokens found, please try again later.'
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={'message': error_message})
 
         except Exception as error:
             logger.error(error)
