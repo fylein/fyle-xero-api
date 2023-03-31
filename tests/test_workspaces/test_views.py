@@ -7,13 +7,12 @@ from apps.mappings.models import TenantMapping
 from fyle_accounting_mappings.models import Mapping
 from fyle_xero_api import settings
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 from fyle_rest_auth.utils import AuthUtils
 from tests.helper import dict_compare_keys
 from xerosdk import exceptions as xero_exc
 from fyle.platform import exceptions as fyle_exc
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, XeroCredentials, LastExportDetail
-import pytest
-from rest_framework.test import APIRequestFactory
 from .fixtures import data
 from ..test_xero.fixtures import data as xero_data
 from ..test_fyle.fixtures import data as fyle_data
@@ -476,64 +475,58 @@ def test_last_export_detail(mocker, api_client, test_connection):
     assert response.status_code == 200
 
 
-def test_setup_e2e_test_view(mocker, db, api_client, test_connection):
-    # Set up test data
-    user, _ = get_user_model().objects.update_or_create(
-        email='test@example.com',
-        defaults={'full_name': 'anish'}
-    )
-    workspace, _ = Workspace.objects.update_or_create(
-        id=1,
-        defaults={
-            'name': 'Test Workspace',
-            'fyle_org_id': 'test_fyle_org_id'
+@mock.patch('apps.workspaces.views.connection')
+def test_setup_e2e_test_view_for_xero(db, mocker, api_client, test_connection):
+    url = reverse(
+        'setup-e2e-test', kwargs={
+            'workspace_id': 1
         }
     )
-    workspace.user.set([user])  # Use set() method for many-to-many relationships
 
-    FyleCredential.objects.update_or_create(
-        workspace=workspace,
-        defaults={'refresh_token': 'test_fyle_refresh_token'}
-    )
-    XeroCredentials.objects.update_or_create(
-        workspace=workspace,
-        defaults={
-            'refresh_token': 'test_xero_refresh_token',
-            'is_expired': False
-        }
-    )
-    TenantMapping.objects.update_or_create(
-        workspace=workspace,
-        defaults={'tenant_id': 'test_xero_tenant_id'}
-    )
-
-    # Mock authentication and permission classes
-    mocker.patch('apps.workspaces.views.SetupE2ETestView.authentication_classes', new_callable=mock.PropertyMock)
-    mocker.patch('apps.workspaces.views.SetupE2ETestView.permission_classes', new_callable=mock.PropertyMock)
-
-    # Mock XeroConnector and related methods
-    xero_connector_mock = mocker.patch('apps.workspaces.views.XeroConnector')
-    xero_connector_instance = xero_connector_mock.return_value
-    xero_connector_instance.get_organisation.return_value = None
-    xero_connector_instance.sync_dimensions.return_value = None
-
-    # Mock PlatformConnector and related methods
-    platform_connector_mock = mocker.patch('apps.workspaces.views.PlatformConnector')
-    platform_connector_instance = platform_connector_mock.return_value
-    platform_connector_instance.import_fyle_dimensions.return_value = None
-
-    # Authenticate the api_client
-    api_client.force_authenticate(user=user)
-
-    # Create the request and call the view
-    workspace_id = 1
-    url = f'/api/workspaces/{workspace_id}/setup_e2e_test/'
-
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-
+    api_client.credentials(HTTP_X_E2E_Tests_Client_ID='dummy_id')
     response = api_client.post(url)
+    assert response.status_code == 403
 
-    # Check the response
-    assert response.status_code == status.HTTP_200_OK
+    mocker.patch(
+        'cryptography.fernet.Fernet.decrypt',
+        return_value=settings.E2E_TESTS_CLIENT_SECRET.encode('utf-8')
+    )
 
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.sync_dimensions',
+        return_value=None
+    )
+    mocker.patch(
+        'fyle_integrations_platform_connector.PlatformConnector.import_fyle_dimensions',
+        return_value=[]
+    )
+    mocker.patch(
+        'apps.workspaces.models.XeroCredentials.objects.create',
+        return_value=None
+    )
 
+    api_client.credentials(HTTP_X_E2E_Tests_Client_ID='dummy_id')
+    response = api_client.post(url)
+    assert response.status_code == 400
+
+    mocker.patch(
+        'apps.xero.utils.XeroConnector.get_organisations',
+        return_value=None
+    )
+    healthy_token = XeroCredentials.objects.get(workspace_id=1)
+    healthy_token.is_expired = False
+    healthy_token.save()
+
+    api_client.credentials(HTTP_X_E2E_Tests_Client_ID='gAAAAABgbDinj4F3CvdGg3d8eM__R3kiUvygoLTvtSE_2fMcCyXSYqRpdGYC-CUG6bN8srTsEkGvJFJ8p8BTQYOhaYV8Myb46A====')
+    response = api_client.post(url)
+    print(response.content)
+    assert response.status_code == 200
+
+    url = reverse(
+        'setup-e2e-test', kwargs={
+            'workspace_id': 6
+        }
+    )
+    api_client.credentials(HTTP_X_E2E_Tests_Client_ID='gAAAAABi8oWVoonxF0K_g2TQnFdlpOJvGsBYa9rPtwfgM-puStki_qYbi0PdipWHqIBIMip94MDoaTP4MXOfERDeEGrbARCxPw==')
+    response = api_client.post(url)
+    assert response.status_code == 500
