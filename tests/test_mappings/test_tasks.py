@@ -248,6 +248,10 @@ def test_async_auto_map_employees(mocker, db):
     employee_mappings = EmployeeMapping.objects.filter(workspace_id=workspace_id).count()
     assert employee_mappings == 0
 
+    with mock.patch('apps.mappings.tasks.async_auto_map_employees') as mock_call:
+        mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Invalid Token for Fyle")
+        async_auto_map_employees(workspace_id=workspace_id)
+
     qbo_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
     qbo_credentials.delete()
 
