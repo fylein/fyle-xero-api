@@ -5,6 +5,7 @@ from fyle_accounting_mappings.models import DestinationAttribute, CategoryMappin
     Mapping, MappingSetting, EmployeeMapping
 from apps.mappings.tasks import *
 from fyle_integrations_platform_connector import PlatformConnector
+from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from ..test_xero.fixtures import data as xero_data
 from ..test_fyle.fixtures import data as fyle_data
 from .fixtures import data
@@ -58,6 +59,8 @@ def test_auto_create_tax_codes_mappings(db, mocker):
         mock_call.side_effect = WrongParamsError(msg='wrong parameter error', response="wrong parameter error")
         response = auto_create_tax_codes_mappings(workspace_id=workspace_id)
 
+        mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Invalid Token for Fyle")
+        response = auto_create_tax_codes_mappings(workspace_id=workspace_id)
 
 def test_schedule_tax_groups_creation(db):
     workspace_id = 1
@@ -112,6 +115,9 @@ def test_auto_create_project_mappings(db, mocker):
 
     with mock.patch('apps.xero.utils.XeroConnector.sync_customers') as mock_call:
         mock_call.side_effect = WrongParamsError(msg='wrong parameter error', response="wrong parameter error")
+        response = auto_create_project_mappings(workspace_id=workspace_id)
+
+        mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Invalid Token for Fyle")
         response = auto_create_project_mappings(workspace_id=workspace_id)
 
         mock_call.side_effect = Exception()
@@ -206,6 +212,9 @@ def test_auto_create_category_mappings(db, mocker):
         mock_call.side_effect = WrongParamsError(msg='wrong parameter error', response="wrong parameter error")
         response = auto_create_category_mappings(workspace_id=workspace_id)
 
+        mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Invalid Token for Fyle")
+        response = auto_create_category_mappings(workspace_id=workspace_id)
+
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     fyle_credentials.delete()
 
@@ -298,6 +307,9 @@ def test_auto_create_cost_center_mappings(db, mocker, create_mapping_setting):
 
     with mock.patch('fyle_integrations_platform_connector.apis.CostCenters.sync') as mock_call:
         mock_call.side_effect = WrongParamsError(msg='wrong parameter error', response="wrong parameter error")
+        response = auto_create_cost_center_mappings(workspace_id=workspace_id)
+
+        mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Inalid Token for Fyle")
         response = auto_create_cost_center_mappings(workspace_id=workspace_id)
 
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
@@ -399,6 +411,9 @@ def test_auto_create_expense_fields_mappings(db, mocker, create_mapping_setting)
 
     with mock.patch('fyle_integrations_platform_connector.apis.ExpenseCustomFields.post') as mock_call:
         mock_call.side_effect = WrongParamsError(msg='wrong parameter error', response="wrong parameter error")
+        auto_create_expense_fields_mappings(workspace_id, 'COST_CENTER', 'TESTING_THIS')
+
+        mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Invalid Token for Fyle")
         auto_create_expense_fields_mappings(workspace_id, 'COST_CENTER', 'TESTING_THIS')
 
         mock_call.side_effect = Exception()
