@@ -11,7 +11,7 @@ from fyle_integrations_platform_connector import PlatformConnector
 
 from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
 
-from fyle.platform.exceptions import WrongParamsError
+from fyle.platform.exceptions import WrongParamsError, InternalServerError
 
 from xerosdk.exceptions import UnsuccessfulAuthentication, InvalidGrant
 
@@ -171,6 +171,10 @@ def auto_create_category_mappings(workspace_id):
             'Error while creating categories workspace_id - %s in Fyle %s %s',
             workspace_id, exception.message, {'error': exception.response}
         )
+
+    except InternalServerError:
+        logger.error('Internal server error while importing to Fyle')
+
     except Exception:
         error = traceback.format_exc()
         error = {
@@ -203,6 +207,9 @@ def async_auto_map_employees(workspace_id: int):
             'Xero Credentials not found for workspace_id %s',
             workspace_id,
         )
+
+    except InternalServerError:
+        logger.error('Internal server error while importing to Fyle')
 
     except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
@@ -324,6 +331,9 @@ def auto_create_cost_center_mappings(workspace_id: int):
             workspace_id, exception.message, {'error': exception.response}
         )
 
+    except InternalServerError:
+        logger.error('Internal server error while importing to Fyle')
+
     except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
@@ -436,6 +446,9 @@ def auto_create_project_mappings(workspace_id: int):
             'Error while creating projects workspace_id - %s in Fyle %s %s',
             workspace_id, exception.message, {'error': exception.response}
         )
+
+    except InternalServerError:
+        logger.error('Internal server error while importing to Fyle')
 
     except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
@@ -560,6 +573,10 @@ def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: 
             'Error while creating %s workspace_id - %s in Fyle %s %s',
             fyle_attribute_type, workspace_id, exception.message, {'error': exception.response}
         )
+        
+    except InternalServerError:
+        logger.error('Internal server error while importing to Fyle')
+
     except Exception:
         error = traceback.format_exc()
         error = {
@@ -681,6 +698,9 @@ def auto_create_tax_codes_mappings(workspace_id: int):
             'Error while creating tax groups workspace_id - %s in Fyle %s %s',
             workspace_id, exception.message, {'error': exception.response}
         )
+
+    except InternalServerError:
+        logger.error('Internal server error while importing to Fyle')
 
     except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
