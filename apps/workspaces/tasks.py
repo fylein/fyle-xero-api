@@ -4,6 +4,8 @@ import logging
 
 from django_q.models import Schedule
 
+from fyle_integrations_platform_connector import PlatformConnector
+
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
 from apps.mappings.models import TenantMapping
@@ -11,6 +13,7 @@ from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_lo
 from apps.xero.tasks import schedule_bills_creation, schedule_bank_transaction_creation, create_chain_and_export
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import Workspace, WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, FyleCredential
+from apps.users.models import User
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -151,3 +154,22 @@ def run_email_notification(workspace_id):
 
         ws_schedule.error_count = task_logs_count
         ws_schedule.save()
+
+def async_add_admins_to_workspace(workspace_id: int, current_user_id: str):
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    platform = PlatformConnector(fyle_credentials)
+
+    users = []
+    admins = platform.employees.get_admins()
+
+    for admin in admins:
+        # Skip current user since it is already added
+        if current_user_id != admin['user_id']:
+            users.append(User(email=admin['email'], user_id=admin['user_id'], full_name=admin['full_name']))
+
+    if len(users):
+        created_users = User.objects.bulk_create(users, batch_size=50)
+        workspace = Workspace.objects.get(id=workspace_id)
+
+        for user in created_users:
+            workspace.user.add(user)
