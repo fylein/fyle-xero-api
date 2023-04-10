@@ -15,7 +15,7 @@ for workspace in workspaces:
         platform = PlatformConnector(fyle_credentials)
         users = []
         admins = platform.employees.get_admins()
-        existing_user_ids = User.objects.filter(workspace__id=1).values_list('user_id', flat=True)
+        existing_user_ids = User.objects.filter(workspace__id=workspace_id).values_list('user_id', flat=True)
         for admin in admins:
             # Skip already existing users
             if admin['user_id'] not in existing_user_ids:
@@ -25,6 +25,5 @@ for workspace in workspaces:
             workspace = Workspace.objects.get(id=workspace_id)
             for user in created_users:
                 workspace.user.add(user)
-
     except Exception as e:
         print(e.__dict__)
