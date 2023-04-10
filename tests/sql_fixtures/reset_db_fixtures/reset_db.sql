@@ -691,7 +691,7 @@ CREATE TABLE public.expense_attributes (
     id integer NOT NULL,
     attribute_type character varying(255) NOT NULL,
     display_name character varying(255) NOT NULL,
-    value character varying(255) NOT NULL,
+    value character varying(1000) NOT NULL,
     source_id character varying(255) NOT NULL,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
@@ -704,6 +704,45 @@ CREATE TABLE public.expense_attributes (
 
 
 ALTER TABLE public.expense_attributes OWNER TO postgres;
+
+--
+-- Name: expense_fields; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.expense_fields (
+    id integer NOT NULL,
+    attribute_type character varying(255) NOT NULL,
+    source_field_id integer NOT NULL,
+    is_enabled boolean NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    workspace_id integer NOT NULL
+);
+
+
+ALTER TABLE public.expense_fields OWNER TO postgres;
+
+--
+-- Name: expense_fields_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.expense_fields_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.expense_fields_id_seq OWNER TO postgres;
+
+--
+-- Name: expense_fields_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.expense_fields_id_seq OWNED BY public.expense_fields.id;
+
 
 --
 -- Name: expense_group_settings; Type: TABLE; Schema: public; Owner: postgres
@@ -968,7 +1007,8 @@ CREATE TABLE public.mapping_settings (
     workspace_id integer NOT NULL,
     import_to_fyle boolean NOT NULL,
     is_custom boolean NOT NULL,
-    source_placeholder text
+    source_placeholder text,
+    expense_field_id integer
 );
 
 
@@ -1705,6 +1745,13 @@ ALTER TABLE ONLY public.expense_attributes ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: expense_fields id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_fields ALTER COLUMN id SET DEFAULT nextval('public.expense_fields_id_seq'::regclass);
+
+
+--
 -- Name: expense_group_settings id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2006,6 +2053,10 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 146	Can change last export detail	37	change_lastexportdetail
 147	Can delete last export detail	37	delete_lastexportdetail
 148	Can view last export detail	37	view_lastexportdetail
+149	Can add expense field	38	add_expensefield
+150	Can change expense field	38	change_expensefield
+151	Can delete expense field	38	delete_expensefield
+152	Can view expense field	38	view_expensefield
 \.
 
 
@@ -2285,6 +2336,7 @@ COPY public.django_content_type (id, app_label, model) FROM stdin;
 35	django_q	ormq
 36	tasks	error
 37	workspaces	lastexportdetail
+38	fyle_accounting_mappings	expensefield
 \.
 
 
@@ -2427,6 +2479,9 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 132	workspaces	0033_auto_20230321_0736	2023-03-21 07:52:39.767433+00
 133	workspaces	0035_merge_20230321_0751	2023-03-21 07:52:39.77092+00
 134	workspaces	0036_auto_20230323_0846	2023-03-23 08:48:08.362718+00
+135	fyle_accounting_mappings	0019_auto_20230105_1104	2023-04-10 08:19:53.587731+00
+136	fyle_accounting_mappings	0020_auto_20230302_0519	2023-04-10 08:19:53.615283+00
+137	fyle_accounting_mappings	0021_auto_20230323_0557	2023-04-10 08:19:53.627683+00
 \.
 
 
@@ -4605,6 +4660,14 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 
 
 --
+-- Data for Name: expense_fields; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.expense_fields (id, attribute_type, source_field_id, is_enabled, created_at, updated_at, workspace_id) FROM stdin;
+\.
+
+
+--
 -- Data for Name: expense_group_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -4697,13 +4760,13 @@ COPY public.last_export_details (id, last_exported_at, export_mode, total_expens
 -- Data for Name: mapping_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.mapping_settings (id, source_field, destination_field, created_at, updated_at, workspace_id, import_to_fyle, is_custom, source_placeholder) FROM stdin;
-1	CATEGORY	ACCOUNT	2022-08-02 20:25:24.632318+00	2022-08-02 20:25:24.632372+00	1	f	f	\N
-2	EMPLOYEE	CONTACT	2022-08-02 20:25:24.647585+00	2022-08-02 20:25:24.647636+00	1	f	f	\N
-3	PROJECT	CUSTOMER	2022-08-02 20:25:24.660915+00	2022-08-02 20:25:24.660954+00	1	t	f	\N
-4	CORPORATE_CARD	BANK_ACCOUNT	2022-08-02 20:25:24.662017+00	2022-08-02 20:25:24.662053+00	1	f	f	\N
-5	TAX_GROUP	TAX_CODE	2022-08-02 20:25:24.67454+00	2022-08-02 20:25:24.674589+00	1	f	f	\N
-99	COST_CENTER	DEPARTMENT	2022-08-02 20:25:24.67454+00	2022-08-02 20:25:24.674589+00	1	f	f	\N
+COPY public.mapping_settings (id, source_field, destination_field, created_at, updated_at, workspace_id, import_to_fyle, is_custom, source_placeholder, expense_field_id) FROM stdin;
+1	CATEGORY	ACCOUNT	2022-08-02 20:25:24.632318+00	2022-08-02 20:25:24.632372+00	1	f	f	\N	\N
+2	EMPLOYEE	CONTACT	2022-08-02 20:25:24.647585+00	2022-08-02 20:25:24.647636+00	1	f	f	\N	\N
+3	PROJECT	CUSTOMER	2022-08-02 20:25:24.660915+00	2022-08-02 20:25:24.660954+00	1	t	f	\N	\N
+4	CORPORATE_CARD	BANK_ACCOUNT	2022-08-02 20:25:24.662017+00	2022-08-02 20:25:24.662053+00	1	f	f	\N	\N
+5	TAX_GROUP	TAX_CODE	2022-08-02 20:25:24.67454+00	2022-08-02 20:25:24.674589+00	1	f	f	\N	\N
+99	COST_CENTER	DEPARTMENT	2022-08-02 20:25:24.67454+00	2022-08-02 20:25:24.674589+00	1	f	f	\N	\N
 \.
 
 
@@ -4886,7 +4949,7 @@ SELECT pg_catalog.setval('public.auth_group_permissions_id_seq', 1, false);
 -- Name: auth_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.auth_permission_id_seq', 148, true);
+SELECT pg_catalog.setval('public.auth_permission_id_seq', 152, true);
 
 
 --
@@ -4935,14 +4998,14 @@ SELECT pg_catalog.setval('public.django_admin_log_id_seq', 1, false);
 -- Name: django_content_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_content_type_id_seq', 37, true);
+SELECT pg_catalog.setval('public.django_content_type_id_seq', 38, true);
 
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 134, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 137, true);
 
 
 --
@@ -4971,6 +5034,13 @@ SELECT pg_catalog.setval('public.employee_mappings_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.errors_id_seq', 1, false);
+
+
+--
+-- Name: expense_fields_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.expense_fields_id_seq', 1, false);
 
 
 --
@@ -5357,6 +5427,22 @@ ALTER TABLE ONLY public.errors
 
 ALTER TABLE ONLY public.expense_attributes
     ADD CONSTRAINT expense_attributes_value_attribute_type_wor_a06aa6b3_uniq UNIQUE (value, attribute_type, workspace_id);
+
+
+--
+-- Name: expense_fields expense_fields_attribute_type_workspace_id_22d6ab60_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_fields
+    ADD CONSTRAINT expense_fields_attribute_type_workspace_id_22d6ab60_uniq UNIQUE (attribute_type, workspace_id);
+
+
+--
+-- Name: expense_fields expense_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_fields
+    ADD CONSTRAINT expense_fields_pkey PRIMARY KEY (id);
 
 
 --
@@ -5843,6 +5929,13 @@ CREATE INDEX errors_workspace_id_a33dd61b ON public.errors USING btree (workspac
 
 
 --
+-- Name: expense_fields_workspace_id_b60af18c; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX expense_fields_workspace_id_b60af18c ON public.expense_fields USING btree (workspace_id);
+
+
+--
 -- Name: expense_groups_expenses_expense_id_af963907; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -5910,6 +6003,13 @@ CREATE INDEX fyle_accounting_mappings_mapping_workspace_id_10d6edd3 ON public.ma
 --
 
 CREATE INDEX fyle_accounting_mappings_mappingsetting_workspace_id_c123c088 ON public.mapping_settings USING btree (workspace_id);
+
+
+--
+-- Name: mapping_settings_expense_field_id_e9afc6c2; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX mapping_settings_expense_field_id_e9afc6c2 ON public.mapping_settings USING btree (expense_field_id);
 
 
 --
@@ -6174,6 +6274,14 @@ ALTER TABLE ONLY public.errors
 
 
 --
+-- Name: expense_fields expense_fields_workspace_id_b60af18c_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_fields
+    ADD CONSTRAINT expense_fields_workspace_id_b60af18c_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: expense_group_settings expense_group_settings_workspace_id_4c110bbe_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6267,6 +6375,14 @@ ALTER TABLE ONLY public.general_mappings
 
 ALTER TABLE ONLY public.last_export_details
     ADD CONSTRAINT last_export_details_workspace_id_0af72f0e_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: mapping_settings mapping_settings_expense_field_id_e9afc6c2_fk_expense_fields_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.mapping_settings
+    ADD CONSTRAINT mapping_settings_expense_field_id_e9afc6c2_fk_expense_fields_id FOREIGN KEY (expense_field_id) REFERENCES public.expense_fields(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
