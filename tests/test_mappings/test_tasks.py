@@ -252,6 +252,9 @@ def test_async_auto_map_employees(mocker, db):
         mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Invalid Token for Fyle")
         async_auto_map_employees(workspace_id=workspace_id)
 
+        mock_call.side_effect = UnsuccessfulAuthentication(msg='Auth error')
+        async_auto_map_employees(workspace_id=workspace_id)
+
     qbo_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
     qbo_credentials.delete()
 
