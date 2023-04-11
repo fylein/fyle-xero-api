@@ -62,7 +62,7 @@ def test_create_expense_groups(mocker, db):
     task_log = TaskLog.objects.get(id=task_log.id)
     assert task_log.status == 'FAILED'
 
-    with mock.patch('yle.platform.apis.v1beta.admin.Expenses.list_all') as mock_call:
+    with mock.patch('fyle.platform.apis.v1beta.admin.Expenses.list_all') as mock_call:
         mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Invalid Token for Fyle")
         create_expense_groups(workspace_id, ['PERSONAL', 'CCC'], task_log)
 
