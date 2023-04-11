@@ -3,6 +3,9 @@ from apps.workspaces.models import FyleCredential
 from apps.fyle.tasks import schedule_expense_group_creation, create_expense_groups
 from apps.tasks.models import TaskLog
 from .fixtures import data
+from unittest import mock
+
+from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 
 
 def test_schedule_expense_group_creation(api_client, test_connection):
@@ -58,6 +61,10 @@ def test_create_expense_groups(mocker, db):
 
     task_log = TaskLog.objects.get(id=task_log.id)
     assert task_log.status == 'FAILED'
+
+    with mock.patch('fyle.platform.apis.v1beta.admin.Expenses.list_all') as mock_call:
+        mock_call.side_effect = FyleInvalidTokenError(msg='Invalid Token for Fyle', response="Invalid Token for Fyle")
+        create_expense_groups(workspace_id, ['PERSONAL', 'CCC'], task_log)
 
     expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
     expense_group_settings.delete()
