@@ -10,7 +10,7 @@ from apps.workspaces.apis.import_settings.serializers import ImportSettingsSeria
 from apps.workspaces.apis.advanced_settings.serializers import AdvancedSettingsSerializer
 
 
-class PrefillConfigurationsSerializer(serializers.ModelSerializer):
+class CloneSettingsSerializer(serializers.ModelSerializer):
     export_settings = ReadWriteSerializerMethodField()
     import_settings = ReadWriteSerializerMethodField()
     advanced_settings = ReadWriteSerializerMethodField()

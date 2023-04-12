@@ -3,9 +3,9 @@ from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 
 User = get_user_model()
 
-def get_latest_workspace_id(user_id: str):
+def get_latest_workspace(user_id: str):
     """
-    Get latest workspace id for user
+    Get latest workspace for user
 
     :param user_id: user id
     :return: workspace id / None
@@ -19,6 +19,6 @@ def get_latest_workspace_id(user_id: str):
     ).order_by('-updated_at').first()
 
     if workspace_general_setting:
-        return workspace_general_setting.workspace.id
+        return workspace_general_setting.workspace
 
     return None
