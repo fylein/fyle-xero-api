@@ -4,6 +4,8 @@ import logging
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 
+from django_q.tasks import async_task
+
 from rest_framework.response import Response
 from rest_framework.views import status
 from rest_framework import viewsets
@@ -101,6 +103,8 @@ class WorkspaceView(viewsets.ViewSet):
                 workspace_id=workspace.id,
                 cluster_domain=cluster_domain
             )
+
+            async_task('apps.workspaces.tasks.async_add_admins_to_workspace', workspace.id, request.user.user_id)
 
         return Response(
             data=WorkspaceSerializer(workspace).data,

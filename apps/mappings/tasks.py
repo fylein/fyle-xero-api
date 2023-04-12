@@ -11,7 +11,7 @@ from fyle_integrations_platform_connector import PlatformConnector
 
 from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
 
-from fyle.platform.exceptions import WrongParamsError
+from fyle.platform.exceptions import WrongParamsError, InvalidTokenError as FyleInvalidTokenError
 
 from xerosdk.exceptions import UnsuccessfulAuthentication, InvalidGrant
 
@@ -162,6 +162,9 @@ def auto_create_category_mappings(workspace_id):
             'Xero Credentials not found for workspace_id %s',
             workspace_id,
         )
+    
+    except FyleInvalidTokenError:
+        logger.info('Invalid token for fyle')
 
     except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
@@ -203,6 +206,9 @@ def async_auto_map_employees(workspace_id: int):
             'Xero Credentials not found for workspace_id %s',
             workspace_id,
         )
+    
+    except FyleInvalidTokenError:
+        logger.info('Invalid Token for Fyle')
 
     except (UnsuccessfulAuthentication, InvalidGrant):
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
@@ -318,6 +324,9 @@ def auto_create_cost_center_mappings(workspace_id: int):
     except XeroCredentials.DoesNotExist:
         logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
 
+    except FyleInvalidTokenError:
+        logger.info('Invalid Token for Fyle')
+
     except WrongParamsError as exception:
         logger.error(
             'Error while creating cost centers workspace_id - %s in Fyle %s %s',
@@ -430,6 +439,9 @@ def auto_create_project_mappings(workspace_id: int):
 
     except XeroCredentials.DoesNotExist:
         logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
+    
+    except FyleInvalidTokenError:
+        logger.info('Invalid Token for Fyle')
 
     except WrongParamsError as exception:
         logger.error(
@@ -560,6 +572,10 @@ def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: 
             'Error while creating %s workspace_id - %s in Fyle %s %s',
             fyle_attribute_type, workspace_id, exception.message, {'error': exception.response}
         )
+    
+    except FyleInvalidTokenError:
+        logger.info('Invalid Token for Fyle')
+
     except Exception:
         error = traceback.format_exc()
         error = {
@@ -675,6 +691,9 @@ def auto_create_tax_codes_mappings(workspace_id: int):
 
     except XeroCredentials.DoesNotExist:
         logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
+
+    except FyleInvalidTokenError:
+        logger.info('Invalid Token for Fyle')
 
     except WrongParamsError as exception:
         logger.error(

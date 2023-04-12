@@ -10,6 +10,7 @@ from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSe
 from apps.tasks.models import TaskLog
 
 from fyle_integrations_platform_connector import PlatformConnector
+from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
 
@@ -137,6 +138,8 @@ def async_create_expense_groups(workspace_id: int, fund_source: List[str], task_
         task_log.status = 'FAILED'
         task_log.save()
 
+    except FyleInvalidTokenError:
+        logger.info("Invalid Token for Fyle")
     except Exception:
         error = traceback.format_exc()
         task_log.detail = {

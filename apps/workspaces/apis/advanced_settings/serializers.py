@@ -24,8 +24,7 @@ class ReadWriteSerializerMethodField(serializers.SerializerMethodField):
 
 
 class WorkspaceScheduleSerializer(serializers.ModelSerializer):
-
-
+    emails_selected = serializers.ListField(allow_null=True, required=False)
     class Meta:
         model = WorkspaceSchedule
         fields = [
