@@ -39,13 +39,6 @@ jobs:
         continue-on-error: true
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@v3
-      - name: Pytest coverage comment
-        uses: MishaKav/pytest-coverage-comment@main
-        if: ${{ always() && github.ref != 'refs/heads/master' }}
-        with:
-          create-new-comment: true
-          pytest-coverage-path: ./pytest-coverage.txt
-          junitxml-path: ./test-reports/report.xml
       - name: Stop Services
         run: docker compose -f docker-compose-pipeline.yml down
       - name: Evaluate Coverage
