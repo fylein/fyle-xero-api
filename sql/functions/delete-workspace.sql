@@ -157,6 +157,12 @@ BEGIN
   RAISE NOTICE 'Deleted % destination_attributes', rcount;
 
   DELETE
+  FROM expense_fields ef
+  WHERE ef.workspace_id = _workspace_id;
+  GET DIAGNOSTICS rcount = ROW_COUNT;
+  RAISE NOTICE 'Deleted % expense_fields', rcount;
+
+  DELETE
   FROM workspace_schedules wsch
   WHERE wsch.workspace_id = _workspace_id;
   GET DIAGNOSTICS rcount = ROW_COUNT;
