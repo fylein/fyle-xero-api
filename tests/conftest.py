@@ -7,6 +7,8 @@ from fyle_rest_auth.models import AuthToken, User
 from fyle.platform import Platform
 
 from apps.fyle.helpers import get_access_token
+from apps.fyle.models import ExpenseGroupSettings
+from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from fyle_xero_api.tests import settings
 from .test_fyle.fixtures import data as fyle_data
 
@@ -97,5 +99,21 @@ def test_connection(db):
         user=user
     )
     auth_token.save()
+
+    workspace = Workspace.objects.create(
+        name='Test Workspace 2',
+        fyle_org_id='fyle_org_id_dummy',
+        fyle_currency='USD',
+        xero_currency='USD',
+        app_version='v2',
+        xero_short_code='xero_short_code_dummy',
+        onboarding_state='COMPLETE'
+    )
+    workspace.user.add(user)
+    WorkspaceGeneralSettings.objects.create(
+        workspace=workspace,
+        reimbursable_expenses_object='BILL'
+    )
+    ExpenseGroupSettings.objects.create(workspace=workspace)
 
     return fyle_connection
