@@ -165,11 +165,11 @@ data = {
             }
         }
     },
-    'clone_settings_availability': {
+    'clone_settings_exists': {
         'is_available': True,
         'workspace_name': 'FAE'
     },
-    'clone_settings_un_availability': {
+    'clone_settings_not_exists': {
         'is_available': False,
         'workspace_name': None
     }
