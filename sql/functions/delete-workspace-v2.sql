@@ -1,6 +1,6 @@
-DROP FUNCTION if exists delete_workspace;
+DROP FUNCTION if exists delete_workspace_v2;
 
-CREATE OR REPLACE FUNCTION delete_workspace(IN _workspace_id integer) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION delete_workspace_v2(IN _workspace_id integer) RETURNS void AS $$
 DECLARE
   rcount integer;
 BEGIN
