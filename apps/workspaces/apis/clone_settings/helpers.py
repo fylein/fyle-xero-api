@@ -3,6 +3,7 @@ from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 
 User = get_user_model()
 
+
 def get_latest_workspace(user_id: str):
     """
     Get latest workspace for user
@@ -20,5 +21,3 @@ def get_latest_workspace(user_id: str):
 
     if workspace_general_setting:
         return workspace_general_setting.workspace
-
-    return None

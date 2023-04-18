@@ -16,7 +16,8 @@ class CloneSettingsView(generics.RetrieveUpdateAPIView):
 
         return Workspace.objects.filter(id=latest_workspace.id).first()
 
-class CloneSettingsAvailabilityView(generics.RetrieveAPIView):
+
+class CloneSettingsExistsView(generics.RetrieveAPIView):
 
     permission_classes = [IsAuthenticated]
 

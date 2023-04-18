@@ -3,8 +3,9 @@ from rest_framework import serializers
 
 from django.db import transaction
 
-from apps.workspaces.apis.export_settings.serializers import ExportSettingsSerializer, \
-    ReadWriteSerializerMethodField
+from apps.workspaces.apis.export_settings.serializers import (
+    ExportSettingsSerializer, ReadWriteSerializerMethodField
+)
 
 from apps.workspaces.apis.import_settings.serializers import ImportSettingsSerializer
 from apps.workspaces.apis.advanced_settings.serializers import AdvancedSettingsSerializer
