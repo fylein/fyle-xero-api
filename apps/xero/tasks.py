@@ -426,6 +426,8 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
 
     except UnsuccessfulAuthentication:
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
+    except XeroCredentials.DoesNotExist:
+        logger.info('Xero Credentials not found for workspace_id %s',workspace_id)
 
 def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> list:
     """
