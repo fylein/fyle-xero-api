@@ -22,7 +22,7 @@ jobs:
           docker-compose -f docker-compose-pipeline.yml build
           docker-compose -f docker-compose-pipeline.yml up -d
           docker-compose -f docker-compose-pipeline.yml exec -T api pytest tests/ --cov=. --cov-report=xml --cov-fail-under=97 --junit-xml=test-reports/report.xml
-          echo "STATUS=$(cat pytest-coverage.txt | grep 'Required test' | awk '{ print $1 }')" >> $GITHUB_ENV
+          echo "STATUS=$(cat pytest-coverage.xml | grep 'Required test' | awk '{ print $1 }')" >> $GITHUB_ENV
           echo "FAILED=$(cat test-reports/report.xml | awk -F'=' '{print $5}' | awk -F' ' '{gsub(/"/, "", $1); print $1}')" >> $GITHUB_ENV
         env:
           API_URL: ${{ secrets.API_URL }}

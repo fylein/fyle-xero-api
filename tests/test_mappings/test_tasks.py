@@ -196,6 +196,7 @@ def test_auto_create_category_mappings(db, mocker):
         'fyle_integrations_platform_connector.apis.Categories.post_bulk',
         return_value=[]
     )
+    abc
 
     mocker.patch(
         'xerosdk.apis.Accounts.get_all',

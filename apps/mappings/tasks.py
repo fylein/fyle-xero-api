@@ -175,8 +175,14 @@ def auto_create_category_mappings(workspace_id):
             workspace_id, exception.message, {'error': exception.response}
         )
 
-    except (InternalServerError, PlatformError) as exception:
-        logger.error('Internal server error while importing to Fyle- code %s', exception.code)
+    except InternalServerError:
+        logger.error('Internal server error while importing to Fyle')
+
+    except PlatformError as exception:
+        logger.error(
+            'Platform error - %s in Fyle %s %s',
+            workspace_id, exception.message, {'error': exception.response}
+        )
 
     except Exception:
         error = traceback.format_exc()
