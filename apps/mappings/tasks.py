@@ -11,7 +11,7 @@ from fyle_integrations_platform_connector import PlatformConnector
 
 from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
 
-from fyle.platform.exceptions import WrongParamsError, InternalServerError, InvalidTokenError as FyleInvalidTokenError
+from fyle.platform.exceptions import WrongParamsError, InternalServerError, InvalidTokenError as FyleInvalidTokenError, PlatformError
 
 from xerosdk.exceptions import UnsuccessfulAuthentication, InvalidGrant
 
@@ -177,6 +177,12 @@ def auto_create_category_mappings(workspace_id):
 
     except InternalServerError:
         logger.error('Internal server error while importing to Fyle')
+
+    except PlatformError as exception:
+        logger.error(
+            'Platform error - %s in Fyle %s %s',
+            workspace_id, exception.message, {'error': exception.response}
+        )
 
     except Exception:
         error = traceback.format_exc()
