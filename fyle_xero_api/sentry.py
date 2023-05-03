@@ -36,11 +36,11 @@ class Sentry:
                 return 0
 
         return 0.5
-    
+
     @staticmethod
     def before_send(event, hint):
         if 'exc_info' in hint:
-            exc_type, exc_value, tb = hint['exc_info'] 
+            exc_value= hint['exc_info']
             if isinstance(exc_value, (gevent.GreenletExit)):
                 return None
             elif exc_value.args[0] in ['Error: 502']:
