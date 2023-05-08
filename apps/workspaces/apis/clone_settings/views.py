@@ -16,6 +16,17 @@ class CloneSettingsView(generics.RetrieveUpdateAPIView):
 
         return Workspace.objects.filter(id=latest_workspace.id).first()
 
+    def patch(self, request, *args, **kwargs):
+        workspace_instance = Workspace.objects.get(id=kwargs['workspace_id'])
+        serializer = CloneSettingsSerializer(workspace_instance, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                data=serializer.data,
+                status=status.HTTP_200_OK
+            )
+
 
 class CloneSettingsExistsView(generics.RetrieveAPIView):
 
