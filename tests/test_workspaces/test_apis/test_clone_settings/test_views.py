@@ -23,7 +23,7 @@ def test_clone_settings(api_client, test_connection):
 
     url = '/api/v2/workspaces/1/clone_settings/'
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-    response = api_client.put(
+    response = api_client.patch(
         url,
         data=data['clone_settings'],
         format='json'
@@ -33,7 +33,7 @@ def test_clone_settings(api_client, test_connection):
     response = json.loads(response.content)
     assert dict_compare_keys(response, data['clone_settings_response']) == [], 'clone settings api returns a diff in the keys'
 
-    response = api_client.put(
+    response = api_client.patch(
         url,
         data=data['clone_settings_missing_values'],
         format='json'
