@@ -287,7 +287,7 @@ class BankTransaction(models.Model):
 
             if not contact_id:
                 contact_id = DestinationAttribute.objects.filter(
-                    value='Credit Card Misc', workspace_id=expense_group.workspace_id).first().destination_id
+                    value__iexact='Credit Card Misc', workspace_id=expense_group.workspace_id).first().destination_id
             else:
                 contact_id = contact_id.destination_id
 
