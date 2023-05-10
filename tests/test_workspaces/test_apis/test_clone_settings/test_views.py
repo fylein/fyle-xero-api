@@ -13,7 +13,7 @@ def assert_4xx_cases(api_client, url, data):
 
     assert response.status_code == 400
 
-    assert 'This field is required.' in str(response.data), 'clone settings api returns a diff in the message'
+    assert 'Settings are required' in str(response.data), 'clone settings api returns a diff in the message'
 
 
 def test_clone_settings(api_client, test_connection):
