@@ -352,7 +352,7 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
             xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
             xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
-            mapping_settings = MappingSetting.objects.filter(workspace_id=workspace_id)
+            mapping_settings = MappingSetting.objects.filter(workspace_id=workspace_id, import_to_fyle=True)
             chain = Chain()
 
             for mapping_setting in mapping_settings:
