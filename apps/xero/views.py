@@ -5,10 +5,12 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import status
 
-from fyle_accounting_mappings.models import DestinationAttribute
+from fyle_accounting_mappings.models import DestinationAttribute, MappingSetting
 from fyle_accounting_mappings.serializers import DestinationAttributeSerializer
 
 from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuthentication
+
+from django_q.tasks import Chain
 
 from apps.fyle.models import ExpenseGroup
 from apps.tasks.models import TaskLog
@@ -346,12 +348,30 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
         Sync data from Xero
         """
         try:
-            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=kwargs['workspace_id'])
-            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+            workspace_id = kwargs['workspace_id']
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
+            xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
-            xero_connector.sync_dimensions(kwargs['workspace_id'])
+            mapping_settings = MappingSetting.objects.filter(workspace_id=workspace_id)
+            chain = Chain()
 
-            workspace = Workspace.objects.get(id=kwargs['workspace_id'])
+            for mapping_setting in mapping_settings:
+                if mapping_setting.source_field == 'PROJECT':
+                    # run auto_import_and_map_fyle_fields
+                    chain.append('apps.mappings.tasks.auto_import_and_map_fyle_fields', int(workspace_id))
+                elif mapping_setting.source_field == 'COST_CENTER':
+                    # run auto_create_cost_center_mappings
+                    chain.append('apps.mappings.tasks.auto_create_cost_center_mappings', int(workspace_id))
+                elif mapping_setting.is_custom:
+                    # run async_auto_create_custom_field_mappings
+                    chain.append('apps.mappings.tasks.async_auto_create_custom_field_mappings', int(workspace_id))
+            
+            if chain.length() > 0:
+                chain.run()
+
+            xero_connector.sync_dimensions(workspace_id)
+
+            workspace = Workspace.objects.get(id=workspace_id)
             workspace.destination_synced_at = datetime.now()
             workspace.save(update_fields=['destination_synced_at'])
 
