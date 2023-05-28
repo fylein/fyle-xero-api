@@ -6,6 +6,7 @@ from apps.fyle.models import Reimbursement
 from .fixtures import data
 from ..test_fyle.fixtures import data as fyle_data
 from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuthentication 
+from fyle_accounting_mappings.models import MappingSetting
 
 def test_get_token_health(api_client, test_connection):
     workspace_id = 1
@@ -420,7 +421,11 @@ def test_post_refresh_dimensions(mocker, api_client, test_connection):
     )
     workspace_id = 1
 
-    access_token = test_connection.access_token
+    MappingSetting.object.create(workspace_id=workspace_id,source_field = 'PROJECT',import_to_fyle=True, destination_field= "CUSTOMER")
+    MappingSetting.object.create(workspace_id=workspace_id,source_field = 'COST_CENTER',import_to_fyle=True, destination_field= "ACCOUNT")
+    MappingSetting.object.create(workspace_id=workspace_id,source_field = 'Custom Field',import_to_fyle=True, destination_field= "Region", is_custom=True)
+
+    access_token = test_connection.access_token 
     url = '/api/workspaces/{}/xero/refresh_dimensions/'.format(workspace_id)
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(access_token))
