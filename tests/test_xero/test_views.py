@@ -425,6 +425,10 @@ def test_post_refresh_dimensions(mocker, api_client, test_connection):
     MappingSetting.object.create(workspace_id=workspace_id,source_field = 'COST_CENTER',import_to_fyle=True, destination_field= "ACCOUNT")
     MappingSetting.object.create(workspace_id=workspace_id,source_field = 'Custom Field',import_to_fyle=True, destination_field= "Region", is_custom=True)
 
+    mock_auto_import_and_map_fyle_fields = mocker.patch('apps.mappings.tasks.auto_import_and_map_fyle_fields')
+    mock_auto_create_cost_center_mappings = mocker.patch('apps.mappings.tasks.auto_create_cost_center_mappings')
+    mock_async_auto_create_custom_field_mappings = mocker.patch('apps.mappings.tasks.async_auto_create_custom_field_mappings')
+
     access_token = test_connection.access_token 
     url = '/api/workspaces/{}/xero/refresh_dimensions/'.format(workspace_id)
 
@@ -441,6 +445,10 @@ def test_post_refresh_dimensions(mocker, api_client, test_connection):
 
     response = json.loads(response.content)
     assert response['message'] == 'Xero credentials not found in workspace'
+
+    mock_auto_import_and_map_fyle_fields.delay.assert_called_once_with(workspace_id)
+    mock_auto_create_cost_center_mappings.delay.assert_called_once_with(workspace_id)
+    mock_async_auto_create_custom_field_mappings.delay.assert_called_once_with(workspace_id)
 
 
 def test_get_tax_code_view(api_client, test_connection):
