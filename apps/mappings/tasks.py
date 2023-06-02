@@ -29,6 +29,40 @@ DEFAULT_FYLE_CATEGORIES = [
     'Flight', 'Software', 'Parking', 'Toll Charge', 'Tax', 'Training', 'Unspecified'
 ]
 
+
+def disable_expense_attributes(source_field, workspace_id):
+
+    destination_field = "ACCOUNT"
+
+    filter = {
+        'mapping__isnull': False,
+        'mapping__destination_type': destination_field
+    }
+
+    destination_attribute_ids = DestinationAttribute.objects.filter(
+        attribute_type=destination_field,
+        active=False,
+        workspace_id=workspace_id,
+        **filter
+    ).values_list('id',flat=True)
+    
+    filter = {
+        'mapping__destination_id__in': destination_attribute_ids
+    }
+
+    expense_attributes_to_disable = ExpenseAttribute.objects.filter(
+        attribute_type=source_field,
+        active=True,
+        **filter
+    )
+
+    expense_attributes_ids = []
+    if expense_attributes_to_disable:
+        expense_attributes_ids = [expense_attribute.id for expense_attribute in expense_attributes_to_disable]
+        expense_attributes_to_disable.update(active=False)
+    
+    return expense_attributes_ids
+
 def resolve_expense_attribute_errors(
     source_attribute_type: str, workspace_id: int, destination_attribute_type: str = None):
     """
@@ -65,7 +99,7 @@ def remove_duplicates(xero_attributes: List[DestinationAttribute]):
     return unique_attributes
 
 
-def create_fyle_categories_payload(categories: List[DestinationAttribute], workspace_id: int, category_map: Dict):
+def create_fyle_categories_payload(categories: List[DestinationAttribute], workspace_id: int, category_map: Dict, updated_categories: List[ExpenseAttribute] = None):
     """
     Create Fyle Categories Payload from Xero Categories
     :param workspace_id: Workspace integer id
@@ -74,20 +108,30 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
     """
     payload = []
 
-    for category in categories:
-        if category.value.lower() not in category_map:
+    if updated_categories:
+        for category in updated_categories:
+            destination_id_of_category = category.mapping.first().destination.destination_id
             payload.append({
+                'id': category.source_id,
                 'name': category.value,
-                'code': category.destination_id,
-                'is_enabled': True
+                'code': destination_id_of_category,
+                'is_enabled': category.active
             })
-        else:
-            payload.append({
-                'id': category_map[category.value.lower()]['id'],
-                'name': category.value,
-                'code': category.destination_id,
-                'is_enabled': category_map[category.value.lower()]['is_enabled']
-            })
+    else:
+        for category in categories:
+            if category.value.lower() not in category_map:
+                payload.append({
+                    'name': category.value,
+                    'code': category.destination_id,
+                    'is_enabled': True
+                })
+            else:
+                payload.append({
+                    'id': category_map[category.value.lower()]['id'],
+                    'name': category.value,
+                    'code': category.destination_id,
+                    'is_enabled': category_map[category.value.lower()]['is_enabled']
+                })
     return payload
 
 def get_all_categories_from_fyle(platform: PlatformConnector):
@@ -137,6 +181,13 @@ def upload_categories_to_fyle(workspace_id):
     fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id, category_map)
 
     if fyle_payload:
+        platform.categories.post_bulk(fyle_payload)
+        platform.categories.sync()
+    
+    category_ids_to_be_changed = disable_expense_attributes('CATEGORY', workspace_id)
+    if category_ids_to_be_changed:
+        expense_attributes = ExpenseAttribute.objects.filter(id__in=category_ids_to_be_changed)
+        fyle_payload: List[Dict] = create_fyle_categories_payload([], workspace_id,[],updated_categories=expense_attributes)
         platform.categories.post_bulk(fyle_payload)
         platform.categories.sync()
 
