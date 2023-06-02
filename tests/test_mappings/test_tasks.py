@@ -164,7 +164,9 @@ def test_upload_categories_to_fyle(db, mocker):
 
     ea_instance = ExpenseAttribute.objects.filter(attribute_type="CATEGORY").first()
     ea_instance.active = True
-    ea_instance.mapping.destination_id = da_instance.id
+
+    mapping_instance = Mapping.objects.create(destination_type="ACCOUNT",destination=da_instance,workspace_id=workspace_id,source=ea_instance)
+
     ea_instance.save()
 
     xero_attributes = upload_categories_to_fyle(workspace_id=workspace_id)
