@@ -499,10 +499,11 @@ def test_get_destination_attributes_view(api_client, test_connection):
     response = api_client.get(
         url,
         data={
-            'attribute_types': ['CUSTOMER']
+            'attribute_types': ['CUSTOMER'],
+            'active': 'true'
         }
         )
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    assert len(response) == 14
+    assert len(response) == 0
