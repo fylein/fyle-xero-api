@@ -449,6 +449,10 @@ class DestinationAttributesView(generics.ListAPIView):
 
     def get_queryset(self):
         attribute_types = self.request.query_params.get('attribute_types').split(',')
+        active = self.request.query_params.get('active')
+
+        if active and active.lower() == 'true':
+            active = True
 
         return DestinationAttribute.objects.filter(
-            attribute_type__in=attribute_types, workspace_id=self.kwargs['workspace_id']).order_by('value')
+            attribute_type__in=attribute_types, active=active, workspace_id=self.kwargs['workspace_id']).order_by('value')
