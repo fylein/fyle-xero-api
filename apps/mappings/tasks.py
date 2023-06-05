@@ -29,10 +29,9 @@ DEFAULT_FYLE_CATEGORIES = [
     'Flight', 'Software', 'Parking', 'Toll Charge', 'Tax', 'Training', 'Unspecified'
 ]
 
-
 def disable_expense_attributes(source_field, workspace_id):
 
-    destination_field = "ACCOUNT"
+    destination_field = 'ACCOUNT'
 
     filter = {
         'mapping__isnull': False,
@@ -119,19 +118,11 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
             })
     else:
         for category in categories:
-            if category.value.lower() not in category_map:
-                payload.append({
-                    'name': category.value,
-                    'code': category.destination_id,
-                    'is_enabled': True
-                })
-            else:
-                payload.append({
-                    'id': category_map[category.value.lower()]['id'],
-                    'name': category.value,
-                    'code': category.destination_id,
-                    'is_enabled': category_map[category.value.lower()]['is_enabled']
-                })
+            payload.append({
+                'name': category.value,
+                'code': category.destination_id,
+                'is_enabled': True
+            })
     return payload
 
 def get_all_categories_from_fyle(platform: PlatformConnector):
@@ -187,7 +178,7 @@ def upload_categories_to_fyle(workspace_id):
     category_ids_to_be_changed = disable_expense_attributes('CATEGORY', workspace_id)
     if category_ids_to_be_changed:
         expense_attributes = ExpenseAttribute.objects.filter(id__in=category_ids_to_be_changed)
-        fyle_payload: List[Dict] = create_fyle_categories_payload([], workspace_id,[],updated_categories=expense_attributes)
+        fyle_payload: List[Dict] = create_fyle_categories_payload(category_map, workspace_id,[],updated_categories=expense_attributes)
         platform.categories.post_bulk(fyle_payload)
         platform.categories.sync()
 
