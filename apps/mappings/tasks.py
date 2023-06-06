@@ -44,8 +44,6 @@ def disable_expense_attributes(source_field, workspace_id):
         workspace_id=workspace_id,
         **filter
     ).values_list('id',flat=True)
-
-    print("destination_attribute_ids",destination_attribute_ids)
     
     filter = {
         'mapping__destination_id__in': destination_attribute_ids
@@ -56,8 +54,6 @@ def disable_expense_attributes(source_field, workspace_id):
         active=True,
         **filter
     )
-
-    print("expense_attributes_to_disable",expense_attributes_to_disable)
 
     expense_attributes_ids = []
     if expense_attributes_to_disable:
@@ -172,7 +168,6 @@ def upload_categories_to_fyle(workspace_id):
     ).all()
 
     xero_attributes = remove_duplicates(xero_attributes)
-    print("xero_attributes",xero_attributes)
 
     fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id, category_map)
 
