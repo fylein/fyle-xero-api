@@ -155,8 +155,19 @@ def test_upload_categories_to_fyle(db, mocker):
         'apps.xero.utils.XeroConnector.sync_accounts',
         return_value=[]
     )
-    
+
     workspace_id = 1
+
+    da_instance = DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type="ACCOUNT").first()
+    da_instance.active = False
+    da_instance.save()
+
+    ea_instance = ExpenseAttribute.objects.filter(attribute_type="CATEGORY").first()
+    ea_instance.active = True
+
+    mapping_instance = Mapping.objects.create(destination_type="ACCOUNT",destination=da_instance,workspace_id=workspace_id,source=ea_instance)
+
+    ea_instance.save()
 
     xero_attributes = upload_categories_to_fyle(workspace_id=workspace_id)
     assert len(xero_attributes) == 29
