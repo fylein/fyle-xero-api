@@ -81,7 +81,7 @@ spec:
           command: ['/bin/bash', 'start_qcluster.sh']
           resources:
             limits:
-              memory: 400Mi
+              memory: 450Mi
             requests:
               memory: 350Mi
           env:
