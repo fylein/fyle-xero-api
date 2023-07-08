@@ -109,7 +109,8 @@ data = {
             "expense_group_settings": {
             "reimbursable_expense_state": "PAYMENT_PROCESSING",
             "reimbursable_export_date_type": "current_date",
-            "ccc_expense_state": "PAID"
+            "ccc_expense_state": "PAID",
+            "ccc_export_date_type": "spent_at"
             },
             "workspace_general_settings": {
             "reimbursable_expenses_object": "PURCHASE BILL",

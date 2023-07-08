@@ -284,8 +284,6 @@ class BankTransaction(models.Model):
                 value__iexact=merchant, attribute_type='CONTACT', workspace_id=expense_group.workspace_id
             ).first()
 
-            expense_group.description['spent_at'] = expense.spent_at.strftime('%Y-%m-%d')
-            expense_group.save()
 
             if not contact_id:
                 contact_id = DestinationAttribute.objects.filter(
@@ -325,6 +323,7 @@ class BankTransaction(models.Model):
                 'transaction_date': get_transaction_date(expense_group),
             }
         )
+        print("bank_transaction_object", bank_transaction_object.__dict__)
         return bank_transaction_object
 
 

@@ -133,7 +133,6 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
         expense_group_settings['expense_state'] = expense_group_settings_instance.expense_state
         expense_group_settings['reimbursable_expense_group_fields'] = expense_group_settings_instance.reimbursable_expense_group_fields
         expense_group_settings['corporate_credit_card_expense_group_fields'] = expense_group_settings_instance.corporate_credit_card_expense_group_fields
-        expense_group_settings['ccc_export_date_type'] = expense_group_settings_instance.ccc_export_date_type
 
         if 'expense_state' in expense_group_settings and not expense_group_settings['expense_state']:
             expense_group_settings['expense_state'] = 'PAYMENT_PROCESSING'
