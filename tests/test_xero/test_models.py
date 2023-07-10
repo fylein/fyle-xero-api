@@ -233,7 +233,6 @@ def test_support_post_date_integrations(mocker, db):
     expense_group.description['posted_at'] = '2021-12-22'
     expense_group.save()
     expenses = expense_group.expenses.all()
-    print(expense_group.__dict__)
 
     for expense in expenses:
         expense.expense_group_id = expense_group.id
