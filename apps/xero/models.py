@@ -323,7 +323,6 @@ class BankTransaction(models.Model):
                 'transaction_date': get_transaction_date(expense_group),
             }
         )
-        print("bank_transaction_object", bank_transaction_object.__dict__)
         return bank_transaction_object
 
 
