@@ -56,6 +56,8 @@ def get_transaction_date(expense_group: ExpenseGroup) -> str:
         return expense_group.description['verified_at']
     elif 'last_spent_at' in expense_group.description and expense_group.description['last_spent_at']:
         return expense_group.description['last_spent_at']
+    elif 'posted_at' in expense_group.description and expense_group.description['posted_at']:
+        return expense_group.description['posted_at']
 
     return datetime.now().strftime("%Y-%m-%d")
 
@@ -282,8 +284,6 @@ class BankTransaction(models.Model):
                 value__iexact=merchant, attribute_type='CONTACT', workspace_id=expense_group.workspace_id
             ).first()
 
-            expense_group.description['spent_at'] = expense.spent_at.strftime('%Y-%m-%d')
-            expense_group.save()
 
             if not contact_id:
                 contact_id = DestinationAttribute.objects.filter(

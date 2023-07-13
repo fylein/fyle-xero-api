@@ -1,9 +1,15 @@
 from datetime import datetime
-from apps.fyle.models import ExpenseGroup
-from fyle_accounting_mappings.models import MappingSetting, Mapping
+import random
+from apps.fyle.models import ExpenseGroup, Expense, ExpenseGroupSettings
+from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
 from apps.xero.models import Bill, BillLineItem, get_tax_code_id_or_none, get_customer_id_or_none, get_tracking_category, \
     get_expense_purpose, get_transaction_date, get_item_code_or_none, BankTransaction, BankTransactionLineItem, Payment
-
+from apps.workspaces.models import XeroCredentials, WorkspaceGeneralSettings
+from apps.tasks.models import TaskLog
+from apps.xero.utils import XeroConnector
+from apps.xero.tasks import create_bank_transaction
+from tests.test_fyle.fixtures import data
+from .fixtures import data as xero_data
 
 def test_create_bill(db):
     expense_group = ExpenseGroup.objects.get(id=4)
@@ -168,3 +174,80 @@ def test_get_transaction_date(db):
 
     transaction_date = get_transaction_date(expense_group)
     assert transaction_date <= datetime.now().strftime('%Y-%m-%d')
+
+def test_support_post_date_integrations(mocker, db):
+    workspace_id = 1
+    payload = data['expenses']
+    expense_id = data['expenses'][0]['id']
+    Expense.create_expense_objects(payload, workspace_id)
+    expense_objects = Expense.objects.get(expense_id=expense_id)
+    expense_objects.reimbursable = False
+    expense_objects.fund_source = 'CCC'
+    expense_objects.source_account_type = 'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT'
+    expense_objects.save()
+    assert expense_objects.posted_at.strftime("%m/%d/%Y") == '12/22/2021'
+
+    expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
+    expense_group_settings.reimbursable_export_date_type = 'last_spent_at'
+    expense_group_settings.ccc_export_date_type = 'posted_at'
+    expense_group_settings.corporate_credit_card_expense_group_fields = ['claim_number', 'fund_source', 'projects', 'employee_email', 'report_id', 'posted_at']
+    expense_group_settings.save()
+
+    expense_groups = ExpenseGroup.create_expense_groups_by_report_id_fund_source([expense_objects], workspace_id)
+    assert expense_groups[0].description['posted_at'] == expense_objects.posted_at.strftime("%Y-%m-%d")
+    
+    mocker.patch(
+        'xerosdk.apis.BankTransactions.post',
+        return_value=xero_data['bank_transaction_object']
+    )
+
+    mocker.patch(
+        'xerosdk.apis.Contacts.search_contact_by_contact_name',
+        return_value=xero_data['create_contact']['Contacts'][0]
+    )
+
+    mocker.patch(
+        'xerosdk.apis.Contacts.post',
+        return_vaue=xero_data['create_contact']['Contacts'][0]
+    )
+
+    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=1)
+
+    general_settings.auto_map_employees = 'NAME'
+    general_settings.import_items = False
+    general_settings.auto_create_destination_entity = True
+    general_settings.save()
+
+    
+    task_log = TaskLog.objects.first()
+    task_log.workspace_id = 1
+    task_log.status = 'READY'
+    task_log.type = 'CREATING_BANK_TRANSACTION'
+    task_log.save()
+
+    expense_group = ExpenseGroup.objects.get(id=5)
+    expense_group.description.pop('spent_at')
+    expense_group.description['posted_at'] = '2021-12-22'
+    expense_group.save()
+    expenses = expense_group.expenses.all()
+
+    for expense in expenses:
+        expense.expense_group_id = expense_group.id
+        expense.save()
+        
+        bank_transaction_lineitems = BankTransactionLineItem.objects.get(expense_id=expense.id)
+        bank_transaction_lineitems.delete()
+    
+    expense_group.expenses.set(expenses)
+    
+    create_bank_transaction(expense_group.id, task_log.id, xero_connection, False)
+    
+    task_log = TaskLog.objects.get(pk=task_log.id)
+    bank_transaction = BankTransaction.objects.get(expense_group_id=expense_group.id)
+
+    assert task_log.status=='COMPLETE'
+    assert bank_transaction.currency == 'USD'
+    assert bank_transaction.transaction_date.strftime("%m/%d/%Y") == expense_objects.posted_at.strftime("%m/%d/%Y")
