@@ -491,7 +491,7 @@ def disable_renamed_projects(workspace_id,destination_field):
                 fyle_project.save()
                 expense_attribute_to_be_disabled.append(fyle_project.id)
 
-        return expense_attribute_to_be_disabled
+    return expense_attribute_to_be_disabled
 
 
 def post_projects_in_batches(platform: PlatformConnector,
