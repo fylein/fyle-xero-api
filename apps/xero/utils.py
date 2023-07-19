@@ -266,12 +266,21 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        updated_at = get_last_synced_at(self.workspace_id, 'CUSTOMER')
+        customers_generator = self.connection.contacts.list_all_generator()
 
-        customers_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)
+        customer_attributes = []
+        destination_attributes = DestinationAttribute.objects.filter(workspace_id=self.workspace_id,
+                attribute_type= 'CUSTOMER', display_name='Customer').values('destination_id', 'value', 'detail')
+        disabled_fields_map = {}
+
+        for destination_attribute in destination_attributes:
+            disabled_fields_map[destination_attribute['destination_id']] = {
+                'value': destination_attribute['value'],
+                'detail': destination_attribute['detail']
+            }
+
 
         for customers in customers_generator:
-            customer_attributes = []
 
             for customer in customers['Contacts']:
                 if customer['IsCustomer']:
@@ -285,9 +294,26 @@ class XeroConnector:
                         },
                         'active': True if customer['ContactStatus'] == 'ACTIVE' else False
                     })
+                    
+                    if customer['ContactStatus'] == 'ACTIVE' and customer['ContactID'] in disabled_fields_map:
+                        disabled_fields_map.pop(customer['ContactID'])
+        # For setting active to False
+        # During the initial run we only pull in the active ones.
+        # In the concurrent runs we get all the destination_attributes and store it in disable_field_map check if in the SDK call we get status = Active or not .
+        # If yes then we pop the item from the disable_field_map else we set the active = True.
+        # This should take care of delete as well as inactive case since we are checking the status=Active case.
+        for destination_id in disabled_fields_map:
+            customer_attributes.append({
+                'attribute_type': 'CUSTOMER',
+                'display_name': 'customer',
+                'value': disabled_fields_map[destination_id]['value'],
+                'destination_id': destination_id,
+                'active': False,
+                'detail': disabled_fields_map[destination_id]['detail']
+            })
 
-            DestinationAttribute.bulk_create_or_update_destination_attributes(
-                customer_attributes, 'CUSTOMER', self.workspace_id, True)
+        DestinationAttribute.bulk_create_or_update_destination_attributes(
+            customer_attributes, 'CUSTOMER', self.workspace_id, True)
 
         return []
 
