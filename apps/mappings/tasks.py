@@ -173,7 +173,7 @@ def upload_categories_to_fyle(workspace_id):
         platform.categories.post_bulk(fyle_payload)
         platform.categories.sync()
     
-    category_ids_to_be_changed = disable_expense_attributes('CATEGORY', 'ACCOUNT', workspace_id,)
+    category_ids_to_be_changed = disable_expense_attributes('CATEGORY', 'ACCOUNT', workspace_id)
     if category_ids_to_be_changed:
         expense_attributes = ExpenseAttribute.objects.filter(id__in=category_ids_to_be_changed)
         fyle_payload: List[Dict] = create_fyle_categories_payload([], workspace_id,category_map,updated_categories=expense_attributes)
@@ -479,14 +479,14 @@ def disable_renamed_projects(workspace_id,destination_field):
             set(field.value for field in fyle_projects)
         )
 
-        intacct_projects = DestinationAttribute.objects.filter(
-        attribute_type=destination_field,
-        workspace_id=workspace_id,
-        value__in=project_names
+        xero_customers = DestinationAttribute.objects.filter(
+            attribute_type=destination_field,
+            workspace_id=workspace_id,
+            value__in=project_names
         ).values_list('value', flat=True)
 
         for fyle_project in fyle_projects:
-            if fyle_project.value not in intacct_projects:
+            if fyle_project.value not in xero_customers:
                 fyle_project.active = False
                 fyle_project.save()
                 expense_attribute_to_be_disabled.append(fyle_project.id)
