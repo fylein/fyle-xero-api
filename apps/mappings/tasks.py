@@ -29,9 +29,7 @@ DEFAULT_FYLE_CATEGORIES = [
     'Flight', 'Software', 'Parking', 'Toll Charge', 'Tax', 'Training', 'Unspecified'
 ]
 
-def disable_expense_attributes(source_field, workspace_id):
-
-    destination_field = 'ACCOUNT'
+def disable_expense_attributes(source_field, destination_field, workspace_id):
 
     filter = {
         'mapping__isnull': False,
@@ -175,7 +173,7 @@ def upload_categories_to_fyle(workspace_id):
         platform.categories.post_bulk(fyle_payload)
         platform.categories.sync()
     
-    category_ids_to_be_changed = disable_expense_attributes('CATEGORY', workspace_id)
+    category_ids_to_be_changed = disable_expense_attributes('CATEGORY', 'ACCOUNT', workspace_id)
     if category_ids_to_be_changed:
         expense_attributes = ExpenseAttribute.objects.filter(id__in=category_ids_to_be_changed)
         fyle_payload: List[Dict] = create_fyle_categories_payload([], workspace_id,category_map,updated_categories=expense_attributes)
@@ -426,28 +424,74 @@ def schedule_cost_centers_creation(import_to_fyle, workspace_id: int):
             schedule.delete()
 
 
-def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_project_names: list):
+def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_project_names: list, 
+                                    updated_projects: List[ExpenseAttribute] = None):
     """
     Create Fyle Projects Payload from Xero Projects and Customers
     :param projects: Xero Projects
     :return: Fyle Projects Payload
     """
     payload = []
-    existing_project_names = [project_name.lower() for project_name in existing_project_names]
-
-    for project in projects:
-        if project.value.lower() not in existing_project_names:
+    if updated_projects:
+        for project in updated_projects:
+            destination_id_of_project = project.mapping.first().destination.destination_id
             payload.append({
+                'id': project.source_id,
                 'name': project.value,
-                'code': project.destination_id,
+                'code': destination_id_of_project,
                 'description': 'Project - {0}, Id - {1}'.format(
                     project.value,
-                    project.destination_id
+                    destination_id_of_project
                 ),
-                'is_enabled': True if project.active is None else project.active
+                'is_enabled': project.active
             })
+    else:
+        existing_project_names = [project_name.lower() for project_name in existing_project_names]
+
+        for project in projects:
+            if project.value.lower() not in existing_project_names:
+                payload.append({
+                    'name': project.value,
+                    'code': project.destination_id,
+                    'description': 'Project - {0}, Id - {1}'.format(
+                        project.value,
+                        project.destination_id
+                    ),
+                    'is_enabled': True if project.active is None else project.active
+                })
 
     return payload
+
+def disable_renamed_projects(workspace_id,destination_field):
+    page_size = 200
+    expense_attributes_count = ExpenseAttribute.objects.filter(attribute_type='PROJECT',workspace_id=workspace_id,auto_mapped=True).count()
+    expense_attribute_to_be_disabled = []
+    for offset in range(0, expense_attributes_count, page_size):
+        limit = offset + page_size
+
+        fyle_projects = ExpenseAttribute.objects.filter(
+            workspace_id=workspace_id,
+            attribute_type="PROJECT",
+            auto_mapped=True
+        ).order_by('value', 'id')[offset:limit]
+
+        project_names = list(
+            set(field.value for field in fyle_projects)
+        )
+
+        xero_customers = DestinationAttribute.objects.filter(
+            attribute_type=destination_field,
+            workspace_id=workspace_id,
+            value__in=project_names
+        ).values_list('value', flat=True)
+
+        for fyle_project in fyle_projects:
+            if fyle_project.value not in xero_customers:
+                fyle_project.active = False
+                fyle_project.save()
+                expense_attribute_to_be_disabled.append(fyle_project.id)
+
+    return expense_attribute_to_be_disabled
 
 
 def post_projects_in_batches(platform: PlatformConnector,
@@ -473,7 +517,16 @@ def post_projects_in_batches(platform: PlatformConnector,
             platform.projects.sync()
 
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'PROJECT', destination_field, workspace_id)
-
+    
+    if destination_field == 'CUSTOMER':
+        expense_attribute_to_be_disable = disable_renamed_projects(workspace_id,destination_field)
+        project_ids_to_be_changed = disable_expense_attributes('PROJECT', 'CUSTOMER', workspace_id)
+        project_ids_to_be_changed.extend(expense_attribute_to_be_disable)
+        if project_ids_to_be_changed:
+            expense_attributes = ExpenseAttribute.objects.filter(id__in=project_ids_to_be_changed)
+            fyle_payload: List[Dict] = create_fyle_projects_payload(projects=[], existing_project_names=[], updated_projects=expense_attributes)
+            platform.projects.post_bulk(fyle_payload)
+            platform.projects.sync()
 
 def auto_create_project_mappings(workspace_id: int):
     """
