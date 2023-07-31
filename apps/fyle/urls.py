@@ -1,8 +1,7 @@
 from django.urls import path
 
-from .views import ExpenseGroupView, ExpenseGroupByIdView, ExpenseGroupScheduleView, ExpenseView, EmployeeView, \
-    CategoryView, CostCenterView, ProjectView, ExpenseFieldsView, ExpenseCustomFieldsView, \
-    ExpenseGroupSettingsView, SyncFyleDimensionView, RefreshFyleDimensionView, ExpenseGroupSyncView, ExportableExpenseGroupsView
+from .views import ExpenseGroupView,ExpenseFieldsView, ExpenseGroupSettingsView, \
+    SyncFyleDimensionView, RefreshFyleDimensionView, ExpenseGroupSyncView, ExportableExpenseGroupsView
 
 urlpatterns = [
     path('expense_groups/', ExpenseGroupView.as_view()),
