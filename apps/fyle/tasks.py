@@ -43,17 +43,6 @@ def get_task_log_and_fund_source(workspace_id: int):
     return task_log, fund_source
 
 
-def schedule_expense_group_creation(workspace_id: int):
-    """
-    Schedule Expense group creation
-    :param workspace_id: Workspace id
-    :return: None
-    """
-    task_log, fund_source = get_task_log_and_fund_source(workspace_id)
-
-    async_task('apps.fyle.tasks.create_expense_groups', workspace_id, fund_source, task_log)
-
-
 def create_expense_groups(workspace_id: int, fund_source: List[str], task_log: TaskLog):
     """
     Create expense groups

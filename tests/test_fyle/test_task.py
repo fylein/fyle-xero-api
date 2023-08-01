@@ -1,23 +1,11 @@
 from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
 from apps.workspaces.models import FyleCredential
-from apps.fyle.tasks import schedule_expense_group_creation, create_expense_groups
+from apps.fyle.tasks import create_expense_groups
 from apps.tasks.models import TaskLog
 from .fixtures import data
 from unittest import mock
 
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
-
-
-def test_schedule_expense_group_creation(api_client, test_connection):
-    workspace_id = 1
-
-    expense_groups = ExpenseGroup.objects.filter(workspace_id=workspace_id).count()
-    assert expense_groups == 10
-    
-    schedule_expense_group_creation(workspace_id=workspace_id)
-
-    expense_groups = ExpenseGroup.objects.filter(workspace_id=workspace_id).count()
-    assert expense_groups == 10
 
 
 def test_create_expense_groups(mocker, db):
