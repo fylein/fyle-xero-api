@@ -204,6 +204,15 @@ def test_connect_xero_view_exceptions(api_client, test_connection):
         )
         assert response.status_code == 500
 
+def test_connect_xero_view(api_client, test_connection):
+    workspace_id = 1
+
+    url = '/api/workspaces/{}/credentials/xero/'.format(workspace_id)
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
+    
+    response = api_client.get(url)
+    assert response.status_code == 200
+
 
 def test_revoke_xero_connection(mocker, api_client, test_connection):
     mocker.patch(

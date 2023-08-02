@@ -10,7 +10,6 @@ urlpatterns = [
     path('<int:workspace_id>/connect_xero/authorization_code/', ConnectXeroView.as_view({'post': 'post'})),
     path('<int:workspace_id>/credentials/xero/', ConnectXeroView.as_view({'get': 'get'})),
     path('<int:workspace_id>/connection/xero/revoke/', RevokeXeroConnectionView.as_view({'post': 'post'})),
-    path('<int:workspace_id>/credentials/xero/delete/', ConnectXeroView.as_view({'post': 'delete'})),
     path('<int:workspace_id>/exports/trigger/', ExportToXeroView.as_view({'post': 'post'}), name='export-to-xero'),
     path('<int:workspace_id>/settings/general/', GeneralSettingsView.as_view({'post': 'post', 'get': 'get', 'patch': 'patch'})),
     path('<int:workspace_id>/fyle/', include('apps.fyle.urls')),

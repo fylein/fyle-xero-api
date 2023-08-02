@@ -239,20 +239,7 @@ class ConnectXeroView(viewsets.ViewSet):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-    def delete(self, request, **kwargs):
-        """Delete credentials"""
-        workspace_id = kwargs['workspace_id']
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
-        xero_credentials.refresh_token = None
-        xero_credentials.country = None
-        xero_credentials.is_expired = True
-        xero_credentials.save()
-
-        return Response(data={
-            'workspace_id': workspace_id,
-            'message': 'Xero credentials deleted'
-        })
+        
 
     def get(self, request, **kwargs):
         """
