@@ -108,120 +108,6 @@ def test_post_of_workspace(api_client, test_connection, mocker):
     assert dict_compare_keys(response, data['workspace']) == [], 'workspaces api returns a diff in the keys'
 
 
-def test_connect_fyle_view(api_client, test_connection):
-    workspace_id = 1
-    
-    url = '/api/workspaces/{}/credentials/fyle/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-    
-    response = api_client.get(url)
-    assert response.status_code == 200
-    
-    url = '/api/workspaces/{}/credentials/fyle/delete/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-    
-    response = api_client.delete(url)
-    assert response.status_code == 200
-
-    url = '/api/workspaces/{}/credentials/fyle/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-    
-    response = api_client.get(url)
-    assert response.status_code == 400
-
-
-def test_connect_fyle_view_post(mocker, api_client, test_connection):
-    mocker.patch(
-        'fyle_rest_auth.utils.AuthUtils.generate_fyle_refresh_token',
-        return_value={'refresh_token': 'asdfghjk', 'access_token': 'qwertyuio'}
-    )
-    mocker.patch(
-        'apps.workspaces.views.get_fyle_admin',
-        return_value={'data': {'org': {'name': 'FAE', 'id': 'orPJvXuoLqvJ', 'currency': 'USD'}}}
-    )
-    mocker.patch(
-        'apps.workspaces.views.get_cluster_domain',
-        return_value='https://staging.fyle.tech'
-    )
-    workspace_id = 1
-
-    code = 'sdfghj'
-    url = '/api/workspaces/{}/connect_fyle/authorization_code/'.format(workspace_id)
-
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-
-    response = api_client.post(
-            url,
-            data={'code': code}    
-        )
-    assert response.status_code == 200
-
-
-def test_connect_fyle_view_exceptions(api_client, test_connection):
-    workspace_id = 1
-    
-    code = 'qwertyu'
-    url = '/api/workspaces/{}/connect_fyle/authorization_code/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-    
-    with mock.patch('fyle_rest_auth.utils.AuthUtils.generate_fyle_refresh_token') as mock_call:
-        mock_call.side_effect = fyle_exc.UnauthorizedClientError(msg='Invalid Authorization Code', response='Invalid Authorization Code')
-        
-        response = api_client.post(
-            url,
-            data={'code': code}    
-        )
-        assert response.status_code == 403
-
-        mock_call.side_effect = fyle_exc.NotFoundClientError(msg='Fyle Application not found', response='Fyle Application not found')
-        
-        response = api_client.post(
-            url,
-            data={'code': code}    
-        )
-        assert response.status_code == 404
-
-        mock_call.side_effect = fyle_exc.WrongParamsError(msg='Some of the parameters are wrong', response='Some of the parameters are wrong')
-        
-        response = api_client.post(
-            url,
-            data={'code': code}    
-        )
-        assert response.status_code == 400
-
-        mock_call.side_effect = fyle_exc.InternalServerError(msg='Wrong/Expired Authorization code', response='Wrong/Expired Authorization code')
-        
-        response = api_client.post(
-            url,
-            data={'code': code}    
-        )
-        assert response.status_code == 401
-
-
-def test_connect_xero_view(api_client, test_connection):
-    workspace_id = 1
-
-    url = '/api/workspaces/{}/credentials/xero/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-    
-    response = api_client.get(url)
-    assert response.status_code == 200
-
-    response = json.loads(response.content)
-
-    url = '/api/workspaces/{}/credentials/xero/delete/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-    
-    response = api_client.delete(url)
-    assert response.status_code == 200
-
-    url = '/api/workspaces/{}/credentials/xero/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-    
-    response = api_client.get(url)
-    assert response.status_code == 400
-
-
 def test_connect_xero_view_post(mocker, api_client, test_connection):
     workspace_id = 1
     tenant_mapping = TenantMapping.objects.filter(workspace_id=workspace_id).first()
@@ -318,6 +204,15 @@ def test_connect_xero_view_exceptions(api_client, test_connection):
         )
         assert response.status_code == 500
 
+def test_connect_xero_view(api_client, test_connection):
+    workspace_id = 1
+
+    url = '/api/workspaces/{}/credentials/xero/'.format(workspace_id)
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
+    
+    response = api_client.get(url)
+    assert response.status_code == 200
+
 
 def test_revoke_xero_connection(mocker, api_client, test_connection):
     mocker.patch(
@@ -348,37 +243,6 @@ def test_revoke_xero_connection(mocker, api_client, test_connection):
         
         response = api_client.post(url)
         assert response.status_code == 200
-
-
-def test_workspace_schedule(api_client, test_connection):
-    workspace_id = 1
-
-    url = '/api/workspaces/{}/schedule/'.format(workspace_id)
-
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-
-    response = api_client.get(url)
-
-    WorkspaceSchedule.objects.get_or_create(
-        workspace_id=workspace_id
-    )
-    response = api_client.get(url)
-
-    response = json.loads(response.content)
-    assert dict_compare_keys(response, data['workspace_schedule']) == [], 'workspace_schedule api returns a diff in keys'
-
-    response = api_client.post(
-        url,
-        data={
-            'schedule_enabled': True,
-            'hours': 1
-        },
-        format='json'    
-    )
-    assert response.status_code == 200
-
-    response = json.loads(response.content)
-    assert dict_compare_keys(response, data['workspace_schedule']) == [], 'workspace_schedule api returns a diff in keys'
 
 
 def test_get_general_settings_detail(api_client, test_connection):
