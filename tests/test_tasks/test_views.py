@@ -12,3 +12,4 @@ def test_get_queryset(api_client, test_connection):
         'status': 'ALL'
     })
     assert response.status_code==200
+    

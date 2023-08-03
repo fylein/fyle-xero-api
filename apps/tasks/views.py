@@ -38,3 +38,4 @@ class TasksView(generics.ListAPIView):
             filters['status__in'] = task_status.split(',')
 
         return TaskLog.objects.filter(**filters).order_by('-updated_at').all()
+    
