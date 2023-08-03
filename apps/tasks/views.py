@@ -38,43 +38,4 @@ class TasksView(generics.ListAPIView):
             filters['status__in'] = task_status.split(',')
 
         return TaskLog.objects.filter(**filters).order_by('-updated_at').all()
-
-
-class TasksByIdView(generics.RetrieveAPIView):
-    """
-    Get Task by Ids
-    """
-    serializer_class = TaskLogSerializer
-
-    def get(self, request, *args, **kwargs):
-        """
-        Get task logs by ids
-        """
-        task_log_ids = self.request.query_params.getlist('id', [])
-
-        assert_valid(task_log_ids != [], 'task log ids not found')
-
-        task_logs = TaskLog.objects.filter(id__in=task_log_ids).all()
-
-        return Response(
-            data=self.serializer_class(task_logs, many=True).data,
-            status=status.HTTP_200_OK
-        )
-
-
-class TasksByExpenseGroupIdView(generics.RetrieveAPIView):
-    """
-    Get Task by Ids
-    """
-    serializer_class = TaskLogSerializer
-
-    def get(self, request, *args, **kwargs):
-        """
-        Get task logs by ids
-        """
-        task_logs = TaskLog.objects.filter(expense_group_id=kwargs['expense_group_id']).all()
-
-        return Response(
-            data=self.serializer_class(task_logs, many=True).data,
-            status=status.HTTP_200_OK
-        )
+    
