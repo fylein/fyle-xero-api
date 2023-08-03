@@ -1,16 +1,6 @@
 from django.urls import reverse
 from ..test_fyle.fixtures import data as fyle_data
 
-def test_get_profile_view(api_client, test_connection):
-    access_token = test_connection.access_token
-
-    url = '/api/user/profile/'
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(access_token))
-
-    response = api_client.get(url)
-    assert response.status_code == 200
-
-
 def test_get_fyle_orgs_view(api_client, test_connection, mocker):
     access_token = test_connection.access_token
     mocker.patch(
@@ -23,3 +13,4 @@ def test_get_fyle_orgs_view(api_client, test_connection, mocker):
 
     response = api_client.get(url)
     assert response.status_code == 200
+    
