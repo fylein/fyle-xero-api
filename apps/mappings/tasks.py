@@ -14,6 +14,7 @@ from fyle_accounting_mappings.models import Mapping, MappingSetting, Destination
 from fyle.platform.exceptions import WrongParamsError, InternalServerError, InvalidTokenError as FyleInvalidTokenError, PlatformError
 
 from xerosdk.exceptions import UnsuccessfulAuthentication, InvalidGrant
+from .exceptions import handle_import_exceptions
 
 from apps.xero.utils import XeroConnector
 from apps.tasks.models import Error
@@ -182,89 +183,41 @@ def upload_categories_to_fyle(workspace_id):
 
     return xero_attributes
 
+
+@handle_import_exceptions('auto_create_category_mappings')
 def auto_create_category_mappings(workspace_id):
     """
     Create Category Mappings
     :return: mappings
     """
 
-    try:
-        fyle_categories = upload_categories_to_fyle(workspace_id=workspace_id)
+    fyle_categories = upload_categories_to_fyle(workspace_id=workspace_id)
 
-        Mapping.bulk_create_mappings(fyle_categories, 'CATEGORY', 'ACCOUNT', workspace_id)
+    Mapping.bulk_create_mappings(fyle_categories, 'CATEGORY', 'ACCOUNT', workspace_id)
 
-        resolve_expense_attribute_errors(source_attribute_type='CATEGORY', workspace_id=workspace_id)
+    resolve_expense_attribute_errors(source_attribute_type='CATEGORY', workspace_id=workspace_id)
 
-        return []
+    return []
 
-    except XeroCredentials.DoesNotExist:
-        logger.info(
-            'Xero Credentials not found for workspace_id %s',
-            workspace_id,
-        )
-    
-    except FyleInvalidTokenError:
-        logger.info('Invalid token for fyle')
 
-    except (UnsuccessfulAuthentication, InvalidGrant):
-        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
-
-    except WrongParamsError as exception:
-        logger.error(
-            'Error while creating categories workspace_id - %s in Fyle %s %s',
-            workspace_id, exception.message, {'error': exception.response}
-        )
-
-    except InternalServerError:
-        logger.error('Internal server error while importing to Fyle')
-
-    except PlatformError as exception:
-        logger.error(
-            'Platform error - %s in Fyle %s %s',
-            workspace_id, exception.message, {'error': exception.response}
-        )
-
-    except Exception:
-        error = traceback.format_exc()
-        error = {
-            'error': error
-        }
-        logger.exception(
-            'Error while creating categories workspace_id - %s error: %s',
-            workspace_id, error
-        )
-
+@handle_import_exceptions('async_auto_map_employees')
 def async_auto_map_employees(workspace_id: int):
-    try:
-        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
-        employee_mapping_preference = general_settings.auto_map_employees
-        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-        platform = PlatformConnector(fyle_credentials)
 
-        xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-        xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    employee_mapping_preference = general_settings.auto_map_employees
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    platform = PlatformConnector(fyle_credentials)
 
-        platform.employees.sync()
-        xero_connection.sync_contacts()
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+    xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
-        Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)
+    platform.employees.sync()
+    xero_connection.sync_contacts()
 
-        resolve_expense_attribute_errors(source_attribute_type='EMPLOYEE', workspace_id=workspace_id)
+    Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)
 
-    except XeroCredentials.DoesNotExist:
-        logger.info(
-            'Xero Credentials not found for workspace_id %s',
-            workspace_id,
-        )
-    
-    except FyleInvalidTokenError:
-        logger.info('Invalid Token for Fyle')
+    resolve_expense_attribute_errors(source_attribute_type='EMPLOYEE', workspace_id=workspace_id)
 
-    except InternalServerError:
-        logger.error('Internal server error while importing to Fyle')
-
-    except (UnsuccessfulAuthentication, InvalidGrant):
-        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
 def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
     if employee_mapping_preference:
@@ -355,52 +308,25 @@ def post_cost_centers_in_batches(platform: PlatformConnector, workspace_id: int,
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'COST_CENTER', xero_attribute_type, workspace_id)
 
 
+@handle_import_exceptions('auto_create_cost_center_mappings')
 def auto_create_cost_center_mappings(workspace_id: int):
     """
     Create Cost Center Mappings
     """
-    try:
-        fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
 
-        platform = PlatformConnector(fyle_credentials)
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
 
-        mapping_setting = MappingSetting.objects.get(
-            source_field='COST_CENTER', import_to_fyle=True, workspace_id=workspace_id
-        )
+    platform = PlatformConnector(fyle_credentials)
 
-        platform.cost_centers.sync()
+    mapping_setting = MappingSetting.objects.get(
+        source_field='COST_CENTER', import_to_fyle=True, workspace_id=workspace_id
+    )
 
-        sync_xero_attributes(mapping_setting.destination_field, workspace_id=workspace_id)
+    platform.cost_centers.sync()
 
-        post_cost_centers_in_batches(platform, workspace_id, mapping_setting.destination_field)
+    sync_xero_attributes(mapping_setting.destination_field, workspace_id=workspace_id)
 
-    except XeroCredentials.DoesNotExist:
-        logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
-
-    except FyleInvalidTokenError:
-        logger.info('Invalid Token for Fyle')
-
-    except WrongParamsError as exception:
-        logger.error(
-            'Error while creating cost centers workspace_id - %s in Fyle %s %s',
-            workspace_id, exception.message, {'error': exception.response}
-        )
-
-    except InternalServerError:
-        logger.error('Internal server error while importing to Fyle')
-
-    except (UnsuccessfulAuthentication, InvalidGrant):
-        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
-
-    except Exception:
-        error = traceback.format_exc()
-        error = {
-            'error': error
-        }
-        logger.exception(
-            'Error while creating cost centers workspace_id - %s error: %s',
-            workspace_id, error
-        )
+    post_cost_centers_in_batches(platform, workspace_id, mapping_setting.destination_field)
 
 
 def schedule_cost_centers_creation(import_to_fyle, workspace_id: int):
@@ -528,53 +454,26 @@ def post_projects_in_batches(platform: PlatformConnector,
             platform.projects.post_bulk(fyle_payload)
             platform.projects.sync()
 
+@handle_import_exceptions('auto_create_project_mappings')
 def auto_create_project_mappings(workspace_id: int):
     """
     Create Project Mappings
     :return: mappings
     """
-    try:
-        fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
 
-        platform = PlatformConnector(fyle_credentials)
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
 
-        platform.projects.sync()
+    platform = PlatformConnector(fyle_credentials)
 
-        mapping_setting = MappingSetting.objects.get(
-            source_field='PROJECT', workspace_id=workspace_id
-        )
+    platform.projects.sync()
 
-        sync_xero_attributes(mapping_setting.destination_field, workspace_id)
+    mapping_setting = MappingSetting.objects.get(
+        source_field='PROJECT', workspace_id=workspace_id
+    )
 
-        post_projects_in_batches(platform, workspace_id, mapping_setting.destination_field)
+    sync_xero_attributes(mapping_setting.destination_field, workspace_id)
 
-    except XeroCredentials.DoesNotExist:
-        logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
-    
-    except FyleInvalidTokenError:
-        logger.info('Invalid Token for Fyle')
-
-    except WrongParamsError as exception:
-        logger.error(
-            'Error while creating projects workspace_id - %s in Fyle %s %s',
-            workspace_id, exception.message, {'error': exception.response}
-        )
-
-    except InternalServerError:
-        logger.error('Internal server error while importing to Fyle')
-
-    except (UnsuccessfulAuthentication, InvalidGrant):
-        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
-
-    except Exception:
-        error = traceback.format_exc()
-        error = {
-            'error': error
-        }
-        logger.exception(
-            'Error while creating projects workspace_id - %s error: %s',
-            workspace_id, error
-        )
+    post_projects_in_batches(platform, workspace_id, mapping_setting.destination_field)
 
 
 def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int,
@@ -670,58 +569,32 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     return xero_attributes
 
 
+@handle_import_exceptions('auto_create_expense_fields_mappings')
 def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str, source_placeholder: str = None):
     """
     Create Fyle Attributes Mappings
     :return: mappings
     """
-    try:
-        fyle_attributes = upload_attributes_to_fyle(workspace_id=workspace_id, xero_attribute_type=xero_attribute_type,
-                                                    fyle_attribute_type=fyle_attribute_type, source_placeholder=source_placeholder)
-        if fyle_attributes:
-            Mapping.bulk_create_mappings(fyle_attributes, fyle_attribute_type, xero_attribute_type, workspace_id)
 
-    except WrongParamsError as exception:
-        logger.error(
-            'Error while creating %s workspace_id - %s in Fyle %s %s',
-            fyle_attribute_type, workspace_id, exception.message, {'error': exception.response}
-        )
-        
-    except InternalServerError:
-        logger.error('Internal server error while importing to Fyle')
-    
-    except FyleInvalidTokenError:
-        logger.info('Invalid Token for Fyle')
-
-    except Exception:
-        error = traceback.format_exc()
-        error = {
-            'error': error
-        }
-        logger.exception(
-            'Error while creating %s workspace_id - %s error: %s', fyle_attribute_type, workspace_id, error
-        )
+    fyle_attributes = upload_attributes_to_fyle(workspace_id=workspace_id, xero_attribute_type=xero_attribute_type,
+                                                fyle_attribute_type=fyle_attribute_type, source_placeholder=source_placeholder)
+    if fyle_attributes:
+        Mapping.bulk_create_mappings(fyle_attributes, fyle_attribute_type, xero_attribute_type, workspace_id)
 
 
+@handle_import_exceptions('async_auto_create_custom_field_mappings')
 def async_auto_create_custom_field_mappings(workspace_id: str):
     mapping_settings = MappingSetting.objects.filter(
         is_custom=True, import_to_fyle=True, workspace_id=workspace_id
     ).all()
 
     for mapping_setting in mapping_settings:
-        try:
-            if mapping_setting.import_to_fyle:
-                sync_xero_attributes(mapping_setting.destination_field, workspace_id)
-                auto_create_expense_fields_mappings(
-                    workspace_id, mapping_setting.destination_field, mapping_setting.source_field,
-                    mapping_setting.source_placeholder
-                )
-
-        except XeroCredentials.DoesNotExist:
-            logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
-
-        except (UnsuccessfulAuthentication, InvalidGrant):
-            logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
+        if mapping_setting.import_to_fyle:
+            sync_xero_attributes(mapping_setting.destination_field, workspace_id)
+            auto_create_expense_fields_mappings(
+                workspace_id, mapping_setting.destination_field, mapping_setting.source_field,
+                mapping_setting.source_placeholder
+            )
 
 
 def schedule_fyle_attributes_creation(workspace_id: int):
@@ -791,48 +664,21 @@ def create_fyle_tax_group_payload(xero_attributes: List[DestinationAttribute], e
     return fyle_tax_group_payload
 
 
+@handle_import_exceptions('auto_create_tax_codes_mappings')
 def auto_create_tax_codes_mappings(workspace_id: int):
     """
     Create Tax Codes Mappings
     :return: None
     """
-    try:
-        fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
 
-        platform = PlatformConnector(fyle_credentials=fyle_credentials)
-        platform.tax_groups.sync()
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
 
-        sync_xero_attributes('TAX_CODE', workspace_id)
+    platform = PlatformConnector(fyle_credentials=fyle_credentials)
+    platform.tax_groups.sync()
 
-        upload_tax_groups_to_fyle(platform, workspace_id)
+    sync_xero_attributes('TAX_CODE', workspace_id)
 
-    except XeroCredentials.DoesNotExist:
-        logger.info('Xero credentials does not exist for workspace_id - %s', workspace_id)
-
-    except FyleInvalidTokenError:
-        logger.info('Invalid Token for Fyle')
-
-    except WrongParamsError as exception:
-        logger.error(
-            'Error while creating tax groups workspace_id - %s in Fyle %s %s',
-            workspace_id, exception.message, {'error': exception.response}
-        )
-
-    except InternalServerError:
-        logger.error('Internal server error while importing to Fyle')
-
-    except (UnsuccessfulAuthentication, InvalidGrant):
-        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
-
-    except Exception:
-        error = traceback.format_exc()
-        error = {
-            'error': error
-        }
-        logger.exception(
-            'Error while creating tax groups workspace_id - %s error: %s',
-            workspace_id, error
-        )
+    upload_tax_groups_to_fyle(platform, workspace_id)
 
 
 def schedule_tax_groups_creation(import_tax_codes, workspace_id):
@@ -854,6 +700,7 @@ def schedule_tax_groups_creation(import_tax_codes, workspace_id):
 
         if schedule:
             schedule.delete()
+
 
 def auto_import_and_map_fyle_fields(workspace_id):
     """
