@@ -1,7 +1,5 @@
 import logging
 import traceback
-
-
 from xerosdk.exceptions import WrongParamsError as XeroWrongParamsError, InvalidTokenError as XeroInvalidTokenError, UnsuccessfulAuthentication, InvalidGrant
 from fyle.platform.exceptions import WrongParamsError, InvalidTokenError, InternalServerError, PlatformError
 from apps.workspaces.models import XeroCredentials
@@ -21,25 +19,25 @@ def handle_import_exceptions(task_name):
             }
 
             try:
-                return func(workspace_id,*args)
+                return func(workspace_id, *args)
             except InvalidTokenError:
                 error['message'] = 'Invalid Fyle refresh token'
             
             except XeroCredentials.DoesNotExist:
                 error['message'] = 'Xero Credentials not found'
             
-            except WrongParamsError as e:
-                error['message'] = e.message
-                error['response'] = e.response
+            except WrongParamsError as exception:
+                error['message'] = exception.message
+                error['response'] = exception.response
                 error['alert'] = True
             
-            except InternalServerError as e:
+            except InternalServerError as exception:
                 error['message'] = 'Internal server error while importing to Fyle'
-                error['response'] = e.__dict__
+                error['response'] = exception.__dict__
             
-            except (XeroWrongParamsError, XeroInvalidTokenError) as e:
+            except (XeroWrongParamsError, XeroInvalidTokenError) as exception:
                 error['message'] = 'Xero token expired'
-                error['response'] = e.__dict__
+                error['response'] = exception.__dict__
             
             except PlatformError as exception:
                 error['message'] = 'Platform error while importing to Fyle'

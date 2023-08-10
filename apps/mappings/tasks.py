@@ -1,5 +1,4 @@
 import logging
-import traceback
 from datetime import datetime, timedelta
 
 from typing import List, Dict
@@ -11,9 +10,6 @@ from fyle_integrations_platform_connector import PlatformConnector
 
 from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
 
-from fyle.platform.exceptions import WrongParamsError, InternalServerError, InvalidTokenError as FyleInvalidTokenError, PlatformError
-
-from xerosdk.exceptions import UnsuccessfulAuthentication, InvalidGrant
 from .exceptions import handle_import_exceptions
 
 from apps.xero.utils import XeroConnector
@@ -184,7 +180,7 @@ def upload_categories_to_fyle(workspace_id):
     return xero_attributes
 
 
-@handle_import_exceptions('auto_create_category_mappings')
+@handle_import_exceptions(task_name='auto_create_category_mappings')
 def auto_create_category_mappings(workspace_id):
     """
     Create Category Mappings
@@ -200,7 +196,7 @@ def auto_create_category_mappings(workspace_id):
     return []
 
 
-@handle_import_exceptions('async_auto_map_employees')
+@handle_import_exceptions(task_name='async_auto_map_employees')
 def async_auto_map_employees(workspace_id: int):
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
@@ -308,7 +304,7 @@ def post_cost_centers_in_batches(platform: PlatformConnector, workspace_id: int,
         Mapping.bulk_create_mappings(paginated_xero_attributes, 'COST_CENTER', xero_attribute_type, workspace_id)
 
 
-@handle_import_exceptions('auto_create_cost_center_mappings')
+@handle_import_exceptions(task_name='auto_create_cost_center_mappings')
 def auto_create_cost_center_mappings(workspace_id: int):
     """
     Create Cost Center Mappings
@@ -454,7 +450,7 @@ def post_projects_in_batches(platform: PlatformConnector,
             platform.projects.post_bulk(fyle_payload)
             platform.projects.sync()
 
-@handle_import_exceptions('auto_create_project_mappings')
+@handle_import_exceptions(task_name='auto_create_project_mappings')
 def auto_create_project_mappings(workspace_id: int):
     """
     Create Project Mappings
@@ -569,7 +565,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     return xero_attributes
 
 
-@handle_import_exceptions('auto_create_expense_fields_mappings')
+@handle_import_exceptions(task_name='auto_create_expense_fields_mappings')
 def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str, source_placeholder: str = None):
     """
     Create Fyle Attributes Mappings
@@ -582,7 +578,7 @@ def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: 
         Mapping.bulk_create_mappings(fyle_attributes, fyle_attribute_type, xero_attribute_type, workspace_id)
 
 
-@handle_import_exceptions('async_auto_create_custom_field_mappings')
+@handle_import_exceptions(task_name='async_auto_create_custom_field_mappings')
 def async_auto_create_custom_field_mappings(workspace_id: str):
     mapping_settings = MappingSetting.objects.filter(
         is_custom=True, import_to_fyle=True, workspace_id=workspace_id
@@ -664,7 +660,7 @@ def create_fyle_tax_group_payload(xero_attributes: List[DestinationAttribute], e
     return fyle_tax_group_payload
 
 
-@handle_import_exceptions('auto_create_tax_codes_mappings')
+@handle_import_exceptions(task_name='auto_create_tax_codes_mappings')
 def auto_create_tax_codes_mappings(workspace_id: int):
     """
     Create Tax Codes Mappings
