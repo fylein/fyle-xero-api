@@ -1,4 +1,3 @@
-import json
 import logging
 import traceback
 from datetime import datetime, timedelta
@@ -13,112 +12,22 @@ from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute, DestinationAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 
-from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError, UnsuccessfulAuthentication
+from xerosdk.exceptions import WrongParamsError, UnsuccessfulAuthentication
 
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.tasks.models import Error
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential, Workspace, LastExportDetail
+from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials, FyleCredential, Workspace
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 
+from .exceptions import handle_xero_exceptions
+
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
-def update_last_export_details(workspace_id):
-    last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
-
-    failed_exports = TaskLog.objects.filter(
-        ~Q(type__in=['CREATING_PAYMENT', 'FETCHING_EXPENSES']), workspace_id=workspace_id, status__in=['FAILED', 'FATAL']
-    ).count()
-
-    successful_exports = TaskLog.objects.filter(
-        ~Q(type__in=['CREATING_PAYMENT', 'FETCHING_EXPENSES']),
-        workspace_id=workspace_id,
-        status='COMPLETE',
-        updated_at__gt=last_export_detail.last_exported_at
-    ).count()
-
-    last_export_detail.failed_expense_groups_count = failed_exports
-    last_export_detail.successful_expense_groups_count = successful_exports
-    last_export_detail.total_expense_groups_count = failed_exports + successful_exports
-    last_export_detail.save()
-
-    return last_export_detail
-
-def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog):
-    """
-    Handle the xero-error and save it to Errors and TaskLogs table
-    :params exception: exception
-    :params expense_group: expense_group
-    :params task_log: task_log
-    :params export_type: export_type
-    """
-    if type(exception).__name__ == 'RateLimitError':
-        logger.info(exception.message)
-        task_log.xero_errors = [
-            {
-                'error': {
-                    'Elements': [
-                        {
-                            'ValidationErrors': [
-                                {
-                                    'Message': 'Rate limit exceeded, integration will retry exports in a while'
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        ]
-        Error.objects.update_or_create(
-            workspace_id=expense_group.workspace_id,
-            expense_group=expense_group,
-            defaults={
-                'type': 'XERO_ERROR',
-                'error_title': 'Rate Limit Error',
-                'error_detail': 'Rate limit exceeded, integration will retry exports in a while',
-                'is_resolved': False
-            }
-        )
-
-    else:
-        all_details = []
-        logger.info(exception)
-        detail = json.dumps(exception.__dict__)
-        detail = json.loads(detail)
-
-        all_details.append({
-            'expense_group_id': expense_group.id,
-            'message': detail['message']['Message'],
-            'error': detail['message']
-        })
-
-        error_detail = 'Something unexcepted happen'
-        if 'Elements' in detail['message'] and len(detail['message']['Elements']) > 0 and\
-            'ValidationErrors' in detail['message']['Elements'][0] and len(detail['message']['Elements'][0]['ValidationErrors']) > 0 and\
-            'Message' in detail['message']['Elements'][0]['ValidationErrors'][0]:
-            error_detail = detail['message']['Elements'][0]['ValidationErrors'][0]['Message']
-
-        Error.objects.update_or_create(
-            workspace_id=expense_group.workspace_id,
-            expense_group=expense_group,
-            defaults={
-                'type': 'XERO_ERROR',
-                'error_title': detail['message']['Message'],
-                'error_detail': error_detail,
-                'is_resolved': False
-            }
-        )
-
-        task_log.xero_errors = all_details
-
-    task_log.detail = None
-    task_log.status = 'FAILED'
-
-    task_log.save()
 
 def resolve_errors_for_exported_expense_group(expense_group: ExpenseGroup):
     """
@@ -258,6 +167,8 @@ def create_or_update_employee_mapping(expense_group: ExpenseGroup, xero_connecti
             logger.info('Error while auto creating contact workspace_id - %s error: %s',
                 expense_group.workspace_id, {'error': exception.message})
 
+
+@handle_xero_exceptions(payment=False)
 def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector, last_export: bool):
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
@@ -269,136 +180,49 @@ def create_bill(expense_group_id: int, task_log_id: int, xero_connection: XeroCo
         return
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
-    try:
-        if general_settings.auto_map_employees and general_settings.auto_create_destination_entity \
-                and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
-            create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
 
-        __validate_expense_group(expense_group)
+    if general_settings.auto_map_employees and general_settings.auto_create_destination_entity \
+            and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
+        create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
 
-        with transaction.atomic():
+    __validate_expense_group(expense_group)
 
-            bill_object = Bill.create_bill(expense_group)
+    with transaction.atomic():
 
-            bill_lineitems_objects = BillLineItem.create_bill_lineitems(expense_group)
+        bill_object = Bill.create_bill(expense_group)
 
-            created_bill = xero_connection.post_bill(bill_object, bill_lineitems_objects, general_settings)
+        bill_lineitems_objects = BillLineItem.create_bill_lineitems(expense_group)
 
-            task_log.detail = created_bill
-            task_log.bill = bill_object
-            task_log.xero_errors = None
-            task_log.status = 'COMPLETE'
+        created_bill = xero_connection.post_bill(bill_object, bill_lineitems_objects, general_settings)
 
-            task_log.save()
-
-            expense_group.exported_at = datetime.now()
-            expense_group.response_logs = created_bill
-            expense_group.save()
-            resolve_errors_for_exported_expense_group(expense_group)
-
-            # Assign billable expenses to customers
-            if general_settings.import_customers:
-                # Save parent level ID and line item level ID to corresponding exports table to make things easier during posting of linked transaction for debugging purposes
-                bill_object.export_id = created_bill['Invoices'][0]['InvoiceID']
-                bill_object.save()
-
-                index = 0
-                for bill_lineitems_object in bill_lineitems_objects:
-                    # Sequence of lines in API response and bank_transaction_lineitems_objects will be the same, iterating over them and adding line item ID
-                    bill_lineitems_object.line_item_id = created_bill['Invoices'][0]['LineItems'][index]['LineItemID']
-                    bill_lineitems_object.save()
-                    index += 1
-
-                attach_customer_to_export(xero_connection, task_log)
-
-            load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
-    except XeroCredentials.DoesNotExist:
-        logger.info(
-            'Xero Credentials not found for workspace_id %s / expense group %s',
-            expense_group.workspace_id,
-            expense_group.id
-        )
-        detail = {
-            'expense_group_id': expense_group.id,
-            'message': 'Xero Account not connected'
-        }
-        task_log.status = 'FAILED'
-        task_log.detail = detail
+        task_log.detail = created_bill
+        task_log.bill = bill_object
+        task_log.xero_errors = None
+        task_log.status = 'COMPLETE'
 
         task_log.save()
 
-    except BulkError as exception:
-        logger.info(exception.response)
-        detail = exception.response
-        task_log.status = 'FAILED'
-        task_log.detail = detail
+        expense_group.exported_at = datetime.now()
+        expense_group.response_logs = created_bill
+        expense_group.save()
+        resolve_errors_for_exported_expense_group(expense_group)
 
-        task_log.save()
+        # Assign billable expenses to customers
+        if general_settings.import_customers:
+            # Save parent level ID and line item level ID to corresponding exports table to make things easier during posting of linked transaction for debugging purposes
+            bill_object.export_id = created_bill['Invoices'][0]['InvoiceID']
+            bill_object.save()
 
-    except WrongParamsError as exception:
-        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
+            index = 0
+            for bill_lineitems_object in bill_lineitems_objects:
+                # Sequence of lines in API response and bank_transaction_lineitems_objects will be the same, iterating over them and adding line item ID
+                bill_lineitems_object.line_item_id = created_bill['Invoices'][0]['LineItems'][index]['LineItemID']
+                bill_lineitems_object.save()
+                index += 1
 
-    except InvalidGrant as exception:
-        logger.info(exception.message)
-        task_log.status = 'FAILED'
-        task_log.detail = None
-        task_log.xero_errors = {
-            'error': exception.message
-        }
+            attach_customer_to_export(xero_connection, task_log)
 
-        task_log.save()
-
-    except RateLimitError as exception:
-        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
-
-    except NoPrivilegeError as exception:
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).first()
-        xero_credentials.refresh_token = None
-        xero_credentials.country = None
-        xero_credentials.is_expired = True
-        xero_credentials.save()
-        logger.info(exception.message)
-        task_log.status = 'FAILED'
-        task_log.detail = None
-        task_log.xero_errors = [
-            {
-                'error': {
-                    'Elements': [
-                        {
-                            'ValidationErrors': [
-                                {
-                                    'Message': 'Xero account got disconnected, please go Configurations -> Tenant page and connect to Xero again'
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        ]
-
-        task_log.save()
-
-    except XeroSDKError as exception:
-        logger.info(exception.response)
-        detail = exception.response
-        task_log.status = 'FAILED'
-        task_log.detail = None
-        task_log.xero_errors = detail
-
-        task_log.save()
-
-    except Exception:
-        error = traceback.format_exc()
-        task_log.detail = None
-        task_log.xero_errors = {
-            'error': error
-        }
-        task_log.status = 'FATAL'
-        task_log.save()
-        logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
-    
-    if last_export:
-        update_last_export_details(expense_group.workspace_id)
+        load_attachments(xero_connection, created_bill['Invoices'][0]['InvoiceID'], 'invoices', expense_group)
 
 
 def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> None:
@@ -535,6 +359,7 @@ def attach_customer_to_export(xero_connection: XeroConnector, task_log: TaskLog)
             logger.info('Something unexpected happened during attaching customer to export', exception)
 
 
+@handle_xero_exceptions(payment=False)
 def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connection: XeroConnector, last_export: bool):
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
@@ -546,145 +371,58 @@ def create_bank_transaction(expense_group_id: int, task_log_id: int, xero_connec
         return
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=expense_group.workspace_id)
-    try:
-        if not general_settings.map_merchant_to_contact:
-            if general_settings.auto_map_employees and general_settings.auto_create_destination_entity \
-                    and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
-                create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
-        else:
-            merchant = expense_group.expenses.first().vendor
-            get_or_create_credit_card_contact(expense_group.workspace_id, merchant, general_settings.auto_create_merchant_destination_entity)
 
-        __validate_expense_group(expense_group)
+    if not general_settings.map_merchant_to_contact:
+        if general_settings.auto_map_employees and general_settings.auto_create_destination_entity \
+                and general_settings.auto_map_employees != 'EMPLOYEE_CODE':
+            create_or_update_employee_mapping(expense_group, xero_connection, general_settings.auto_map_employees)
+    else:
+        merchant = expense_group.expenses.first().vendor
+        get_or_create_credit_card_contact(expense_group.workspace_id, merchant, general_settings.auto_create_merchant_destination_entity)
 
-        with transaction.atomic():
+    __validate_expense_group(expense_group)
 
-            bank_transaction_object = BankTransaction.create_bank_transaction(expense_group, general_settings.map_merchant_to_contact)
+    with transaction.atomic():
 
-            bank_transaction_lineitems_objects = BankTransactionLineItem.create_bank_transaction_lineitems(
-                expense_group
-            )
+        bank_transaction_object = BankTransaction.create_bank_transaction(expense_group, general_settings.map_merchant_to_contact)
 
-            created_bank_transaction = xero_connection.post_bank_transaction(
-                bank_transaction_object, bank_transaction_lineitems_objects, general_settings
-            )
-
-            task_log.detail = created_bank_transaction
-            task_log.bank_transaction = bank_transaction_object
-            task_log.xero_errors = None
-            task_log.status = 'COMPLETE'
-
-            task_log.save()
-
-            expense_group.exported_at = datetime.now()
-            expense_group.response_logs = created_bank_transaction
-            expense_group.save()
-            resolve_errors_for_exported_expense_group(expense_group)
-
-            # Assign billable expenses to customers
-            if general_settings.import_customers:
-                # Save parent level ID and line item level ID to corresponding exports table to make things easier during posting of linked transaction for debugging purposes
-                bank_transaction_object.export_id = created_bank_transaction['BankTransactions'][0]['BankTransactionID']
-                bank_transaction_object.save()
-
-                index = 0
-                for bank_transaction_lineitems_object in bank_transaction_lineitems_objects:
-                    # Sequence of lines in API response and bank_transaction_lineitems_objects will be the same, iterating over them and adding line item ID
-                    bank_transaction_lineitems_object.line_item_id = created_bank_transaction['BankTransactions'][0]['LineItems'][index]['LineItemID']
-                    bank_transaction_lineitems_object.save()
-                    index += 1
-
-                attach_customer_to_export(xero_connection, task_log)               
-
-            load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
-                    'banktransactions', expense_group)
-    except XeroCredentials.DoesNotExist:
-        logger.info(
-            'Xero Credentials not found for workspace_id %s / expense group %s',
-            expense_group.workspace_id,
-            expense_group.id
+        bank_transaction_lineitems_objects = BankTransactionLineItem.create_bank_transaction_lineitems(
+            expense_group
         )
-        detail = {
-            'expense_group_id': expense_group.id,
-            'message': 'Xero Account not connected'
-        }
-        task_log.status = 'FAILED'
-        task_log.detail = detail
+
+        created_bank_transaction = xero_connection.post_bank_transaction(
+            bank_transaction_object, bank_transaction_lineitems_objects, general_settings
+        )
+
+        task_log.detail = created_bank_transaction
+        task_log.bank_transaction = bank_transaction_object
+        task_log.xero_errors = None
+        task_log.status = 'COMPLETE'
 
         task_log.save()
 
-    except BulkError as exception:
-        logger.info(exception.response)
-        detail = exception.response
-        task_log.status = 'FAILED'
-        task_log.detail = detail
+        expense_group.exported_at = datetime.now()
+        expense_group.response_logs = created_bank_transaction
+        expense_group.save()
+        resolve_errors_for_exported_expense_group(expense_group)
 
-        task_log.save()
+        # Assign billable expenses to customers
+        if general_settings.import_customers:
+            # Save parent level ID and line item level ID to corresponding exports table to make things easier during posting of linked transaction for debugging purposes
+            bank_transaction_object.export_id = created_bank_transaction['BankTransactions'][0]['BankTransactionID']
+            bank_transaction_object.save()
 
-    except WrongParamsError as exception:
-        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
+            index = 0
+            for bank_transaction_lineitems_object in bank_transaction_lineitems_objects:
+                # Sequence of lines in API response and bank_transaction_lineitems_objects will be the same, iterating over them and adding line item ID
+                bank_transaction_lineitems_object.line_item_id = created_bank_transaction['BankTransactions'][0]['LineItems'][index]['LineItemID']
+                bank_transaction_lineitems_object.save()
+                index += 1
 
-    except InvalidGrant as exception:
-        logger.info(exception.message)
-        task_log.status = 'FAILED'
-        task_log.detail = None
-        task_log.xero_errors = {
-            'error': exception.message
-        }
+            attach_customer_to_export(xero_connection, task_log)               
 
-        task_log.save()
-
-    except RateLimitError as exception:
-        handle_xero_error(exception=exception, expense_group=expense_group, task_log=task_log)
-
-    except (NoPrivilegeError, UnsuccessfulAuthentication) as exception:
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=expense_group.workspace_id).first()
-        xero_credentials.refresh_token = None
-        xero_credentials.country = None
-        xero_credentials.is_expired = True
-        xero_credentials.save()
-        logger.info(exception.message)
-        task_log.status = 'FAILED'
-        task_log.detail = None
-        task_log.xero_errors = [
-            {
-                'error': {
-                    'Elements': [
-                        {
-                            'ValidationErrors': [
-                                {
-                                    'Message': 'Xero account got disconnected, please go Configurations -> Tenant page and connect to Xero again'
-                                }
-                            ]
-                        }
-                    ]
-                }
-            }
-        ]
-
-        task_log.save()
-
-    except XeroSDKError as exception:
-        logger.info(exception.response)
-        detail = exception.response
-        task_log.status = 'FAILED'
-        task_log.detail = None
-        task_log.xero_errors = detail
-
-        task_log.save()
-
-    except Exception:
-        error = traceback.format_exc()
-        task_log.detail = None
-        task_log.xero_errors = {
-            'error': error
-        }
-        task_log.status = 'FATAL'
-        task_log.save()
-        logger.exception('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
-    
-    if last_export:
-        update_last_export_details(expense_group.workspace_id)
+        load_attachments(xero_connection, created_bank_transaction['BankTransactions'][0]['BankTransactionID'],
+                'banktransactions', expense_group)
 
 
 def schedule_bank_transaction_creation(workspace_id: int, expense_group_ids: List[str]) -> list:
@@ -861,6 +599,7 @@ def check_expenses_reimbursement_status(expenses):
     return all_expenses_paid
 
 
+@handle_xero_exceptions(payment=True)
 def create_payment(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
@@ -885,102 +624,33 @@ def create_payment(workspace_id):
                     'type': 'CREATING_PAYMENT'
                 }
             )
-            try:
-                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-                xero_connection = XeroConnector(xero_credentials, workspace_id)
-                with transaction.atomic():
-                    xero_object_task_log = TaskLog.objects.get(expense_group=bill.expense_group)
+            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+            xero_connection = XeroConnector(xero_credentials, workspace_id)
+            with transaction.atomic():
+                xero_object_task_log = TaskLog.objects.get(expense_group=bill.expense_group)
 
-                    invoice_id = xero_object_task_log.detail['Invoices'][0]['InvoiceID']
+                invoice_id = xero_object_task_log.detail['Invoices'][0]['InvoiceID']
 
-                    payment_object = Payment.create_payment(
-                        expense_group=bill.expense_group,
-                        invoice_id=invoice_id,
-                        account_id=general_mappings.payment_account_id
-                    )
-
-                    created_payment = xero_connection.post_payment(
-                        payment_object
-                    )
-
-                    bill.payment_synced = True
-                    bill.paid_on_xero = True
-                    bill.save()
-
-                    task_log.detail = created_payment
-                    task_log.payment = payment_object
-                    task_log.xero_errors = None
-                    task_log.status = 'COMPLETE'
-
-                    task_log.save()
-
-            except XeroCredentials.DoesNotExist:
-                logger.info(
-                    'Xero Credentials not found for workspace_id %s / expense group %s',
-                    workspace_id,
-                    bill.expense_group.id
+                payment_object = Payment.create_payment(
+                    expense_group=bill.expense_group,
+                    invoice_id=invoice_id,
+                    account_id=general_mappings.payment_account_id
                 )
-                detail = {
-                    'expense_group_id': bill.expense_group.id,
-                    'message': 'Xero Account not connected'
-                }
-                task_log.status = 'FAILED'
-                task_log.detail = detail
+
+                created_payment = xero_connection.post_payment(
+                    payment_object
+                )
+
+                bill.payment_synced = True
+                bill.paid_on_xero = True
+                bill.save()
+
+                task_log.detail = created_payment
+                task_log.payment = payment_object
+                task_log.xero_errors = None
+                task_log.status = 'COMPLETE'
 
                 task_log.save()
-
-            except BulkError as exception:
-                logger.info(exception.response)
-                detail = exception.response
-                task_log.status = 'FAILED'
-                task_log.detail = detail
-
-                task_log.save()
-
-            except WrongParamsError as exception:
-                logger.info(exception.message)
-                detail = exception.message
-                task_log.status = 'FAILED'
-                task_log.detail = detail
-
-                task_log.save()
-
-            except (NoPrivilegeError, UnsuccessfulAuthentication) as exception:
-                xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
-                xero_credentials.refresh_token = None
-                xero_credentials.country = None
-                xero_credentials.is_expired = True
-                xero_credentials.save()
-                logger.info(exception.message)
-                task_log.status = 'FAILED'
-                task_log.detail = None
-                task_log.xero_errors = [
-                    {
-                        'error': {
-                            'Elements': [
-                                {
-                                    'ValidationErrors': [
-                                        {
-                                            'Message': 'Xero account got disconnected, please go Configurations -> Tenant page and connect to Xero again'
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                ]
-
-                task_log.save()
-
-            except Exception:
-                error = traceback.format_exc()
-                task_log.detail = {
-                    'error': error
-                }
-                task_log.status = 'FATAL'
-                task_log.save()
-                logger.error('Something unexpected happened workspace_id: %s %s',
-                             task_log.workspace_id, task_log.detail)
 
 
 def schedule_payment_creation(sync_fyle_to_xero_payments, workspace_id):
