@@ -12,7 +12,7 @@ from .fixtures import data
 from tests.helper import dict_compare_keys
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings 
-
+from xerosdk.exceptions import WrongParamsError, UnsuccessfulAuthentication
 
 def test_auto_create_tax_codes_mappings(db, mocker):
     workspace_id = 1

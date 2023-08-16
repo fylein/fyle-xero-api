@@ -598,8 +598,38 @@ def check_expenses_reimbursement_status(expenses):
 
     return all_expenses_paid
 
-
 @handle_xero_exceptions(payment=True)
+def process_payments(bill: Bill, workspace_id:int, task_log: TaskLog, general_mappings):
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+    xero_connection = XeroConnector(xero_credentials, workspace_id)
+    with transaction.atomic():
+        xero_object_task_log = TaskLog.objects.get(expense_group=bill.expense_group)
+
+        invoice_id = xero_object_task_log.detail['Invoices'][0]['InvoiceID']
+
+        payment_object = Payment.create_payment(
+            expense_group=bill.expense_group,
+            invoice_id=invoice_id,
+            account_id=general_mappings.payment_account_id
+        )
+
+        created_payment = xero_connection.post_payment(
+            payment_object
+        )
+
+        bill.payment_synced = True
+        bill.paid_on_xero = True
+        bill.save()
+
+        task_log.detail = created_payment
+        task_log.payment = payment_object
+        task_log.xero_errors = None
+        task_log.status = 'COMPLETE'
+
+        task_log.save()
+
+
+
 def create_payment(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
@@ -624,33 +654,8 @@ def create_payment(workspace_id):
                     'type': 'CREATING_PAYMENT'
                 }
             )
-            xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-            xero_connection = XeroConnector(xero_credentials, workspace_id)
-            with transaction.atomic():
-                xero_object_task_log = TaskLog.objects.get(expense_group=bill.expense_group)
-
-                invoice_id = xero_object_task_log.detail['Invoices'][0]['InvoiceID']
-
-                payment_object = Payment.create_payment(
-                    expense_group=bill.expense_group,
-                    invoice_id=invoice_id,
-                    account_id=general_mappings.payment_account_id
-                )
-
-                created_payment = xero_connection.post_payment(
-                    payment_object
-                )
-
-                bill.payment_synced = True
-                bill.paid_on_xero = True
-                bill.save()
-
-                task_log.detail = created_payment
-                task_log.payment = payment_object
-                task_log.xero_errors = None
-                task_log.status = 'COMPLETE'
-
-                task_log.save()
+            
+            process_payments(bill,workspace_id,task_log, general_mappings)
 
 
 def schedule_payment_creation(sync_fyle_to_xero_payments, workspace_id):

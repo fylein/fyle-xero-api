@@ -113,7 +113,9 @@ def handle_xero_exceptions(payment=False):
     def decorator(func):
         def new_fn(*args):
             if payment:
-                workspace_id = args[0]
+                workspace_id = args[1]
+                expense_group = args[0].expense_group
+                task_log = args[2]
             else:
                 expense_group_id = args[0]
                 expense_group = ExpenseGroup.objects.get(id=expense_group_id)
