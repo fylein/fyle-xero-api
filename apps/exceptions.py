@@ -42,19 +42,9 @@ def handle_view_exceptions():
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            except WrongParamsError as exception:
+            except (WrongParamsError, InvalidTokenError) as exception:
                 logger.info('Xero token expired workspace_id - %s %s', kwargs['workspace_id'],
                             {'error': exception.response})
-                return Response(
-                    data={
-                        'message': 'Xero token expired workspace_id'
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            except InvalidTokenError as exception:
-                logger.info('Xero token expired workspace_id - %s %s', kwargs['workspace_id'], {
-                            'error': exception.response})
                 return Response(
                     data={
                         'message': 'Xero token expired workspace_id'
@@ -79,7 +69,7 @@ def handle_view_exceptions():
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            except (InvalidGrant, UnsuccessfulAuthentication, InvalidTokenError, InvalidClientError) as exception:
+            except (InvalidGrant, UnsuccessfulAuthentication, InvalidClientError) as exception:
                 logger.info(exception)
                 return Response(
                     data={

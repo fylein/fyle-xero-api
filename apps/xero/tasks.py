@@ -598,6 +598,7 @@ def check_expenses_reimbursement_status(expenses):
 
     return all_expenses_paid
 
+
 @handle_xero_exceptions(payment=True)
 def process_payments(bill: Bill, workspace_id:int, task_log: TaskLog, general_mappings):
     xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
@@ -627,7 +628,6 @@ def process_payments(bill: Bill, workspace_id:int, task_log: TaskLog, general_ma
         task_log.status = 'COMPLETE'
 
         task_log.save()
-
 
 
 def create_payment(workspace_id):
