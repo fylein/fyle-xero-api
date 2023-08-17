@@ -3,10 +3,11 @@ import logging
 from rest_framework.views import status
 from rest_framework.response import Response
 
-from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuthentication, WrongParamsError, InvalidClientError
-from apps.workspaces.models import XeroCredentials, Workspace, FyleCredential, WorkspaceGeneralSettings, WorkspaceSchedule
+from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuthentication, \
+    WrongParamsError, InvalidClientError
+from apps.workspaces.models import XeroCredentials, Workspace, FyleCredential, \
+    WorkspaceGeneralSettings, WorkspaceSchedule
 from apps.fyle.models import ExpenseGroup
-from apps.tasks.models import TaskLog
 from apps.mappings.models import GeneralMapping, TenantMapping
 
 logger = logging.getLogger(__name__)
@@ -68,7 +69,7 @@ def handle_view_exceptions():
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             except (InvalidGrant, UnsuccessfulAuthentication, InvalidClientError) as exception:
                 logger.info(exception)
                 return Response(
