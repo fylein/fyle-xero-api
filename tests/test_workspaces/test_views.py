@@ -213,6 +213,11 @@ def test_connect_xero_view(api_client, test_connection):
     response = api_client.get(url)
     assert response.status_code == 200
 
+    XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+
+    response = api_client.get(url)
+    assert response.status_code == 400
+
 
 def test_revoke_xero_connection(mocker, api_client, test_connection):
     mocker.patch(
