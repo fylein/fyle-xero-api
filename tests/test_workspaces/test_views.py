@@ -339,3 +339,14 @@ def test_last_export_detail(mocker, api_client, test_connection):
 
     response = api_client.get(url)
     assert response.status_code == 200
+
+
+def test_get_admin_of_workspaces(api_client, test_connection):
+    workspace_id = 1
+
+    url = '/api/workspaces/{}/admins/'.format(workspace_id)
+
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
+
+    response = api_client.get(url)
+    assert response.status_code == 200
