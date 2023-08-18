@@ -116,11 +116,12 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
             })
     else:
         for category in categories:
-            payload.append({
-                'name': category.value,
-                'code': category.destination_id,
-                'is_enabled': True
-            })
+            if category.value.lower() not in category_map:
+                payload.append({
+                    'name': category.value,
+                    'code': category.destination_id,
+                    'is_enabled': category.active
+                })
     return payload
 
 def get_all_categories_from_fyle(platform: PlatformConnector):
