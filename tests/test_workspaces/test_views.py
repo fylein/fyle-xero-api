@@ -213,6 +213,11 @@ def test_connect_xero_view(api_client, test_connection):
     response = api_client.get(url)
     assert response.status_code == 200
 
+    XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+
+    response = api_client.get(url)
+    assert response.status_code == 400
+
 
 def test_revoke_xero_connection(mocker, api_client, test_connection):
     mocker.patch(
@@ -331,6 +336,17 @@ def test_last_export_detail(mocker, api_client, test_connection):
     last_export_detail.last_exported_at = datetime.now()
     last_export_detail.total_expense_groups_count = 1
     last_export_detail.save()
+
+    response = api_client.get(url)
+    assert response.status_code == 200
+
+
+def test_get_admin_of_workspaces(api_client, test_connection):
+    workspace_id = 1
+
+    url = '/api/workspaces/{}/admins/'.format(workspace_id)
+
+    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
 
     response = api_client.get(url)
     assert response.status_code == 200
