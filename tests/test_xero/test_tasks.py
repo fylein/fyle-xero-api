@@ -17,6 +17,8 @@ from .fixtures import data
 from tests.test_fyle.fixtures import data as fyle_data
 from tests.test_xero.fixtures import data as xero_data
 
+from apps.xero.exceptions import update_last_export_details
+
 logger = logging.getLogger(__name__)
 
 
