@@ -19,6 +19,7 @@ from .tasks import create_expense_groups, get_task_log_and_fund_source, async_cr
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
 from .serializers import ExpenseGroupSerializer, ExpenseSerializer, ExpenseFieldSerializer, \
     ExpenseGroupSettingsSerializer
+from apps.exceptions import handle_view_exceptions
 
 
 class ExpenseGroupView(generics.ListCreateAPIView):
@@ -139,35 +140,28 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
     Sync Fyle Dimensions View
     """
 
+    @handle_view_exceptions()
     def post(self, request, *args, **kwargs):
         """
         Sync Data From Fyle
         """
-        try:
-            workspace = Workspace.objects.get(id=kwargs['workspace_id'])
-            if workspace.source_synced_at:
-                time_interval = datetime.now(timezone.utc) - workspace.source_synced_at
 
-            if workspace.source_synced_at is None or time_interval.days > 0:
-                fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
+        workspace = Workspace.objects.get(id=kwargs['workspace_id'])
+        if workspace.source_synced_at:
+            time_interval = datetime.now(timezone.utc) - workspace.source_synced_at
 
-                platform = PlatformConnector(fyle_credentials)
-                platform.import_fyle_dimensions()
+        if workspace.source_synced_at is None or time_interval.days > 0:
+            fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
-                workspace.source_synced_at = datetime.now()
-                workspace.save(update_fields=['source_synced_at'])
+            platform = PlatformConnector(fyle_credentials)
+            platform.import_fyle_dimensions()
 
-            return Response(
-                status=status.HTTP_200_OK
-            )
+            workspace.source_synced_at = datetime.now()
+            workspace.save(update_fields=['source_synced_at'])
 
-        except FyleCredential.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Fyle credentials not found in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return Response(
+            status=status.HTTP_200_OK
+        )
 
 
 class RefreshFyleDimensionView(generics.ListCreateAPIView):
@@ -175,30 +169,24 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
     Refresh Fyle Dimensions view
     """
 
+    @handle_view_exceptions()
     def post(self, request, *args, **kwargs):
         """
         Sync data from Fyle
         """
-        try:
-            fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
+    
+        fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
-            platform = PlatformConnector(fyle_credentials)
-            platform.import_fyle_dimensions()
+        platform = PlatformConnector(fyle_credentials)
+        platform.import_fyle_dimensions()
 
-            workspace = Workspace.objects.get(id=kwargs['workspace_id'])
-            workspace.source_synced_at = datetime.now()
-            workspace.save(update_fields=['source_synced_at'])
+        workspace = Workspace.objects.get(id=kwargs['workspace_id'])
+        workspace.source_synced_at = datetime.now()
+        workspace.save(update_fields=['source_synced_at'])
 
-            return Response(
-                status=status.HTTP_200_OK
-            )
-        except FyleCredential.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Fyle credentials not found in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return Response(
+            status=status.HTTP_200_OK
+        )
 
 
 class ExportableExpenseGroupsView(generics.RetrieveAPIView):

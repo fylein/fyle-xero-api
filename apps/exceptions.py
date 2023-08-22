@@ -4,7 +4,7 @@ from rest_framework.views import status
 from rest_framework.response import Response
 
 from xerosdk.exceptions import InvalidGrant, InvalidTokenError, UnsuccessfulAuthentication, \
-    WrongParamsError, InvalidClientError
+    WrongParamsError, InvalidClientError, InternalServerError
 from apps.workspaces.models import XeroCredentials, Workspace, FyleCredential, \
     WorkspaceGeneralSettings, WorkspaceSchedule
 from apps.fyle.models import ExpenseGroup
@@ -52,6 +52,7 @@ def handle_view_exceptions():
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
+        
 
             except Workspace.DoesNotExist:
                 return Response(
@@ -104,6 +105,14 @@ def handle_view_exceptions():
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
+            except InternalServerError as exception:
+                return Response(
+                {
+                    'message': 'Internal server error'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
             except Exception as exception:
                 logger.exception(exception)

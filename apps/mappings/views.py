@@ -16,6 +16,7 @@ from .utils import MappingUtils
 from ..workspaces.models import WorkspaceGeneralSettings
 from apps.xero.utils import XeroConnector
 from apps.workspaces.models import Workspace
+from apps.exceptions import handle_view_exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -67,63 +68,49 @@ class TenantMappingView(generics.ListCreateAPIView):
             status=status.HTTP_200_OK
         )
 
+    @handle_view_exceptions()
     def get(self, request, *args, **kwargs):
         """
         Get tenant mappings
         """
-        try:
-            subsidiary_mapping = TenantMapping.objects.get(workspace_id=kwargs['workspace_id'])
 
-            return Response(
-                data=self.serializer_class(subsidiary_mapping).data,
-                status=status.HTTP_200_OK
-            )
-        except TenantMapping.DoesNotExist:
-            return Response(
-                {
-                    'message': 'Tenant mappings do not exist for the workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        subsidiary_mapping = TenantMapping.objects.get(workspace_id=kwargs['workspace_id'])
+
+        return Response(
+            data=self.serializer_class(subsidiary_mapping).data,
+            status=status.HTTP_200_OK
+        )
 
 
 class AutoMapEmployeeView(generics.CreateAPIView):
     """
     Auto Map Employees view
     """
-
+    @handle_view_exceptions()
     def post(self, request, *args, **kwargs):
         """
         Trigger Auto Map employees
         """
-        try:
-            workspace_id = kwargs['workspace_id']
-            general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    
+        workspace_id = kwargs['workspace_id']
+        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
 
-            chain = Chain()
+        chain = Chain()
 
-            if not general_settings.auto_map_employees:
-                return Response(
-                    data={
-                        'message': 'Employee mapping preference not found for this workspace'
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            chain.append(
-                'apps.mappings.tasks.async_auto_map_employees', workspace_id)
-
-            chain.run()
-
+        if not general_settings.auto_map_employees:
             return Response(
-                data={},
-                status=status.HTTP_200_OK
-            )
-
-        except GeneralMapping.DoesNotExist:
-            return Response(
-                {
-                    'message': 'General mappings do not exist for this workspace'
+                data={
+                    'message': 'Employee mapping preference not found for this workspace'
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        chain.append(
+            'apps.mappings.tasks.async_auto_map_employees', workspace_id)
+
+        chain.run()
+
+        return Response(
+            data={},
+            status=status.HTTP_200_OK
+        )

@@ -192,7 +192,7 @@ def test_connect_xero_view_exceptions(api_client, test_connection):
                 'code': code
             }
         )
-        assert response.status_code == 401
+        assert response.status_code == 400
 
         mock_call.side_effect = xero_exc.InternalServerError(msg='Wrong/Expired Authorization code', response='Wrong/Expired Authorization code')
         

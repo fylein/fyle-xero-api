@@ -33,6 +33,7 @@ from .utils import generate_xero_identity, generate_xero_refresh_token, create_o
 from .serializers import WorkspaceSerializer, FyleCredentialSerializer, XeroCredentialSerializer, \
     WorkSpaceGeneralSettingsSerializer, WorkspaceScheduleSerializer, LastExportDetailSerializer
 from .tasks import export_to_xero
+from apps.exceptions import handle_view_exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -124,25 +125,20 @@ class WorkspaceView(viewsets.ViewSet):
             status=status.HTTP_200_OK
         )
 
+    @handle_view_exceptions()
     def get_by_id(self, request, **kwargs):
         """
         Get Workspace by id
         """
-        try:
-            user = User.objects.get(user_id=request.user)
-            workspace = Workspace.objects.get(pk=kwargs['workspace_id'], user=user)
 
-            return Response(
-                data=WorkspaceSerializer(workspace).data if workspace else {},
-                status=status.HTTP_200_OK
-            )
-        except Workspace.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Workspace with this id does not exist'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        user = User.objects.get(user_id=request.user)
+        workspace = Workspace.objects.get(pk=kwargs['workspace_id'], user=user)
+
+        return Response(
+            data=WorkspaceSerializer(workspace).data if workspace else {},
+            status=status.HTTP_200_OK
+        )
+
 
     def patch(self, request, **kwargs):
         """
@@ -164,101 +160,75 @@ class ConnectXeroView(viewsets.ViewSet):
     """
     Xero Connect Oauth View
     """
+    @handle_view_exceptions()
     def post(self, request, **kwargs):
         """
         Post of Xero Credentials
         """
-        try:
-            authorization_code = request.data.get('code')
-            redirect_uri = request.data.get('redirect_uri')
-            if redirect_uri:
-                refresh_token = generate_xero_refresh_token(authorization_code, redirect_uri)
-            else:
-                refresh_token = generate_xero_refresh_token(authorization_code)
-            xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
-            tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
+    
+        authorization_code = request.data.get('code')
+        redirect_uri = request.data.get('redirect_uri')
+        if redirect_uri:
+            refresh_token = generate_xero_refresh_token(authorization_code, redirect_uri)
+        else:
+            refresh_token = generate_xero_refresh_token(authorization_code)
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
+        tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
 
-            workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
+        workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
 
-            if not xero_credentials:
-                xero_credentials = XeroCredentials.objects.create(
-                    refresh_token=refresh_token,
-                    workspace_id=kwargs['workspace_id']
-                )
+        if not xero_credentials:
+            xero_credentials = XeroCredentials.objects.create(
+                refresh_token=refresh_token,
+                workspace_id=kwargs['workspace_id']
+            )
 
-            else:
-                xero_credentials.refresh_token = refresh_token
-                xero_credentials.is_expired = False
-                xero_credentials.save()
+        else:
+            xero_credentials.refresh_token = refresh_token
+            xero_credentials.is_expired = False
+            xero_credentials.save()
 
-            if tenant_mapping and not tenant_mapping.connection_id:
+        if tenant_mapping and not tenant_mapping.connection_id:
+            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
+            connections = xero_connector.connection.connections.get_all()
+            connection = list(filter(lambda connection: connection['tenantId'] == tenant_mapping.tenant_id, connections))
+
+            if connection:
+                tenant_mapping.connection_id = connection[0]['id']
+                tenant_mapping.save()
+                
+        if tenant_mapping:
+            try:
                 xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
-                connections = xero_connector.connection.connections.get_all()
-                connection = list(filter(lambda connection: connection['tenantId'] == tenant_mapping.tenant_id, connections))
-
-                if connection:
-                    tenant_mapping.connection_id = connection[0]['id']
-                    tenant_mapping.save()
-                    
-            if tenant_mapping:
-                try:
-                    xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
-                    company_info = xero_connector.get_organisations()[0]
-                    workspace.xero_currency = company_info['BaseCurrency']
-                    workspace.save()
-                    xero_credentials.country = company_info['CountryCode']
-                    xero_credentials.save()
-
-                except (xero_exc.WrongParamsError, xero_exc.UnsuccessfulAuthentication) as exception:
-                    logger.info(exception.response)
-            
-            if workspace.onboarding_state == 'CONNECTION':
-                workspace.onboarding_state = 'EXPORT_SETTINGS'
+                company_info = xero_connector.get_organisations()[0]
+                workspace.xero_currency = company_info['BaseCurrency']
                 workspace.save()
-
-            return Response(
-                data=XeroCredentialSerializer(xero_credentials).data,
-                status=status.HTTP_200_OK
-            )
-        except (xero_exc.InvalidClientError, xero_exc.InvalidGrant, xero_exc.UnsuccessfulAuthentication) as e:
-            return Response(
-                json.loads(e.response),
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except xero_exc.InvalidTokenError:
-            return Response(
-                {
-                    'message': 'Invalid Authorization Code'
-                },
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        except xero_exc.InternalServerError:
-            return Response(
-                {
-                    'message': 'Internal server error'
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+                xero_credentials.country = company_info['CountryCode']
+                xero_credentials.save()
+            except (xero_exc.WrongParamsError, xero_exc.UnsuccessfulAuthentication) as exception:
+                    logger.info(exception.response)
         
+        if workspace.onboarding_state == 'CONNECTION':
+            workspace.onboarding_state = 'EXPORT_SETTINGS'
+            workspace.save()
 
+        return Response(
+            data=XeroCredentialSerializer(xero_credentials).data,
+            status=status.HTTP_200_OK
+        )
+        
+    @handle_view_exceptions()
     def get(self, request, **kwargs):
         """
         Get Xero Credentials in Workspace
         """
-        try:
-            xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'], is_expired=False, refresh_token__isnull=False)
+    
+        xero_credentials = XeroCredentials.objects.get(workspace_id=kwargs['workspace_id'], is_expired=False, refresh_token__isnull=False)
 
-            return Response(
-                data=XeroCredentialSerializer(xero_credentials).data,
-                status=status.HTTP_200_OK
-            )
-        except XeroCredentials.DoesNotExist:
-            return Response(
-                data={
-                    'message': 'Xero Credentials not found in this workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return Response(
+            data=XeroCredentialSerializer(xero_credentials).data,
+            status=status.HTTP_200_OK
+        )
 
 
 class RevokeXeroConnectionView(viewsets.ViewSet):
@@ -322,23 +292,17 @@ class GeneralSettingsView(viewsets.ViewSet):
             status=status.HTTP_200_OK
         )
 
+    @handle_view_exceptions()
     def get(self, request, *args, **kwargs):
         """
         Get workspace general settings
         """
-        try:
-            general_settings = self.queryset.get(workspace_id=kwargs['workspace_id'])
-            return Response(
-                data=self.serializer_class(general_settings).data,
-                status=status.HTTP_200_OK
-            )
-        except WorkspaceGeneralSettings.DoesNotExist:
-            return Response(
-                {
-                    'message': 'General Settings does not exist in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+
+        general_settings = self.queryset.get(workspace_id=kwargs['workspace_id'])
+        return Response(
+            data=self.serializer_class(general_settings).data,
+            status=status.HTTP_200_OK
+        )
 
     def patch(self, request, **kwargs):
         """
@@ -362,27 +326,20 @@ class XeroExternalSignUpsView(viewsets.ViewSet):
     authentication_classes = []
     permission_classes = []
 
+    @handle_view_exceptions()
     def post(self, request, **kwargs):
         """
         Post Xero External Sign Ups
         """
-        try:
-            authorization_code = request.data.get('code')
-            redirect_uri = request.data.get('redirect_uri')
-            identity = generate_xero_identity(authorization_code, redirect_uri)
 
-            return Response(
-                data=identity,
-                status=status.HTTP_200_OK
-            )
-        except Exception as exception:
-            logger.info('Error while generating xero identity: %s', exception.__dict__)
-            return Response(
-                data={
-                    'message': 'Error while generating xero identity'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        authorization_code = request.data.get('code')
+        redirect_uri = request.data.get('redirect_uri')
+        identity = generate_xero_identity(authorization_code, redirect_uri)
+
+        return Response(
+            data=identity,
+            status=status.HTTP_200_OK
+        )
 
 
 class ExportToXeroView(viewsets.ViewSet):
