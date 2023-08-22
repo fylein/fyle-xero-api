@@ -52,7 +52,10 @@ def handle_view_exceptions():
                     },
                     status=status.HTTP_400_BAD_REQUEST
                 )
+<<<<<<< HEAD
         
+=======
+>>>>>>> master
 
             except Workspace.DoesNotExist:
                 return Response(
@@ -106,6 +109,7 @@ def handle_view_exceptions():
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+<<<<<<< HEAD
             except InternalServerError as exception:
                 return Response(
                 {
@@ -114,6 +118,8 @@ def handle_view_exceptions():
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+=======
+>>>>>>> master
             except Exception as exception:
                 logger.exception(exception)
                 return Response(
