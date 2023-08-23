@@ -116,7 +116,7 @@ def test_post_sync_dimensions(mocker, api_client, test_connection):
     assert response.status_code == 400
 
     response = json.loads(response.content)
-    assert response['message'] == 'Xero Credentials not found in workspace'
+    assert response['message'] == 'Xero credentials not found in workspace'
 
 
 def test_post_refresh_dimensions(mocker, api_client, test_connection):
