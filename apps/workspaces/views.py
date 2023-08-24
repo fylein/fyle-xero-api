@@ -1,39 +1,23 @@
-import json
 import logging
 
 from django.contrib.auth import get_user_model
-from django.core.cache import cache
-
-from django_q.tasks import async_task
 
 from rest_framework.response import Response
 from rest_framework.views import status
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from fyle.platform import exceptions as fyle_exc
-from apps.workspaces.signals import post_delete_xero_connection
-from xerosdk import exceptions as xero_exc
-
-from fyle_rest_auth.helpers import get_fyle_admin
 from fyle_rest_auth.utils import AuthUtils
-from fyle_rest_auth.models import AuthToken
 
-from apps.workspaces.tasks import schedule_sync
 from fyle_xero_api.utils import assert_valid
 
-from apps.fyle.helpers import get_cluster_domain
-from apps.fyle.models import ExpenseGroupSettings
-from apps.xero.utils import XeroConnector
-from apps.mappings.models import TenantMapping
-from fyle_accounting_mappings.models import ExpenseAttribute
-
-from .models import Workspace, FyleCredential, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule, LastExportDetail
-from .utils import generate_xero_identity, generate_xero_refresh_token, create_or_update_general_settings
-from .serializers import WorkspaceSerializer, FyleCredentialSerializer, XeroCredentialSerializer, \
-    WorkSpaceGeneralSettingsSerializer, WorkspaceScheduleSerializer, LastExportDetailSerializer
+from .models import Workspace, XeroCredentials, WorkspaceGeneralSettings, LastExportDetail
+from .utils import generate_xero_identity, create_or_update_general_settings
+from .serializers import WorkspaceSerializer, XeroCredentialSerializer, \
+    WorkSpaceGeneralSettingsSerializer, LastExportDetailSerializer
 from .tasks import export_to_xero
 from apps.exceptions import handle_view_exceptions
+from .actions import connect_xero, post_workspace, revoke_connections, get_workspace_admin
 
 logger = logging.getLogger(__name__)
 
@@ -76,36 +60,7 @@ class WorkspaceView(viewsets.ViewSet):
         Create a Workspace
         """
         access_token = request.META.get('HTTP_AUTHORIZATION')
-        fyle_user = get_fyle_admin(access_token.split(' ')[1], None)
-        org_name = fyle_user['data']['org']['name']
-        org_id = fyle_user['data']['org']['id']
-        fyle_currency = fyle_user['data']['org']['currency']
-
-        workspace = Workspace.objects.filter(fyle_org_id=org_id).first()
-
-        if workspace:
-            workspace.user.add(User.objects.get(user_id=request.user))
-            cache.delete(str(workspace.id))
-        else:
-            workspace = Workspace.objects.create(name=org_name, fyle_currency=fyle_currency, fyle_org_id=org_id)
-
-            ExpenseGroupSettings.objects.create(workspace_id=workspace.id)
-
-            LastExportDetail.objects.create(workspace_id=workspace.id)
-
-            workspace.user.add(User.objects.get(user_id=request.user))
-
-            auth_tokens = AuthToken.objects.get(user__user_id=request.user)
-
-            cluster_domain = get_cluster_domain(auth_tokens.refresh_token)
-
-            FyleCredential.objects.update_or_create(
-                refresh_token=auth_tokens.refresh_token,
-                workspace_id=workspace.id,
-                cluster_domain=cluster_domain
-            )
-
-            async_task('apps.workspaces.tasks.async_add_admins_to_workspace', workspace.id, request.user.user_id)
+        workspace = post_workspace(access_token=access_token,request=request)
 
         return Response(
             data=WorkspaceSerializer(workspace).data,
@@ -168,49 +123,8 @@ class ConnectXeroView(viewsets.ViewSet):
     
         authorization_code = request.data.get('code')
         redirect_uri = request.data.get('redirect_uri')
-        if redirect_uri:
-            refresh_token = generate_xero_refresh_token(authorization_code, redirect_uri)
-        else:
-            refresh_token = generate_xero_refresh_token(authorization_code)
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
-        tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
 
-        workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
-
-        if not xero_credentials:
-            xero_credentials = XeroCredentials.objects.create(
-                refresh_token=refresh_token,
-                workspace_id=kwargs['workspace_id']
-            )
-
-        else:
-            xero_credentials.refresh_token = refresh_token
-            xero_credentials.is_expired = False
-            xero_credentials.save()
-
-        if tenant_mapping and not tenant_mapping.connection_id:
-            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
-            connections = xero_connector.connection.connections.get_all()
-            connection = list(filter(lambda connection: connection['tenantId'] == tenant_mapping.tenant_id, connections))
-
-            if connection:
-                tenant_mapping.connection_id = connection[0]['id']
-                tenant_mapping.save()
-                
-        if tenant_mapping:
-            try:
-                xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
-                company_info = xero_connector.get_organisations()[0]
-                workspace.xero_currency = company_info['BaseCurrency']
-                workspace.save()
-                xero_credentials.country = company_info['CountryCode']
-                xero_credentials.save()
-            except (xero_exc.WrongParamsError, xero_exc.UnsuccessfulAuthentication) as exception:
-                    logger.info(exception.response)
-        
-        if workspace.onboarding_state == 'CONNECTION':
-            workspace.onboarding_state = 'EXPORT_SETTINGS'
-            workspace.save()
+        xero_credentials = connect_xero(authorization_code=authorization_code, redirect_uri=redirect_uri, workspace_id=kwargs['workspace_id']) 
 
         return Response(
             data=XeroCredentialSerializer(xero_credentials).data,
@@ -240,26 +154,7 @@ class RevokeXeroConnectionView(viewsets.ViewSet):
         Post of Xero Credentials
         """
         # TODO: cleanup later - merge with ConnectXeroView
-        workspace_id = kwargs['workspace_id']
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
-        tenant_mapping = TenantMapping.objects.filter(workspace_id=workspace_id).first()
-        if xero_credentials:
-            if tenant_mapping and tenant_mapping.connection_id:
-                try:
-                    xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
-                    xero_connector.connection.connections.remove_connection(tenant_mapping.connection_id)
-                except (xero_exc.InvalidGrant, xero_exc.UnsupportedGrantType,
-                        xero_exc.InvalidTokenError, xero_exc.UnsuccessfulAuthentication,
-                        xero_exc.WrongParamsError, xero_exc.NoPrivilegeError,
-                        xero_exc.InternalServerError):
-                    pass
-            
-            xero_credentials.refresh_token = None
-            xero_credentials.country = None
-            xero_credentials.is_expired = True
-            xero_credentials.save()
-
-            post_delete_xero_connection(workspace_id)
+        revoke_connections(workspace_id=kwargs['workspace_id'])
 
         return Response(
             data={
@@ -387,15 +282,7 @@ class WorkspaceAdminsView(viewsets.ViewSet):
         Get Admins for the workspaces
         """
 
-        workspace = Workspace.objects.get(pk=kwargs['workspace_id'])
-        
-        admin_email = []
-        users = workspace.user.all()
-        for user in users:
-            admin = User.objects.get(user_id=user)
-            employee = ExpenseAttribute.objects.filter(value=admin.email, workspace_id=kwargs['workspace_id'], attribute_type='EMPLOYEE').first()
-            if employee:
-                admin_email.append({'name': employee.detail['full_name'], 'email': admin.email})
+        admin_email = get_workspace_admin(workspace_id=kwargs['workspace_id'])
 
         return Response(
                 data=admin_email,

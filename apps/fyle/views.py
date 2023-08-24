@@ -1,25 +1,13 @@
-from datetime import datetime, timezone
-from django.db.models import Q
-
 from rest_framework.views import status
 from rest_framework import generics
 from rest_framework.response import Response
 
-from fyle_accounting_mappings.models import ExpenseAttribute
-from fyle_accounting_mappings.serializers import ExpenseAttributeSerializer
-
-from fyle_integrations_platform_connector import PlatformConnector
-
-from apps.tasks.models import TaskLog
-from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, Workspace
-from apps.workspaces.serializers import WorkspaceSerializer
-
-from fyle_integrations_platform_connector import PlatformConnector
-from .tasks import create_expense_groups, get_task_log_and_fund_source, async_create_expense_groups
+from .tasks import get_task_log_and_fund_source, async_create_expense_groups
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
-from .serializers import ExpenseGroupSerializer, ExpenseSerializer, ExpenseFieldSerializer, \
+from .serializers import ExpenseGroupSerializer, ExpenseFieldSerializer, \
     ExpenseGroupSettingsSerializer
 from apps.exceptions import handle_view_exceptions
+from .actions import exportable_expense_group, get_expense_field, refresh_fyle_dimension, sync_fyle_dimension
 
 
 class ExpenseGroupView(generics.ListCreateAPIView):
@@ -98,19 +86,8 @@ class ExpenseFieldsView(generics.ListAPIView):
     serializer_class = ExpenseFieldSerializer
 
     def get(self, request, *args, **kwargs):
-        default_attributes = ['EMPLOYEE', 'CATEGORY', 'PROJECT', 'COST_CENTER', 'CORPORATE_CARD', 'TAX_GROUP']
-        attributes = ExpenseAttribute.objects.filter(
-            ~Q(attribute_type__in=default_attributes),
-            workspace_id=self.kwargs['workspace_id']
-        ).values('attribute_type', 'display_name').distinct()
 
-        expense_fields= [
-            {'attribute_type': 'COST_CENTER', 'display_name': 'Cost Center'},
-            {'attribute_type': 'PROJECT', 'display_name': 'Project'}
-        ]
-
-        for attribute in attributes:
-            expense_fields.append(attribute)
+        expense_fields = get_expense_field(workspace_id=kwargs['workspace_id'])     
 
         return Response(
             expense_fields,
@@ -146,18 +123,7 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
         Sync Data From Fyle
         """
 
-        workspace = Workspace.objects.get(id=kwargs['workspace_id'])
-        if workspace.source_synced_at:
-            time_interval = datetime.now(timezone.utc) - workspace.source_synced_at
-
-        if workspace.source_synced_at is None or time_interval.days > 0:
-            fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
-
-            platform = PlatformConnector(fyle_credentials)
-            platform.import_fyle_dimensions()
-
-            workspace.source_synced_at = datetime.now()
-            workspace.save(update_fields=['source_synced_at'])
+        sync_fyle_dimension(workspace_id=kwargs['workspace_id'])
 
         return Response(
             status=status.HTTP_200_OK
@@ -174,15 +140,8 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         """
         Sync data from Fyle
         """
-    
-        fyle_credentials = FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
-        platform = PlatformConnector(fyle_credentials)
-        platform.import_fyle_dimensions()
-
-        workspace = Workspace.objects.get(id=kwargs['workspace_id'])
-        workspace.source_synced_at = datetime.now()
-        workspace.save(update_fields=['source_synced_at'])
+        refresh_fyle_dimension(workspace_id=kwargs['workspace_id'])
 
         return Response(
             status=status.HTTP_200_OK
@@ -194,19 +153,8 @@ class ExportableExpenseGroupsView(generics.RetrieveAPIView):
     List Exportable Expense Groups
     """
     def get(self, request, *args, **kwargs):
-        configuration = WorkspaceGeneralSettings.objects.get(workspace_id=kwargs['workspace_id'])
-        fund_source = []
-
-        if configuration.reimbursable_expenses_object:
-            fund_source.append('PERSONAL')
-        if configuration.corporate_credit_card_expenses_object:
-            fund_source.append('CCC')
-
-        expense_group_ids = ExpenseGroup.objects.filter(
-            workspace_id=self.kwargs['workspace_id'],
-            exported_at__isnull=True,
-            fund_source__in=fund_source
-        ).values_list('id', flat=True)
+        
+        expense_group_ids = exportable_expense_group(workspace_id=kwargs['workspace_id'])
 
         return Response(
             data={'exportable_expense_group_ids': expense_group_ids},
