@@ -72,12 +72,12 @@ def test_post_of_workspace(api_client, test_connection, mocker):
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
     
     mocker.patch(
-        'apps.workspaces.views.get_fyle_admin',
+        'apps.workspaces.actions.get_fyle_admin',
         return_value=fyle_data['get_my_profile']
     )
 
     mocker.patch(
-        'apps.workspaces.views.get_cluster_domain',
+        'apps.workspaces.actions.get_cluster_domain',
         return_value={
             'cluster_domain': 'https://staging.fyle.tech/'
         }
@@ -89,7 +89,7 @@ def test_post_of_workspace(api_client, test_connection, mocker):
     assert dict_compare_keys(response, data['workspace']) == [], 'workspaces api returns a diff in the keys'
 
     mocker.patch(
-        'apps.workspaces.views.get_fyle_admin',
+        'apps.workspaces.actions.get_fyle_admin',
         return_value=fyle_data['get_exsisting_org']
     )
 
@@ -113,7 +113,7 @@ def test_connect_xero_view_post(mocker, api_client, test_connection):
     tenant_mapping = TenantMapping.objects.filter(workspace_id=workspace_id).first()
 
     mocker.patch(
-        'apps.workspaces.views.generate_xero_refresh_token',
+        'apps.workspaces.actions.generate_xero_refresh_token',
         return_value='asdfghjk'
     )
 
@@ -163,7 +163,7 @@ def test_connect_xero_view_exceptions(api_client, test_connection):
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
     
-    with mock.patch('apps.workspaces.views.generate_xero_refresh_token') as mock_call:
+    with mock.patch('apps.workspaces.actions.generate_xero_refresh_token') as mock_call:
         mock_call.side_effect = xero_exc.InvalidClientError(msg='Invalid client', response=json.dumps({'message': 'Invalid client'}))
         
         response = api_client.post(
