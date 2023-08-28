@@ -60,7 +60,7 @@ def post_workspace(access_token,request):
 def connect_xero(authorization_code, redirect_uri, workspace_id):
     
     if redirect_uri:
-            refresh_token = generate_xero_refresh_token(authorization_code, redirect_uri)
+        refresh_token = generate_xero_refresh_token(authorization_code, redirect_uri)
     else:
         refresh_token = generate_xero_refresh_token(authorization_code)
     xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
@@ -115,9 +115,9 @@ def revoke_connections(workspace_id):
                 xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
                 xero_connector.connection.connections.remove_connection(tenant_mapping.connection_id)
             except (xero_exc.InvalidGrant, xero_exc.UnsupportedGrantType,
-                    xero_exc.InvalidTokenError, xero_exc.UnsuccessfulAuthentication,
-                    xero_exc.WrongParamsError, xero_exc.NoPrivilegeError,
-                    xero_exc.InternalServerError):
+                xero_exc.InvalidTokenError, xero_exc.UnsuccessfulAuthentication,
+                xero_exc.WrongParamsError, xero_exc.NoPrivilegeError,
+                xero_exc.InternalServerError):
                 pass
         
         xero_credentials.refresh_token = None
