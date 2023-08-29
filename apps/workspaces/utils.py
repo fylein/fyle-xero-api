@@ -7,6 +7,7 @@ import requests
 import jwt
 
 from django.conf import settings
+from django_q.models import Schedule
 
 from future.moves.urllib.parse import urlencode
 
@@ -242,3 +243,16 @@ def delete_cards_mapping_settings(workspace_general_settings: WorkspaceGeneralSe
         ).first()
         if mapping_setting:
             mapping_setting.delete()
+
+
+def delete_import_supplier_schedule(workspace_general_settings: WorkspaceGeneralSettings):
+    if workspace_general_settings.import_suppliers_as_merchants:
+        workspace_general_settings.import_suppliers_as_merchants = False
+        workspace_general_settings.save()
+        schedule: Schedule = Schedule.objects.filter(
+            func='apps.mappings.tasks.auto_create_suppliers_as_merchants',
+            args='{}'.format(workspace_general_settings.workspace_id)
+        ).first()
+
+        if schedule:
+            schedule.delete()

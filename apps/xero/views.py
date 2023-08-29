@@ -14,7 +14,7 @@ from django_q.tasks import Chain
 
 from apps.fyle.models import ExpenseGroup
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import XeroCredentials, Workspace
+from apps.workspaces.models import XeroCredentials, Workspace, WorkspaceGeneralSettings
 from apps.workspaces.serializers import WorkspaceSerializer
 from apps.xero.models import BankTransaction, Bill
 from fyle_xero_api.utils import assert_valid
@@ -128,6 +128,7 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
         xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
         mapping_settings = MappingSetting.objects.filter(workspace_id=workspace_id, import_to_fyle=True)
+        workspace_general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
         chain = Chain()
 
         for mapping_setting in mapping_settings:
@@ -140,6 +141,9 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
             elif mapping_setting.is_custom:
                 # run async_auto_create_custom_field_mappings
                 chain.append('apps.mappings.tasks.async_auto_create_custom_field_mappings', int(workspace_id))
+            elif workspace_general_settings.import_suppliers_as_merchants:
+                # run auto_create_suppliers_as_merchants
+                chain.append('apps.mappings.tasks.auto_create_suppliers_as_merchants', workspace_id)
         
         if chain.length() > 0:
             chain.run()

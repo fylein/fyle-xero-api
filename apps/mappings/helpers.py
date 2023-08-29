@@ -12,7 +12,7 @@ def schedule_or_delete_fyle_import_tasks(configuration: WorkspaceGeneralSettings
     :return: None
     """
     project_mapping = MappingSetting.objects.filter(source_field='PROJECT', workspace_id=configuration.workspace_id).first()
-    if configuration.import_categories or (project_mapping and project_mapping.import_to_fyle):
+    if configuration.import_categories or (project_mapping and project_mapping.import_to_fyle) or configuration.import_suppliers_as_merchants:
         start_datetime = datetime.now()
         Schedule.objects.update_or_create(
             func='apps.mappings.tasks.auto_import_and_map_fyle_fields',
@@ -23,7 +23,7 @@ def schedule_or_delete_fyle_import_tasks(configuration: WorkspaceGeneralSettings
                 'next_run': start_datetime
             }
         )
-    elif not configuration.import_categories and not (project_mapping and project_mapping.import_to_fyle):
+    elif not configuration.import_categories and not (project_mapping and project_mapping.import_to_fyle) and not configuration.import_suppliers_as_merchants:
         Schedule.objects.filter(
             func='apps.mappings.tasks.auto_import_and_map_fyle_fields',
             args='{}'.format(configuration.workspace_id)

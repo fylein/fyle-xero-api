@@ -15,6 +15,7 @@ from .exceptions import handle_import_exceptions
 from apps.xero.utils import XeroConnector
 from apps.tasks.models import Error
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
+from apps.mappings.models import TenantMapping
 from .constants import FYLE_EXPENSE_SYSTEM_FIELDS
 
 logger = logging.getLogger(__name__)
@@ -699,6 +700,24 @@ def schedule_tax_groups_creation(import_tax_codes, workspace_id):
             schedule.delete()
 
 
+def post_merchants(fyle_connection: PlatformConnector, workspace_id: int):
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+    xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
+
+    merchant_names = xero_connection.get_suppliers()
+                    
+    if merchant_names:
+        fyle_connection.merchants.post_xero_mechants(merchant_names)
+
+
+
+def auto_create_suppliers_as_merchants(workspace_id):
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_connection = PlatformConnector(fyle_credentials)
+    
+    post_merchants(fyle_connection, workspace_id)
+
+
 def auto_import_and_map_fyle_fields(workspace_id):
     """
     Auto import and map fyle fields
@@ -713,6 +732,9 @@ def auto_import_and_map_fyle_fields(workspace_id):
 
     if project_mapping and project_mapping.import_to_fyle:
         chain.append('apps.mappings.tasks.auto_create_project_mappings', workspace_id)
+    
+    if workspace_general_settings.import_suppliers_as_merchants:
+        chain.append('apps.mappings.tasks.auto_create_suppliers_as_merchants', workspace_id)
 
     if chain.length() > 0:
         chain.run()
