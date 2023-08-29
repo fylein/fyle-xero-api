@@ -7,16 +7,11 @@ from rest_framework.views import status
 
 from fyle_xero_api.utils import assert_valid
 
-from xerosdk.exceptions import UnsuccessfulAuthentication
-
-from .serializers import TenantMappingSerializer, GeneralMappingSerializer
-from .models import TenantMapping, GeneralMapping
-from apps.workspaces.models import XeroCredentials
-from .utils import MappingUtils
+from .serializers import TenantMappingSerializer
+from .models import TenantMapping
 from ..workspaces.models import WorkspaceGeneralSettings
-from apps.xero.utils import XeroConnector
-from apps.workspaces.models import Workspace
 from apps.exceptions import handle_view_exceptions
+from .actions import tenant_mapping_view
 
 logger = logging.getLogger(__name__)
 
@@ -35,33 +30,7 @@ class TenantMappingView(generics.ListCreateAPIView):
 
         assert_valid(tenant_mapping_payload is not None, 'Request body is empty')
 
-        mapping_utils = MappingUtils(kwargs['workspace_id'])
-        tenant_mapping_object = mapping_utils.create_or_update_tenant_mapping(tenant_mapping_payload)
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=kwargs['workspace_id']).first()
-        workspace = Workspace.objects.filter(id=kwargs['workspace_id']).first()
-
-        try:
-            xero_connector = XeroConnector(xero_credentials, workspace_id=kwargs['workspace_id'])
-            tenant_mapping = TenantMapping.objects.filter(workspace_id=kwargs['workspace_id']).first()
-            company_info = xero_connector.get_organisations()[0]
-            workspace.xero_currency = company_info['BaseCurrency']
-            workspace.save()
-            xero_credentials.country = company_info['CountryCode']
-            xero_credentials.save()
-
-            if tenant_mapping and not tenant_mapping.connection_id:
-                connections = xero_connector.connection.connections.get_all()
-                connection = list(filter(lambda connection: connection['tenantId'] == tenant_mapping.tenant_id, connections))
-
-                if connection:
-                    tenant_mapping.connection_id = connection[0]['id']
-                    tenant_mapping.save()
-
-        except UnsuccessfulAuthentication:
-            logger.info('Xero refresh token is invalid for workspace_id - %s', kwargs['workspace_id'])
-
-        except Exception:
-            logger.info('Error while fetching company information')
+        tenant_mapping_object = tenant_mapping_view(workspace_id=kwargs['workspace_id'],tenant_mapping_payload=tenant_mapping_payload)
 
         return Response(
             data=self.serializer_class(tenant_mapping_object).data,
