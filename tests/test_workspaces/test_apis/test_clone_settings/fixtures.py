@@ -48,7 +48,8 @@ data = {
                     "COST of goods"
                 ],
                 "import_tax_codes": True,
-                "import_customers": True
+                "import_customers": True,
+                "import_suppliers_as_merchants": True
             },
             "general_mappings": {
                 "default_tax_code": {
@@ -131,6 +132,7 @@ data = {
                 "EXPENSE"
             ],
             "import_tax_codes": False,
+            "import_suppliers_as_merchants": False,
             "import_customers": False
             },
             "general_mappings": {

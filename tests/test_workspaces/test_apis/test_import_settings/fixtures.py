@@ -4,7 +4,8 @@ data = {
             "import_categories": True,
             "charts_of_accounts": ["Expense", "COST of goods"],
             "import_tax_codes": True,
-            "import_customers": True
+            "import_customers": True,
+            "import_suppliers_as_merchants": True
         },
         "general_mappings": {
             "default_tax_code": {
@@ -34,7 +35,8 @@ data = {
             "import_categories": True,
             "charts_of_accounts": ["Expense", "COST of goods"],
             "import_tax_codes": True,
-            "import_customers": False
+            "import_customers": False,
+            "import_suppliers_as_merchants": False
         },
         "general_mappings": {
             "default_tax_code": {
@@ -67,7 +69,8 @@ data = {
                 "COST of goods"
             ],
             "import_tax_codes": True,
-            "import_customers": True
+            "import_customers": True,
+            "import_suppliers_as_merchants": True
         },
         "general_mappings": {
             "default_tax_code": {
