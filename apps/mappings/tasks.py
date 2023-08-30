@@ -700,22 +700,17 @@ def schedule_tax_groups_creation(import_tax_codes, workspace_id):
             schedule.delete()
 
 
-def post_merchants(fyle_connection: PlatformConnector, workspace_id: int):
+def auto_create_suppliers_as_merchants(workspace_id):
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_connection = PlatformConnector(fyle_credentials)
+    
     xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
     xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
     merchant_names = xero_connection.get_suppliers()
                     
     if merchant_names:
-        fyle_connection.merchants.post_xero_mechants(merchant_names)
-
-
-
-def auto_create_suppliers_as_merchants(workspace_id):
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-    fyle_connection = PlatformConnector(fyle_credentials)
-    
-    post_merchants(fyle_connection, workspace_id)
+        fyle_connection.merchants.post_merchant_names(merchant_names)
 
 
 def auto_import_and_map_fyle_fields(workspace_id):

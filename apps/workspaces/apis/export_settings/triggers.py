@@ -1,7 +1,7 @@
 from apps.mappings.tasks import schedule_auto_map_employees
 from apps.workspaces.models import WorkspaceGeneralSettings
 from fyle_accounting_mappings.models import MappingSetting
-from apps.workspaces.utils import delete_cards_mapping_settings, delete_import_supplier_schedule
+from apps.workspaces.utils import delete_cards_mapping_settings, schedule_or_delete_fyle_import_tasks
 
 
 class ExportSettingsTrigger:
@@ -26,7 +26,7 @@ class ExportSettingsTrigger:
 
         delete_cards_mapping_settings(workspace_general_settings_instance)
 
-        delete_import_supplier_schedule(workspace_general_settings_instance)
+        schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
 
         schedule_auto_map_employees(workspace_general_settings_instance.auto_map_employees,
             workspace_general_settings_instance.workspace_id)
