@@ -710,7 +710,7 @@ def auto_create_suppliers_as_merchants(workspace_id):
     merchant_names = xero_connection.get_suppliers()
                     
     if merchant_names:
-        fyle_connection.merchants.post_merchant_names(merchant_names)
+        fyle_connection.merchants.post(merchant_names, skip_fyle_merchants=True)
 
 
 def auto_import_and_map_fyle_fields(workspace_id):
