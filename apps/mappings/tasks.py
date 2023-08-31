@@ -703,12 +703,12 @@ def schedule_tax_groups_creation(import_tax_codes, workspace_id):
 def auto_create_suppliers_as_merchants(workspace_id):
     fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
     fyle_connection = PlatformConnector(fyle_credentials)
-    
+
     xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
     xero_connection = XeroConnector(xero_credentials, workspace_id=workspace_id)
 
     merchant_names = xero_connection.get_suppliers()
-                    
+
     if merchant_names:
         fyle_connection.merchants.post(merchant_names, skip_existing_merchants=True)
 
