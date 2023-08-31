@@ -245,7 +245,7 @@ def delete_cards_mapping_settings(workspace_general_settings: WorkspaceGeneralSe
             mapping_setting.delete()
 
 
-def schedule_or_delete_fyle_import_tasks(workspace_general_settings: WorkspaceGeneralSettings):
+def schedule_or_delete_import_supplier_schedule(workspace_general_settings: WorkspaceGeneralSettings):
     if not workspace_general_settings.corporate_credit_card_expenses_object:
         workspace_general_settings.import_suppliers_as_merchants = False
         workspace_general_settings.save()
