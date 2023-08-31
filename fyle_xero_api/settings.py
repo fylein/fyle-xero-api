@@ -102,6 +102,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
         'apps.workspaces.permissions.WorkspacePermissions'
     ),
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'fyle_rest_auth.authentication.FyleJWTAuthentication',
     ),
