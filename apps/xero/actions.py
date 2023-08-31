@@ -49,7 +49,7 @@ def refersh_xero_dimension(workspace_id):
             # run async_auto_create_custom_field_mappings
             chain.append('apps.mappings.tasks.async_auto_create_custom_field_mappings', int(workspace_id))
         elif workspace_general_settings.import_suppliers_as_merchants:
-            # run auto_create_suppliers_as_merchants
+            # run auto_create_suppliers_as_merchant
             chain.append('apps.mappings.tasks.auto_create_suppliers_as_merchants', workspace_id)
     
     if chain.length() > 0:
