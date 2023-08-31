@@ -189,7 +189,7 @@ def test_get_destination_attributes_view(api_client, test_connection):
     response = api_client.get(
         url,
         data={
-            'attribute_types__in': 'CUSTOMER',
+            'attribute_type__in': 'CUSTOMER',
             'active': 'true'
         }
         )
