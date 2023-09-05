@@ -34,7 +34,7 @@ def test_get_tenant_view(api_client, test_connection):
     workspace_id = 1
 
     access_token = test_connection.access_token
-    url = '/api/workspaces/{}/xero/tenants/'.format(workspace_id)
+    url = '/api/workspaces/{}/xero/tenants/?attribute_type=TENANT'.format(workspace_id)
 
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(access_token))
 
@@ -189,7 +189,7 @@ def test_get_destination_attributes_view(api_client, test_connection):
     response = api_client.get(
         url,
         data={
-            'attribute_types': ['CUSTOMER'],
+            'attribute_type__in': 'CUSTOMER',
             'active': 'true'
         }
         )

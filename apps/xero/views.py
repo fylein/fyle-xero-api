@@ -14,6 +14,8 @@ from .serializers import XeroFieldSerializer
 from apps.exceptions import handle_view_exceptions
 
 from .actions import get_xero_connector, sync_tenant, sync_dimensions, refersh_xero_dimension
+from fyle_xero_api.utils import LookupFieldMixin
+from django_filters.rest_framework import DjangoFilterBackend
 
 class TokenHealthView(generics.RetrieveAPIView):
     """
@@ -30,16 +32,18 @@ class TokenHealthView(generics.RetrieveAPIView):
             )
 
 
-class TenantView(generics.ListCreateAPIView):
+class TenantView(LookupFieldMixin, generics.ListCreateAPIView):
     """
     Tenant view
     """
+    queryset = DestinationAttribute.objects.all()
     serializer_class = DestinationAttributeSerializer
+    filter_backends = (DjangoFilterBackend,)
     pagination_class = None
-
-    def get_queryset(self, **kwargs):
-        return DestinationAttribute.objects.filter(
-            attribute_type='TENANT', workspace_id=self.kwargs['workspace_id']).order_by('value')
+    filterset_fields = {
+        'attribute_type': {'exact'}
+    }
+    ordering_fields = ('value',)
 
     @handle_view_exceptions()
     def post(self, request, *args, **kwargs):
@@ -105,24 +109,14 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
         )
 
 
-class DestinationAttributesView(generics.ListAPIView):
+class DestinationAttributesView(LookupFieldMixin, generics.ListAPIView):
     """
     Destination Attributes view
     """
+
+    queryset = DestinationAttribute.objects.all()
     serializer_class = DestinationAttributeSerializer
+    filter_backends = (DjangoFilterBackend,)
     pagination_class = None
-
-    def get_queryset(self):
-        attribute_types = self.request.query_params.get('attribute_types').split(',')
-        active = self.request.query_params.get('active')
-        workspace_id = self.kwargs['workspace_id']
-
-        filters = {
-            'attribute_type__in': attribute_types,
-            'workspace_id':  workspace_id
-        }
-
-        if active and active.lower() == 'true':
-            filters['active'] = True
-
-        return DestinationAttribute.objects.filter(**filters).order_by('value')
+    filterset_fields = {'attribute_type': {'exact', 'in'}, 'active': {'exact'}}
+    ordering_fields = ('value',)
