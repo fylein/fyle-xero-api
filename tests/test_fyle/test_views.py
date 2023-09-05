@@ -15,44 +15,13 @@ def test_expense_group_view(api_client, test_connection):
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(access_token))
 
     response = api_client.get(url, {
-        'expense_group_ids': '1,2'
-    })
-    assert response.status_code==200
-
-    response = json.loads(response.content)
-    assert response['count'] == 2
-
-    response = api_client.get(url, {
-        'state': 'ALL'
+        'exported_at__gte': '2022-05-23 13:03:06',
+        'exported_at__lte': '2022-05-23 13:03:48',
     })
     assert response.status_code==200
 
     response = json.loads(response.content)
     assert response['count'] == 10
-
-    response = api_client.get(url, {
-        'state': 'COMPLETE',
-        'start_date': '2022-05-23 13:03:06',
-        'end_date': '2022-05-23 13:03:48',
-        'exported_at': '2022-05-23 13:03:06'
-    })
-    assert response.status_code==200
-
-    response = json.loads(response.content)
-    assert response['count'] == 0
-    
-    response = api_client.get(url, {
-        'state': 'READY'
-    })
-
-    response = json.loads(response.content)
-    assert response == {'count': 0, 'next': None, 'previous': None, 'results': []}
-
-    response = api_client.get(url, {
-      'state': 'FAILED'
-    })
-    response = json.loads(response.content)
-    assert response == {'count': 0, 'next': None, 'previous': None, 'results': []}
 
     task_log, _ = TaskLog.objects.update_or_create(
         workspace_id=1,

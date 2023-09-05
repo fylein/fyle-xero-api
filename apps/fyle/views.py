@@ -8,54 +8,17 @@ from .serializers import ExpenseGroupSerializer, ExpenseFieldSerializer, \
     ExpenseGroupSettingsSerializer
 from apps.exceptions import handle_view_exceptions
 from .actions import exportable_expense_group, get_expense_field, refresh_fyle_dimension, sync_fyle_dimension
+from fyle_xero_api.utils import LookupFieldMixin
 
 
-class ExpenseGroupView(generics.ListCreateAPIView):
+class ExpenseGroupView(LookupFieldMixin, generics.ListCreateAPIView):
     """
     List Fyle Expenses
     """
     serializer_class = ExpenseGroupSerializer
-
-    def get_queryset(self):
-        state = self.request.query_params.get('state', 'ALL')
-        start_date = self.request.query_params.get('start_date', None)
-        end_date = self.request.query_params.get('end_date', None)
-        exported_at = self.request.query_params.get('exported_at', None)
-        expense_group_ids = self.request.query_params.get('expense_group_ids', None)
-
-        if expense_group_ids:
-            return ExpenseGroup.objects.filter(
-                workspace_id=self.kwargs['workspace_id'],
-                id__in=expense_group_ids.split(',')
-            )
-
-        if state == 'ALL':
-            return ExpenseGroup.objects.filter(workspace_id=self.kwargs['workspace_id']).order_by('-updated_at')
-
-        if state == 'FAILED':
-            return ExpenseGroup.objects.filter(tasklog__status='FAILED',
-                                               workspace_id=self.kwargs['workspace_id']).order_by('-updated_at')
-
-        elif state == 'COMPLETE':
-            filters = {
-                'workspace_id': self.kwargs['workspace_id'],
-                'tasklog__status': 'COMPLETE'
-            }
-
-            if start_date and end_date:
-                filters['exported_at__range'] = [start_date, end_date]
-
-            if exported_at:
-                filters['exported_at__gte'] = exported_at
-
-            return ExpenseGroup.objects.filter(**filters).order_by('-exported_at')
-
-        elif state == 'READY':
-            return ExpenseGroup.objects.filter(
-                workspace_id=self.kwargs['workspace_id'],
-                bill__id__isnull=True,
-                banktransaction__id__isnull=True
-            ).order_by('-updated_at')
+    queryset = ExpenseGroup.objects.filter(tasklog__status='COMPLETE')
+    serializer_class = ExpenseGroupSerializer
+    filterset_fields = {'exported_at': {'gte', 'lte'}}
 
 
 class ExpenseGroupSettingsView(generics.ListCreateAPIView):
