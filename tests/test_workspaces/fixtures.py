@@ -9,6 +9,7 @@ data = {
         'map_merchant_to_contact':True,
         'change_accounting_period':True,
         'import_categories':True,
+        'import_suppliers_as_merchants':True,
         'auto_map_employees':'EMAIL',
         'auto_create_destination_entity':True,
         'skip_cards_mapping':False,

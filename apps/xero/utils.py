@@ -63,6 +63,19 @@ class XeroConnector:
         credentials_object.save()
 
 
+    def get_suppliers(self):
+        tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
+        self.connection.set_tenant_id(tenant_mapping.tenant_id)
+
+        suppliers_generator = self.connection.contacts.list_all_generator()
+        merchant_names : List[str] = []
+        for suppliers in suppliers_generator:
+                for supplier in suppliers['Contacts']:
+                    if supplier['IsSupplier'] and supplier['ContactStatus'] == 'ACTIVE':
+                        merchant_names.append(supplier['Name'])
+        return merchant_names
+
+
     def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
         """
         Call xero api to get or create contact
