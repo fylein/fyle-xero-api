@@ -124,6 +124,7 @@ class WorkspaceGeneralSettings(models.Model):
     skip_cards_mapping = models.BooleanField(default=False, help_text='Skip cards mapping')
     import_tax_codes = models.BooleanField(default=False, help_text='Auto import tax codes to Fyle', null=True)
     import_customers = models.BooleanField(default=False, help_text='Auto import customers to Fyle')
+    import_suppliers_as_merchants = models.BooleanField(default=False, help_text='Auto import suppliers to Fyle')
     is_simplify_report_closure_enabled = models.BooleanField(default=True, help_text='Simplify report closure is enabled')
     created_at = models.DateTimeField(auto_now_add=True, help_text='Created at')
     updated_at = models.DateTimeField(auto_now=True, help_text='Updated at')
