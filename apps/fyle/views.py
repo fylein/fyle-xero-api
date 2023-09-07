@@ -21,19 +21,13 @@ class ExpenseGroupView(LookupFieldMixin, generics.ListCreateAPIView):
     filterset_fields = {'exported_at': {'gte', 'lte'}}
 
 
-class ExpenseGroupSettingsView(generics.ListCreateAPIView):
+class ExpenseGroupSettingsView(generics.CreateAPIView, generics.RetrieveAPIView):
     """
     Expense Group Settings View
     """
+    lookup_field = 'workspace_id'
     serializer_class = ExpenseGroupSettingsSerializer
-
-    def get(self, request, *args, **kwargs):
-        expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=self.kwargs['workspace_id'])
-
-        return Response(
-            data=self.serializer_class(expense_group_settings).data,
-            status=status.HTTP_200_OK
-        )
+    queryset = ExpenseGroupSettings.objects.all()
 
     def post(self, request, *args, **kwargs):
         expense_group_settings, _ = ExpenseGroupSettings.update_expense_group_settings(
