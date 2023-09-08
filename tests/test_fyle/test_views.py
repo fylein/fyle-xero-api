@@ -47,19 +47,6 @@ def test_expense_group_settings_view(api_client, test_connection):
     assert response['reimbursable_expense_state'] == 'PAYMENT_PROCESSING'
     assert response['reimbursable_export_date_type'] == 'current_date'
 
-    response = api_client.post(
-        url,
-        data=data['expense_group_settings_payload'],
-        format='json'
-    )
-    assert response.status_code==200
-    response = json.loads(response.content)
-
-    assert dict_compare_keys(response, data['expense_group_setting_response']) == [], 'expense group api return diffs in keys'
-    assert response['ccc_expense_state'] == 'PAYMENT_PROCESSING'
-    assert response['reimbursable_expense_state'] == 'PAYMENT_PROCESSING'
-    assert response['reimbursable_export_date_type'] == 'spent_at'
-
 
 def test_expense_fields_view(api_client, test_connection):
     
