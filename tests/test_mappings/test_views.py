@@ -53,7 +53,7 @@ def test_tenant_mapping_view(api_client, test_connection, mocker):
     tenenat_mapping.delete()
 
     response = api_client.get(url)
-    assert response.status_code == 400
+    assert response.status_code == 404
 
 
 def test_auto_map_employee(api_client, test_connection):

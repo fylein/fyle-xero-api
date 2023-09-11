@@ -18,6 +18,7 @@ from .serializers import WorkspaceSerializer, XeroCredentialSerializer, \
 from .tasks import export_to_xero
 from apps.exceptions import handle_view_exceptions
 from .actions import connect_xero, post_workspace, revoke_connections, get_workspace_admin
+from rest_framework import generics
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ User = get_user_model()
 auth_utils = AuthUtils()
 
 
-class ReadyView(viewsets.ViewSet):
+class ReadyView(generics.ListAPIView):
     """
     Ready call
     """
@@ -48,7 +49,7 @@ class ReadyView(viewsets.ViewSet):
         )
 
 
-class WorkspaceView(viewsets.ViewSet):
+class WorkspaceView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
     """
     Xero Workspace
     """
@@ -80,21 +81,6 @@ class WorkspaceView(viewsets.ViewSet):
             status=status.HTTP_200_OK
         )
 
-    @handle_view_exceptions()
-    def get_by_id(self, request, **kwargs):
-        """
-        Get Workspace by id
-        """
-
-        user = User.objects.get(user_id=request.user)
-        workspace = Workspace.objects.get(pk=kwargs['workspace_id'], user=user)
-
-        return Response(
-            data=WorkspaceSerializer(workspace).data if workspace else {},
-            status=status.HTTP_200_OK
-        )
-
-
     def patch(self, request, **kwargs):
         """
         PATCH workspace
@@ -111,7 +97,7 @@ class WorkspaceView(viewsets.ViewSet):
             )
 
 
-class ConnectXeroView(viewsets.ViewSet):
+class ConnectXeroView(generics.CreateAPIView, generics.RetrieveAPIView):
     """
     Xero Connect Oauth View
     """
@@ -130,7 +116,8 @@ class ConnectXeroView(viewsets.ViewSet):
             data=XeroCredentialSerializer(xero_credentials).data,
             status=status.HTTP_200_OK
         )
-        
+    
+    
     @handle_view_exceptions()
     def get(self, request, **kwargs):
         """
@@ -143,9 +130,9 @@ class ConnectXeroView(viewsets.ViewSet):
             data=XeroCredentialSerializer(xero_credentials).data,
             status=status.HTTP_200_OK
         )
+    
 
-
-class RevokeXeroConnectionView(viewsets.ViewSet):
+class RevokeXeroConnectionView(generics.CreateAPIView):
     """
     Xero Revoke Xero Connection View
     """
@@ -164,57 +151,18 @@ class RevokeXeroConnectionView(viewsets.ViewSet):
         )
 
 
-class GeneralSettingsView(viewsets.ViewSet):
+class GeneralSettingsView(generics.RetrieveAPIView):
     """
     General Settings
     """
+    lookup_field = 'workspace_id'
+    lookup_url_kwarg = 'workspace_id'
     serializer_class = WorkSpaceGeneralSettingsSerializer
     queryset = WorkspaceGeneralSettings.objects.all()
 
-    def post(self, request, *args, **kwargs):
-        """
-        Post workspace general settings
-        """
-        general_settings_payload = request.data
+    
 
-        assert_valid(general_settings_payload is not None, 'Request body is empty')
-
-        workspace_id = kwargs['workspace_id']
-
-        general_settings = create_or_update_general_settings(general_settings_payload, workspace_id)
-        return Response(
-            data=self.serializer_class(general_settings).data,
-            status=status.HTTP_200_OK
-        )
-
-    @handle_view_exceptions()
-    def get(self, request, *args, **kwargs):
-        """
-        Get workspace general settings
-        """
-
-        general_settings = self.queryset.get(workspace_id=kwargs['workspace_id'])
-        return Response(
-            data=self.serializer_class(general_settings).data,
-            status=status.HTTP_200_OK
-        )
-
-    def patch(self, request, **kwargs):
-        """
-        PATCH workspace general settings
-        """
-        workspace_general_settings_object = WorkspaceGeneralSettings.objects.get(workspace_id=kwargs['workspace_id'])
-        serializer = WorkSpaceGeneralSettingsSerializer(
-            workspace_general_settings_object, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                data=serializer.data,
-                status=status.HTTP_200_OK
-            )
-
-class XeroExternalSignUpsView(viewsets.ViewSet):
+class XeroExternalSignUpsView(generics.CreateAPIView):
     """
     Xero External Sign Ups
     """
@@ -237,7 +185,7 @@ class XeroExternalSignUpsView(viewsets.ViewSet):
         )
 
 
-class ExportToXeroView(viewsets.ViewSet):
+class ExportToXeroView(generics.CreateAPIView):
     """
     Export Expenses to QBO
     """
@@ -250,32 +198,18 @@ class ExportToXeroView(viewsets.ViewSet):
         )
 
 
-class LastExportDetailView(viewsets.ViewSet):
+class LastExportDetailView(generics.RetrieveAPIView):
     """
     Last Export Details
     """
+
+    lookup_field = 'workspace_id'
+    lookup_url_kwarg = 'workspace_id'
     serializer_class = LastExportDetailSerializer
+    queryset = LastExportDetail.objects.filter(last_exported_at__isnull=False, total_expense_groups_count__gt=0)
+    
 
-    def get(self, request, *args, **kwargs):
-        """
-        last export detail
-        """
-        last_export_detail = LastExportDetail.objects.filter(workspace_id=kwargs['workspace_id']).first()
-        if last_export_detail and last_export_detail.last_exported_at and last_export_detail.total_expense_groups_count:
-            return Response(
-                data=self.serializer_class(last_export_detail).data,
-                status=status.HTTP_200_OK
-            )
-        else:
-            return Response(
-                data={
-                    'message': 'latest exported details does not exist in workspace'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-
-class WorkspaceAdminsView(viewsets.ViewSet):
+class WorkspaceAdminsView(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         """

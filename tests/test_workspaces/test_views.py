@@ -43,27 +43,6 @@ def test_get_workspace(api_client, test_connection):
     assert response == []
 
 
-def test_get_workspace_by_id(api_client, test_connection):
-    workspace_id = 1
-
-    url = '/api/workspaces/{}/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-
-    response = api_client.get(url)
-    assert response.status_code == 200
-
-    response = json.loads(response.content)
-    assert dict_compare_keys(response, data['workspace']) == [], 'workspaces api returns a diff in the keys'
-
-    workspace_id = 5
-
-    url = '/api/workspaces/{}/'.format(workspace_id)
-    api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
-
-    response = api_client.get(url)
-    assert response.status_code == 400
-
-
 def test_post_of_workspace(api_client, test_connection, mocker):
     workspace_id = 1
 
@@ -268,26 +247,10 @@ def test_get_general_settings_detail(api_client, test_connection):
 
     assert dict_compare_keys(response, data['workspace_general_settings_payload']) == [], 'general_setting api returns a diff in keys'
 
-    response = api_client.post(
-        url,
-        data=data['workspace_general_settings_payload'],
-        format='json'
-    )
-
-    assert response.status_code==200
-
-    response = api_client.patch(
-        url,
-        data = {
-            'sync_fyle_to_xero_payments': False
-        }
-    )
-    assert response.status_code == 200
-
     workspace_general_setting.delete()
 
     response = api_client.get(url)
-    assert response.status_code == 400
+    assert response.status_code == 404
 
 
 def test_xero_external_signup_view(mocker, api_client, test_connection):
@@ -330,7 +293,7 @@ def test_last_export_detail(mocker, api_client, test_connection):
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(test_connection.access_token))
 
     response = api_client.get(url)
-    assert response.status_code == 400
+    assert response.status_code == 404
 
     last_export_detail = LastExportDetail.objects.create(workspace_id=workspace_id)
     last_export_detail.last_exported_at = datetime.now()

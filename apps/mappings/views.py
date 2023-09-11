@@ -16,11 +16,16 @@ from .actions import tenant_mapping_view
 logger = logging.getLogger(__name__)
 
 
-class TenantMappingView(generics.ListCreateAPIView):
+class TenantMappingView(generics.CreateAPIView, generics.RetrieveAPIView):
     """
     Tenant mappings view
     """
+
+    lookup_field = 'workspace_id'
+    lookup_url_kwarg = 'workspace_id'
     serializer_class = TenantMappingSerializer
+    queryset = TenantMapping.objects.all()
+
 
     def post(self, request, *args, **kwargs):
         """
@@ -34,19 +39,6 @@ class TenantMappingView(generics.ListCreateAPIView):
 
         return Response(
             data=self.serializer_class(tenant_mapping_object).data,
-            status=status.HTTP_200_OK
-        )
-
-    @handle_view_exceptions()
-    def get(self, request, *args, **kwargs):
-        """
-        Get tenant mappings
-        """
-
-        subsidiary_mapping = TenantMapping.objects.get(workspace_id=kwargs['workspace_id'])
-
-        return Response(
-            data=self.serializer_class(subsidiary_mapping).data,
             status=status.HTTP_200_OK
         )
 

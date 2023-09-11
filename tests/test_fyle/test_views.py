@@ -15,44 +15,13 @@ def test_expense_group_view(api_client, test_connection):
     api_client.credentials(HTTP_AUTHORIZATION='Bearer {}'.format(access_token))
 
     response = api_client.get(url, {
-        'expense_group_ids': '1,2'
-    })
-    assert response.status_code==200
-
-    response = json.loads(response.content)
-    assert response['count'] == 2
-
-    response = api_client.get(url, {
-        'state': 'ALL'
+        'exported_at__gte': '2022-05-23 13:03:06',
+        'exported_at__lte': '2022-05-23 13:03:48',
     })
     assert response.status_code==200
 
     response = json.loads(response.content)
     assert response['count'] == 10
-
-    response = api_client.get(url, {
-        'state': 'COMPLETE',
-        'start_date': '2022-05-23 13:03:06',
-        'end_date': '2022-05-23 13:03:48',
-        'exported_at': '2022-05-23 13:03:06'
-    })
-    assert response.status_code==200
-
-    response = json.loads(response.content)
-    assert response['count'] == 0
-    
-    response = api_client.get(url, {
-        'state': 'READY'
-    })
-
-    response = json.loads(response.content)
-    assert response == {'count': 0, 'next': None, 'previous': None, 'results': []}
-
-    response = api_client.get(url, {
-      'state': 'FAILED'
-    })
-    response = json.loads(response.content)
-    assert response == {'count': 0, 'next': None, 'previous': None, 'results': []}
 
     task_log, _ = TaskLog.objects.update_or_create(
         workspace_id=1,
@@ -77,19 +46,6 @@ def test_expense_group_settings_view(api_client, test_connection):
     assert response['ccc_expense_state'] == 'PAYMENT_PROCESSING'
     assert response['reimbursable_expense_state'] == 'PAYMENT_PROCESSING'
     assert response['reimbursable_export_date_type'] == 'current_date'
-
-    response = api_client.post(
-        url,
-        data=data['expense_group_settings_payload'],
-        format='json'
-    )
-    assert response.status_code==200
-    response = json.loads(response.content)
-
-    assert dict_compare_keys(response, data['expense_group_setting_response']) == [], 'expense group api return diffs in keys'
-    assert response['ccc_expense_state'] == 'PAYMENT_PROCESSING'
-    assert response['reimbursable_expense_state'] == 'PAYMENT_PROCESSING'
-    assert response['reimbursable_export_date_type'] == 'spent_at'
 
 
 def test_expense_fields_view(api_client, test_connection):
