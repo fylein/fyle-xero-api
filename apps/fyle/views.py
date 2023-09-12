@@ -16,10 +16,9 @@ class ExpenseGroupView(LookupFieldMixin, generics.ListCreateAPIView):
     List Fyle Expenses
     """
     serializer_class = ExpenseGroupSerializer
-    queryset = ExpenseGroup.objects.filter(tasklog__status='COMPLETE')
+    queryset = ExpenseGroup.objects.filter(tasklog__status='COMPLETE').order_by('-updated_at')
     serializer_class = ExpenseGroupSerializer
     filterset_fields = {'exported_at': {'gte', 'lte'}}
-    ordering_fields = ('-updated_at',)
 
 
 class ExpenseGroupSettingsView(generics.RetrieveAPIView):
