@@ -1,4 +1,4 @@
-from apps.mappings.tasks import schedule_auto_map_employees
+from apps.mappings.queue import schedule_auto_map_employees
 from apps.workspaces.models import WorkspaceGeneralSettings
 from fyle_accounting_mappings.models import MappingSetting
 from apps.workspaces.utils import delete_cards_mapping_settings, schedule_or_delete_import_supplier_schedule

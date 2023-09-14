@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
-from apps.workspaces.tasks import schedule_sync
+from apps.workspaces.queue import schedule_sync
 from apps.mappings.models import GeneralMapping
 from .triggers import AdvancedSettingsTriggers
 

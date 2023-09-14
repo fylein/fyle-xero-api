@@ -1,4 +1,4 @@
-from apps.xero.tasks import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
+from apps.xero.queue import schedule_payment_creation, schedule_xero_objects_status_sync, schedule_reimbursements_sync
 from apps.workspaces.models import WorkspaceGeneralSettings
 
 

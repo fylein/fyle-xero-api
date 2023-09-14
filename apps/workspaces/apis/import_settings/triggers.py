@@ -1,7 +1,7 @@
 from typing import Dict, List
 from django.db.models import Q
 
-from apps.mappings.tasks import schedule_cost_centers_creation, schedule_tax_groups_creation,\
+from apps.mappings.queue import schedule_cost_centers_creation, schedule_tax_groups_creation,\
     schedule_fyle_attributes_creation
 from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
 from apps.workspaces.models import WorkspaceGeneralSettings

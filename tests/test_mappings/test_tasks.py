@@ -3,6 +3,7 @@ from unittest import mock
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import DestinationAttribute, CategoryMapping, \
     Mapping, MappingSetting, EmployeeMapping
+from apps.mappings.queue import *
 from apps.mappings.tasks import *
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError, InternalServerError
@@ -11,6 +12,7 @@ from ..test_fyle.fixtures import data as fyle_data
 from .fixtures import data
 from tests.helper import dict_compare_keys
 from apps.fyle.models import ExpenseGroup, Reimbursement, Expense
+from fyle_accounting_mappings.models import ExpenseAttribute
 from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings 
 from xerosdk.exceptions import WrongParamsError, UnsuccessfulAuthentication
 
