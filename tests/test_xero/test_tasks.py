@@ -5,6 +5,7 @@ from django_q.models import Schedule
 from apps.tasks.models import TaskLog
 from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem
 from apps.xero.tasks import *
+from apps.xero.queue import *
 from apps.xero.tasks import __validate_expense_group
 from xerosdk.exceptions import XeroSDKError, WrongParamsError, InvalidGrant, RateLimitError, NoPrivilegeError
 from fyle_accounting_mappings.models import Mapping, ExpenseAttribute

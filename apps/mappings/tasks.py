@@ -217,27 +217,6 @@ def async_auto_map_employees(workspace_id: int):
     resolve_expense_attribute_errors(source_attribute_type='EMPLOYEE', workspace_id=workspace_id)
 
 
-def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
-    if employee_mapping_preference:
-        Schedule.objects.update_or_create(
-            func='apps.mappings.tasks.async_auto_map_employees',
-            args='{}'.format(workspace_id),
-            defaults={
-                'schedule_type': Schedule.MINUTES,
-                'minutes': 24 * 60,
-                'next_run': datetime.now()
-            }
-        )
-    else:
-        schedule: Schedule = Schedule.objects.filter(
-            func='apps.mappings.tasks.async_auto_map_employees',
-            args='{}'.format(workspace_id)
-        ).first()
-
-        if schedule:
-            schedule.delete()
-
-
 def sync_xero_attributes(xero_attribute_type: str, workspace_id: int):
     xero_credentials: XeroCredentials = XeroCredentials.get_active_xero_credentials(workspace_id)
     xero_connection = XeroConnector(
@@ -325,27 +304,6 @@ def auto_create_cost_center_mappings(workspace_id: int):
     sync_xero_attributes(mapping_setting.destination_field, workspace_id=workspace_id)
 
     post_cost_centers_in_batches(platform, workspace_id, mapping_setting.destination_field)
-
-
-def schedule_cost_centers_creation(import_to_fyle, workspace_id: int):
-    if import_to_fyle:
-        schedule, _ = Schedule.objects.update_or_create(
-            func='apps.mappings.tasks.auto_create_cost_center_mappings',
-            args='{}'.format(workspace_id),
-            defaults={
-                'schedule_type': Schedule.MINUTES,
-                'minutes': 24 * 60,
-                'next_run': datetime.now()
-            }
-        )
-    else:
-        schedule: Schedule = Schedule.objects.filter(
-            func='apps.mappings.tasks.auto_create_cost_center_mappings',
-            args='{}'.format(workspace_id)
-        ).first()
-
-        if schedule:
-            schedule.delete()
 
 
 def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_project_names: list, 
@@ -595,31 +553,6 @@ def async_auto_create_custom_field_mappings(workspace_id: str):
             )
 
 
-def schedule_fyle_attributes_creation(workspace_id: int):
-    mapping_settings = MappingSetting.objects.filter(
-        is_custom=True, import_to_fyle=True, workspace_id=workspace_id
-    ).all()
-
-    if mapping_settings:
-        schedule, _ = Schedule.objects.get_or_create(
-            func='apps.mappings.tasks.async_auto_create_custom_field_mappings',
-            args='{0}'.format(workspace_id),
-            defaults={
-                'schedule_type': Schedule.MINUTES,
-                'minutes': 24 * 60,
-                'next_run': datetime.now() + timedelta(hours=24)
-            }
-        )
-    else:
-        schedule: Schedule = Schedule.objects.filter(
-            func='apps.mappings.tasks.async_auto_create_custom_field_mappings',
-            args=workspace_id
-        ).first()
-
-        if schedule:
-            schedule.delete()
-
-
 def upload_tax_groups_to_fyle(platform_connection: PlatformConnector, workspace_id: int):
     existing_tax_codes_name = ExpenseAttribute.objects.filter(
         attribute_type='TAX_GROUP', workspace_id=workspace_id).values_list('value', flat=True)
@@ -677,27 +610,6 @@ def auto_create_tax_codes_mappings(workspace_id: int):
     sync_xero_attributes('TAX_CODE', workspace_id)
 
     upload_tax_groups_to_fyle(platform, workspace_id)
-
-
-def schedule_tax_groups_creation(import_tax_codes, workspace_id):
-    if import_tax_codes:
-        schedule, _ = Schedule.objects.update_or_create(
-            func='apps.mappings.tasks.auto_create_tax_codes_mappings',
-            args='{}'.format(workspace_id),
-            defaults={
-                'schedule_type': Schedule.MINUTES,
-                'minutes': 24 * 60,
-                'next_run': datetime.now()
-            }
-        )
-    else:
-        schedule: Schedule = Schedule.objects.filter(
-            func='apps.mappings.tasks.auto_create_tax_codes_mappings',
-            args='{}'.format(workspace_id),
-        ).first()
-
-        if schedule:
-            schedule.delete()
 
 
 def auto_create_suppliers_as_merchants(workspace_id):

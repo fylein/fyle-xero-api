@@ -4,7 +4,7 @@ from apps.workspaces.models import WorkspaceGeneralSettings
 from fyle_xero_api.utils import assert_valid
 
 from .models import TenantMapping, GeneralMapping
-from ..xero.tasks import schedule_payment_creation
+from ..xero.queue import schedule_payment_creation
 
 
 class MappingUtils:

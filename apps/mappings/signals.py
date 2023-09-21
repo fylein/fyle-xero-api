@@ -11,8 +11,8 @@ from django_q.tasks import async_task
 
 from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute, Mapping
 from apps.tasks.models import Error
-from apps.mappings.tasks import schedule_cost_centers_creation, schedule_fyle_attributes_creation,\
-    upload_attributes_to_fyle
+from apps.mappings.queue import schedule_cost_centers_creation, schedule_fyle_attributes_creation
+from apps.mappings.tasks import upload_attributes_to_fyle
 from apps.workspaces.models import WorkspaceGeneralSettings
 
 from django.db.models.signals import post_save

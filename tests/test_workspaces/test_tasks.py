@@ -2,7 +2,8 @@ from datetime import datetime
 from apps.tasks.models import TaskLog
 from apps.workspaces.email import send_failure_notification_email
 from apps.workspaces.tasks import run_email_notification, run_sync_schedule, \
-    schedule_sync, async_update_fyle_credentials, async_add_admins_to_workspace
+    async_update_fyle_credentials, async_add_admins_to_workspace
+from apps.workspaces.queue import schedule_sync
 from apps.workspaces.models import WorkspaceSchedule, WorkspaceGeneralSettings, LastExportDetail, \
     FyleCredential
 from apps.users.models import User
