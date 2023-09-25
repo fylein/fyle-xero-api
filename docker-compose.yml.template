@@ -11,7 +11,7 @@ services:
     - 8000:8000
     depends_on:
     - db
-    environment: 
+    environment:
       SECRET_KEY: thisisthedjangosecretkey
       ALLOWED_HOSTS: "*"
       DEBUG: "False"
@@ -39,7 +39,7 @@ services:
     depends_on:
     - db
     - api
-    environment: 
+    environment:
       SECRET_KEY: thisisthedjangosecretkey
       ALLOWED_HOSTS: "*"
       DEBUG: "False"
@@ -59,7 +59,7 @@ services:
 
   db:
     image: "postgres:15"
-    environment: 
+    environment:
       POSTGRES_PASSWORD: postgres
     volumes:
       - data:/var/lib/postgresql/data/

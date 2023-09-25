@@ -2,7 +2,7 @@ from django.apps import AppConfig
 
 
 class MappingsConfig(AppConfig):
-    name = 'apps.mappings'
+    name = "apps.mappings"
 
     def ready(self):
         super(MappingsConfig, self).ready()

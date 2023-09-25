@@ -1,24 +1,20 @@
 import logging
-from .serializers import TenantMappingSerializer, GeneralMappingSerializer
-from .models import TenantMapping, GeneralMapping
-from apps.workspaces.models import XeroCredentials
-from apps.xero.utils import XeroConnector
-from apps.workspaces.models import Workspace
-from ..workspaces.models import WorkspaceGeneralSettings
-
-from django_q.tasks import Chain
 
 from xerosdk.exceptions import UnsuccessfulAuthentication
 
-from .utils import MappingUtils
-
+from apps.mappings.models import TenantMapping
+from apps.mappings.utils import MappingUtils
+from apps.workspaces.models import Workspace, XeroCredentials
+from apps.xero.utils import XeroConnector
 
 logger = logging.getLogger(__name__)
 
-def tenant_mapping_view(workspace_id, tenant_mapping_payload):
 
+def tenant_mapping_view(workspace_id, tenant_mapping_payload):
     mapping_utils = MappingUtils(workspace_id)
-    tenant_mapping_object = mapping_utils.create_or_update_tenant_mapping(tenant_mapping_payload)
+    tenant_mapping_object = mapping_utils.create_or_update_tenant_mapping(
+        tenant_mapping_payload
+    )
     xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
     workspace = Workspace.objects.filter(id=workspace_id).first()
 
@@ -26,23 +22,29 @@ def tenant_mapping_view(workspace_id, tenant_mapping_payload):
         xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
         tenant_mapping = TenantMapping.objects.filter(workspace_id=workspace_id).first()
         company_info = xero_connector.get_organisations()[0]
-        workspace.xero_currency = company_info['BaseCurrency']
+        workspace.xero_currency = company_info["BaseCurrency"]
         workspace.save()
-        xero_credentials.country = company_info['CountryCode']
+        xero_credentials.country = company_info["CountryCode"]
         xero_credentials.save()
 
         if tenant_mapping and not tenant_mapping.connection_id:
             connections = xero_connector.connection.connections.get_all()
-            connection = list(filter(lambda connection: connection['tenantId'] == tenant_mapping.tenant_id, connections))
+            connection = list(
+                filter(
+                    lambda connection: connection["tenantId"]
+                    == tenant_mapping.tenant_id,
+                    connections,
+                )
+            )
 
             if connection:
-                tenant_mapping.connection_id = connection[0]['id']
+                tenant_mapping.connection_id = connection[0]["id"]
                 tenant_mapping.save()
 
     except UnsuccessfulAuthentication:
-        logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
+        logger.info("Xero refresh token is invalid for workspace_id - %s", workspace_id)
 
     except Exception:
-        logger.info('Error while fetching company information')
-    
+        logger.info("Error while fetching company information")
+
     return tenant_mapping_object

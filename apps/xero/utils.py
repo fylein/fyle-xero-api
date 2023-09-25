@@ -1,40 +1,41 @@
-import os
-import ast
 import base64
 import json
 import logging
-from datetime import timedelta, datetime
-
-from django.conf import settings
-from typing import List, Dict
+from datetime import datetime, timedelta
+from typing import Dict, List
 
 import unidecode
-
+from fyle_accounting_mappings.models import DestinationAttribute
 from xerosdk import XeroSDK
 from xerosdk.exceptions import WrongParamsError
 
+from apps.mappings.models import GeneralMapping, TenantMapping
+from apps.workspaces.models import Workspace, WorkspaceGeneralSettings, XeroCredentials
+from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem, Payment
 from fyle_xero_api import settings
-from apps.mappings.models import TenantMapping
-from apps.workspaces.models import XeroCredentials, WorkspaceGeneralSettings, Workspace
-from fyle_accounting_mappings.models import DestinationAttribute
-from apps.mappings.models import GeneralMapping
-from apps.xero.models import Bill, BillLineItem, BankTransaction, BankTransactionLineItem, Payment
 
 logger = logging.getLogger(__name__)
 
-CHARTS_OF_ACCOUNTS = ['EXPENSE', 'ASSET', 'EQUITY', 'LIABILITY', 'REVENUE']
+CHARTS_OF_ACCOUNTS = ["EXPENSE", "ASSET", "EQUITY", "LIABILITY", "REVENUE"]
 
 
 def format_updated_at(updated_at):
-    return datetime.strftime(updated_at, '%Y-%m-%dT%H:%M:%S')
+    return datetime.strftime(updated_at, "%Y-%m-%dT%H:%M:%S")
 
 
 def get_last_synced_at(workspace_id: int, attribute_type: str):
-    latest_synced_record = DestinationAttribute.objects.filter(
-        workspace_id=workspace_id,
-        attribute_type=attribute_type
-    ).order_by('-updated_at').first()
-    updated_at = format_updated_at(latest_synced_record.updated_at) if latest_synced_record else None
+    latest_synced_record = (
+        DestinationAttribute.objects.filter(
+            workspace_id=workspace_id, attribute_type=attribute_type
+        )
+        .order_by("-updated_at")
+        .first()
+    )
+    updated_at = (
+        format_updated_at(latest_synced_record.updated_at)
+        if latest_synced_record
+        else None
+    )
 
     return updated_at
 
@@ -54,7 +55,7 @@ class XeroConnector:
             base_url=base_url,
             client_id=client_id,
             client_secret=client_secret,
-            refresh_token=refresh_token
+            refresh_token=refresh_token,
         )
 
         self.workspace_id = workspace_id
@@ -62,21 +63,21 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
-
     def get_suppliers(self):
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         suppliers_generator = self.connection.contacts.list_all_generator()
-        merchant_names : List[str] = []
+        merchant_names: List[str] = []
         for suppliers in suppliers_generator:
-                for supplier in suppliers['Contacts']:
-                    if supplier['IsSupplier'] and supplier['ContactStatus'] == 'ACTIVE':
-                        merchant_names.append(supplier['Name'])
+            for supplier in suppliers["Contacts"]:
+                if supplier["IsSupplier"] and supplier["ContactStatus"] == "ACTIVE":
+                    merchant_names.append(supplier["Name"])
         return merchant_names
 
-
-    def get_or_create_contact(self, contact_name: str, email: str = None, create: bool = False):
+    def get_or_create_contact(
+        self, contact_name: str, email: str = None, create: bool = False
+    ):
         """
         Call xero api to get or create contact
         :param email: email for contact user
@@ -87,9 +88,11 @@ class XeroConnector:
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        contact_name = contact_name.replace('#', '%23')  # Replace '#' with %23
-        contact_name = contact_name.replace('"', '')  # remove double quotes from merchant name
-        contact_name = contact_name.replace('&', '')  # remove & merchant name
+        contact_name = contact_name.replace("#", "%23")  # Replace '#' with %23
+        contact_name = contact_name.replace(
+            '"', ""
+        )  # remove double quotes from merchant name
+        contact_name = contact_name.replace("&", "")  # remove & merchant name
 
         contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
 
@@ -121,33 +124,37 @@ class XeroConnector:
         tenant_attributes = []
 
         for tenant in tenants:
-            tenant_attributes.append({
-                'attribute_type': 'TENANT',
-                'display_name': 'Tenant',
-                'value': tenant['tenantName'],
-                'destination_id': tenant['tenantId']
-            })
+            tenant_attributes.append(
+                {
+                    "attribute_type": "TENANT",
+                    "display_name": "Tenant",
+                    "value": tenant["tenantName"],
+                    "destination_id": tenant["tenantId"],
+                }
+            )
 
-        tenant_attributes = DestinationAttribute.bulk_create_or_update_destination_attributes(
-            tenant_attributes, 'TENANT', self.workspace_id, True)
+        tenant_attributes = (
+            DestinationAttribute.bulk_create_or_update_destination_attributes(
+                tenant_attributes, "TENANT", self.workspace_id, True
+            )
+        )
         return tenant_attributes
 
-
     def get_tax_inclusive_amount(self, amount, default_tax_code_id):
-
         tax_attribute = DestinationAttribute.objects.filter(
-            destination_id=default_tax_code_id, 
-            attribute_type='TAX_CODE',
-            workspace_id=self.workspace_id
+            destination_id=default_tax_code_id,
+            attribute_type="TAX_CODE",
+            workspace_id=self.workspace_id,
         ).first()
-        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
+        general_settings = WorkspaceGeneralSettings.objects.get(
+            workspace_id=self.workspace_id
+        )
         tax_inclusive_amount = amount
         if tax_attribute and general_settings.import_tax_codes:
-            tax_rate = float((tax_attribute.detail['tax_rate']) / 100)
-            tax_amount = round((amount - (amount / ( tax_rate + 1))), 2)
+            tax_rate = float((tax_attribute.detail["tax_rate"]) / 100)
+            tax_amount = round((amount - (amount / (tax_rate + 1))), 2)
             tax_inclusive_amount = round((amount - tax_amount), 2)
         return tax_inclusive_amount
-
 
     def sync_tax_codes(self):
         """
@@ -156,25 +163,30 @@ class XeroConnector:
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
-        tax_codes = self.connection.tax_rates.get_all()['TaxRates']
+        tax_codes = self.connection.tax_rates.get_all()["TaxRates"]
 
         tax_attributes = []
         for tax_code in tax_codes:
-            effective_tax_rate = tax_code['EffectiveRate']
+            effective_tax_rate = tax_code["EffectiveRate"]
             if effective_tax_rate >= 0:
-                tax_attributes.append({
-                    'attribute_type': 'TAX_CODE',
-                    'display_name': 'Tax Code',
-                    'value': '{0} @{1}%'.format(tax_code['Name'], effective_tax_rate),
-                    'destination_id': tax_code['TaxType'],
-                    'detail': {
-                        'tax_rate': effective_tax_rate,
-                        'tax_refs': tax_code['TaxComponents']
+                tax_attributes.append(
+                    {
+                        "attribute_type": "TAX_CODE",
+                        "display_name": "Tax Code",
+                        "value": "{0} @{1}%".format(
+                            tax_code["Name"], effective_tax_rate
+                        ),
+                        "destination_id": tax_code["TaxType"],
+                        "detail": {
+                            "tax_rate": effective_tax_rate,
+                            "tax_refs": tax_code["TaxComponents"],
+                        },
                     }
-                })
+                )
 
         DestinationAttribute.bulk_create_or_update_destination_attributes(
-            tax_attributes, 'TAX_CODE', self.workspace_id, True)
+            tax_attributes, "TAX_CODE", self.workspace_id, True
+        )
 
         return []
 
@@ -188,51 +200,57 @@ class XeroConnector:
 
         workspace = Workspace.objects.filter(id=self.workspace_id).first()
 
-        updated_at = get_last_synced_at(self.workspace_id, 'ACCOUNT')
+        updated_at = get_last_synced_at(self.workspace_id, "ACCOUNT")
 
         if not workspace.xero_accounts_last_synced_at:
             updated_at = None
 
-        accounts = self.connection.accounts.get_all(
-            modified_after=updated_at
-        )['Accounts']
+        accounts = self.connection.accounts.get_all(modified_after=updated_at)[
+            "Accounts"
+        ]
 
-        account_attributes = {
-            'bank_account': [],
-            'account': []
-        }
+        account_attributes = {"bank_account": [], "account": []}
 
         for account in accounts:
             detail = {
-                'account_type': account['Class'],
-                'enable_payments_to_account': account['EnablePaymentsToAccount'],
-                'active': True if account['Status'] == 'ACTIVE' else False,
+                "account_type": account["Class"],
+                "enable_payments_to_account": account["EnablePaymentsToAccount"],
+                "active": True if account["Status"] == "ACTIVE" else False,
             }
 
-            if account['Type'] == 'BANK':
-                account_attributes['bank_account'].append({
-                    'attribute_type': 'BANK_ACCOUNT',
-                    'display_name': 'Bank Account',
-                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
-                    'destination_id': account['AccountID'],
-                    'active': True if account['Status'] == 'ACTIVE' else False,
-                    'detail': detail
-                })
+            if account["Type"] == "BANK":
+                account_attributes["bank_account"].append(
+                    {
+                        "attribute_type": "BANK_ACCOUNT",
+                        "display_name": "Bank Account",
+                        "value": unidecode.unidecode(
+                            "{0}".format(account["Name"])
+                        ).replace("/", "-"),
+                        "destination_id": account["AccountID"],
+                        "active": True if account["Status"] == "ACTIVE" else False,
+                        "detail": detail,
+                    }
+                )
 
-            elif account['Class'] in CHARTS_OF_ACCOUNTS:
-                account_attributes['account'].append({
-                    'attribute_type': 'ACCOUNT',
-                    'display_name': 'Account',
-                    'value': unidecode.unidecode(u'{0}'.format(account['Name'])).replace('/', '-'),
-                    'destination_id': account['Code'],
-                    'active': True if account['Status'] == 'ACTIVE' else False,
-                    'detail': detail
-                })
+            elif account["Class"] in CHARTS_OF_ACCOUNTS:
+                account_attributes["account"].append(
+                    {
+                        "attribute_type": "ACCOUNT",
+                        "display_name": "Account",
+                        "value": unidecode.unidecode(
+                            "{0}".format(account["Name"])
+                        ).replace("/", "-"),
+                        "destination_id": account["Code"],
+                        "active": True if account["Status"] == "ACTIVE" else False,
+                        "detail": detail,
+                    }
+                )
 
         for attribute_type, account_attribute in account_attributes.items():
             if account_attribute:
                 DestinationAttribute.bulk_create_or_update_destination_attributes(
-                    account_attribute, attribute_type.upper(), self.workspace_id, True)
+                    account_attribute, attribute_type.upper(), self.workspace_id, True
+                )
 
         workspace.xero_accounts_last_synced_at = datetime.now()
         workspace.save()
@@ -247,27 +265,34 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        updated_at = get_last_synced_at(self.workspace_id, 'CONTACT')
+        updated_at = get_last_synced_at(self.workspace_id, "CONTACT")
 
-        contacts_generator = self.connection.contacts.list_all_generator(modified_after=updated_at)
+        contacts_generator = self.connection.contacts.list_all_generator(
+            modified_after=updated_at
+        )
 
         for contacts in contacts_generator:
             contact_attributes = []
 
-            for contact in contacts['Contacts']:
+            for contact in contacts["Contacts"]:
                 detail = {
-                    'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
+                    "email": contact["EmailAddress"]
+                    if "EmailAddress" in contact
+                    else None
                 }
-                contact_attributes.append({
-                    'attribute_type': 'CONTACT',
-                    'display_name': 'Contact',
-                    'value': contact['Name'],
-                    'destination_id': contact['ContactID'],
-                    'detail': detail
-                })
+                contact_attributes.append(
+                    {
+                        "attribute_type": "CONTACT",
+                        "display_name": "Contact",
+                        "value": contact["Name"],
+                        "destination_id": contact["ContactID"],
+                        "detail": detail,
+                    }
+                )
 
             DestinationAttribute.bulk_create_or_update_destination_attributes(
-                contact_attributes, 'CONTACT', self.workspace_id, True)
+                contact_attributes, "CONTACT", self.workspace_id, True
+            )
 
         return []
 
@@ -282,51 +307,64 @@ class XeroConnector:
         customers_generator = self.connection.contacts.list_all_generator()
 
         customer_attributes = []
-        destination_attributes = DestinationAttribute.objects.filter(workspace_id=self.workspace_id,
-                attribute_type= 'CUSTOMER', display_name='Customer').values('destination_id', 'value', 'detail')
+        destination_attributes = DestinationAttribute.objects.filter(
+            workspace_id=self.workspace_id,
+            attribute_type="CUSTOMER",
+            display_name="Customer",
+        ).values("destination_id", "value", "detail")
         disabled_fields_map = {}
 
         for destination_attribute in destination_attributes:
-            disabled_fields_map[destination_attribute['destination_id']] = {
-                'value': destination_attribute['value'],
-                'detail': destination_attribute['detail']
+            disabled_fields_map[destination_attribute["destination_id"]] = {
+                "value": destination_attribute["value"],
+                "detail": destination_attribute["detail"],
             }
 
-
         for customers in customers_generator:
+            for customer in customers["Contacts"]:
+                if customer["IsCustomer"]:
+                    customer_attributes.append(
+                        {
+                            "attribute_type": "CUSTOMER",
+                            "display_name": "Customer",
+                            "value": customer["Name"],
+                            "destination_id": customer["ContactID"],
+                            "detail": {
+                                "email": customer["EmailAddress"]
+                                if "EmailAddress" in customer
+                                else None
+                            },
+                            "active": True
+                            if customer["ContactStatus"] == "ACTIVE"
+                            else False,
+                        }
+                    )
 
-            for customer in customers['Contacts']:
-                if customer['IsCustomer']:
-                    customer_attributes.append({
-                        'attribute_type': 'CUSTOMER',
-                        'display_name': 'Customer',
-                        'value': customer['Name'],
-                        'destination_id': customer['ContactID'],
-                        'detail': {
-                            'email': customer['EmailAddress'] if 'EmailAddress' in customer else None
-                        },
-                        'active': True if customer['ContactStatus'] == 'ACTIVE' else False
-                    })
-                    
-                    if customer['ContactStatus'] == 'ACTIVE' and customer['ContactID'] in disabled_fields_map:
-                        disabled_fields_map.pop(customer['ContactID'])
+                    if (
+                        customer["ContactStatus"] == "ACTIVE"
+                        and customer["ContactID"] in disabled_fields_map
+                    ):
+                        disabled_fields_map.pop(customer["ContactID"])
         # For setting active to False
         # During the initial run we only pull in the active ones.
         # In the concurrent runs we get all the destination_attributes and store it in disable_field_map check if in the SDK call we get status = Active or not .
         # If yes then we pop the item from the disable_field_map else we set the active = True.
         # This should take care of delete as well as inactive case since we are checking the status=Active case.
         for destination_id in disabled_fields_map:
-            customer_attributes.append({
-                'attribute_type': 'CUSTOMER',
-                'display_name': 'customer',
-                'value': disabled_fields_map[destination_id]['value'],
-                'destination_id': destination_id,
-                'active': False,
-                'detail': disabled_fields_map[destination_id]['detail']
-            })
+            customer_attributes.append(
+                {
+                    "attribute_type": "CUSTOMER",
+                    "display_name": "customer",
+                    "value": disabled_fields_map[destination_id]["value"],
+                    "destination_id": destination_id,
+                    "active": False,
+                    "detail": disabled_fields_map[destination_id]["detail"],
+                }
+            )
 
         DestinationAttribute.bulk_create_or_update_destination_attributes(
-            customer_attributes, 'CUSTOMER', self.workspace_id, True)
+            customer_attributes, "CUSTOMER", self.workspace_id, True
+        )
 
         return []
 
@@ -338,24 +376,36 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        tracking_categories = self.connection.tracking_categories.get_all()['TrackingCategories']
+        tracking_categories = self.connection.tracking_categories.get_all()[
+            "TrackingCategories"
+        ]
 
         for tracking_category in tracking_categories:
             tracking_category_attributes = []
 
-            for option in tracking_category['Options']:
-                if tracking_category['Name'].lower() == 'customer':
-                    tracking_category['Name'] = '{}-TC'.format(tracking_category['Name'])
+            for option in tracking_category["Options"]:
+                if tracking_category["Name"].lower() == "customer":
+                    tracking_category["Name"] = "{}-TC".format(
+                        tracking_category["Name"]
+                    )
 
-                tracking_category_attributes.append({
-                    'attribute_type': tracking_category['Name'].upper().replace(' ', '_'),
-                    'display_name': tracking_category['Name'],
-                    'value': option['Name'],
-                    'destination_id': option['TrackingOptionID']
-                })
+                tracking_category_attributes.append(
+                    {
+                        "attribute_type": tracking_category["Name"]
+                        .upper()
+                        .replace(" ", "_"),
+                        "display_name": tracking_category["Name"],
+                        "value": option["Name"],
+                        "destination_id": option["TrackingOptionID"],
+                    }
+                )
 
             DestinationAttribute.bulk_create_or_update_destination_attributes(
-                tracking_category_attributes, tracking_category['Name'].upper().replace(' ', '_'), self.workspace_id, True)
+                tracking_category_attributes,
+                tracking_category["Name"].upper().replace(" ", "_"),
+                self.workspace_id,
+                True,
+            )
 
         return []
 
@@ -367,38 +417,45 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        updated_at = get_last_synced_at(self.workspace_id, 'ITEM')
+        updated_at = get_last_synced_at(self.workspace_id, "ITEM")
 
-        items = self.connection.items.get_all(modified_after=updated_at)['Items']
+        items = self.connection.items.get_all(modified_after=updated_at)["Items"]
 
         item_attributes = []
 
         for item in items:
-            item_attributes.append({
-                'attribute_type': 'ITEM',
-                'display_name': 'Item',
-                'value': item['Code'],
-                'destination_id': item['ItemID']
-            })
+            item_attributes.append(
+                {
+                    "attribute_type": "ITEM",
+                    "display_name": "Item",
+                    "value": item["Code"],
+                    "destination_id": item["ItemID"],
+                }
+            )
         DestinationAttribute.bulk_create_or_update_destination_attributes(
-            item_attributes, 'ITEM', self.workspace_id, True)
+            item_attributes, "ITEM", self.workspace_id, True
+        )
         return []
 
     def create_contact_destination_attribute(self, contact):
-        created_contact = DestinationAttribute.create_or_update_destination_attribute({
-            'attribute_type': 'CONTACT',
-            'display_name': 'Contact',
-            'value': contact['Name'],
-            'destination_id': contact['ContactID'],
-            'detail': {
-                'email': contact['EmailAddress'] if 'EmailAddress' in contact else None
-            }
-        }, self.workspace_id)
+        created_contact = DestinationAttribute.create_or_update_destination_attribute(
+            {
+                "attribute_type": "CONTACT",
+                "display_name": "Contact",
+                "value": contact["Name"],
+                "destination_id": contact["ContactID"],
+                "detail": {
+                    "email": contact["EmailAddress"]
+                    if "EmailAddress" in contact
+                    else None
+                },
+            },
+            self.workspace_id,
+        )
 
         return created_contact
 
     def sync_dimensions(self, workspace_id: str):
-
         try:
             self.sync_accounts()
         except Exception as exception:
@@ -440,19 +497,24 @@ class XeroConnector:
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         contact = {
-            'Name': contact_name,
-            'FirstName': contact_name.split(' ')[0],
-            'LastName': contact_name.split(' ')[-1]
-            if len(contact_name.split(' ')) > 1 else '',
-            'EmailAddress': email
+            "Name": contact_name,
+            "FirstName": contact_name.split(" ")[0],
+            "LastName": contact_name.split(" ")[-1]
+            if len(contact_name.split(" ")) > 1
+            else "",
+            "EmailAddress": email,
         }
 
-        created_contact = self.connection.contacts.post(contact)['Contacts'][0]
+        created_contact = self.connection.contacts.post(contact)["Contacts"][0]
 
         return created_contact
 
-
-    def __construct_bill_lineitems(self, bill_lineitems: List[BillLineItem], general_mappings: GeneralMapping, general_settings: WorkspaceGeneralSettings) -> List[Dict]:
+    def __construct_bill_lineitems(
+        self,
+        bill_lineitems: List[BillLineItem],
+        general_mappings: GeneralMapping,
+        general_settings: WorkspaceGeneralSettings,
+    ) -> List[Dict]:
         """
         Create bill line items
         :return: constructed line items
@@ -460,12 +522,13 @@ class XeroConnector:
         lines = []
 
         for line in bill_lineitems:
-
             unit_amount = line.amount
             if line.tax_code:
                 unit_amount = line.amount - line.tax_amount
             elif general_mappings:
-                unit_amount = self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id)
+                unit_amount = self.get_tax_inclusive_amount(
+                    line.amount, general_mappings.default_tax_code_id
+                )
 
             tax_type = None
             if line.tax_code and line.tax_amount:
@@ -477,17 +540,25 @@ class XeroConnector:
             if line.tax_code and line.tax_amount is not None:
                 tax_amount = line.tax_amount
             elif general_mappings:
-                tax_amount = round(line.amount - self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id), 2)
+                tax_amount = round(
+                    line.amount
+                    - self.get_tax_inclusive_amount(
+                        line.amount, general_mappings.default_tax_code_id
+                    ),
+                    2,
+                )
 
             line = {
-                'Description': line.description,
-                'Quantity': '1',
-                'UnitAmount': unit_amount,
-                'AccountCode': line.account_id,
-                'ItemCode': line.item_code if line.item_code else None,
-                'Tracking': line.tracking_categories if line.tracking_categories else None,
-                'TaxType': tax_type,
-                'TaxAmount': tax_amount,
+                "Description": line.description,
+                "Quantity": "1",
+                "UnitAmount": unit_amount,
+                "AccountCode": line.account_id,
+                "ItemCode": line.item_code if line.item_code else None,
+                "Tracking": line.tracking_categories
+                if line.tracking_categories
+                else None,
+                "TaxType": tax_type,
+                "TaxAmount": tax_amount,
             }
             lines.append(line)
 
@@ -498,29 +569,44 @@ class XeroConnector:
         Create a bill
         :return: constructed bill
         """
-        general_mappings = GeneralMapping.objects.filter(workspace_id=self.workspace_id).first()
-        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
+        general_mappings = GeneralMapping.objects.filter(
+            workspace_id=self.workspace_id
+        ).first()
+        general_settings = WorkspaceGeneralSettings.objects.get(
+            workspace_id=self.workspace_id
+        )
         workspace = bill.expense_group.workspace
 
         bill_payload = {
-            'Type': 'ACCPAY',
-            'Contact': {
-                'ContactID': bill.contact_id
-            },
-            'Url': '{}/app/admin/#/reports/{}?org_id={}'.format(settings.FYLE_APP_URL, bill_lineitems[0].expense.report_id, workspace.fyle_org_id),
-            'LineAmountTypes': 'Exclusive' if general_settings.import_tax_codes else 'NoTax',
-            'Reference': bill.reference,
-            'InvoiceNumber': bill.reference,
-            'Date': bill.date,
-            'DueDate': (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d'),
-            'CurrencyCode': bill.currency,
-            'Status': 'AUTHORISED',
-            'LineItems': self.__construct_bill_lineitems(bill_lineitems, general_mappings, general_settings)
+            "Type": "ACCPAY",
+            "Contact": {"ContactID": bill.contact_id},
+            "Url": "{}/app/admin/#/reports/{}?org_id={}".format(
+                settings.FYLE_APP_URL,
+                bill_lineitems[0].expense.report_id,
+                workspace.fyle_org_id,
+            ),
+            "LineAmountTypes": "Exclusive"
+            if general_settings.import_tax_codes
+            else "NoTax",
+            "Reference": bill.reference,
+            "InvoiceNumber": bill.reference,
+            "Date": bill.date,
+            "DueDate": (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d"),
+            "CurrencyCode": bill.currency,
+            "Status": "AUTHORISED",
+            "LineItems": self.__construct_bill_lineitems(
+                bill_lineitems, general_mappings, general_settings
+            ),
         }
 
         return bill_payload
 
-    def post_bill(self, bill: Bill, bill_lineitems: List[BillLineItem], general_settings: WorkspaceGeneralSettings):
+    def post_bill(
+        self,
+        bill: Bill,
+        bill_lineitems: List[BillLineItem],
+        general_settings: WorkspaceGeneralSettings,
+    ):
         """
         Post vendor bills to Xero
         """
@@ -537,17 +623,30 @@ class XeroConnector:
             detail = json.dumps(exception.__dict__)
             detail = json.loads(detail)
 
-            if detail['message']['Elements']:
-                if general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
-                    first_day_of_month = datetime.today().date().replace(day=1).strftime('%Y-%m-%d')
+            if detail["message"]["Elements"]:
+                if (
+                    general_settings.change_accounting_period
+                    and "The document date cannot be before the end of year lock date"
+                    in detail["message"]["Elements"][0]["ValidationErrors"][0][
+                        "Message"
+                    ]
+                ):
+                    first_day_of_month = (
+                        datetime.today().date().replace(day=1).strftime("%Y-%m-%d")
+                    )
                     bills_payload = self.__construct_bill(bill, bill_lineitems)
-                    bills_payload['Date'] = first_day_of_month
+                    bills_payload["Date"] = first_day_of_month
                     created_bill = self.connection.invoices.post(bills_payload)
                     return created_bill
                 else:
                     raise
-    
-    def __construct_bank_transaction_lineitems(self, bank_transaction_lineitems: List[BankTransactionLineItem], general_mappings: GeneralMapping, general_settings: WorkspaceGeneralSettings) -> List[Dict]:
+
+    def __construct_bank_transaction_lineitems(
+        self,
+        bank_transaction_lineitems: List[BankTransactionLineItem],
+        general_mappings: GeneralMapping,
+        general_settings: WorkspaceGeneralSettings,
+    ) -> List[Dict]:
         """
         Create bank transaction line items
         :return: constructed line items
@@ -555,93 +654,129 @@ class XeroConnector:
         lines = []
 
         for line in bank_transaction_lineitems:
-
             unit_amount = line.amount
             if line.tax_code:
                 unit_amount = line.amount - line.tax_amount
             elif general_mappings:
-                unit_amount = self.get_tax_inclusive_amount(line.amount, general_mappings.default_tax_code_id)
+                unit_amount = self.get_tax_inclusive_amount(
+                    line.amount, general_mappings.default_tax_code_id
+                )
 
             tax_type = None
-            if (line.tax_code and line.tax_amount is not None):
+            if line.tax_code and line.tax_amount is not None:
                 tax_type = line.tax_code
             elif general_settings.import_tax_codes and general_mappings != None:
                 tax_type = general_mappings.default_tax_code_id
 
             line = {
-                'Description': line.description,
-                'Quantity': '1',
-                'UnitAmount': abs(unit_amount),
-                'AccountCode': line.account_id,
-                'ItemCode': line.item_code if line.item_code else None,
-                'Tracking': line.tracking_categories if line.tracking_categories else None,
-                'TaxType': tax_type,
+                "Description": line.description,
+                "Quantity": "1",
+                "UnitAmount": abs(unit_amount),
+                "AccountCode": line.account_id,
+                "ItemCode": line.item_code if line.item_code else None,
+                "Tracking": line.tracking_categories
+                if line.tracking_categories
+                else None,
+                "TaxType": tax_type,
             }
             lines.append(line)
 
         return lines
 
-    def __construct_bank_transaction(self, bank_transaction: BankTransaction,
-                                     bank_transaction_lineitems: List[BankTransactionLineItem]) -> Dict:
+    def __construct_bank_transaction(
+        self,
+        bank_transaction: BankTransaction,
+        bank_transaction_lineitems: List[BankTransactionLineItem],
+    ) -> Dict:
         """
         Create a bank transaction
         :return: constructed bank transaction
         """
-        general_mappings = GeneralMapping.objects.filter(workspace_id=self.workspace_id).first()
-        general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=self.workspace_id)
+        general_mappings = GeneralMapping.objects.filter(
+            workspace_id=self.workspace_id
+        ).first()
+        general_settings = WorkspaceGeneralSettings.objects.get(
+            workspace_id=self.workspace_id
+        )
         workspace = bank_transaction.expense_group.workspace
-        
+
         bank_transaction_payload = {
-            'Type': 'SPEND',
-            'Contact': {
-                'ContactID': bank_transaction.contact_id
-            },
-            'BankAccount': {
-                'AccountID': bank_transaction.bank_account_code
-            },
-            'Url': '{}/app/admin/#/view_expense/{}?org_id={}'.format(settings.FYLE_APP_URL, bank_transaction_lineitems[0].expense.expense_id, workspace.fyle_org_id),
-            'LineAmountTypes': 'Exclusive' if general_settings.import_tax_codes else 'NoTax',
-            'Reference': bank_transaction.reference,
-            'Date': bank_transaction.transaction_date,
-            'CurrencyCode': bank_transaction.currency,
-            'Status': 'AUTHORISED',
-            'LineItems': self.__construct_bank_transaction_lineitems(bank_transaction_lineitems, general_mappings, general_settings)
+            "Type": "SPEND",
+            "Contact": {"ContactID": bank_transaction.contact_id},
+            "BankAccount": {"AccountID": bank_transaction.bank_account_code},
+            "Url": "{}/app/admin/#/view_expense/{}?org_id={}".format(
+                settings.FYLE_APP_URL,
+                bank_transaction_lineitems[0].expense.expense_id,
+                workspace.fyle_org_id,
+            ),
+            "LineAmountTypes": "Exclusive"
+            if general_settings.import_tax_codes
+            else "NoTax",
+            "Reference": bank_transaction.reference,
+            "Date": bank_transaction.transaction_date,
+            "CurrencyCode": bank_transaction.currency,
+            "Status": "AUTHORISED",
+            "LineItems": self.__construct_bank_transaction_lineitems(
+                bank_transaction_lineitems, general_mappings, general_settings
+            ),
         }
 
         if bank_transaction_lineitems[0].amount < 0:
-            bank_transaction_payload['Type'] = 'RECEIVE'
+            bank_transaction_payload["Type"] = "RECEIVE"
 
         return bank_transaction_payload
 
-    def post_bank_transaction(self, bank_transaction: BankTransaction,
-                              bank_transaction_lineitems: List[BankTransactionLineItem], general_settings: WorkspaceGeneralSettings):
+    def post_bank_transaction(
+        self,
+        bank_transaction: BankTransaction,
+        bank_transaction_lineitems: List[BankTransactionLineItem],
+        general_settings: WorkspaceGeneralSettings,
+    ):
         """
         Post bank transactions to Xero
         """
-        
+
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
         try:
-            bank_transaction_payload = self.__construct_bank_transaction(bank_transaction, bank_transaction_lineitems)
-            created_bank_transaction = self.connection.bank_transactions.post(bank_transaction_payload)
+            bank_transaction_payload = self.__construct_bank_transaction(
+                bank_transaction, bank_transaction_lineitems
+            )
+            created_bank_transaction = self.connection.bank_transactions.post(
+                bank_transaction_payload
+            )
             return created_bank_transaction
-    
+
         except WrongParamsError as exception:
             detail = json.dumps(exception.__dict__)
             detail = json.loads(detail)
 
-            if detail['message']['Elements']:
-                if general_settings.change_accounting_period and 'The document date cannot be before the end of year lock date' in detail['message']['Elements'][0]['ValidationErrors'][0]['Message']:
-                    first_day_of_month = datetime.today().date().replace(day=1).strftime('%Y-%m-%d')
-                    bank_transaction_payload = self.__construct_bank_transaction(bank_transaction, bank_transaction_lineitems)
-                    bank_transaction_payload['Date'] = first_day_of_month
-                    bank_transaction_payload = self.connection.bank_transactions.post(bank_transaction_payload)
+            if detail["message"]["Elements"]:
+                if (
+                    general_settings.change_accounting_period
+                    and "The document date cannot be before the end of year lock date"
+                    in detail["message"]["Elements"][0]["ValidationErrors"][0][
+                        "Message"
+                    ]
+                ):
+                    first_day_of_month = (
+                        datetime.today().date().replace(day=1).strftime("%Y-%m-%d")
+                    )
+                    bank_transaction_payload = self.__construct_bank_transaction(
+                        bank_transaction, bank_transaction_lineitems
+                    )
+                    bank_transaction_payload["Date"] = first_day_of_month
+                    bank_transaction_payload = self.connection.bank_transactions.post(
+                        bank_transaction_payload
+                    )
                     return bank_transaction_payload
                 else:
                     raise
 
-    def post_attachments(self, ref_id: str, ref_type: str, attachments: List[Dict]) -> List:
+    def post_attachments(
+        self, ref_id: str, ref_type: str, attachments: List[Dict]
+    ) -> List:
         """
         Link attachments to objects Xero
         :param ref_id: object id
@@ -654,9 +789,9 @@ class XeroConnector:
             for attachment in attachments:
                 response = self.connection.attachments.post_attachment(
                     endpoint=ref_type,
-                    filename='{0}_{1}'.format(attachment['id'], attachment['name']),
-                    data=base64.b64decode(attachment['download_url']),
-                    guid=ref_id
+                    filename="{0}_{1}".format(attachment["id"], attachment["name"]),
+                    data=base64.b64decode(attachment["download_url"]),
+                    guid=ref_id,
                 )
 
                 responses.append(response)
@@ -671,15 +806,11 @@ class XeroConnector:
         :return: constructed bill payment
         """
         payment_payload = {
-            'Payments': [
+            "Payments": [
                 {
-                    'Invoice': {
-                        'InvoiceId': payment.invoice_id
-                    },
-                    'Account': {
-                        'AccountId': payment.account_id
-                    },
-                    'Amount': payment.amount
+                    "Invoice": {"InvoiceId": payment.invoice_id},
+                    "Account": {"AccountId": payment.account_id},
+                    "Amount": payment.amount,
                 }
             ]
         }

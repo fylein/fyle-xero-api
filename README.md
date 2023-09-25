@@ -12,7 +12,7 @@ Django Rest Framework API for Fyle Xero Integration
     ```
     $ mv docker-compose.yml.template docker-compose.yml
     ```
-  
+
 * Setup environment variables in docker_compose.yml
 
     ```yaml
@@ -33,7 +33,7 @@ Django Rest Framework API for Fyle Xero Integration
       XERO_REDIRECT_URI: http://localhost:4200/workspaces/xero/callback
       XERO_TOKEN_URI: https://identity.xero.com/connect/token
    ```
-  
+
 * Build docker images
 
     ```
@@ -53,7 +53,7 @@ Django Rest Framework API for Fyle Xero Integration
     ```
 
 * To tail the logs a service you can do
-    
+
     ```
     docker-compose logs -f <api / qcluster>
     ```

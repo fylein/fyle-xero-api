@@ -1,9 +1,9 @@
 app_to_database = {
-    'django_cache': 'cache_db',
+    "django_cache": "cache_db",
 }
 
-class CacheRouter:
 
+class CacheRouter:
     def db_for_read(self, model, **hints):
         return app_to_database.get(model._meta.app_label, None)
 

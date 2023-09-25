@@ -1,11 +1,10 @@
 from rest_framework import generics, status
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
+from apps.workspaces.apis.clone_settings.helpers import get_latest_workspace
+from apps.workspaces.apis.clone_settings.serializers import CloneSettingsSerializer
 from apps.workspaces.models import Workspace
-
-from .helpers import get_latest_workspace
-from .serializers import CloneSettingsSerializer
 
 
 class CloneSettingsView(generics.RetrieveUpdateAPIView):
@@ -17,19 +16,17 @@ class CloneSettingsView(generics.RetrieveUpdateAPIView):
         return Workspace.objects.filter(id=latest_workspace.id).first()
 
     def put(self, request, **kwargs):
-        workspace_instance = Workspace.objects.get(id=kwargs['workspace_id'])
-        serializer = CloneSettingsSerializer(workspace_instance, data=request.data, partial=True)
+        workspace_instance = Workspace.objects.get(id=kwargs["workspace_id"])
+        serializer = CloneSettingsSerializer(
+            workspace_instance, data=request.data, partial=True
+        )
 
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return Response(
-                data=serializer.data,
-                status=status.HTTP_200_OK
-            )
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class CloneSettingsExistsView(generics.RetrieveAPIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
@@ -37,8 +34,8 @@ class CloneSettingsExistsView(generics.RetrieveAPIView):
 
         return Response(
             data={
-                'is_available': True if latest_workspace else False,
-                'workspace_name': latest_workspace.name if latest_workspace else None
+                "is_available": True if latest_workspace else False,
+                "workspace_name": latest_workspace.name if latest_workspace else None,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
