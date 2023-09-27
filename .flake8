@@ -26,7 +26,6 @@ extend-ignore =
     E241,
     E402,
 
-exclude = apps/mappings/apps.py, apps/xero/admin.py
 max-line-length = 99
 max-complexity = 19
 ban-relative-imports = true
