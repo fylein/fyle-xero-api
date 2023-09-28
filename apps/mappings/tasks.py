@@ -1,65 +1,80 @@
 import logging
-from datetime import datetime, timedelta
+from typing import Dict, List
 
-from typing import List, Dict
-
-from django_q.models import Schedule
 from django_q.tasks import Chain
-
+from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping, MappingSetting
 from fyle_integrations_platform_connector import PlatformConnector
 
-from fyle_accounting_mappings.models import Mapping, MappingSetting, DestinationAttribute, ExpenseAttribute
-
-from .exceptions import handle_import_exceptions
-
-from apps.xero.utils import XeroConnector
+from apps.mappings.constants import FYLE_EXPENSE_SYSTEM_FIELDS
+from apps.mappings.exceptions import handle_import_exceptions
 from apps.tasks.models import Error
-from apps.workspaces.models import XeroCredentials, FyleCredential, WorkspaceGeneralSettings
-from apps.mappings.models import TenantMapping
-from .constants import FYLE_EXPENSE_SYSTEM_FIELDS
+from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
+from apps.xero.utils import XeroConnector
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
 DEFAULT_FYLE_CATEGORIES = [
-    'Activity', 'Train', 'Fuel', 'Snacks', 'Office Supplies', 'Utility', 'Entertainment', 'Others', 'Mileage', 'Food',
-    'Per Diem', 'Bus', 'Internet', 'Taxi', 'Courier', 'Hotel', 'Professional Services', 'Phone', 'Office Party',
-    'Flight', 'Software', 'Parking', 'Toll Charge', 'Tax', 'Training', 'Unspecified'
+    "Activity",
+    "Train",
+    "Fuel",
+    "Snacks",
+    "Office Supplies",
+    "Utility",
+    "Entertainment",
+    "Others",
+    "Mileage",
+    "Food",
+    "Per Diem",
+    "Bus",
+    "Internet",
+    "Taxi",
+    "Courier",
+    "Hotel",
+    "Professional Services",
+    "Phone",
+    "Office Party",
+    "Flight",
+    "Software",
+    "Parking",
+    "Toll Charge",
+    "Tax",
+    "Training",
+    "Unspecified",
 ]
 
-def disable_expense_attributes(source_field, destination_field, workspace_id):
 
-    filter = {
-        'mapping__isnull': False,
-        'mapping__destination_type': destination_field
-    }
+def disable_expense_attributes(source_field, destination_field, workspace_id):
+    filter = {"mapping__isnull": False, "mapping__destination_type": destination_field}
 
     destination_attribute_ids = DestinationAttribute.objects.filter(
         attribute_type=destination_field,
         active=False,
         workspace_id=workspace_id,
         **filter
-    ).values_list('id',flat=True)
-    
-    filter = {
-        'mapping__destination_id__in': destination_attribute_ids
-    }
+    ).values_list("id", flat=True)
+
+    filter = {"mapping__destination_id__in": destination_attribute_ids}
 
     expense_attributes_to_disable = ExpenseAttribute.objects.filter(
-        attribute_type=source_field,
-        active=True,
-        **filter
+        attribute_type=source_field, active=True, **filter
     )
 
     expense_attributes_ids = []
     if expense_attributes_to_disable:
-        expense_attributes_ids = [expense_attribute.id for expense_attribute in expense_attributes_to_disable]
+        expense_attributes_ids = [
+            expense_attribute.id for expense_attribute in expense_attributes_to_disable
+        ]
         expense_attributes_to_disable.update(active=False)
-    
+
     return expense_attributes_ids
 
+
 def resolve_expense_attribute_errors(
-    source_attribute_type: str, workspace_id: int, destination_attribute_type: str = None):
+    source_attribute_type: str,
+    workspace_id: int,
+    destination_attribute_type: str = None,
+):
     """
     Resolve Expense Attribute Errors
     :return: None
@@ -67,18 +82,20 @@ def resolve_expense_attribute_errors(
     errored_attribute_ids: List[int] = Error.objects.filter(
         is_resolved=False,
         workspace_id=workspace_id,
-        type='{}_MAPPING'.format(source_attribute_type)
-    ).values_list('expense_attribute_id', flat=True)
+        type="{}_MAPPING".format(source_attribute_type),
+    ).values_list("expense_attribute_id", flat=True)
 
     if errored_attribute_ids:
         mapped_attribute_ids = []
 
         mapped_attribute_ids: List[int] = Mapping.objects.filter(
             source_id__in=errored_attribute_ids
-        ).values_list('source_id', flat=True)
+        ).values_list("source_id", flat=True)
 
         if mapped_attribute_ids:
-            Error.objects.filter(expense_attribute_id__in=mapped_attribute_ids).update(is_resolved=True)
+            Error.objects.filter(expense_attribute_id__in=mapped_attribute_ids).update(
+                is_resolved=True
+            )
 
 
 def remove_duplicates(xero_attributes: List[DestinationAttribute]):
@@ -94,7 +111,12 @@ def remove_duplicates(xero_attributes: List[DestinationAttribute]):
     return unique_attributes
 
 
-def create_fyle_categories_payload(categories: List[DestinationAttribute], workspace_id: int, category_map: Dict, updated_categories: List[ExpenseAttribute] = None):
+def create_fyle_categories_payload(
+    categories: List[DestinationAttribute],
+    workspace_id: int,
+    category_map: Dict,
+    updated_categories: List[ExpenseAttribute] = None,
+):
     """
     Create Fyle Categories Payload from Xero Categories
     :param workspace_id: Workspace integer id
@@ -105,84 +127,107 @@ def create_fyle_categories_payload(categories: List[DestinationAttribute], works
 
     if updated_categories:
         for category in updated_categories:
-            destination_id_of_category = category.mapping.first().destination.destination_id
-            payload.append({
-                'id': category.source_id,
-                'name': category.value,
-                'code': destination_id_of_category,
-                'is_enabled': category.active
-            })
+            destination_id_of_category = (
+                category.mapping.first().destination.destination_id
+            )
+            payload.append(
+                {
+                    "id": category.source_id,
+                    "name": category.value,
+                    "code": destination_id_of_category,
+                    "is_enabled": category.active,
+                }
+            )
     else:
         for category in categories:
             if category.value.lower() not in category_map:
-                payload.append({
-                    'name': category.value,
-                    'code': category.destination_id,
-                    'is_enabled': category.active
-                })
+                payload.append(
+                    {
+                        "name": category.value,
+                        "code": category.destination_id,
+                        "is_enabled": category.active,
+                    }
+                )
     return payload
 
+
 def get_all_categories_from_fyle(platform: PlatformConnector):
-    categories_generator = platform.connection.v1beta.admin.categories.list_all(query_params={
-            'order': 'id.desc'
-        })
+    categories_generator = platform.connection.v1beta.admin.categories.list_all(
+        query_params={"order": "id.desc"}
+    )
     categories = []
 
     for response in categories_generator:
-        if response.get('data'):
-            categories.extend(response['data'])
-    
+        if response.get("data"):
+            categories.extend(response["data"])
+
     category_name_map = {}
     for category in categories:
-        if category['sub_category'] and category['name'] != category['sub_category']:
-                    category['name'] = '{0} / {1}'.format(category['name'], category['sub_category'])
-        category_name_map[category['name'].lower()] = category
+        if category["sub_category"] and category["name"] != category["sub_category"]:
+            category["name"] = "{0} / {1}".format(
+                category["name"], category["sub_category"]
+            )
+        category_name_map[category["name"].lower()] = category
 
     return category_name_map
+
 
 def upload_categories_to_fyle(workspace_id):
     """
     Upload categories to Fyle
     """
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
-    xero_credentials: XeroCredentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-    general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(
+        workspace_id=workspace_id
+    )
+    xero_credentials: XeroCredentials = XeroCredentials.get_active_xero_credentials(
+        workspace_id
+    )
+    general_settings = WorkspaceGeneralSettings.objects.filter(
+        workspace_id=workspace_id
+    ).first()
     platform = PlatformConnector(fyle_credentials)
 
     category_map = get_all_categories_from_fyle(platform=platform)
 
     xero_connection = XeroConnector(
-        credentials_object=xero_credentials,
-        workspace_id=workspace_id
+        credentials_object=xero_credentials, workspace_id=workspace_id
     )
     platform.categories.sync()
     xero_connection.sync_accounts()
 
     xero_attributes = DestinationAttribute.objects.filter(
         workspace_id=workspace_id,
-        attribute_type='ACCOUNT',
-        detail__account_type__in=general_settings.charts_of_accounts
+        attribute_type="ACCOUNT",
+        detail__account_type__in=general_settings.charts_of_accounts,
     ).all()
 
     xero_attributes = remove_duplicates(xero_attributes)
 
-    fyle_payload: List[Dict] = create_fyle_categories_payload(xero_attributes, workspace_id, category_map)
+    fyle_payload: List[Dict] = create_fyle_categories_payload(
+        xero_attributes, workspace_id, category_map
+    )
 
     if fyle_payload:
         platform.categories.post_bulk(fyle_payload)
         platform.categories.sync()
-    
-    category_ids_to_be_changed = disable_expense_attributes('CATEGORY', 'ACCOUNT', workspace_id)
+
+    category_ids_to_be_changed = disable_expense_attributes(
+        "CATEGORY", "ACCOUNT", workspace_id
+    )
     if category_ids_to_be_changed:
-        expense_attributes = ExpenseAttribute.objects.filter(id__in=category_ids_to_be_changed)
-        fyle_payload: List[Dict] = create_fyle_categories_payload([], workspace_id,category_map,updated_categories=expense_attributes)
+        expense_attributes = ExpenseAttribute.objects.filter(
+            id__in=category_ids_to_be_changed
+        )
+        fyle_payload: List[Dict] = create_fyle_categories_payload(
+            [], workspace_id, category_map, updated_categories=expense_attributes
+        )
         platform.categories.post_bulk(fyle_payload)
         platform.categories.sync()
 
     return xero_attributes
 
 
-@handle_import_exceptions(task_name='auto create category mappings')
+@handle_import_exceptions(task_name="auto create category mappings")
 def auto_create_category_mappings(workspace_id):
     """
     Create Category Mappings
@@ -191,16 +236,17 @@ def auto_create_category_mappings(workspace_id):
 
     fyle_categories = upload_categories_to_fyle(workspace_id=workspace_id)
 
-    Mapping.bulk_create_mappings(fyle_categories, 'CATEGORY', 'ACCOUNT', workspace_id)
+    Mapping.bulk_create_mappings(fyle_categories, "CATEGORY", "ACCOUNT", workspace_id)
 
-    resolve_expense_attribute_errors(source_attribute_type='CATEGORY', workspace_id=workspace_id)
+    resolve_expense_attribute_errors(
+        source_attribute_type="CATEGORY", workspace_id=workspace_id
+    )
 
     return []
 
 
-@handle_import_exceptions(task_name='async auto map employees')
+@handle_import_exceptions(task_name="async auto map employees")
 def async_auto_map_employees(workspace_id: int):
-
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     employee_mapping_preference = general_settings.auto_map_employees
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
@@ -212,29 +258,34 @@ def async_auto_map_employees(workspace_id: int):
     platform.employees.sync()
     xero_connection.sync_contacts()
 
-    Mapping.auto_map_employees('CONTACT', employee_mapping_preference, workspace_id)
+    Mapping.auto_map_employees("CONTACT", employee_mapping_preference, workspace_id)
 
-    resolve_expense_attribute_errors(source_attribute_type='EMPLOYEE', workspace_id=workspace_id)
+    resolve_expense_attribute_errors(
+        source_attribute_type="EMPLOYEE", workspace_id=workspace_id
+    )
 
 
 def sync_xero_attributes(xero_attribute_type: str, workspace_id: int):
-    xero_credentials: XeroCredentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+    xero_credentials: XeroCredentials = XeroCredentials.get_active_xero_credentials(
+        workspace_id
+    )
     xero_connection = XeroConnector(
-        credentials_object=xero_credentials,
-        workspace_id=workspace_id
+        credentials_object=xero_credentials, workspace_id=workspace_id
     )
 
-    if xero_attribute_type == 'ITEM':
+    if xero_attribute_type == "ITEM":
         xero_connection.sync_items()
-    elif xero_attribute_type == 'TAX_CODE':
+    elif xero_attribute_type == "TAX_CODE":
         xero_connection.sync_tax_codes()
-    elif xero_attribute_type == 'CUSTOMER':
+    elif xero_attribute_type == "CUSTOMER":
         xero_connection.sync_customers()
     else:
         xero_connection.sync_tracking_categories()
 
 
-def create_fyle_cost_centers_payload(xero_attributes: List[DestinationAttribute], existing_fyle_cost_centers: list):
+def create_fyle_cost_centers_payload(
+    xero_attributes: List[DestinationAttribute], existing_fyle_cost_centers: list
+):
     """
     Create Fyle Cost Centers Payload from xero Objects
     :param workspace_id: Workspace integer id
@@ -242,28 +293,37 @@ def create_fyle_cost_centers_payload(xero_attributes: List[DestinationAttribute]
     :param fyle_attribute: Fyle Attribute
     :return: Fyle Cost Centers Payload
     """
-    existing_fyle_cost_centers = [cost_center.lower() for cost_center in existing_fyle_cost_centers]
+    existing_fyle_cost_centers = [
+        cost_center.lower() for cost_center in existing_fyle_cost_centers
+    ]
     fyle_cost_centers_payload = []
 
     for xero_attribute in xero_attributes:
         if xero_attribute.value.lower() not in existing_fyle_cost_centers:
-            fyle_cost_centers_payload.append({
-                'name': xero_attribute.value,
-                'is_enabled': True if xero_attribute.active is None else xero_attribute.active,
-                'description': 'Cost Center - {0}, Id - {1}'.format(
-                    xero_attribute.value,
-                    xero_attribute.destination_id
-                )
-            })
+            fyle_cost_centers_payload.append(
+                {
+                    "name": xero_attribute.value,
+                    "is_enabled": True
+                    if xero_attribute.active is None
+                    else xero_attribute.active,
+                    "description": "Cost Center - {0}, Id - {1}".format(
+                        xero_attribute.value, xero_attribute.destination_id
+                    ),
+                }
+            )
     return fyle_cost_centers_payload
 
 
-def post_cost_centers_in_batches(platform: PlatformConnector, workspace_id: int, xero_attribute_type: str):
+def post_cost_centers_in_batches(
+    platform: PlatformConnector, workspace_id: int, xero_attribute_type: str
+):
     existing_cost_center_names = ExpenseAttribute.objects.filter(
-        attribute_type='COST_CENTER', workspace_id=workspace_id).values_list('value', flat=True)
+        attribute_type="COST_CENTER", workspace_id=workspace_id
+    ).values_list("value", flat=True)
 
     xero_attribute_count = DestinationAttribute.objects.filter(
-        attribute_type=xero_attribute_type, workspace_id=workspace_id).count()
+        attribute_type=xero_attribute_type, workspace_id=workspace_id
+    ).count()
 
     page_size = 200
 
@@ -271,43 +331,53 @@ def post_cost_centers_in_batches(platform: PlatformConnector, workspace_id: int,
         limit = offset + page_size
         paginated_xero_attributes = DestinationAttribute.objects.filter(
             attribute_type=xero_attribute_type, workspace_id=workspace_id
-        ).order_by('value', 'id')[offset:limit]
+        ).order_by("value", "id")[offset:limit]
 
         paginated_xero_attributes = remove_duplicates(paginated_xero_attributes)
 
         fyle_payload: List[Dict] = create_fyle_cost_centers_payload(
-            paginated_xero_attributes, existing_cost_center_names)
+            paginated_xero_attributes, existing_cost_center_names
+        )
 
         if fyle_payload:
             platform.cost_centers.post_bulk(fyle_payload)
             platform.cost_centers.sync()
 
-        Mapping.bulk_create_mappings(paginated_xero_attributes, 'COST_CENTER', xero_attribute_type, workspace_id)
+        Mapping.bulk_create_mappings(
+            paginated_xero_attributes, "COST_CENTER", xero_attribute_type, workspace_id
+        )
 
 
-@handle_import_exceptions(task_name='auto create cost center mappings')
+@handle_import_exceptions(task_name="auto create cost center mappings")
 def auto_create_cost_center_mappings(workspace_id: int):
     """
     Create Cost Center Mappings
     """
 
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(
+        workspace_id=workspace_id
+    )
 
     platform = PlatformConnector(fyle_credentials)
 
     mapping_setting = MappingSetting.objects.get(
-        source_field='COST_CENTER', import_to_fyle=True, workspace_id=workspace_id
+        source_field="COST_CENTER", import_to_fyle=True, workspace_id=workspace_id
     )
 
     platform.cost_centers.sync()
 
     sync_xero_attributes(mapping_setting.destination_field, workspace_id=workspace_id)
 
-    post_cost_centers_in_batches(platform, workspace_id, mapping_setting.destination_field)
+    post_cost_centers_in_batches(
+        platform, workspace_id, mapping_setting.destination_field
+    )
 
 
-def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_project_names: list, 
-                                    updated_projects: List[ExpenseAttribute] = None):
+def create_fyle_projects_payload(
+    projects: List[DestinationAttribute],
+    existing_project_names: list,
+    updated_projects: List[ExpenseAttribute] = None,
+):
     """
     Create Fyle Projects Payload from Xero Projects and Customers
     :param projects: Xero Projects
@@ -316,56 +386,63 @@ def create_fyle_projects_payload(projects: List[DestinationAttribute], existing_
     payload = []
     if updated_projects:
         for project in updated_projects:
-            destination_id_of_project = project.mapping.first().destination.destination_id
-            payload.append({
-                'id': project.source_id,
-                'name': project.value,
-                'code': destination_id_of_project,
-                'description': 'Project - {0}, Id - {1}'.format(
-                    project.value,
-                    destination_id_of_project
-                ),
-                'is_enabled': project.active
-            })
+            destination_id_of_project = (
+                project.mapping.first().destination.destination_id
+            )
+            payload.append(
+                {
+                    "id": project.source_id,
+                    "name": project.value,
+                    "code": destination_id_of_project,
+                    "description": "Project - {0}, Id - {1}".format(
+                        project.value, destination_id_of_project
+                    ),
+                    "is_enabled": project.active,
+                }
+            )
     else:
-        existing_project_names = [project_name.lower() for project_name in existing_project_names]
+        existing_project_names = [
+            project_name.lower() for project_name in existing_project_names
+        ]
 
         for project in projects:
             if project.value.lower() not in existing_project_names:
-                payload.append({
-                    'name': project.value,
-                    'code': project.destination_id,
-                    'description': 'Project - {0}, Id - {1}'.format(
-                        project.value,
-                        project.destination_id
-                    ),
-                    'is_enabled': True if project.active is None else project.active
-                })
+                payload.append(
+                    {
+                        "name": project.value,
+                        "code": project.destination_id,
+                        "description": "Project - {0}, Id - {1}".format(
+                            project.value, project.destination_id
+                        ),
+                        "is_enabled": True
+                        if project.active is None
+                        else project.active,
+                    }
+                )
 
     return payload
 
-def disable_renamed_projects(workspace_id,destination_field):
+
+def disable_renamed_projects(workspace_id, destination_field):
     page_size = 200
-    expense_attributes_count = ExpenseAttribute.objects.filter(attribute_type='PROJECT',workspace_id=workspace_id,auto_mapped=True).count()
+    expense_attributes_count = ExpenseAttribute.objects.filter(
+        attribute_type="PROJECT", workspace_id=workspace_id, auto_mapped=True
+    ).count()
     expense_attribute_to_be_disabled = []
     for offset in range(0, expense_attributes_count, page_size):
         limit = offset + page_size
 
         fyle_projects = ExpenseAttribute.objects.filter(
-            workspace_id=workspace_id,
-            attribute_type="PROJECT",
-            auto_mapped=True
-        ).order_by('value', 'id')[offset:limit]
+            workspace_id=workspace_id, attribute_type="PROJECT", auto_mapped=True
+        ).order_by("value", "id")[offset:limit]
 
-        project_names = list(
-            set(field.value for field in fyle_projects)
-        )
+        project_names = list(set(field.value for field in fyle_projects))
 
         xero_customers = DestinationAttribute.objects.filter(
             attribute_type=destination_field,
             workspace_id=workspace_id,
-            value__in=project_names
-        ).values_list('value', flat=True)
+            value__in=project_names,
+        ).values_list("value", flat=True)
 
         for fyle_project in fyle_projects:
             if fyle_project.value not in xero_customers:
@@ -376,55 +453,75 @@ def disable_renamed_projects(workspace_id,destination_field):
     return expense_attribute_to_be_disabled
 
 
-def post_projects_in_batches(platform: PlatformConnector,
-                             workspace_id: int, destination_field: str):
+def post_projects_in_batches(
+    platform: PlatformConnector, workspace_id: int, destination_field: str
+):
     existing_project_names = ExpenseAttribute.objects.filter(
-        attribute_type='PROJECT', workspace_id=workspace_id).values_list('value', flat=True)
+        attribute_type="PROJECT", workspace_id=workspace_id
+    ).values_list("value", flat=True)
     xero_attributes_count = DestinationAttribute.objects.filter(
-        attribute_type=destination_field, workspace_id=workspace_id).count()
+        attribute_type=destination_field, workspace_id=workspace_id
+    ).count()
     page_size = 200
 
     for offset in range(0, xero_attributes_count, page_size):
         limit = offset + page_size
         paginated_xero_attributes = DestinationAttribute.objects.filter(
-            attribute_type=destination_field, workspace_id=workspace_id).order_by('value', 'id')[offset:limit]
+            attribute_type=destination_field, workspace_id=workspace_id
+        ).order_by("value", "id")[offset:limit]
 
         paginated_xero_attributes = remove_duplicates(paginated_xero_attributes)
 
         fyle_payload: List[Dict] = create_fyle_projects_payload(
-            paginated_xero_attributes, existing_project_names)
+            paginated_xero_attributes, existing_project_names
+        )
 
         if fyle_payload:
             platform.projects.post_bulk(fyle_payload)
             platform.projects.sync()
 
-        Mapping.bulk_create_mappings(paginated_xero_attributes, 'PROJECT', destination_field, workspace_id)
-    
-    if destination_field == 'CUSTOMER':
-        expense_attribute_to_be_disable = disable_renamed_projects(workspace_id,destination_field)
-        project_ids_to_be_changed = disable_expense_attributes('PROJECT', 'CUSTOMER', workspace_id)
+        Mapping.bulk_create_mappings(
+            paginated_xero_attributes, "PROJECT", destination_field, workspace_id
+        )
+
+    if destination_field == "CUSTOMER":
+        expense_attribute_to_be_disable = disable_renamed_projects(
+            workspace_id, destination_field
+        )
+        project_ids_to_be_changed = disable_expense_attributes(
+            "PROJECT", "CUSTOMER", workspace_id
+        )
         project_ids_to_be_changed.extend(expense_attribute_to_be_disable)
         if project_ids_to_be_changed:
-            expense_attributes = ExpenseAttribute.objects.filter(id__in=project_ids_to_be_changed)
-            fyle_payload: List[Dict] = create_fyle_projects_payload(projects=[], existing_project_names=[], updated_projects=expense_attributes)
+            expense_attributes = ExpenseAttribute.objects.filter(
+                id__in=project_ids_to_be_changed
+            )
+            fyle_payload: List[Dict] = create_fyle_projects_payload(
+                projects=[],
+                existing_project_names=[],
+                updated_projects=expense_attributes,
+            )
             platform.projects.post_bulk(fyle_payload)
             platform.projects.sync()
 
-@handle_import_exceptions(task_name='auto_create_project_mappings')
+
+@handle_import_exceptions(task_name="auto_create_project_mappings")
 def auto_create_project_mappings(workspace_id: int):
     """
     Create Project Mappings
     :return: mappings
     """
 
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(
+        workspace_id=workspace_id
+    )
 
     platform = PlatformConnector(fyle_credentials)
 
     platform.projects.sync()
 
     mapping_setting = MappingSetting.objects.get(
-        source_field='PROJECT', workspace_id=workspace_id
+        source_field="PROJECT", workspace_id=workspace_id
     )
 
     sync_xero_attributes(mapping_setting.destination_field, workspace_id)
@@ -432,8 +529,13 @@ def auto_create_project_mappings(workspace_id: int):
     post_projects_in_batches(platform, workspace_id, mapping_setting.destination_field)
 
 
-def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationAttribute], workspace_id: int,
-                                              fyle_attribute: str,  platform: PlatformConnector, source_placeholder: str = None):
+def create_fyle_expense_custom_fields_payload(
+    xero_attributes: List[DestinationAttribute],
+    workspace_id: int,
+    fyle_attribute: str,
+    platform: PlatformConnector,
+    source_placeholder: str = None,
+):
     """
     Create Fyle Expense Custom Field Payload from Xero Objects
     :param workspace_id: Workspace ID
@@ -444,30 +546,42 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
 
     fyle_expense_custom_field_options = []
 
-    [fyle_expense_custom_field_options.append(xero_attribute.value) for xero_attribute in xero_attributes]
+    [
+        fyle_expense_custom_field_options.append(xero_attribute.value)
+        for xero_attribute in xero_attributes
+    ]
 
     if fyle_attribute.lower() not in FYLE_EXPENSE_SYSTEM_FIELDS:
-        existing_attribute = ExpenseAttribute.objects.filter(
-            attribute_type=fyle_attribute, workspace_id=workspace_id).values_list('detail', flat=True).first()
+        existing_attribute = (
+            ExpenseAttribute.objects.filter(
+                attribute_type=fyle_attribute, workspace_id=workspace_id
+            )
+            .values_list("detail", flat=True)
+            .first()
+        )
 
         custom_field_id = None
         placeholder = None
         if existing_attribute is not None:
-            custom_field_id = existing_attribute['custom_field_id']
-            placeholder = existing_attribute['placeholder'] if 'placeholder' in existing_attribute else None
+            custom_field_id = existing_attribute["custom_field_id"]
+            placeholder = (
+                existing_attribute["placeholder"]
+                if "placeholder" in existing_attribute
+                else None
+            )
 
-        fyle_attribute = fyle_attribute.replace('_', ' ').title()
+        fyle_attribute = fyle_attribute.replace("_", " ").title()
 
         new_placeholder = None
 
-        # Here is the explanation of what's happening in the if-else ladder below   
+        # Here is the explanation of what's happening in the if-else ladder below
         # source_field is the field that's save in mapping settings, this field user may or may not fill in the custom field form
         # placeholder is the field that's saved in the detail column of destination attributes
         # fyle_attribute is what we're constructing when both of these fields would not be available
 
         if not (source_placeholder or placeholder):
             # If source_placeholder and placeholder are both None, then we're creating adding a self constructed placeholder
-            new_placeholder = 'Select {0}'.format(fyle_attribute)
+            new_placeholder = "Select {0}".format(fyle_attribute)
         elif not source_placeholder and placeholder:
             # If source_placeholder is None but placeholder is not, then we're choosing same place holder as 1 in detail section
             new_placeholder = placeholder
@@ -479,28 +593,35 @@ def create_fyle_expense_custom_fields_payload(xero_attributes: List[DestinationA
             new_placeholder = source_placeholder
 
         expense_custom_field_payload = {
-            'field_name': fyle_attribute,
-            'type': 'SELECT',
-            'is_enabled': True,
-            'is_mandatory': False,
-            'placeholder': new_placeholder,
-            'options': fyle_expense_custom_field_options,
-            'code': None
+            "field_name": fyle_attribute,
+            "type": "SELECT",
+            "is_enabled": True,
+            "is_mandatory": False,
+            "placeholder": new_placeholder,
+            "options": fyle_expense_custom_field_options,
+            "code": None,
         }
 
         if custom_field_id:
             expense_field = platform.expense_custom_fields.get_by_id(custom_field_id)
-            expense_custom_field_payload['id'] = custom_field_id
-            expense_custom_field_payload['is_mandatory'] = expense_field['is_mandatory']
+            expense_custom_field_payload["id"] = custom_field_id
+            expense_custom_field_payload["is_mandatory"] = expense_field["is_mandatory"]
 
         return expense_custom_field_payload
 
 
-def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str, source_placeholder: str = None):
+def upload_attributes_to_fyle(
+    workspace_id: int,
+    xero_attribute_type: str,
+    fyle_attribute_type: str,
+    source_placeholder: str = None,
+):
     """
     Upload attributes to Fyle
     """
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(
+        workspace_id=workspace_id
+    )
 
     platform = PlatformConnector(fyle_credentials)
 
@@ -515,7 +636,7 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
         workspace_id=workspace_id,
         fyle_attribute=fyle_attribute_type,
         source_placeholder=source_placeholder,
-        platform=platform
+        platform=platform,
     )
 
     if fyle_custom_field_payload:
@@ -525,20 +646,31 @@ def upload_attributes_to_fyle(workspace_id: int, xero_attribute_type: str, fyle_
     return xero_attributes
 
 
-@handle_import_exceptions(task_name='auto create expense fields_mappings')
-def auto_create_expense_fields_mappings(workspace_id: int, xero_attribute_type: str, fyle_attribute_type: str, source_placeholder: str = None):
+@handle_import_exceptions(task_name="auto create expense fields_mappings")
+def auto_create_expense_fields_mappings(
+    workspace_id: int,
+    xero_attribute_type: str,
+    fyle_attribute_type: str,
+    source_placeholder: str = None,
+):
     """
     Create Fyle Attributes Mappings
     :return: mappings
     """
 
-    fyle_attributes = upload_attributes_to_fyle(workspace_id=workspace_id, xero_attribute_type=xero_attribute_type,
-                                                fyle_attribute_type=fyle_attribute_type, source_placeholder=source_placeholder)
+    fyle_attributes = upload_attributes_to_fyle(
+        workspace_id=workspace_id,
+        xero_attribute_type=xero_attribute_type,
+        fyle_attribute_type=fyle_attribute_type,
+        source_placeholder=source_placeholder,
+    )
     if fyle_attributes:
-        Mapping.bulk_create_mappings(fyle_attributes, fyle_attribute_type, xero_attribute_type, workspace_id)
+        Mapping.bulk_create_mappings(
+            fyle_attributes, fyle_attribute_type, xero_attribute_type, workspace_id
+        )
 
 
-@handle_import_exceptions(task_name='async auto create custom field_mappings')
+@handle_import_exceptions(task_name="async auto create custom field_mappings")
 def async_auto_create_custom_field_mappings(workspace_id: str):
     mapping_settings = MappingSetting.objects.filter(
         is_custom=True, import_to_fyle=True, workspace_id=workspace_id
@@ -548,30 +680,40 @@ def async_auto_create_custom_field_mappings(workspace_id: str):
         if mapping_setting.import_to_fyle:
             sync_xero_attributes(mapping_setting.destination_field, workspace_id)
             auto_create_expense_fields_mappings(
-                workspace_id, mapping_setting.destination_field, mapping_setting.source_field,
-                mapping_setting.source_placeholder
+                workspace_id,
+                mapping_setting.destination_field,
+                mapping_setting.source_field,
+                mapping_setting.source_placeholder,
             )
 
 
-def upload_tax_groups_to_fyle(platform_connection: PlatformConnector, workspace_id: int):
+def upload_tax_groups_to_fyle(
+    platform_connection: PlatformConnector, workspace_id: int
+):
     existing_tax_codes_name = ExpenseAttribute.objects.filter(
-        attribute_type='TAX_GROUP', workspace_id=workspace_id).values_list('value', flat=True)
+        attribute_type="TAX_GROUP", workspace_id=workspace_id
+    ).values_list("value", flat=True)
 
     xero_attributes = DestinationAttribute.objects.filter(
-        attribute_type='TAX_CODE', workspace_id=workspace_id).order_by('value', 'id')
+        attribute_type="TAX_CODE", workspace_id=workspace_id
+    ).order_by("value", "id")
 
     xero_attributes = remove_duplicates(xero_attributes)
 
-    fyle_payload: List[Dict] = create_fyle_tax_group_payload(xero_attributes, existing_tax_codes_name)
+    fyle_payload: List[Dict] = create_fyle_tax_group_payload(
+        xero_attributes, existing_tax_codes_name
+    )
 
     if fyle_payload:
         platform_connection.tax_groups.post_bulk(fyle_payload)
 
     platform_connection.tax_groups.sync()
-    Mapping.bulk_create_mappings(xero_attributes, 'TAX_GROUP', 'TAX_CODE', workspace_id)
+    Mapping.bulk_create_mappings(xero_attributes, "TAX_GROUP", "TAX_CODE", workspace_id)
 
 
-def create_fyle_tax_group_payload(xero_attributes: List[DestinationAttribute], existing_fyle_tax_groups: list):
+def create_fyle_tax_group_payload(
+    xero_attributes: List[DestinationAttribute], existing_fyle_tax_groups: list
+):
     """
     Create Fyle tax Group Payload from Xero Objects
     :param existing_fyle_tax_groups: Existing tax groups names
@@ -579,41 +721,47 @@ def create_fyle_tax_group_payload(xero_attributes: List[DestinationAttribute], e
     :return: Fyle tax Group Payload
     """
 
-    existing_fyle_tax_groups = [tax_group.lower() for tax_group in existing_fyle_tax_groups]
+    existing_fyle_tax_groups = [
+        tax_group.lower() for tax_group in existing_fyle_tax_groups
+    ]
 
     fyle_tax_group_payload = []
     for xero_attribute in xero_attributes:
         if xero_attribute.value.lower() not in existing_fyle_tax_groups:
             fyle_tax_group_payload.append(
                 {
-                    'name': xero_attribute.value,
-                    'is_enabled': True,
-                    'percentage': round((xero_attribute.detail['tax_rate'] / 100), 2)
+                    "name": xero_attribute.value,
+                    "is_enabled": True,
+                    "percentage": round((xero_attribute.detail["tax_rate"] / 100), 2),
                 }
             )
 
     return fyle_tax_group_payload
 
 
-@handle_import_exceptions(task_name='auto create tax codes_mappings')
+@handle_import_exceptions(task_name="auto create tax codes_mappings")
 def auto_create_tax_codes_mappings(workspace_id: int):
     """
     Create Tax Codes Mappings
     :return: None
     """
 
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(
+        workspace_id=workspace_id
+    )
 
     platform = PlatformConnector(fyle_credentials=fyle_credentials)
     platform.tax_groups.sync()
 
-    sync_xero_attributes('TAX_CODE', workspace_id)
+    sync_xero_attributes("TAX_CODE", workspace_id)
 
     upload_tax_groups_to_fyle(platform, workspace_id)
 
 
 def auto_create_suppliers_as_merchants(workspace_id):
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(workspace_id=workspace_id)
+    fyle_credentials: FyleCredential = FyleCredential.objects.get(
+        workspace_id=workspace_id
+    )
     fyle_connection = PlatformConnector(fyle_credentials)
 
     xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
@@ -629,19 +777,25 @@ def auto_import_and_map_fyle_fields(workspace_id):
     """
     Auto import and map fyle fields
     """
-    workspace_general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
-    project_mapping = MappingSetting.objects.filter(source_field='PROJECT', workspace_id=workspace_general_settings.workspace_id).first()
+    workspace_general_settings: WorkspaceGeneralSettings = (
+        WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    )
+    project_mapping = MappingSetting.objects.filter(
+        source_field="PROJECT", workspace_id=workspace_general_settings.workspace_id
+    ).first()
 
     chain = Chain()
 
     if workspace_general_settings.import_categories:
-        chain.append('apps.mappings.tasks.auto_create_category_mappings', workspace_id)
+        chain.append("apps.mappings.tasks.auto_create_category_mappings", workspace_id)
 
     if project_mapping and project_mapping.import_to_fyle:
-        chain.append('apps.mappings.tasks.auto_create_project_mappings', workspace_id)
-    
+        chain.append("apps.mappings.tasks.auto_create_project_mappings", workspace_id)
+
     if workspace_general_settings.import_suppliers_as_merchants:
-        chain.append('apps.mappings.tasks.auto_create_suppliers_as_merchants', workspace_id)
+        chain.append(
+            "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id
+        )
 
     if chain.length() > 0:
         chain.run()

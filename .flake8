@@ -1,0 +1,32 @@
+[flake8]
+extend-ignore =
+    # Comparison to true should be 'if cond is true:' or 'if cond:'
+    E712,
+    # Comparison to None should be 'cond is None:' (E711)
+    E711,
+    # Line break occurred before a binary operator (W503)
+    W503,
+    # Missing whitespace after ',', ';', or ':' (E231)
+    E231,
+    # Line too long (82 > 79 characters) (E501)
+    E501,
+    # E251 unexpected spaces around keyword / parameter equals
+    E251,
+    # E502 the backslash is redundant between brackets
+    E502,
+    # E128 continuation line under-indented for visual indent
+    E128,
+    # E125 continuation line with same indent as next logical line
+    E125,
+    # E131 continuation line unaligned for hanging indent
+    E131,
+    # E129 visually indented line with same indent as next logical line
+    E129,
+    # Multiple spaces after ',' (E241)
+    E241,
+    E402,
+
+max-line-length = 99
+max-complexity = 19
+ban-relative-imports = true
+select = B,C,E,F,N,W,I25

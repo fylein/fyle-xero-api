@@ -2,9 +2,9 @@ version: '3.7'
 
 services:
   api:
-    build: 
+    build:
       context: ./
-      args: 
+      args:
         CI: ENABLED
     entrypoint: bash run.sh
     restart: unless-stopped
@@ -12,7 +12,7 @@ services:
     - ./:/fyle-xero-api
     depends_on:
     - db
-    environment: 
+    environment:
       SECRET_KEY: thisisthedjangosecretkey
       ALLOWED_HOSTS: "*"
       DEBUG: "False"
@@ -32,7 +32,7 @@ services:
       XERO_TOKEN_URI: ${XERO_TOKEN_URI}
   db:
     image: "postgres:15"
-    environment: 
+    environment:
       POSTGRES_DB: dummy
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

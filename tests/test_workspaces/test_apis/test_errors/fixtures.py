@@ -1,5 +1,5 @@
 data = {
-    'errors_response': [
+    "errors_response": [
         {
             "id": 1,
             "expense_attribute": {
@@ -14,7 +14,7 @@ data = {
                 "detail": None,
                 "created_at": "2022-10-07T06:02:54.076426Z",
                 "updated_at": "2022-10-07T06:02:54.076429Z",
-                "workspace": 8
+                "workspace": 8,
             },
             "expense_group": None,
             "type": "CATEGORY_MAPPING",
@@ -23,7 +23,7 @@ data = {
             "error_detail": "Category mapping is missing",
             "created_at": "2022-10-07T06:07:32.823778Z",
             "updated_at": "2022-10-07T06:31:53.211657Z",
-            "workspace": 1
+            "workspace": 1,
         },
         {
             "id": 2,
@@ -43,11 +43,11 @@ data = {
                     "department": None,
                     "department_id": None,
                     "employee_code": None,
-                    "department_code": None
+                    "department_code": None,
                 },
                 "created_at": "2022-10-07T06:02:53.810543Z",
                 "updated_at": "2022-10-07T06:02:53.810548Z",
-                "workspace": 8
+                "workspace": 8,
             },
             "expense_group": None,
             "type": "EMPLOYEE_MAPPING",
@@ -56,7 +56,7 @@ data = {
             "error_detail": "Employee mapping is missing",
             "created_at": "2022-10-07T06:31:48.338064Z",
             "updated_at": "2022-10-07T06:31:48.338082Z",
-            "workspace": 1
-        }
+            "workspace": 1,
+        },
     ]
 }

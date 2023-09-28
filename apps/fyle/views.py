@@ -1,13 +1,12 @@
-from rest_framework.views import status
 from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework.views import status
 
-from .tasks import get_task_log_and_fund_source, async_create_expense_groups
-from .models import Expense, ExpenseGroup, ExpenseGroupSettings
-from .serializers import ExpenseGroupSerializer, ExpenseFieldSerializer, \
-    ExpenseGroupSettingsSerializer
 from apps.exceptions import handle_view_exceptions
-from .actions import exportable_expense_group, get_expense_field, refresh_fyle_dimension, sync_fyle_dimension
+from apps.fyle.actions import exportable_expense_group, get_expense_field, refresh_fyle_dimension, sync_fyle_dimension
+from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
+from apps.fyle.serializers import ExpenseFieldSerializer, ExpenseGroupSerializer, ExpenseGroupSettingsSerializer
+from apps.fyle.tasks import async_create_expense_groups, get_task_log_and_fund_source
 from fyle_xero_api.utils import LookupFieldMixin
 
 
@@ -15,18 +14,22 @@ class ExpenseGroupView(LookupFieldMixin, generics.ListCreateAPIView):
     """
     List Fyle Expenses
     """
+
     serializer_class = ExpenseGroupSerializer
-    queryset = ExpenseGroup.objects.filter(tasklog__status='COMPLETE').order_by('-updated_at')
+    queryset = ExpenseGroup.objects.filter(tasklog__status="COMPLETE").order_by(
+        "-updated_at"
+    )
     serializer_class = ExpenseGroupSerializer
-    filterset_fields = {'exported_at': {'gte', 'lte'}}
+    filterset_fields = {"exported_at": {"gte", "lte"}}
 
 
 class ExpenseGroupSettingsView(generics.RetrieveAPIView):
     """
     Expense Group Settings View
     """
-    lookup_field = 'workspace_id'
-    lookup_url_kwarg = 'workspace_id'
+
+    lookup_field = "workspace_id"
+    lookup_url_kwarg = "workspace_id"
     serializer_class = ExpenseGroupSettingsSerializer
     queryset = ExpenseGroupSettings.objects.all()
 
@@ -36,30 +39,25 @@ class ExpenseFieldsView(generics.ListAPIView):
     serializer_class = ExpenseFieldSerializer
 
     def get(self, request, *args, **kwargs):
+        expense_fields = get_expense_field(workspace_id=kwargs["workspace_id"])
 
-        expense_fields = get_expense_field(workspace_id=kwargs['workspace_id'])     
-
-        return Response(
-            expense_fields,
-            status=status.HTTP_200_OK
-        )
+        return Response(expense_fields, status=status.HTTP_200_OK)
 
 
 class ExpenseGroupSyncView(generics.CreateAPIView):
     """
     Create expense groups
     """
+
     def post(self, request, *args, **kwargs):
         """
         Post expense groups creation
         """
-        task_log, fund_source = get_task_log_and_fund_source(kwargs['workspace_id'])
+        task_log, fund_source = get_task_log_and_fund_source(kwargs["workspace_id"])
 
-        async_create_expense_groups(kwargs['workspace_id'], fund_source, task_log)
+        async_create_expense_groups(kwargs["workspace_id"], fund_source, task_log)
 
-        return Response(
-            status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
 
 class SyncFyleDimensionView(generics.ListCreateAPIView):
@@ -73,11 +71,9 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
         Sync Data From Fyle
         """
 
-        sync_fyle_dimension(workspace_id=kwargs['workspace_id'])
+        sync_fyle_dimension(workspace_id=kwargs["workspace_id"])
 
-        return Response(
-            status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
 
 class RefreshFyleDimensionView(generics.ListCreateAPIView):
@@ -91,22 +87,22 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         Sync data from Fyle
         """
 
-        refresh_fyle_dimension(workspace_id=kwargs['workspace_id'])
+        refresh_fyle_dimension(workspace_id=kwargs["workspace_id"])
 
-        return Response(
-            status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
 
 class ExportableExpenseGroupsView(generics.RetrieveAPIView):
     """
     List Exportable Expense Groups
     """
+
     def get(self, request, *args, **kwargs):
-        
-        expense_group_ids = exportable_expense_group(workspace_id=kwargs['workspace_id'])
+        expense_group_ids = exportable_expense_group(
+            workspace_id=kwargs["workspace_id"]
+        )
 
         return Response(
-            data={'exportable_expense_group_ids': expense_group_ids},
-            status=status.HTTP_200_OK
+            data={"exportable_expense_group_ids": expense_group_ids},
+            status=status.HTTP_200_OK,
         )
