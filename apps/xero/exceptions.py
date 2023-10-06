@@ -137,10 +137,13 @@ def handle_xero_exceptions(payment=False):
                 expense_group_id = args[0]
                 expense_group = ExpenseGroup.objects.get(id=expense_group_id)
                 task_log_id = args[1]
+                xero_connection = args[2]
                 task_log = TaskLog.objects.get(id=task_log_id)
                 workspace_id = expense_group.workspace_id
 
             try:
+                if not xero_connection:
+                    raise XeroCredentials.DoesNotExist
                 func(*args)
 
             except (FyleCredential.DoesNotExist, InvalidTokenError):

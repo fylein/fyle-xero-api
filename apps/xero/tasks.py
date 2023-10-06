@@ -266,29 +266,26 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
     try:
         xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
         xero_connection = XeroConnector(xero_credentials, workspace_id)
+    except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
+        xero_connection = None
 
-        chain = Chain()
+    chain = Chain()
 
-        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-        chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials)
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials)
 
-        for group in chaining_attributes:
-            trigger_function = "apps.xero.tasks.create_{}".format(group["export_type"])
-            chain.append(
-                trigger_function,
-                group["expense_group_id"],
-                group["task_log_id"],
-                xero_connection,
-                group["last_export"],
-            )
+    for group in chaining_attributes:
+        trigger_function = "apps.xero.tasks.create_{}".format(group["export_type"])
+        chain.append(
+            trigger_function,
+            group["expense_group_id"],
+            group["task_log_id"],
+            xero_connection,
+            group["last_export"],
+        )
 
-        if chain.length() > 1:
-            chain.run()
-
-    except UnsuccessfulAuthentication:
-        logger.info("Xero refresh token is invalid for workspace_id - %s", workspace_id)
-    except XeroCredentials.DoesNotExist:
-        logger.info("Xero Credentials not found for workspace_id %s", workspace_id)
+    if chain.length() > 1:
+        chain.run()
 
 
 def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> list:
