@@ -142,7 +142,7 @@ def handle_xero_exceptions(payment=False):
                 workspace_id = expense_group.workspace_id
 
             try:
-                if not xero_connection:
+                if not payment and not xero_connection:
                     raise XeroCredentials.DoesNotExist
                 func(*args)
 
