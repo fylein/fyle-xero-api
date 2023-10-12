@@ -48,6 +48,7 @@ jobs:
           git commit -m "Update xero-api image tag"
           git remote set-url origin https://x-access-token:${{ secrets.DEPLOY_GIT_ACCESS_TOKEN }}@github.com/${{ secrets.PROD_DEPLOY_REPO }}
           git push origin master
+          git push origin master
 
       - name: Create new Sentry release
         env:
