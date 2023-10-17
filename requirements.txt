@@ -46,5 +46,5 @@ pytest==7.1.2
 pytest-cov==3.0.0
 pytest-django==4.5.2
 pytest-mock==3.8.2
-gevent==22.10.2
+gevent==23.9.1
 django-filter==21.1
