@@ -1,5 +1,5 @@
 # Pull python base image
-FROM python:3.7.4-slim
+FROM python:3.10-slim
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
