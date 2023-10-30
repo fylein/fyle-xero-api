@@ -16,11 +16,11 @@ class ExpenseGroupView(LookupFieldMixin, generics.ListCreateAPIView):
     """
 
     serializer_class = ExpenseGroupSerializer
-    queryset = ExpenseGroup.objects.filter(tasklog__status="COMPLETE").order_by(
+    queryset = ExpenseGroup.objects.filter().order_by(
         "-updated_at"
     )
     serializer_class = ExpenseGroupSerializer
-    filterset_fields = {"exported_at": {"gte", "lte"}}
+    filterset_fields = {"exported_at": {"gte", "lte"}, "tasklog__status": {"exact"}}
 
 
 class ExpenseGroupSettingsView(generics.RetrieveAPIView):
