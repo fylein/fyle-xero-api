@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from fyle_integrations_platform_connector import PlatformConnector
+from fyle_rest_auth.helpers import get_fyle_admin
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
@@ -131,3 +132,11 @@ def async_add_admins_to_workspace(workspace_id: int, current_user_id: str):
 
         for user in created_users:
             workspace.user.add(user)
+
+
+def async_update_workspace_name(workspace: Workspace, access_token: str):
+    fyle_user = get_fyle_admin(access_token.split(' ')[1], None)
+    org_name = fyle_user['data']['org']['name']
+
+    workspace.name = org_name
+    workspace.save()
