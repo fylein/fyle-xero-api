@@ -30,6 +30,8 @@ def post_workspace(access_token, request):
 
     if workspace:
         workspace.user.add(User.objects.get(user_id=request.user))
+        workspace.name = org_name
+        workspace.save()
         cache.delete(str(workspace.id))
     else:
         workspace = Workspace.objects.create(

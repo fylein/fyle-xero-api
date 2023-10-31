@@ -5,11 +5,12 @@ from fyle_accounting_mappings.models import ExpenseAttribute
 
 from apps.tasks.models import TaskLog
 from apps.users.models import User
-from apps.workspaces.models import FyleCredential, LastExportDetail, WorkspaceGeneralSettings, WorkspaceSchedule
+from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
 from apps.workspaces.queue import schedule_sync
 from apps.workspaces.tasks import (
     async_add_admins_to_workspace,
     async_update_fyle_credentials,
+    async_update_workspace_name,
     run_email_notification,
     run_sync_schedule,
 )
@@ -155,3 +156,16 @@ def test_async_add_admins_to_workspace(db, mocker):
     new_users_count = User.objects.count()
 
     assert new_users_count > old_users_count
+
+
+@pytest.mark.django_db()
+def test_async_update_workspace_name(mocker):
+    mocker.patch(
+        'apps.workspaces.tasks.get_fyle_admin',
+        return_value={'data': {'org': {'name': 'Test Org'}}}
+    )
+    workspace = Workspace.objects.get(id=1)
+    async_update_workspace_name(workspace, 'Bearer access_token')
+
+    workspace = Workspace.objects.get(id=1)
+    assert workspace.name == 'Test Org'

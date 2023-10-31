@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import status
 
+from django_q.tasks import async_task
+
 from apps.exceptions import handle_view_exceptions
 from apps.workspaces.actions import connect_xero, get_workspace_admin, post_workspace, revoke_connections
 from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings, XeroCredentials
@@ -68,10 +70,17 @@ class WorkspaceView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
         """
         user = User.objects.get(user_id=request.user)
         org_id = request.query_params.get("org_id")
-        workspace = Workspace.objects.filter(user__in=[user], fyle_org_id=org_id).all()
+        workspaces = Workspace.objects.filter(user__in=[user], fyle_org_id=org_id).all()
+
+        if workspaces:
+            async_task(
+                "apps.workspaces.tasks.async_update_workspace_name",
+                workspaces[0],
+                request.META.get("HTTP_AUTHORIZATION"),
+            )
 
         return Response(
-            data=WorkspaceSerializer(workspace, many=True).data,
+            data=WorkspaceSerializer(workspaces, many=True).data,
             status=status.HTTP_200_OK,
         )
 
