@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 from datetime import datetime, timedelta
+from time import sleep
 from typing import Dict, List
 
 import unidecode
@@ -307,11 +308,13 @@ class XeroConnector:
         customers_generator = self.connection.contacts.list_all_generator()
 
         customer_attributes = []
+
         destination_attributes = DestinationAttribute.objects.filter(
             workspace_id=self.workspace_id,
             attribute_type="CUSTOMER",
             display_name="Customer",
         ).values("destination_id", "value", "detail")
+
         disabled_fields_map = {}
 
         for destination_attribute in destination_attributes:
@@ -334,22 +337,14 @@ class XeroConnector:
                                 if "EmailAddress" in customer
                                 else None
                             },
-                            "active": True
-                            if customer["ContactStatus"] == "ACTIVE"
-                            else False,
+                            "active": True if customer["ContactStatus"] == "ACTIVE" else False,
                         }
                     )
 
-                    if (
-                        customer["ContactStatus"] == "ACTIVE"
-                        and customer["ContactID"] in disabled_fields_map
-                    ):
+                    if (customer["ContactStatus"] == "ACTIVE" and customer["ContactID"] in disabled_fields_map):
                         disabled_fields_map.pop(customer["ContactID"])
-        # For setting active to False
-        # During the initial run we only pull in the active ones.
-        # In the concurrent runs we get all the destination_attributes and store it in disable_field_map check if in the SDK call we get status = Active or not .
-        # If yes then we pop the item from the disable_field_map else we set the active = True.
-        # This should take care of delete as well as inactive case since we are checking the status=Active case.
+            sleep(0.5)
+
         for destination_id in disabled_fields_map:
             customer_attributes.append(
                 {
