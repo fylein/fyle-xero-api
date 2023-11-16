@@ -68,12 +68,20 @@ class XeroConnector:
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        suppliers_generator = self.connection.contacts.list_all_generator()
+        params = {
+            'where': 'IsSupplier=true',
+            'includeArchived': 'false',
+        }
+
+        suppliers_generator = self.connection.contacts.list_all_generator(**params)
         merchant_names: List[str] = []
+
         for suppliers in suppliers_generator:
             for supplier in suppliers["Contacts"]:
-                if supplier["IsSupplier"] and supplier["ContactStatus"] == "ACTIVE":
-                    merchant_names.append(supplier["Name"])
+                merchant_names.append(supplier["Name"])
+
+            sleep(1)
+
         return merchant_names
 
     def get_or_create_contact(
@@ -268,8 +276,13 @@ class XeroConnector:
 
         updated_at = get_last_synced_at(self.workspace_id, "CONTACT")
 
+        params = {
+            'where': 'IsCustomer=false',
+            'includeArchived': 'true'
+        }
+
         contacts_generator = self.connection.contacts.list_all_generator(
-            modified_after=updated_at
+            modified_after=updated_at, **params
         )
 
         for contacts in contacts_generator:
@@ -288,12 +301,14 @@ class XeroConnector:
                         "value": contact["Name"],
                         "destination_id": contact["ContactID"],
                         "detail": detail,
+                        "active": True if contact["ContactStatus"] == "ACTIVE" else False,
                     }
                 )
 
             DestinationAttribute.bulk_create_or_update_destination_attributes(
                 contact_attributes, "CONTACT", self.workspace_id, True
             )
+            sleep(1)
 
         return []
 
@@ -305,61 +320,36 @@ class XeroConnector:
 
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
-        customers_generator = self.connection.contacts.list_all_generator()
+        params = {
+            'where': 'IsCustomer=true',
+            'includeArchived': 'true',
+        }
 
-        customer_attributes = []
-
-        destination_attributes = DestinationAttribute.objects.filter(
-            workspace_id=self.workspace_id,
-            attribute_type="CUSTOMER",
-            display_name="Customer",
-        ).values("destination_id", "value", "detail")
-
-        disabled_fields_map = {}
-
-        for destination_attribute in destination_attributes:
-            disabled_fields_map[destination_attribute["destination_id"]] = {
-                "value": destination_attribute["value"],
-                "detail": destination_attribute["detail"],
-            }
+        customers_generator = self.connection.contacts.list_all_generator(**params)
 
         for customers in customers_generator:
+            customer_attributes = []
+
             for customer in customers["Contacts"]:
-                if customer["IsCustomer"]:
-                    customer_attributes.append(
-                        {
-                            "attribute_type": "CUSTOMER",
-                            "display_name": "Customer",
-                            "value": customer["Name"],
-                            "destination_id": customer["ContactID"],
-                            "detail": {
-                                "email": customer["EmailAddress"]
-                                if "EmailAddress" in customer
-                                else None
-                            },
-                            "active": True if customer["ContactStatus"] == "ACTIVE" else False,
-                        }
-                    )
+                customer_attributes.append(
+                    {
+                        "attribute_type": "CUSTOMER",
+                        "display_name": "Customer",
+                        "value": customer["Name"],
+                        "destination_id": customer["ContactID"],
+                        "detail": {
+                            "email": customer["EmailAddress"]
+                            if "EmailAddress" in customer
+                            else None
+                        },
+                        "active": True if customer["ContactStatus"] == "ACTIVE" else False,
+                    }
+                )
 
-                    if (customer["ContactStatus"] == "ACTIVE" and customer["ContactID"] in disabled_fields_map):
-                        disabled_fields_map.pop(customer["ContactID"])
-            sleep(0.5)
-
-        for destination_id in disabled_fields_map:
-            customer_attributes.append(
-                {
-                    "attribute_type": "CUSTOMER",
-                    "display_name": "customer",
-                    "value": disabled_fields_map[destination_id]["value"],
-                    "destination_id": destination_id,
-                    "active": False,
-                    "detail": disabled_fields_map[destination_id]["detail"],
-                }
+            DestinationAttribute.bulk_create_or_update_destination_attributes(
+                customer_attributes, "CUSTOMER", self.workspace_id, True
             )
-
-        DestinationAttribute.bulk_create_or_update_destination_attributes(
-            customer_attributes, "CUSTOMER", self.workspace_id, True
-        )
+            sleep(1)
 
         return []
 
