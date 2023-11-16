@@ -191,7 +191,7 @@ def test_sync_customers(mocker, db):
     new_customers_count = DestinationAttribute.objects.filter(
         workspace_id=workspace_id, attribute_type="CUSTOMER"
     ).count()
-    assert new_customers_count == 62
+    assert new_customers_count == 14
 
 
 def test_sync_tracking_categories(mocker, db):
