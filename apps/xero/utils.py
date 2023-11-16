@@ -282,7 +282,7 @@ class XeroConnector:
         }
 
         contacts_generator = self.connection.contacts.list_all_generator(
-            modified_after=updated_at
+            modified_after=updated_at, **params
         )
 
         for contacts in contacts_generator:
@@ -308,6 +308,7 @@ class XeroConnector:
             DestinationAttribute.bulk_create_or_update_destination_attributes(
                 contact_attributes, "CONTACT", self.workspace_id, True
             )
+            sleep(1)
 
         return []
 
