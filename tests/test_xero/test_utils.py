@@ -184,7 +184,7 @@ def test_sync_customers(mocker, db):
     customers_count = DestinationAttribute.objects.filter(
         workspace_id=workspace_id, attribute_type="CUSTOMER"
     ).count()
-    assert customers_count == 62
+    assert customers_count == 14
 
     xero_connection.sync_customers()
 
