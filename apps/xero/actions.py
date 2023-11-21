@@ -50,7 +50,7 @@ def refersh_xero_dimension(workspace_id):
         if mapping_setting.source_field == "PROJECT":
             # run auto_import_and_map_fyle_fields
             chain.append(
-                "apps.mappings.queue.auto_import_and_map_fyle_fields", int(workspace_id)
+                "apps.mappings.tasks.auto_import_and_map_fyle_fields", int(workspace_id)
             )
         elif mapping_setting.source_field == "COST_CENTER":
             # run auto_create_cost_center_mappings
