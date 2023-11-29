@@ -1,9 +1,10 @@
 """
 This file contains all the enums used in the Fyle app
 """
+from enum import Enum
 
 
-class FundSourceEnum:
+class FundSourceEnum(Enum):
     """
     Enum for Fund Source
     """
@@ -11,7 +12,7 @@ class FundSourceEnum:
     CCC = 'CCC'
 
 
-class FyleAttributeEnum:
+class FyleAttributeEnum(Enum):
     """
     Enum for Fyle Attributes
     """
@@ -34,7 +35,7 @@ class FyleAttributeEnum:
     EMPLOYEE_DISPLAY = 'Employee'
 
 
-class ExpenseStateEnum:
+class ExpenseStateEnum(Enum):
     """
     Enum for Expense State
     """
@@ -43,7 +44,7 @@ class ExpenseStateEnum:
     PAID = 'PAID'
 
 
-class PlatformExpensesEnum:
+class PlatformExpensesEnum(Enum):
     """
     Enum for Platform Expenses
     """
