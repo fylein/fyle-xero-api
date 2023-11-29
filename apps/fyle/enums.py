@@ -29,6 +29,9 @@ class FyleAttributeEnum:
     TAX_GROUP = 'TAX_GROUP'
     TAX_GROUP_DISPLAY = 'Tax Group'
 
+    EMPLOYEE = 'EMPLOYEE'
+    EMPLOYEE_DISPLAY = 'Employee'
+
 
 class ExpenseStateEnum:
     """
