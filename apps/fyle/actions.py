@@ -4,18 +4,20 @@ from django.db.models import Q
 from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 
-from apps.fyle.models import ExpenseGroup
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
+
+from .enums import FyleAttributeEnum, FundSourceEnum
+from .models import ExpenseGroup
 
 
 def get_expense_field(workspace_id):
     default_attributes = [
-        "EMPLOYEE",
-        "CATEGORY",
-        "PROJECT",
-        "COST_CENTER",
-        "CORPORATE_CARD",
-        "TAX_GROUP",
+        FyleAttributeEnum.EMPLOYEE,
+        FyleAttributeEnum.CATEGORY,
+        FyleAttributeEnum.PROJECT,
+        FyleAttributeEnum.COST_CENTER,
+        FyleAttributeEnum.CORPORATE_CARD,
+        FyleAttributeEnum.TAX_GROUP
     ]
     attributes = (
         ExpenseAttribute.objects.filter(
@@ -26,8 +28,8 @@ def get_expense_field(workspace_id):
     )
 
     expense_fields = [
-        {"attribute_type": "COST_CENTER", "display_name": "Cost Center"},
-        {"attribute_type": "PROJECT", "display_name": "Project"},
+        {"attribute_type": FyleAttributeEnum.COST_CENTER, "display_name": FyleAttributeEnum.COST_CENTER_DISPLAY},
+        {"attribute_type": FyleAttributeEnum.PROJECT, "display_name": FyleAttributeEnum.PROJECT_DISPLAY}
     ]
 
     for attribute in attributes:
@@ -67,9 +69,9 @@ def exportable_expense_group(workspace_id):
     fund_source = []
 
     if configuration.reimbursable_expenses_object:
-        fund_source.append("PERSONAL")
+        fund_source.append(FundSourceEnum.PERSONAL)
     if configuration.corporate_credit_card_expenses_object:
-        fund_source.append("CCC")
+        fund_source.append(FundSourceEnum.CCC)
 
     expense_group_ids = ExpenseGroup.objects.filter(
         workspace_id=workspace_id, exported_at__isnull=True, fund_source__in=fund_source

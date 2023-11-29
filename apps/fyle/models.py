@@ -15,6 +15,9 @@ from fyle_accounting_mappings.models import ExpenseAttribute
 
 from apps.workspaces.models import Workspace
 
+from .enums import FundSourceEnum, PlatformExpensesEnum, ExpenseStateEnum
+
+
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
@@ -57,8 +60,8 @@ ALLOWED_FORM_INPUT = {
 }
 
 SOURCE_ACCOUNT_MAP = {
-    "PERSONAL_CASH_ACCOUNT": "PERSONAL",
-    "PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT": "CCC",
+    PlatformExpensesEnum.PERSONAL_CASH_ACCOUNT: FundSourceEnum.PERSONAL,
+    PlatformExpensesEnum.PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT: FundSourceEnum.CCC,
 }
 
 
@@ -236,17 +239,17 @@ def get_default_ccc_expense_group_fields():
 
 
 def get_default_expense_state():
-    return "PAYMENT_PROCESSING"
+    return ExpenseStateEnum.PAYMENT_PROCESSING
 
 
 def get_default_ccc_expense_state():
-    return "PAID"
+    return ExpenseStateEnum.PAID
 
 
 CCC_EXPENSE_STATE = (
-    ("APPROVED", "APPROVED"),
-    ("PAID", "PAID"),
-    ("PAYMENT_PROCESSING", "PAYMENT_PROCESSING"),
+    (ExpenseStateEnum.APPROVED, ExpenseStateEnum.APPROVED),
+    (ExpenseStateEnum.PAYMENT_PROCESSING, ExpenseStateEnum.PAYMENT_PROCESSING),
+    (ExpenseStateEnum.PAID, ExpenseStateEnum.PAID)
 )
 
 
@@ -597,7 +600,7 @@ class Reimbursement(models.Model):
 
         for reimbursement in reimbursements:
             reimbursement["state"] = (
-                "COMPLETE" if reimbursement["is_paid"] else "PENDING"
+                PlatformExpensesEnum.REIMBURSEMENT_COMPLETE if reimbursement["is_paid"] else PlatformExpensesEnum.REIMBURSEMENT_PENDING
             )
             if reimbursement["id"] not in existing_reimbursement_ids:
                 attributes_to_be_created.append(
