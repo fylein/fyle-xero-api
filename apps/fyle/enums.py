@@ -2,6 +2,7 @@
 This file contains all the enums used in the Fyle app
 """
 
+
 class FundSourceEnum:
     """
     Enum for Fund Source
