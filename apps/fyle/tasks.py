@@ -7,16 +7,20 @@ from django.db import transaction
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle_integrations_platform_connector import PlatformConnector
 
-from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
+
+from .models import Expense, ExpenseGroup, ExpenseGroupSettings
+from .enums import FundSourceEnum, PlatformExpensesEnum, ExpenseStateEnum
+
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
+
 SOURCE_ACCOUNT_MAP = {
-    "PERSONAL": "PERSONAL_CASH_ACCOUNT",
-    "CCC": "PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT",
+    FundSourceEnum.PERSONAL: PlatformExpensesEnum.PERSONAL_CASH_ACCOUNT,
+    FundSourceEnum.CCC: PlatformExpensesEnum.PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT
 }
 
 
@@ -31,9 +35,9 @@ def get_task_log_and_fund_source(workspace_id: int):
 
     fund_source = []
     if general_settings.reimbursable_expenses_object:
-        fund_source.append("PERSONAL")
+        fund_source.append(FundSourceEnum.PERSONAL)
     if general_settings.corporate_credit_card_expenses_object is not None:
-        fund_source.append("CCC")
+        fund_source.append(FundSourceEnum.CCC)
 
     return task_log, fund_source
 
@@ -77,18 +81,18 @@ def async_create_expense_groups(
             expenses = []
             reimbursable_expenses_count = 0
 
-            if "PERSONAL" in fund_source:
+            if FundSourceEnum.PERSONAL in fund_source:
                 expenses.extend(
                     platform.expenses.get(
-                        source_account_type=["PERSONAL_CASH_ACCOUNT"],
+                        source_account_type=[SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL]],
                         state=expense_group_settings.reimbursable_expense_state,
                         settled_at=last_synced_at
                         if expense_group_settings.reimbursable_expense_state
-                        == "PAYMENT_PROCESSING"
+                        == ExpenseStateEnum.PAYMENT_PROCESSING
                         else None,
                         filter_credit_expenses=True,
                         last_paid_at=last_synced_at
-                        if expense_group_settings.reimbursable_expense_state == "PAID"
+                        if expense_group_settings.reimbursable_expense_state == ExpenseStateEnum.PAID
                         else None,
                     )
                 )
@@ -97,21 +101,21 @@ def async_create_expense_groups(
                 workspace.last_synced_at = datetime.now()
                 reimbursable_expenses_count += len(expenses)
 
-            if "CCC" in fund_source:
+            if FundSourceEnum.CCC in fund_source:
                 expenses.extend(
                     platform.expenses.get(
-                        source_account_type=["PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT"],
+                        source_account_type=[SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]],
                         state=expense_group_settings.ccc_expense_state,
                         settled_at=ccc_last_synced_at
                         if expense_group_settings.ccc_expense_state
-                        == "PAYMENT_PROCESSING"
+                        == ExpenseStateEnum.PAYMENT_PROCESSING
                         else None,
                         approved_at=ccc_last_synced_at
-                        if expense_group_settings.ccc_expense_state == "APPROVED"
+                        if expense_group_settings.ccc_expense_state == ExpenseStateEnum.APPROVED
                         else None,
                         filter_credit_expenses=filter_credit_expenses,
                         last_paid_at=ccc_last_synced_at
-                        if expense_group_settings.ccc_expense_state == "PAID"
+                        if expense_group_settings.ccc_expense_state == ExpenseStateEnum.PAID
                         else None,
                     )
                 )
