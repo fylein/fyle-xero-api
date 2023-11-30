@@ -8,6 +8,7 @@ from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle_integrations_platform_connector import PlatformConnector
 
 from apps.tasks.models import TaskLog
+from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 
 from .models import Expense, ExpenseGroup, ExpenseGroupSettings
@@ -27,8 +28,8 @@ SOURCE_ACCOUNT_MAP = {
 def get_task_log_and_fund_source(workspace_id: int):
     task_log, _ = TaskLog.objects.update_or_create(
         workspace_id=workspace_id,
-        type="FETCHING_EXPENSES",
-        defaults={"status": "IN_PROGRESS"},
+        type=TaskLogTypeEnum.FETCHING_EXPENSES,
+        defaults={"status": TaskLogStatusEnum.IN_PROGRESS},
     )
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
@@ -131,14 +132,14 @@ def async_create_expense_groups(
                 expense_objects, workspace_id
             )
 
-            task_log.status = "COMPLETE"
+            task_log.status = TaskLogStatusEnum.COMPLETE
 
             task_log.save()
 
     except FyleCredential.DoesNotExist:
         logger.info("Fyle credentials not found %s", workspace_id)
         task_log.detail = {"message": "Fyle credentials do not exist in workspace"}
-        task_log.status = "FAILED"
+        task_log.status = TaskLogStatusEnum.FAILED
         task_log.save()
 
     except FyleInvalidTokenError:
@@ -146,7 +147,7 @@ def async_create_expense_groups(
     except Exception:
         error = traceback.format_exc()
         task_log.detail = {"error": error}
-        task_log.status = "FATAL"
+        task_log.status = TaskLogStatusEnum.FATAL
         task_log.save()
         logger.exception(
             "Something unexpected happened workspace_id: %s %s",

@@ -12,10 +12,15 @@ from xerosdk.exceptions import (
     XeroSDKError,
 )
 
-from apps.fyle.models import ExpenseGroup
-from apps.tasks.models import Error, TaskLog
-from apps.workspaces.models import FyleCredential, LastExportDetail, XeroCredentials
 from fyle_xero_api.exceptions import BulkError
+
+from apps.fyle.models import ExpenseGroup
+
+from apps.tasks.models import Error, TaskLog
+from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum, ErrorTypeEnum
+
+from apps.workspaces.models import FyleCredential, LastExportDetail, XeroCredentials
+
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -25,15 +30,15 @@ def update_last_export_details(workspace_id):
     last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
 
     failed_exports = TaskLog.objects.filter(
-        ~Q(type__in=["CREATING_PAYMENT", "FETCHING_EXPENSES"]),
+        ~Q(type__in=[TaskLogTypeEnum.CREATING_PAYMENT, TaskLogTypeEnum.FETCHING_EXPENSES]),
         workspace_id=workspace_id,
-        status__in=["FAILED", "FATAL"],
+        status__in=[TaskLogStatusEnum.FAILED, TaskLogStatusEnum.FATAL],
     ).count()
 
     successful_exports = TaskLog.objects.filter(
-        ~Q(type__in=["CREATING_PAYMENT", "FETCHING_EXPENSES"]),
+        ~Q(type__in=[TaskLogTypeEnum.CREATING_PAYMENT, TaskLogTypeEnum.FETCHING_EXPENSES]),
         workspace_id=workspace_id,
-        status="COMPLETE",
+        status=TaskLogStatusEnum.COMPLETE,
         updated_at__gt=last_export_detail.last_exported_at,
     ).count()
 
@@ -74,7 +79,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
             workspace_id=expense_group.workspace_id,
             expense_group=expense_group,
             defaults={
-                "type": "XERO_ERROR",
+                "type": ErrorTypeEnum.XERO_ERROR,
                 "error_title": "Rate Limit Error",
                 "error_detail": "Rate limit exceeded, integration will retry exports in a while",
                 "is_resolved": False,
@@ -111,7 +116,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
             workspace_id=expense_group.workspace_id,
             expense_group=expense_group,
             defaults={
-                "type": "XERO_ERROR",
+                "type": ErrorTypeEnum.XERO_ERROR,
                 "error_title": detail["message"]["Message"],
                 "error_detail": error_detail,
                 "is_resolved": False,
@@ -121,7 +126,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
         task_log.xero_errors = all_details
 
     task_log.detail = None
-    task_log.status = "FAILED"
+    task_log.status = TaskLogStatusEnum.FAILED
 
     task_log.save()
 
@@ -151,14 +156,14 @@ def handle_xero_exceptions(payment=False):
                 task_log.detail = {
                     "message": "Fyle credentials do not exist in workspace"
                 }
-                task_log.status = "FAILED"
+                task_log.status = TaskLogStatusEnum.FAILED
                 task_log.save()
 
             except WrongParamsError as exception:
                 if payment:
                     logger.info(exception.message)
                     detail = exception.message
-                    task_log.status = "FAILED"
+                    task_log.status = TaskLogStatusEnum.FAILED
                     task_log.detail = detail
 
                     task_log.save()
@@ -183,7 +188,7 @@ def handle_xero_exceptions(payment=False):
                 xero_credentials.is_expired = True
                 xero_credentials.save()
                 logger.info(exception.message)
-                task_log.status = "FAILED"
+                task_log.status = TaskLogStatusEnum.FAILED
                 task_log.detail = None
                 task_log.xero_errors = [
                     {
@@ -210,7 +215,7 @@ def handle_xero_exceptions(payment=False):
                 )
                 detail = {"message": "Xero Account not connected / token expired"}
 
-                task_log.status = "FAILED"
+                task_log.status = TaskLogStatusEnum.FAILED
                 task_log.detail = detail
 
                 task_log.save()
@@ -218,7 +223,7 @@ def handle_xero_exceptions(payment=False):
             except XeroSDKError as exception:
                 logger.info(exception.response)
                 detail = exception.response
-                task_log.status = "FAILED"
+                task_log.status = TaskLogStatusEnum.FAILED
                 task_log.detail = None
                 task_log.xero_errors = detail
 
@@ -227,14 +232,14 @@ def handle_xero_exceptions(payment=False):
             except BulkError as exception:
                 logger.info(exception.response)
                 detail = exception.response
-                task_log.status = "FAILED"
+                task_log.status = TaskLogStatusEnum.FAILED
                 task_log.detail = detail
                 task_log.save()
 
             except Exception as error:
                 error = traceback.format_exc()
                 task_log.detail = {"error": error}
-                task_log.status = "FATAL"
+                task_log.status = TaskLogStatusEnum.FATAL
                 task_log.save()
                 logger.error(
                     "Something unexpected happened workspace_id: %s %s",

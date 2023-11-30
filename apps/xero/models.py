@@ -6,7 +6,10 @@ from django.db.models import JSONField
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping, MappingSetting
 
 from apps.fyle.models import Expense, ExpenseGroup
+from apps.fyle.enums import FyleAttributeEnum
+
 from apps.mappings.models import GeneralMapping
+
 from apps.workspaces.models import FyleCredential, Workspace
 
 
@@ -16,7 +19,13 @@ def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
     ).all()
 
     tracking_categories = []
-    default_expense_attributes = ["CATEGORY", "EMPLOYEE", "CORPORATE_CARD", "TAX_GROUP"]
+
+    default_expense_attributes = [
+        FyleAttributeEnum.CATEGORY,
+        FyleAttributeEnum.EMPLOYEE,
+        FyleAttributeEnum.CORPORATE_CARD,
+        FyleAttributeEnum.TAX_GROUP
+    ]
     default_destination_attributes = ["ITEM"]
 
     for setting in mapping_settings:
@@ -24,9 +33,9 @@ def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
             setting.source_field not in default_expense_attributes
             and setting.destination_field not in default_destination_attributes
         ):
-            if setting.source_field == "PROJECT":
+            if setting.source_field == FyleAttributeEnum.PROJECT:
                 source_value = lineitem.project
-            elif setting.source_field == "COST_CENTER":
+            elif setting.source_field == FyleAttributeEnum.COST_CENTER:
                 source_value = lineitem.cost_center
             else:
                 attribute = ExpenseAttribute.objects.filter(
@@ -92,9 +101,9 @@ def get_item_code_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     item_code = None
 
     if item_setting:
-        if item_setting.source_field == "PROJECT":
+        if item_setting.source_field == FyleAttributeEnum.PROJECT:
             source_value = lineitem.project
-        elif item_setting.source_field == "COST_CENTER":
+        elif item_setting.source_field == FyleAttributeEnum.COST_CENTER:
             source_value = lineitem.cost_center
         else:
             attribute = ExpenseAttribute.objects.filter(
@@ -118,14 +127,14 @@ def get_customer_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     customer_setting: MappingSetting = MappingSetting.objects.filter(
         workspace_id=expense_group.workspace_id,
         destination_field="CUSTOMER",
-        source_field="PROJECT",
+        source_field=FyleAttributeEnum.PROJECT,
     ).first()
 
     customer_id = None
 
     if customer_setting and lineitem.billable and lineitem.project:
         mapping: Mapping = Mapping.objects.filter(
-            source_type="PROJECT",
+            source_type=FyleAttributeEnum.PROJECT,
             destination_type="CUSTOMER",
             source__value=lineitem.project,
             workspace_id=expense_group.workspace_id,
@@ -166,7 +175,7 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
 def get_tax_code_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     tax_code = None
     mapping: Mapping = Mapping.objects.filter(
-        source_type="TAX_GROUP",
+        source_type=FyleAttributeEnum.TAX_GROUP,
         destination_type="TAX_CODE",
         source__source_id=lineitem.tax_group_id,
         workspace_id=expense_group.workspace_id,
@@ -207,7 +216,7 @@ class Bill(models.Model):
 
         contact: Mapping = Mapping.objects.get(
             destination_type="CONTACT",
-            source_type="EMPLOYEE",
+            source_type=FyleAttributeEnum.EMPLOYEE,
             source__value=description.get("employee_email"),
             workspace_id=expense_group.workspace_id,
         )
@@ -268,7 +277,7 @@ class BillLineItem(models.Model):
             )
 
             account = Mapping.objects.filter(
-                source_type="CATEGORY",
+                source_type=FyleAttributeEnum.CATEGORY,
                 source__value=category,
                 destination_type="ACCOUNT",
                 workspace_id=expense_group.workspace_id,
@@ -363,7 +372,7 @@ class BankTransaction(models.Model):
 
         else:
             contact_id = Mapping.objects.get(
-                source_type="EMPLOYEE",
+                source_type=FyleAttributeEnum.EMPLOYEE,
                 destination_type="CONTACT",
                 source__value=description.get("employee_email"),
                 workspace_id=expense_group.workspace_id,
@@ -372,7 +381,7 @@ class BankTransaction(models.Model):
         bank_account_id = None
 
         bank_account = Mapping.objects.filter(
-            source_type="CORPORATE_CARD",
+            source_type=FyleAttributeEnum.CORPORATE_CARD,
             destination_type="BANK_ACCOUNT",
             source__source_id=expense.corporate_card_id,
             workspace_id=expense_group.workspace_id,
@@ -456,7 +465,7 @@ class BankTransactionLineItem(models.Model):
             )
 
             account: Mapping = Mapping.objects.filter(
-                source_type="CATEGORY",
+                source_type=FyleAttributeEnum.CATEGORY,
                 destination_type="ACCOUNT",
                 source__value=category,
                 workspace_id=expense_group.workspace_id,
