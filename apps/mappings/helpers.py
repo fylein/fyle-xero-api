@@ -5,6 +5,8 @@ from fyle_accounting_mappings.models import MappingSetting
 
 from apps.workspaces.models import WorkspaceGeneralSettings
 
+from apps.fyle.enums import FyleAttributeEnum
+
 
 def schedule_or_delete_fyle_import_tasks(configuration: WorkspaceGeneralSettings):
     """
@@ -12,7 +14,7 @@ def schedule_or_delete_fyle_import_tasks(configuration: WorkspaceGeneralSettings
     :return: None
     """
     project_mapping = MappingSetting.objects.filter(
-        source_field="PROJECT", workspace_id=configuration.workspace_id
+        source_field=FyleAttributeEnum.PROJECT, workspace_id=configuration.workspace_id
     ).first()
     if (
         configuration.import_categories

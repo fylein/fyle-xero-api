@@ -10,6 +10,8 @@ from apps.mappings.exceptions import handle_import_exceptions
 from apps.tasks.models import Error
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
+from apps.fyle.enums import FyleAttributeEnum
+
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -212,7 +214,7 @@ def upload_categories_to_fyle(workspace_id):
         platform.categories.sync()
 
     category_ids_to_be_changed = disable_expense_attributes(
-        "CATEGORY", "ACCOUNT", workspace_id
+        FyleAttributeEnum.CATEGORY, "ACCOUNT", workspace_id
     )
     if category_ids_to_be_changed:
         expense_attributes = ExpenseAttribute.objects.filter(
@@ -236,10 +238,10 @@ def auto_create_category_mappings(workspace_id):
 
     fyle_categories = upload_categories_to_fyle(workspace_id=workspace_id)
 
-    Mapping.bulk_create_mappings(fyle_categories, "CATEGORY", "ACCOUNT", workspace_id)
+    Mapping.bulk_create_mappings(fyle_categories, FyleAttributeEnum.CATEGORY, "ACCOUNT", workspace_id)
 
     resolve_expense_attribute_errors(
-        source_attribute_type="CATEGORY", workspace_id=workspace_id
+        source_attribute_type=FyleAttributeEnum.CATEGORY, workspace_id=workspace_id
     )
 
     return []
@@ -261,7 +263,7 @@ def async_auto_map_employees(workspace_id: int):
     Mapping.auto_map_employees("CONTACT", employee_mapping_preference, workspace_id)
 
     resolve_expense_attribute_errors(
-        source_attribute_type="EMPLOYEE", workspace_id=workspace_id
+        source_attribute_type=FyleAttributeEnum.EMPLOYEE, workspace_id=workspace_id
     )
 
 
@@ -318,7 +320,7 @@ def post_cost_centers_in_batches(
     platform: PlatformConnector, workspace_id: int, xero_attribute_type: str
 ):
     existing_cost_center_names = ExpenseAttribute.objects.filter(
-        attribute_type="COST_CENTER", workspace_id=workspace_id
+        attribute_type=FyleAttributeEnum.COST_CENTER, workspace_id=workspace_id
     ).values_list("value", flat=True)
 
     xero_attribute_count = DestinationAttribute.objects.filter(
@@ -344,7 +346,7 @@ def post_cost_centers_in_batches(
             platform.cost_centers.sync()
 
         Mapping.bulk_create_mappings(
-            paginated_xero_attributes, "COST_CENTER", xero_attribute_type, workspace_id
+            paginated_xero_attributes, FyleAttributeEnum.COST_CENTER, xero_attribute_type, workspace_id
         )
 
 
@@ -361,7 +363,7 @@ def auto_create_cost_center_mappings(workspace_id: int):
     platform = PlatformConnector(fyle_credentials)
 
     mapping_setting = MappingSetting.objects.get(
-        source_field="COST_CENTER", import_to_fyle=True, workspace_id=workspace_id
+        source_field=FyleAttributeEnum.COST_CENTER, import_to_fyle=True, workspace_id=workspace_id
     )
 
     platform.cost_centers.sync()
@@ -426,14 +428,14 @@ def create_fyle_projects_payload(
 def disable_renamed_projects(workspace_id, destination_field):
     page_size = 200
     expense_attributes_count = ExpenseAttribute.objects.filter(
-        attribute_type="PROJECT", workspace_id=workspace_id, auto_mapped=True
+        attribute_type=FyleAttributeEnum.PROJECT, workspace_id=workspace_id, auto_mapped=True
     ).count()
     expense_attribute_to_be_disabled = []
     for offset in range(0, expense_attributes_count, page_size):
         limit = offset + page_size
 
         fyle_projects = ExpenseAttribute.objects.filter(
-            workspace_id=workspace_id, attribute_type="PROJECT", auto_mapped=True
+            workspace_id=workspace_id, attribute_type=FyleAttributeEnum.PROJECT, auto_mapped=True
         ).order_by("value", "id")[offset:limit]
 
         project_names = list(set(field.value for field in fyle_projects))
@@ -457,7 +459,7 @@ def post_projects_in_batches(
     platform: PlatformConnector, workspace_id: int, destination_field: str
 ):
     existing_project_names = ExpenseAttribute.objects.filter(
-        attribute_type="PROJECT", workspace_id=workspace_id
+        attribute_type=FyleAttributeEnum.PROJECT, workspace_id=workspace_id
     ).values_list("value", flat=True)
     xero_attributes_count = DestinationAttribute.objects.filter(
         attribute_type=destination_field, workspace_id=workspace_id
@@ -481,7 +483,7 @@ def post_projects_in_batches(
             platform.projects.sync()
 
         Mapping.bulk_create_mappings(
-            paginated_xero_attributes, "PROJECT", destination_field, workspace_id
+            paginated_xero_attributes, FyleAttributeEnum.PROJECT, destination_field, workspace_id
         )
 
     if destination_field == "CUSTOMER":
@@ -489,7 +491,7 @@ def post_projects_in_batches(
             workspace_id, destination_field
         )
         project_ids_to_be_changed = disable_expense_attributes(
-            "PROJECT", "CUSTOMER", workspace_id
+            FyleAttributeEnum.PROJECT, "CUSTOMER", workspace_id
         )
         project_ids_to_be_changed.extend(expense_attribute_to_be_disable)
         if project_ids_to_be_changed:
@@ -521,7 +523,7 @@ def auto_create_project_mappings(workspace_id: int):
     platform.projects.sync()
 
     mapping_setting = MappingSetting.objects.get(
-        source_field="PROJECT", workspace_id=workspace_id
+        source_field=FyleAttributeEnum.PROJECT, workspace_id=workspace_id
     )
 
     sync_xero_attributes(mapping_setting.destination_field, workspace_id)
@@ -691,7 +693,7 @@ def upload_tax_groups_to_fyle(
     platform_connection: PlatformConnector, workspace_id: int
 ):
     existing_tax_codes_name = ExpenseAttribute.objects.filter(
-        attribute_type="TAX_GROUP", workspace_id=workspace_id
+        attribute_type=FyleAttributeEnum.TAX_GROUP, workspace_id=workspace_id
     ).values_list("value", flat=True)
 
     xero_attributes = DestinationAttribute.objects.filter(
@@ -708,7 +710,7 @@ def upload_tax_groups_to_fyle(
         platform_connection.tax_groups.post_bulk(fyle_payload)
 
     platform_connection.tax_groups.sync()
-    Mapping.bulk_create_mappings(xero_attributes, "TAX_GROUP", "TAX_CODE", workspace_id)
+    Mapping.bulk_create_mappings(xero_attributes, FyleAttributeEnum.TAX_GROUP, "TAX_CODE", workspace_id)
 
 
 def create_fyle_tax_group_payload(
@@ -781,7 +783,7 @@ def auto_import_and_map_fyle_fields(workspace_id):
         WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     )
     project_mapping = MappingSetting.objects.filter(
-        source_field="PROJECT", workspace_id=workspace_general_settings.workspace_id
+        source_field=FyleAttributeEnum.PROJECT, workspace_id=workspace_general_settings.workspace_id
     ).first()
 
     chain = Chain()
