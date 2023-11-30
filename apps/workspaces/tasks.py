@@ -6,12 +6,20 @@ from fyle_rest_auth.helpers import get_fyle_admin
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
+from apps.fyle.enums import FundSourceEnum
+
 from apps.mappings.models import TenantMapping
+
 from apps.tasks.models import TaskLog
+from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
+
 from apps.users.models import User
+
 from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, send_failure_notification_email
 from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
+
 from apps.xero.tasks import create_chain_and_export, schedule_bank_transaction_creation, schedule_bills_creation
+
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -26,23 +34,23 @@ def run_sync_schedule(workspace_id):
     """
     task_log, _ = TaskLog.objects.update_or_create(
         workspace_id=workspace_id,
-        type="FETCHING_EXPENSES",
-        defaults={"status": "IN_PROGRESS"},
+        type=TaskLogTypeEnum.FETCHING_EXPENSES,
+        defaults={"status": TaskLogStatusEnum.IN_PROGRESS}
     )
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
 
     fund_source = []
     if general_settings.reimbursable_expenses_object:
-        fund_source.append("PERSONAL")
+        fund_source.append(FundSourceEnum.PERSONAL)
     if general_settings.corporate_credit_card_expenses_object:
-        fund_source.append("CCC")
+        fund_source.append(FundSourceEnum.CCC)
 
     async_create_expense_groups(
         workspace_id=workspace_id, fund_source=fund_source, task_log=task_log
     )
 
-    if task_log.status == "COMPLETE":
+    if task_log.status == TaskLogStatusEnum.COMPLETE:
         export_to_xero(workspace_id, "AUTO")
 
 
@@ -54,16 +62,18 @@ def export_to_xero(workspace_id, export_mode="MANUAL"):
 
     if general_settings.reimbursable_expenses_object:
         expense_group_ids = ExpenseGroup.objects.filter(
-            fund_source="PERSONAL"
+            fund_source=FundSourceEnum.PERSONAL,
+            workspace_id=workspace_id
         ).values_list("id", flat=True)
         chaining_attributes.extend(
             schedule_bills_creation(workspace_id, expense_group_ids)
         )
 
     if general_settings.corporate_credit_card_expenses_object:
-        expense_group_ids = ExpenseGroup.objects.filter(fund_source="CCC").values_list(
-            "id", flat=True
-        )
+        expense_group_ids = ExpenseGroup.objects.filter(
+            fund_source=FundSourceEnum.CCC,
+            workspace_id=workspace_id
+        ).values_list("id", flat=True)
         chaining_attributes.extend(
             schedule_bank_transaction_creation(workspace_id, expense_group_ids)
         )

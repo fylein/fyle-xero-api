@@ -6,6 +6,8 @@ from apps.fyle.models import ExpenseGroup
 from apps.workspaces.models import Workspace
 from apps.xero.models import BankTransaction, Bill, Payment
 
+from .enums import ErrorTypeEnum
+
 
 def get_default():
     return dict
@@ -57,9 +59,9 @@ class TaskLog(models.Model):
 
 
 ERROR_TYPE_CHOICES = (
-    ("EMPLOYEE_MAPPING", "EMPLOYEE_MAPPING"),
-    ("CATEGORY_MAPPING", "CATEGORY_MAPPING"),
-    ("XERO_ERROR", "XERO_ERROR"),
+    (ErrorTypeEnum.EMPLOYEE_MAPPING, ErrorTypeEnum.EMPLOYEE_MAPPING),
+    (ErrorTypeEnum.CATEGORY_MAPPING, ErrorTypeEnum.CATEGORY_MAPPING),
+    (ErrorTypeEnum.XERO_ERROR, ErrorTypeEnum.XERO_ERROR),
 )
 
 
