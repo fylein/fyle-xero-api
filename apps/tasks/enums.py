@@ -23,6 +23,7 @@ class TaskLogTypeEnum:
     CREATING_BANK_TRANSACTION = 'CREATING_BANK_TRANSACTION'
     CREATING_PAYMENT = 'CREATING_PAYMENT'
 
+
 class ErrorTypeEnum:
     """
     Enum for Error Type
