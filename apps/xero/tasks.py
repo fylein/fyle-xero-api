@@ -6,19 +6,31 @@ from typing import List
 
 from django.db import transaction
 from django.db.models import Q
+
 from django_q.tasks import Chain
+
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
+
 from fyle_integrations_platform_connector import PlatformConnector
+
+from fyle_xero_api.exceptions import BulkError
+
 from xerosdk.exceptions import UnsuccessfulAuthentication, WrongParamsError
 
 from apps.fyle.models import Expense, ExpenseGroup, Reimbursement
+from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum, PlatformExpensesEnum
+
 from apps.mappings.models import GeneralMapping, TenantMapping
+
 from apps.tasks.models import Error, TaskLog
+from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum, ErrorTypeEnum
+
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, XeroCredentials
+
 from apps.xero.exceptions import handle_xero_exceptions
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem, Payment
 from apps.xero.utils import XeroConnector
-from fyle_xero_api.exceptions import BulkError
+
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -124,7 +136,7 @@ def create_or_update_employee_mapping(
     try:
         Mapping.objects.get(
             destination_type="CONTACT",
-            source_type="EMPLOYEE",
+            source_type=FyleAttributeEnum.EMPLOYEE,
             source__value=expense_group.description.get("employee_email"),
             workspace_id=expense_group.workspace_id,
         )
@@ -132,7 +144,7 @@ def create_or_update_employee_mapping(
     except Mapping.DoesNotExist:
         source_employee = ExpenseAttribute.objects.get(
             workspace_id=expense_group.workspace_id,
-            attribute_type="EMPLOYEE",
+            attribute_type=FyleAttributeEnum.EMPLOYEE,
             value=expense_group.description.get("employee_email"),
         )
 
@@ -157,7 +169,7 @@ def create_or_update_employee_mapping(
                 )
 
             mapping = Mapping.create_or_update_mapping(
-                source_type="EMPLOYEE",
+                source_type=FyleAttributeEnum.EMPLOYEE,
                 source_value=expense_group.description.get("employee_email"),
                 destination_type="CONTACT",
                 destination_id=contact.destination_id,
@@ -189,8 +201,8 @@ def create_bill(
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
-    if task_log.status not in ["IN_PROGRESS", "COMPLETE"]:
-        task_log.status = "IN_PROGRESS"
+    if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
+        task_log.status = TaskLogStatusEnum.IN_PROGRESS
         task_log.save()
     else:
         return
@@ -222,7 +234,7 @@ def create_bill(
         task_log.detail = created_bill
         task_log.bill = bill_object
         task_log.xero_errors = None
-        task_log.status = "COMPLETE"
+        task_log.status = TaskLogStatusEnum.COMPLETE
 
         task_log.save()
 
@@ -299,7 +311,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
     if expense_group_ids:
         expense_groups = ExpenseGroup.objects.filter(
             Q(tasklog__id__isnull=True)
-            | ~Q(tasklog__status__in=["IN_PROGRESS", "COMPLETE"]),
+            | ~Q(tasklog__status__in=[TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]),
             workspace_id=workspace_id,
             id__in=expense_group_ids,
             bill__id__isnull=True,
@@ -310,10 +322,10 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
             task_log, _ = TaskLog.objects.get_or_create(
                 workspace_id=expense_group.workspace_id,
                 expense_group=expense_group,
-                defaults={"status": "ENQUEUED", "type": "CREATING_BILL"},
+                defaults={"status": TaskLogStatusEnum.ENQUEUED, "type": TaskLogTypeEnum.CREATING_BILL},
             )
-            if task_log.status not in ["IN_PROGRESS", "ENQUEUED"]:
-                task_log.status = "ENQUEUED"
+            if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
+                task_log.status = TaskLogStatusEnum.ENQUEUED
                 task_log.save()
 
             last_export = False
@@ -359,9 +371,13 @@ def extract_export_lines_contact_ids(task_log: TaskLog):
     """
     # Constructing orm filter based on export type
     filter = (
-        {"bill": task_log.bill}
-        if task_log.type == "CREATING_BILL"
-        else {"bank_transaction": task_log.bank_transaction}
+        {
+            "bill": task_log.bill
+        }
+        if task_log.type == TaskLogTypeEnum.CREATING_BILL
+        else {
+            "bank_transaction": task_log.bank_transaction
+        }
     )
 
     # Customer ID is mandatory to create linked transaction
@@ -369,10 +385,10 @@ def extract_export_lines_contact_ids(task_log: TaskLog):
 
     export_id, lines = get_linked_transaction_object(
         export_instance=task_log.bill
-        if task_log.type == "CREATING_BILL"
+        if task_log.type == TaskLogTypeEnum.CREATING_BILL
         else task_log.bank_transaction,
         line_items=BillLineItem.objects.filter(**filter)
-        if task_log.type == "CREATING_BILL"
+        if task_log.type == TaskLogTypeEnum.CREATING_BILL
         else BankTransactionLineItem.objects.filter(**filter),
     )
 
@@ -416,8 +432,8 @@ def create_bank_transaction(
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
-    if task_log.status not in ["IN_PROGRESS", "COMPLETE"]:
-        task_log.status = "IN_PROGRESS"
+    if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
+        task_log.status = TaskLogStatusEnum.IN_PROGRESS
         task_log.save()
     else:
         return
@@ -463,7 +479,7 @@ def create_bank_transaction(
         task_log.detail = created_bank_transaction
         task_log.bank_transaction = bank_transaction_object
         task_log.xero_errors = None
-        task_log.status = "COMPLETE"
+        task_log.status = TaskLogStatusEnum.COMPLETE
 
         task_log.save()
 
@@ -514,7 +530,7 @@ def schedule_bank_transaction_creation(
     if expense_group_ids:
         expense_groups = ExpenseGroup.objects.filter(
             Q(tasklog__id__isnull=True)
-            | ~Q(tasklog__status__in=["IN_PROGRESS", "COMPLETE"]),
+            | ~Q(tasklog__status__in=[TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]),
             workspace_id=workspace_id,
             id__in=expense_group_ids,
             banktransaction__id__isnull=True,
@@ -525,10 +541,10 @@ def schedule_bank_transaction_creation(
             task_log, _ = TaskLog.objects.get_or_create(
                 workspace_id=expense_group.workspace_id,
                 expense_group=expense_group,
-                defaults={"status": "ENQUEUED", "type": "CREATING_BANK_TRANSACTION"},
+                defaults={"status": TaskLogStatusEnum.ENQUEUED, "type": TaskLogTypeEnum.CREATING_BANK_TRANSACTION},
             )
-            if task_log.status not in ["IN_PROGRESS", "ENQUEUED"]:
-                task_log.status = "ENQUEUED"
+            if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
+                task_log.status = TaskLogStatusEnum.ENQUEUED
                 task_log.save()
 
             last_export = False
@@ -575,18 +591,18 @@ def __validate_expense_group(expense_group: ExpenseGroup):
     if not (
         general_settings.corporate_credit_card_expenses_object == "BANK TRANSACTION"
         and general_settings.map_merchant_to_contact
-        and expense_group.fund_source == "CCC"
+        and expense_group.fund_source == FundSourceEnum.CCC
     ):
         employee_attribute = ExpenseAttribute.objects.filter(
             value=expense_group.description.get("employee_email"),
             workspace_id=expense_group.workspace_id,
-            attribute_type="EMPLOYEE",
+            attribute_type=FyleAttributeEnum.EMPLOYEE,
         ).first()
 
         try:
             Mapping.objects.get(
                 destination_type="CONTACT",
-                source_type="EMPLOYEE",
+                source_type=FyleAttributeEnum.EMPLOYEE,
                 source=employee_attribute,
                 workspace_id=expense_group.workspace_id,
             )
@@ -606,7 +622,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                     workspace_id=expense_group.workspace_id,
                     expense_attribute=employee_attribute,
                     defaults={
-                        "type": "EMPLOYEE_MAPPING",
+                        "type": ErrorTypeEnum.EMPLOYEE_MAPPING,
                         "error_title": employee_attribute.value,
                         "error_detail": "Employee mapping is missing",
                         "is_resolved": False,
@@ -652,11 +668,11 @@ def __validate_expense_group(expense_group: ExpenseGroup):
         category_attribute = ExpenseAttribute.objects.filter(
             value=category,
             workspace_id=expense_group.workspace_id,
-            attribute_type="CATEGORY",
+            attribute_type=FyleAttributeEnum.CATEGORY,
         ).first()
 
         account = Mapping.objects.filter(
-            source_type="CATEGORY",
+            source_type=FyleAttributeEnum.CATEGORY,
             source=category_attribute,
             workspace_id=expense_group.workspace_id,
         ).first()
@@ -677,7 +693,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                     workspace_id=expense_group.workspace_id,
                     expense_attribute=category_attribute,
                     defaults={
-                        "type": "CATEGORY_MAPPING",
+                        "type": ErrorTypeEnum.CATEGORY_MAPPING,
                         "error_title": category_attribute.value,
                         "error_detail": "Category mapping is missing",
                         "is_resolved": False,
@@ -698,7 +714,7 @@ def check_expenses_reimbursement_status(expenses):
             settlement_id=expense.settlement_id
         ).first()
 
-        if reimbursement.state != "COMPLETE":
+        if reimbursement.state != PlatformExpensesEnum.REIMBURSEMENT_COMPLETE:
             all_expenses_paid = False
 
     return all_expenses_paid
@@ -730,7 +746,7 @@ def process_payments(
         task_log.detail = created_payment
         task_log.payment = payment_object
         task_log.xero_errors = None
-        task_log.status = "COMPLETE"
+        task_log.status = TaskLogStatusEnum.COMPLETE
 
         task_log.save()
 
@@ -744,7 +760,7 @@ def create_payment(workspace_id):
     bills: List[Bill] = Bill.objects.filter(
         payment_synced=False,
         expense_group__workspace_id=workspace_id,
-        expense_group__fund_source="PERSONAL",
+        expense_group__fund_source=FundSourceEnum.PERSONAL,
     ).all()
 
     general_mappings: GeneralMapping = GeneralMapping.objects.get(
@@ -760,7 +776,7 @@ def create_payment(workspace_id):
             task_log, _ = TaskLog.objects.update_or_create(
                 workspace_id=workspace_id,
                 task_id="PAYMENT_{}".format(bill.expense_group.id),
-                defaults={"status": "IN_PROGRESS", "type": "CREATING_PAYMENT"},
+                defaults={"status": TaskLogStatusEnum.IN_PROGRESS, "type": TaskLogTypeEnum.CREATING_PAYMENT},
             )
 
             process_payments(bill, workspace_id, task_log, general_mappings)
@@ -791,7 +807,7 @@ def check_xero_object_status(workspace_id):
         bills = Bill.objects.filter(
             expense_group__workspace_id=workspace_id,
             paid_on_xero=False,
-            expense_group__fund_source="PERSONAL",
+            expense_group__fund_source=FundSourceEnum.PERSONAL,
         ).all()
 
         if bills:
@@ -833,7 +849,7 @@ def process_reimbursements(workspace_id):
     platform.reimbursements.sync()
 
     reimbursements = Reimbursement.objects.filter(
-        state="PENDING", workspace_id=workspace_id
+        state=PlatformExpensesEnum.REIMBURSEMENT_PENDING, workspace_id=workspace_id
     ).all()
 
     reimbursement_ids = []
@@ -841,7 +857,7 @@ def process_reimbursements(workspace_id):
     if reimbursements:
         for reimbursement in reimbursements:
             expenses = Expense.objects.filter(
-                settlement_id=reimbursement.settlement_id, fund_source="PERSONAL"
+                settlement_id=reimbursement.settlement_id, fund_source=FundSourceEnum.PERSONAL
             ).all()
             paid_expenses = expenses.filter(paid_on_xero=True)
 

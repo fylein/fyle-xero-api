@@ -11,9 +11,14 @@ from fyle_accounting_mappings.models import MappingSetting
 from xerosdk import InternalServerError, InvalidTokenError, XeroSDK
 
 from apps.fyle.models import ExpenseGroupSettings
+from apps.fyle.enums import FyleAttributeEnum
+
 from apps.mappings.queue import schedule_auto_map_employees, schedule_tax_groups_creation
+
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
+
 from apps.xero.queue import schedule_payment_creation, schedule_reimbursements_sync, schedule_xero_objects_status_sync
+
 from fyle_xero_api.utils import assert_valid
 
 
@@ -180,7 +185,7 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
     if general_settings.import_customers or update_customer_import_settings:
         # Signal would take care of syncing them to Fyle
         MappingSetting.objects.update_or_create(
-            source_field="PROJECT",
+            source_field=FyleAttributeEnum.PROJECT,
             workspace_id=workspace_id,
             destination_field="CUSTOMER",
             defaults={"import_to_fyle": import_to_fyle, "is_custom": False},
@@ -277,7 +282,7 @@ def delete_cards_mapping_settings(workspace_general_settings: WorkspaceGeneralSe
     if not workspace_general_settings.corporate_credit_card_expenses_object:
         mapping_setting = MappingSetting.objects.filter(
             workspace_id=workspace_general_settings.workspace_id,
-            source_field="CORPORATE_CARD",
+            source_field=FyleAttributeEnum.CORPORATE_CARD,
             destination_field="BANK_ACCOUNT",
         ).first()
         if mapping_setting:

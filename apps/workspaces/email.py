@@ -8,7 +8,10 @@ from django.template.loader import render_to_string
 from fyle_accounting_mappings.models import ExpenseAttribute
 
 from apps.mappings.models import TenantMapping
+
 from apps.tasks.models import Error, TaskLog
+from apps.tasks.enums import TaskLogTypeEnum, TaskLogStatusEnum
+
 from apps.workspaces.models import Workspace, WorkspaceSchedule
 
 
@@ -23,9 +26,9 @@ def get_failed_task_logs_count(workspace_id: int) -> int:
         int: The count of failed TaskLog objects.
     """
     return TaskLog.objects.filter(
-        ~Q(type__in=["CREATING_PAYMENT", "FETCHING_EXPENSES"]),
+        ~Q(type__in=[TaskLogTypeEnum.CREATING_PAYMENT, TaskLogTypeEnum.FETCHING_EXPENSES]),
         workspace_id=workspace_id,
-        status="FAILED",
+        status=TaskLogStatusEnum.FAILED,
     ).count()
 
 
