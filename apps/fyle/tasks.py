@@ -132,7 +132,7 @@ def async_create_expense_groups(
                 expense_objects, workspace_id
             )
 
-            task_log.status = TaskLogStatusEnum.COMPLETED
+            task_log.status = TaskLogStatusEnum.COMPLETE
 
             task_log.save()
 
