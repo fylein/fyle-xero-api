@@ -5,6 +5,7 @@ from fyle_accounting_mappings.models import MappingSetting
 
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
+from apps.fyle.enums import FyleAttributeEnum
 
 
 def get_xero_connector(workspace_id):
@@ -47,12 +48,12 @@ def refersh_xero_dimension(workspace_id):
     chain = Chain()
 
     for mapping_setting in mapping_settings:
-        if mapping_setting.source_field == "PROJECT":
+        if mapping_setting.source_field == FyleAttributeEnum.PROJECT:
             # run auto_import_and_map_fyle_fields
             chain.append(
                 "apps.mappings.tasks.auto_import_and_map_fyle_fields", int(workspace_id)
             )
-        elif mapping_setting.source_field == "COST_CENTER":
+        elif mapping_setting.source_field == FyleAttributeEnum.COST_CENTER:
             # run auto_create_cost_center_mappings
             chain.append(
                 "apps.mappings.tasks.auto_create_cost_center_mappings",

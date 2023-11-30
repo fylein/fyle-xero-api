@@ -3,6 +3,8 @@ from fyle_accounting_mappings.models import DestinationAttribute, Mapping
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import Workspace
 
+from apps.fyle.enums import FyleAttributeEnum
+
 
 def post_delete_xero_connection(workspace_id):
     """
@@ -13,7 +15,7 @@ def post_delete_xero_connection(workspace_id):
     if workspace.onboarding_state in ("CONNECTION", "EXPORT_SETTINGS"):
         TenantMapping.objects.filter(workspace_id=workspace_id).delete()
         Mapping.objects.filter(
-            workspace_id=workspace_id, source_type="EMPLOYEE"
+            workspace_id=workspace_id, source_type=FyleAttributeEnum.EMPLOYEE
         ).delete()
         DestinationAttribute.objects.filter(workspace_id=workspace_id).delete()
         workspace.onboarding_state = "CONNECTION"
