@@ -8,7 +8,7 @@ data = {
         "PrivateNote": "Reimbursable expense by ashwin.t@fyle.in on 2022-01-21 ",
         "Line": [
             {
-                "Description": "ashwin.t@fyle.in - Travel - 2022-01-21 - C/2022/01/R/8 -  - https://staging.fyle.tech/app/main/#/enterprise/view_expense/txlPjmNxssq1?org_id=orGcBCVPijjO",
+                "Description": "ashwin.t@fyle.in - Travel - 2022-01-21 - C/2022/01/R/8 -  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txlPjmNxssq1?org_id=orGcBCVPijjO",
                 "DetailType": "AccountBasedExpenseLineDetail",
                 "Amount": 60.0,
                 "AccountBasedExpenseLineDetail": {
@@ -34,7 +34,7 @@ data = {
         "Credit": False,
         "Line": [
             {
-                "Description": "ashwin.t@fyle.in - Travel - 2022-01-21 - C/2022/01/R/8 -  - https://staging.fyle.tech/app/main/#/enterprise/view_expense/txvh8qm7RTRI?org_id=orGcBCVPijjO",
+                "Description": "ashwin.t@fyle.in - Travel - 2022-01-21 - C/2022/01/R/8 -  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txvh8qm7RTRI?org_id=orGcBCVPijjO",
                 "DetailType": "AccountBasedExpenseLineDetail",
                 "Amount": 30.0,
                 "AccountBasedExpenseLineDetail": {
@@ -306,7 +306,7 @@ data = {
                 "LineAmountTypes": "Exclusive",
                 "LineItems": [
                     {
-                        "Description": "ashwin.t@fyle.in, category - Food spent on 2020-05-25, report number - C/2022/05/R/16  - https://staging.fyle.tech/app/main/#/enterprise/view_expense/txUDvDmEV4ep?org_id=orPJvXuoLqvJ",
+                        "Description": "ashwin.t@fyle.in, category - Food spent on 2020-05-25, report number - C/2022/05/R/16  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txUDvDmEV4ep?org_id=orPJvXuoLqvJ",
                         "UnitAmount": 4.62,
                         "TaxType": "INPUT",
                         "TaxAmount": 0.38,
@@ -404,7 +404,7 @@ data = {
                 "LineAmountTypes": "Exclusive",
                 "LineItems": [
                     {
-                        "Description": "sravan.kumar@fyle.in, category - WIP spent on 2022-05-24, report number - C/2022/05/R/12  - https://staging.fyle.tech/app/main/#/enterprise/view_expense/txkw3dt3umkN?org_id=orPJvXuoLqvJ",
+                        "Description": "sravan.kumar@fyle.in, category - WIP spent on 2022-05-24, report number - C/2022/05/R/12  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txkw3dt3umkN?org_id=orPJvXuoLqvJ",
                         "UnitAmount": 93.3,
                         "TaxType": "INPUT",
                         "TaxAmount": 7.7,

@@ -150,7 +150,7 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
 
     org_id = Workspace.objects.get(id=workspace_id).fyle_org_id
 
-    expense_link = "{0}/app/main/#/enterprise/view_expense/{1}?org_id={2}".format(
+    expense_link = "{0}/app/admin/#/enterprise/view_expense/{1}?org_id={2}".format(
         fyle_credentials.cluster_domain, lineitem.expense_id, org_id
     )
 

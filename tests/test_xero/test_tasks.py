@@ -368,7 +368,7 @@ def test_create_bill_exceptions(db):
                         "LineAmountTypes": "Exclusive",
                         "LineItems": [
                             {
-                                "Description": "ashwin.t@fyle.in, category - Food spent on 2022-03-30, report number - C/2022/03/R/1  - https://staging.fyle.tech/app/main/#/enterprise/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn",
+                                "Description": "ashwin.t@fyle.in, category - Food spent on 2022-03-30, report number - C/2022/03/R/1  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn",
                                 "UnitAmount": 92.38,
                                 "TaxType": "OUTPUT",
                                 "TaxAmount": 7.62,
@@ -626,7 +626,7 @@ def test_create_bank_transactions_exceptions(db):
                         "LineAmountTypes": "Exclusive",
                         "LineItems": [
                             {
-                                "Description": "ashwin.t@fyle.in, category - Food spent on 2022-03-30, report number - C/2022/03/R/1  - https://staging.fyle.tech/app/main/#/enterprise/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn",
+                                "Description": "ashwin.t@fyle.in, category - Food spent on 2022-03-30, report number - C/2022/03/R/1  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn",
                                 "UnitAmount": 92.38,
                                 "TaxType": "OUTPUT",
                                 "TaxAmount": 7.62,
