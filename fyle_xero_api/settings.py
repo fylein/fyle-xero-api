@@ -210,6 +210,8 @@ DATABASES["cache_db"] = {"ENGINE": "django.db.backends.sqlite3", "NAME": "cache.
 
 DATABASE_ROUTERS = ["fyle_xero_api.cache_router.CacheRouter"]
 
+FYLE_REST_AUTH_SETTINGS = {'async_update_user': True}
+
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
