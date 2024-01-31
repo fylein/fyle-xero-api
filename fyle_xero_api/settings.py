@@ -95,6 +95,10 @@ FYLE_REST_AUTH_SERIALIZERS = {
     "USER_DETAILS_SERIALIZER": "apps.users.serializers.UserSerializer"
 }
 
+FYLE_REST_AUTH_SETTINGS = {
+    'async_update_user': False
+}
+
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
@@ -134,6 +138,16 @@ Q_CLUSTER = {
     # The maximum resident set size in kilobytes before a worker will recycle and release resources.
     # Useful for limiting memory usage.
     "max_rss": 100000,  # 100mb
+    'ALT_CLUSTERS': {
+        'export': {
+            "retry": 14400,
+            "timeout": 3600
+        },
+        'import': {
+            "retry": 14400,
+            "timeout": 3600
+        },
+    }
 }
 
 LOGGING = {

@@ -57,6 +57,7 @@ def schedule_sync(
                 "minutes": hours * 60,
                 "next_run": datetime.now(),
             },
+            cluster='export'
         )
 
         ws_schedule.schedule = schedule

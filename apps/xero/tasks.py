@@ -284,16 +284,26 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
     chain = Chain()
 
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials)
+    chain.append(
+        "apps.fyle.tasks.sync_dimensions",
+        fyle_credentials,
+        q_options={
+            'cluster': 'import'
+        }
+    )
 
     for group in chaining_attributes:
         trigger_function = "apps.xero.tasks.create_{}".format(group["export_type"])
+        print(trigger_function)
         chain.append(
             trigger_function,
             group["expense_group_id"],
             group["task_log_id"],
             xero_connection,
             group["last_export"],
+            q_options={
+                'cluster': 'export'
+            }
         )
 
     if chain.length() > 1:
