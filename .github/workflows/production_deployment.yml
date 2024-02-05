@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     steps:
+      - uses: actions/checkout@v2
       - name: push to dockerhub
         uses: fylein/docker-release-action@master
         env:
