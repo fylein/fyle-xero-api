@@ -37,7 +37,7 @@ jobs:
           cd ${{ secrets.PROD_DEPLOY_REPO }}/${{ secrets.US_EKS_CLUSTER_NAME }}/integrations
           kustomize edit set image docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fyle_xero-api=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fyle_xero-api:$NEW_TAG
 
-          cd ${{ secrets.PROD_DEPLOY_REPO }}/${{ secrets.IN_EKS_CLUSTER_NAME }}/integrations
+          cd ../../${{ secrets.IN_EKS_CLUSTER_NAME }}/integrations
           kustomize edit set image docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fyle_xero-api=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fyle_xero-api:$NEW_TAG
 
       - name: Commit and push changes
