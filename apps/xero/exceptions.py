@@ -175,9 +175,17 @@ def handle_xero_exceptions(payment=False):
                     )
 
             except RateLimitError as exception:
-                handle_xero_error(
-                    exception=exception, expense_group=expense_group, task_log=task_log
-                )
+                if payment:
+                    logger.info(exception.message)
+                    detail = exception.message
+                    task_log.status = TaskLogStatusEnum.FAILED
+                    task_log.detail = detail
+
+                    task_log.save()
+                else:
+                    handle_xero_error(
+                        exception=exception, expense_group=expense_group, task_log=task_log
+                    )
 
             except (NoPrivilegeError, UnsuccessfulAuthentication) as exception:
                 xero_credentials = XeroCredentials.objects.filter(
