@@ -51,7 +51,6 @@ def test_auto_map_employee(api_client, test_connection):
     workspace_id = 1
 
     url = "/api/workspaces/{}/mappings/auto_map_employees/trigger/".format(workspace_id)
-
     api_client.credentials(
         HTTP_AUTHORIZATION="Bearer {}".format(test_connection.access_token)
     )
