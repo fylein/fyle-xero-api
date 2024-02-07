@@ -802,8 +802,8 @@ def auto_import_and_map_fyle_fields(workspace_id):
         chain.append(
             "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id,
             q_options={
-            'cluster': 'import'
-        }
+                'cluster': 'import'
+            }
         )
 
     if chain.length() > 0:
