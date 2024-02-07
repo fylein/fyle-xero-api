@@ -56,7 +56,7 @@ def schedule_sync(
                 "schedule_type": Schedule.MINUTES,
                 "minutes": hours * 60,
                 "next_run": datetime.now(),
-            },
+            }
         )
 
         ws_schedule.schedule = schedule

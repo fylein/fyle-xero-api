@@ -51,24 +51,36 @@ def refersh_xero_dimension(workspace_id):
         if mapping_setting.source_field == FyleAttributeEnum.PROJECT:
             # run auto_import_and_map_fyle_fields
             chain.append(
-                "apps.mappings.tasks.auto_import_and_map_fyle_fields", int(workspace_id)
+                "apps.mappings.tasks.auto_import_and_map_fyle_fields", int(workspace_id),
+                q_options={
+                    'cluster': 'import'
+                }
             )
         elif mapping_setting.source_field == FyleAttributeEnum.COST_CENTER:
             # run auto_create_cost_center_mappings
             chain.append(
                 "apps.mappings.tasks.auto_create_cost_center_mappings",
                 int(workspace_id),
+                q_options={
+                    'cluster': 'import'
+                }
             )
         elif mapping_setting.is_custom:
             # run async_auto_create_custom_field_mappings
             chain.append(
                 "apps.mappings.tasks.async_auto_create_custom_field_mappings",
                 int(workspace_id),
+                q_options={
+                    'cluster': 'import'
+                }
             )
         elif workspace_general_settings.import_suppliers_as_merchants:
             # run auto_create_suppliers_as_merchant
             chain.append(
-                "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id
+                "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id,
+                q_options={
+                    'cluster': 'import'
+                }
             )
 
     if chain.length() > 0:

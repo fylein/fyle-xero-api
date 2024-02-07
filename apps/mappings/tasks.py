@@ -789,14 +789,21 @@ def auto_import_and_map_fyle_fields(workspace_id):
     chain = Chain()
 
     if workspace_general_settings.import_categories:
-        chain.append("apps.mappings.tasks.auto_create_category_mappings", workspace_id)
+        chain.append("apps.mappings.tasks.auto_create_category_mappings", workspace_id, q_options={
+            'cluster': 'import'
+        })
 
     if project_mapping and project_mapping.import_to_fyle:
-        chain.append("apps.mappings.tasks.auto_create_project_mappings", workspace_id)
+        chain.append("apps.mappings.tasks.auto_create_project_mappings", workspace_id, q_options={
+            'cluster': 'import'
+        })
 
     if workspace_general_settings.import_suppliers_as_merchants:
         chain.append(
-            "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id
+            "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id,
+            q_options={
+            'cluster': 'import'
+        }
         )
 
     if chain.length() > 0:

@@ -82,6 +82,9 @@ def run_pre_mapping_settings_triggers(sender, instance: MappingSetting, **kwargs
             int(instance.workspace_id),
             instance.destination_field,
             instance.source_field,
+            q_options={
+                'cluster': 'import'
+            }
         )
 
 
@@ -92,5 +95,5 @@ def run_post_tenant_mapping_trigger(sender, instance: TenantMapping, **kwargs):
     :param instance: Row Instance of Sender Class
     :return: None
     """
-    async_task("apps.xero.tasks.create_missing_currency", int(instance.workspace_id))
-    async_task("apps.xero.tasks.update_xero_short_code", int(instance.workspace_id))
+    async_task("apps.xero.tasks.create_missing_currency", int(instance.workspace_id), q_options={ 'cluster': 'import' })
+    async_task("apps.xero.tasks.update_xero_short_code", int(instance.workspace_id), q_options={ 'cluster': 'import' })

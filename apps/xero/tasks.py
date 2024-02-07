@@ -294,6 +294,9 @@ def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> Non
             group["task_log_id"],
             xero_connection,
             group["last_export"],
+            q_options={
+                'cluster': 'fyle_xero_api'
+            }
         )
 
     if chain.length() > 1:
