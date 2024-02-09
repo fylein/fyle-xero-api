@@ -150,6 +150,8 @@ def create_fyle_categories_payload(
                         "is_enabled": category.active,
                     }
                 )
+
+    logger.info("| Importing Categories to Fyle | Content: {{Fyle Payload count: {}}}".format(len(payload)))
     return payload
 
 
@@ -226,6 +228,7 @@ def upload_categories_to_fyle(workspace_id):
         platform.categories.post_bulk(fyle_payload)
         platform.categories.sync()
 
+    logger.info("| Importing Categories to Fyle | Content: {{Fyle Payload count: {}}}".format(len(fyle_payload)))
     return xero_attributes
 
 
@@ -313,6 +316,8 @@ def create_fyle_cost_centers_payload(
                     ),
                 }
             )
+
+    logger.info("| Importing Cost Centers to Fyle | Content: {{Fyle Payload count: {}}}".format(len(fyle_cost_centers_payload)))
     return fyle_cost_centers_payload
 
 
@@ -422,6 +427,7 @@ def create_fyle_projects_payload(
                     }
                 )
 
+    logger.info("| Importing Projects to Fyle | Content: {{Fyle Payload count: {}}}".format(len(payload)))
     return payload
 
 
@@ -609,6 +615,7 @@ def create_fyle_expense_custom_fields_payload(
             expense_custom_field_payload["id"] = custom_field_id
             expense_custom_field_payload["is_mandatory"] = expense_field["is_mandatory"]
 
+        logger.info("| Importing Custom Fields to Fyle | Content: {{Fyle Payload count: {}}}".format(len(expense_custom_field_payload)))
         return expense_custom_field_payload
 
 
@@ -738,6 +745,7 @@ def create_fyle_tax_group_payload(
                 }
             )
 
+    logger.info("| Importing Tax Groups to Fyle | Content: {{Fyle Payload count: {}}}".format(len(fyle_tax_group_payload)))
     return fyle_tax_group_payload
 
 
