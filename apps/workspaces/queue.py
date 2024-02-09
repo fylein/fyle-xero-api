@@ -11,6 +11,7 @@ def schedule_email_notification(workspace_id: int, schedule_enabled: bool, hours
         schedule, _ = Schedule.objects.update_or_create(
             func="apps.workspaces.tasks.run_email_notification",
             args="{}".format(workspace_id),
+            cluster="import",
             defaults={
                 "schedule_type": Schedule.MINUTES,
                 "minutes": hours * 60,
