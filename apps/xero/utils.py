@@ -16,6 +16,7 @@ from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, Bil
 from fyle_xero_api import settings
 
 logger = logging.getLogger(__name__)
+logger.level = logging.INFO
 
 CHARTS_OF_ACCOUNTS = ["EXPENSE", "ASSET", "EQUITY", "LIABILITY", "REVENUE"]
 
@@ -584,6 +585,7 @@ class XeroConnector:
             ),
         }
 
+        logger.info("| Payload for Bill creation | Content: {{WORKSPACE_ID: {} EXPENSE_GROUP_ID: {} BILL_PAYLOAD: {}}}".format(self.workspace_id, bill.expense_group.id, bill_payload))
         return bill_payload
 
     def post_bill(
@@ -709,6 +711,7 @@ class XeroConnector:
         if bank_transaction_lineitems[0].amount < 0:
             bank_transaction_payload["Type"] = "RECEIVE"
 
+        logger.info("| Payload for Bank Transaction creation | Content: {{WORKSPACE_ID: {} EXPENSE_GROUP_ID: {} BANK_TRANSACTION_PAYLOAD: {}}}".format(self.workspace_id, bank_transaction.expense_group.id, bank_transaction_payload))
         return bank_transaction_payload
 
     def post_bank_transaction(
@@ -800,6 +803,7 @@ class XeroConnector:
             ]
         }
 
+        logger.info("| Payload for Bill Payment creation | Content: {{WORKSPACE_ID: {} EXPENSE_GROUP_ID: {} PAYMENT_PAYLOAD: {}}}".format(payment.workspace_id, payment.expense_group.id, payment_payload))
         return payment_payload
 
     def post_payment(self, payment: Payment):
