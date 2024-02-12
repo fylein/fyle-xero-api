@@ -99,23 +99,27 @@ def run_email_notification(workspace_id):
     task_logs_count = get_failed_task_logs_count(workspace_id)
     workspace = Workspace.objects.get(id=workspace_id)
     tenant_detail = TenantMapping.get_tenant_details(workspace_id)
-    if task_logs_count and (
-        ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count
-    ):
-        errors = get_errors(workspace_id)
-        for admin_email in ws_schedule.emails_selected:
-            admin_name = get_admin_name(workspace_id, admin_email, ws_schedule)
-            send_failure_notification_email(
-                admin_name,
-                admin_email,
-                task_logs_count,
-                workspace,
-                tenant_detail,
-                errors,
-            )
+    try:
+        if task_logs_count and (
+            ws_schedule.error_count is None or task_logs_count > ws_schedule.error_count
+        ):
+            errors = get_errors(workspace_id)
+            for admin_email in ws_schedule.emails_selected:
+                admin_name = get_admin_name(workspace_id, admin_email, ws_schedule)
+                send_failure_notification_email(
+                    admin_name,
+                    admin_email,
+                    task_logs_count,
+                    workspace,
+                    tenant_detail,
+                    errors,
+                )
 
-        ws_schedule.error_count = task_logs_count
-        ws_schedule.save()
+            ws_schedule.error_count = task_logs_count
+            ws_schedule.save()
+
+    except Exception as e:
+        logger.info('Error in sending email notification: %s', str(e))
 
 
 def async_add_admins_to_workspace(workspace_id: int, current_user_id: str):

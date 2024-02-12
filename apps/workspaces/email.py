@@ -2,10 +2,13 @@ from datetime import date
 from typing import List
 
 from django.conf import settings
-from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.template.loader import render_to_string
 from fyle_accounting_mappings.models import ExpenseAttribute
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import (
+    Mail, From
+)
 
 from apps.mappings.models import TenantMapping
 
@@ -96,15 +99,16 @@ def send_email_notification(admin_email: str, message: str):
         admin_email (str): The email address of the admin.
         message (str): The message to include in the email.
     """
-    mail = EmailMessage(
+    SENDGRID_API_KEY = settings.SENDGRID_API_KEY
+    sg = SendGridAPIClient(api_key=SENDGRID_API_KEY)
+    from_email = From(email=settings.EMAIL)
+    mail = Mail(
+        from_email=from_email,
+        to_emails=[admin_email],
         subject="Export To Xero Failed",
-        body=message,
-        from_email=settings.EMAIL,
-        to=[admin_email],
+        html_content=message
     )
-
-    mail.content_subtype = "html"
-    mail.send()
+    sg.send(mail)
 
 
 def send_failure_notification_email(
