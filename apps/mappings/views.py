@@ -70,7 +70,9 @@ class AutoMapEmployeeView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        chain.append("apps.mappings.tasks.async_auto_map_employees", workspace_id)
+        chain.append("apps.mappings.tasks.async_auto_map_employees", workspace_id, q_options={
+            'cluster': 'import'
+        })
 
         chain.run()
 

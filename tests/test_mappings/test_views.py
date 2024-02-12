@@ -51,10 +51,13 @@ def test_auto_map_employee(api_client, test_connection):
     workspace_id = 1
 
     url = "/api/workspaces/{}/mappings/auto_map_employees/trigger/".format(workspace_id)
-
     api_client.credentials(
         HTTP_AUTHORIZATION="Bearer {}".format(test_connection.access_token)
     )
+
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    general_settings.auto_map_employees = True
+    general_settings.save()
 
     response = api_client.post(url)
     assert response.status_code == 200

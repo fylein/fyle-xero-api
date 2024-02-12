@@ -77,6 +77,9 @@ class WorkspaceView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
                 "apps.workspaces.tasks.async_update_workspace_name",
                 workspaces[0],
                 request.META.get("HTTP_AUTHORIZATION"),
+                q_options={
+                    'cluster': 'import'
+                }
             )
 
         return Response(
