@@ -134,7 +134,9 @@ def test_get_errors_returns_unresolved_errors_for_given_workspace(db):
     assert all(not error.is_resolved for error in errors)
 
 
-def test_send_email_notification(db):
+def test_send_email_notification(db, mocker):
+    mocker.patch("apps.workspaces.email.SendGridAPIClient")
+
     admin_email = "test@example.com"
     message = "Test email message"
     send_email_notification(admin_email, message)

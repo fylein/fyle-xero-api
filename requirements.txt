@@ -47,3 +47,4 @@ pytest-cov==3.0.0
 pytest-django==4.5.2
 pytest-mock==3.8.2
 django-filter==21.1
+sendgrid==6.9.7
