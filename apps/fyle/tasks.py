@@ -1,7 +1,7 @@
 import logging
 import traceback
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 
 from django.db import transaction
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
@@ -11,8 +11,10 @@ from apps.tasks.models import TaskLog
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 
-from .models import Expense, ExpenseGroup, ExpenseGroupSettings
-from .enums import FundSourceEnum, PlatformExpensesEnum, ExpenseStateEnum
+from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
+from apps.fyle.enums import FundSourceEnum, PlatformExpensesEnum, ExpenseStateEnum
+from apps.fyle.helpers import get_filter_credit_expenses, get_source_account_type, get_fund_source, handle_import_exception
+from apps.workspaces.actions import export_to_xero
 
 
 logger = logging.getLogger(__name__)
@@ -159,3 +161,64 @@ def async_create_expense_groups(
 def sync_dimensions(fyle_credentials):
     platform = PlatformConnector(fyle_credentials)
     platform.import_fyle_dimensions()
+
+
+def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: Workspace):
+    expense_objects = Expense.create_expense_objects(expenses, workspace.id)
+    configuration: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace.id)
+    filtered_expenses = expense_objects
+    expenses_object_ids = [expense_object.id for expense_object in expense_objects]
+
+    filtered_expenses = Expense.objects.filter(
+        is_skipped=False,
+        id__in=expenses_object_ids,
+        expensegroup__isnull=True,
+        org_id=workspace.fyle_org_id
+    )
+
+    ExpenseGroup.create_expense_groups_by_report_id_fund_source(
+        filtered_expenses, configuration, workspace.id
+    )
+
+    task_log.status = 'COMPLETE'
+    task_log.save()
+
+
+def import_and_export_expenses(report_id: str, org_id: str) -> None:
+    """
+    Import and export expenses
+    :param report_id: report id
+    :param org_id: org id
+    :return: None
+    """
+    workspace = Workspace.objects.get(fyle_org_id=org_id)
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
+    expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace.id)
+
+    try:
+        with transaction.atomic():
+            task_log, _ = TaskLog.objects.update_or_create(workspace_id=workspace.id, type='FETCHING_EXPENSES', defaults={'status': 'IN_PROGRESS'})
+
+            fund_source = get_fund_source(workspace.id)
+            source_account_type = get_source_account_type(fund_source)
+            filter_credit_expenses = get_filter_credit_expenses(expense_group_settings)
+
+            platform = PlatformConnector(fyle_credentials)
+            expenses = platform.expenses.get(
+                source_account_type,
+                filter_credit_expenses=filter_credit_expenses,
+                report_id=report_id
+            )
+
+            group_expenses_and_save(expenses, task_log, workspace)
+
+        # Export only selected expense groups
+        expense_ids = Expense.objects.filter(report_id=report_id, org_id=org_id).values_list('id', flat=True)
+        expense_groups = ExpenseGroup.objects.filter(expenses__id__in=[expense_ids], workspace_id=workspace.id).distinct('id').values('id')
+        expense_group_ids = [expense_group['id'] for expense_group in expense_groups]
+
+        if len(expense_group_ids):
+            export_to_xero(workspace.id, None, expense_group_ids)
+
+    except Exception:
+        handle_import_exception(task_log)

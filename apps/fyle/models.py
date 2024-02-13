@@ -212,6 +212,7 @@ class Expense(models.Model):
                         "billable": expense["billable"]
                         if expense["billable"]
                         else False,
+                        'workspace_id': workspace_id
                     },
                 )
 

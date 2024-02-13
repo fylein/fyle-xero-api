@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -11,10 +12,13 @@ from xerosdk import exceptions as xero_exc
 from apps.fyle.helpers import get_cluster_domain
 from apps.fyle.models import ExpenseGroupSettings
 from apps.mappings.models import TenantMapping
-from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, XeroCredentials
+from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, XeroCredentials, WorkspaceGeneralSettings, WorkspaceSchedule
+from apps.fyle.models import ExpenseGroup
 from apps.workspaces.signals import post_delete_xero_connection
 from apps.workspaces.utils import generate_xero_refresh_token
 from apps.xero.utils import XeroConnector
+from apps.fyle.enums import FundSourceEnum
+from apps.xero.tasks import schedule_bank_transaction_creation, schedule_bills_creation
 
 logger = logging.getLogger(__name__)
 
@@ -170,3 +174,60 @@ def get_workspace_admin(workspace_id):
                 {"name": employee.detail["full_name"], "email": admin.email}
             )
     return admin_email
+
+
+def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[]):
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
+    workspace_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace_id, interval_hours__gt=0, enabled=True).first()
+
+    last_exported_at = datetime.now()
+    is_expenses_exported = False
+    export_mode = export_mode or 'MANUAL'
+    expense_group_filters = {
+        'exported_at__isnull': True,
+        'workspace_id': workspace_id
+    }
+    if expense_group_ids:
+        expense_group_filters['id__in'] = expense_group_ids
+
+    if general_settings.reimbursable_expenses_object:
+        expense_group_ids = ExpenseGroup.objects.filter(
+            fund_source=FundSourceEnum.PERSONAL,
+            **expense_group_filters
+        ).values_list("id", flat=True)
+
+        if len(expense_group_ids):
+            is_expenses_exported = True
+
+        schedule_bills_creation(
+            workspace_id=workspace_id,
+            expense_group_ids=expense_group_ids,
+            is_auto_export=export_mode == 'AUTO',
+            fund_source='PERSONAL'
+        )
+
+    if general_settings.corporate_credit_card_expenses_object:
+        expense_group_ids = ExpenseGroup.objects.filter(
+            fund_source=FundSourceEnum.CCC,
+            **expense_group_filters
+        ).values_list("id", flat=True)
+
+        if len(expense_group_ids):
+            is_expenses_exported = True
+
+        schedule_bank_transaction_creation(
+            workspace_id=workspace_id,
+            expense_group_ids=expense_group_ids,
+            is_auto_export=export_mode == 'AUTO',
+            fund_source='CCC'
+        )
+
+    if is_expenses_exported:
+        last_export_detail.last_exported_at = last_exported_at
+        last_export_detail.export_mode = export_mode or 'MANUAL'
+
+        if workspace_schedule:
+            last_export_detail.next_export_at = last_exported_at + timedelta(hours=workspace_schedule.interval_hours)
+
+        last_export_detail.save()

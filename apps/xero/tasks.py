@@ -268,46 +268,36 @@ def create_bill(
         )
 
 
-def create_chain_and_export(chaining_attributes: list, workspace_id: int) -> None:
+def __create_chain_and_run(fyle_credentials: FyleCredential, xero_connection, in_progress_expenses: List[Expense],
+        workspace_id: int, chain_tasks: List[dict], fund_source: str) -> None:
     """
-    Create a chain of expense groups and export them to Xero
-    :param chaining_attributes:
-    :param workspace_id:
+    Create chain and run
+    :param fyle_credentials: Fyle credentials
+    :param in_progress_expenses: List of in progress expenses
+    :param workspace_id: workspace id
+    :param chain_tasks: List of chain tasks
+    :param fund_source: Fund source
     :return: None
     """
-    try:
-        xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-        xero_connection = XeroConnector(xero_credentials, workspace_id)
-    except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
-        xero_connection = None
-
     chain = Chain()
-
-    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials)
 
-    for group in chaining_attributes:
-        trigger_function = "apps.xero.tasks.create_{}".format(group["export_type"])
-        chain.append(
-            trigger_function,
-            group["expense_group_id"],
-            group["task_log_id"],
-            xero_connection,
-            group["last_export"]
-        )
+    # chain.append('apps.netsuite.tasks.update_expense_and_post_summary', in_progress_expenses, workspace_id, fund_source)
 
-    if chain.length() > 1:
-        chain.run()
+    for task in chain_tasks:
+        chain.append(task['target'], task['expense_group_id'], task['task_log_id'], xero_connection, task['last_export'])
+
+    # chain.append('apps.fyle.tasks.post_accounting_export_summary', fyle_credentials.workspace.fyle_org_id, workspace_id, fund_source)
+    chain.run()
 
 
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> list:
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str) -> list:
     """
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
     :param workspace_id: workspace id
     :return: List of chaining attributes
     """
-    chaining_attributes = []
     if expense_group_ids:
         expense_groups = ExpenseGroup.objects.filter(
             Q(tasklog__id__isnull=True)
@@ -317,6 +307,9 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
             bill__id__isnull=True,
             exported_at__isnull=True,
         ).all()
+
+        chain_tasks = []
+        in_progress_expenses = []
 
         for index, expense_group in enumerate(expense_groups):
             task_log, _ = TaskLog.objects.get_or_create(
@@ -332,18 +325,23 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str]) -> 
             if expense_groups.count() == index + 1:
                 last_export = True
 
-            chaining_attributes.append(
-                {
-                    "expense_group_id": expense_group.id,
-                    "task_log_id": task_log.id,
-                    "export_type": "bill",
-                    "last_export": last_export,
-                }
-            )
+            chain_tasks.append({
+                'target': 'apps.xero.tasks.create_bill',
+                'expense_group_id': expense_group.id,
+                'task_log_id': task_log.id,
+                'last_export': last_export})
 
-            task_log.save()
+            if not (is_auto_export and expense_group.expenses.first().previous_export_state == 'ERROR'):
+                in_progress_expenses.extend(expense_group.expenses.all())
 
-    return chaining_attributes
+        if len(chain_tasks) > 0:
+            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+            try:
+                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+                xero_connection = XeroConnector(xero_credentials, workspace_id)
+            except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
+                xero_connection = None
+            __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
 
 
 def get_linked_transaction_object(export_instance, line_items: list):
@@ -518,7 +516,7 @@ def create_bank_transaction(
 
 
 def schedule_bank_transaction_creation(
-    workspace_id: int, expense_group_ids: List[str]
+    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str
 ) -> list:
     """
     Schedule bank transaction creation
@@ -526,7 +524,6 @@ def schedule_bank_transaction_creation(
     :param workspace_id: workspace id
     :return: List of chaining attributes
     """
-    chaining_attributes = []
     if expense_group_ids:
         expense_groups = ExpenseGroup.objects.filter(
             Q(tasklog__id__isnull=True)
@@ -536,6 +533,9 @@ def schedule_bank_transaction_creation(
             banktransaction__id__isnull=True,
             exported_at__isnull=True,
         ).all()
+
+        chain_tasks = []
+        in_progress_expenses = []
 
         for index, expense_group in enumerate(expense_groups):
             task_log, _ = TaskLog.objects.get_or_create(
@@ -551,18 +551,23 @@ def schedule_bank_transaction_creation(
             if expense_groups.count() == index + 1:
                 last_export = True
 
-            chaining_attributes.append(
-                {
-                    "expense_group_id": expense_group.id,
-                    "task_log_id": task_log.id,
-                    "export_type": "bank_transaction",
-                    "last_export": last_export,
-                }
-            )
+            chain_tasks.append({
+                'target': 'apps.xero.tasks.create_bank_transaction',
+                'expense_group_id': expense_group.id,
+                'task_log_id': task_log.id,
+                'last_export': last_export})
 
-            task_log.save()
+            if not (is_auto_export and expense_group.expenses.first().previous_export_state == 'ERROR'):
+                in_progress_expenses.extend(expense_group.expenses.all())
 
-    return chaining_attributes
+        if len(chain_tasks) > 0:
+            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+            try:
+                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+                xero_connection = XeroConnector(xero_credentials, workspace_id)
+            except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
+                xero_connection = None
+            __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):

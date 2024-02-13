@@ -8,6 +8,7 @@ from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.serializers import ExpenseFieldSerializer, ExpenseGroupSerializer, ExpenseGroupSettingsSerializer
 from apps.fyle.tasks import async_create_expense_groups, get_task_log_and_fund_source
 from fyle_xero_api.utils import LookupFieldMixin
+from apps.fyle.queue import async_import_and_export_expenses
 
 
 class ExpenseGroupView(LookupFieldMixin, generics.ListCreateAPIView):
@@ -106,3 +107,16 @@ class ExportableExpenseGroupsView(generics.RetrieveAPIView):
             data={"exportable_expense_group_ids": expense_group_ids},
             status=status.HTTP_200_OK,
         )
+
+
+class ExportView(generics.CreateAPIView):
+    """
+    Export View
+    """
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        async_import_and_export_expenses(request.data)
+
+        return Response(data={}, status=status.HTTP_200_OK)

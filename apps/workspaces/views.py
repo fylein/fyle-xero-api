@@ -18,7 +18,7 @@ from apps.workspaces.serializers import (
     WorkspaceSerializer,
     XeroCredentialSerializer,
 )
-from apps.workspaces.tasks import export_to_xero
+from apps.workspaces.actions import export_to_xero
 from apps.workspaces.utils import generate_xero_identity
 
 logger = logging.getLogger(__name__)
