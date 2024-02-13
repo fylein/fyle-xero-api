@@ -264,6 +264,7 @@ FYLE_CLIENT_SECRET = os.environ.get("FYLE_CLIENT_SECRET")
 FYLE_BASE_URL = os.environ.get("FYLE_BASE_URL")
 FYLE_APP_URL = os.environ.get("FYLE_APP_URL")
 XERO_APP_URL = os.environ.get("APP_URL")
+INTEGRATIONS_SETTINGS_API = os.environ.get('INTEGRATIONS_SETTINGS_API')
 
 
 # XERO Settings

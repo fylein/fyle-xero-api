@@ -1,9 +1,11 @@
 import logging
+import json
 from datetime import datetime
 from django.conf import settings
 
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_rest_auth.helpers import get_fyle_admin
+from apps.fyle.helpers import post_request
 
 from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import async_create_expense_groups
@@ -170,3 +172,23 @@ def async_create_admin_subcriptions(workspace_id: int) -> None:
         'webhook_url': '{}/workspaces/{}/fyle/exports/'.format(settings.API_URL, workspace_id)
     }
     platform.subscriptions.post(payload)
+
+
+def post_to_integration_settings(workspace_id: int, active: bool):
+    """
+    Post to integration settings
+    """
+    refresh_token = FyleCredential.objects.get(workspace_id=workspace_id).refresh_token
+    url = '{}/integrations/'.format(settings.INTEGRATIONS_SETTINGS_API)
+    payload = {
+        'tpa_id': settings.FYLE_CLIENT_ID,
+        'tpa_name': 'Fyle Xero Integration',
+        'type': 'ACCOUNTING',
+        'is_active': active,
+        'connected_at': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    }
+
+    try:
+        post_request(url, json.dumps(payload), refresh_token)
+    except Exception as error:
+        logger.error(error)
