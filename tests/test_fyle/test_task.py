@@ -8,7 +8,7 @@ from apps.tasks.models import TaskLog
 from apps.workspaces.models import FyleCredential, Workspace
 from tests.test_fyle.fixtures import data
 from apps.fyle.tasks import create_expense_groups, post_accounting_export_summary
-from apps.fyle.actions import update_failed_expenses
+from apps.fyle.actions import update_expenses_in_progress
 
 
 def test_create_expense_groups(mocker, db):
@@ -66,18 +66,18 @@ def test_create_expense_groups(mocker, db):
 
 def test_post_accounting_export_summary(db, mocker):
     expense_group = ExpenseGroup.objects.filter(workspace_id=1).first()
-    expense_id = expense_group.expenses.first().id
-    expense_group.expenses.remove(expense_id)
+    expense = expense_group.expenses.first()
+    expense_group.expenses.remove(expense.id)
 
     workspace = Workspace.objects.get(id=1)
 
-    expense = Expense.objects.filter(id=expense_id).first()
+    expense = Expense.objects.filter(id=expense.id).first()
     expense.workspace_id = 1
     expense.save()
 
-    update_failed_expenses(Q(), [expense_id], workspace)
+    update_expenses_in_progress([expense])
 
-    assert Expense.objects.filter(id=expense_id).first().accounting_export_summary['synced'] == False
+    assert Expense.objects.filter(id=expense.id).first().accounting_export_summary['synced'] == False
 
     mocker.patch(
         'fyle_integrations_platform_connector.apis.Expenses.post_bulk_accounting_export_summary',
@@ -85,4 +85,4 @@ def test_post_accounting_export_summary(db, mocker):
     )
     post_accounting_export_summary('orPJvXuoLqvJ', 1)
 
-    assert Expense.objects.filter(id=expense_id).first().accounting_export_summary['synced'] == True
+    assert Expense.objects.filter(id=expense.id).first().accounting_export_summary['synced'] == True
