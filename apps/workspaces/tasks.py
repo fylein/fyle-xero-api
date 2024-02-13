@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from django.conf import settings
 
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_rest_auth.helpers import get_fyle_admin
@@ -154,3 +155,18 @@ def async_update_workspace_name(workspace: Workspace, access_token: str):
 
     workspace.name = org_name
     workspace.save()
+
+
+def async_create_admin_subcriptions(workspace_id: int) -> None:
+    """
+    Create admin subscriptions
+    :param workspace_id: workspace id
+    :return: None
+    """
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    platform = PlatformConnector(fyle_credentials)
+    payload = {
+        'is_enabled': True,
+        'webhook_url': '{}/workspaces/{}/fyle/exports/'.format(settings.API_URL, workspace_id)
+    }
+    platform.subscriptions.post(payload)

@@ -13,6 +13,7 @@ from apps.workspaces.tasks import (
     async_update_workspace_name,
     run_email_notification,
     run_sync_schedule,
+    async_create_admin_subcriptions
 )
 from tests.test_fyle.fixtures import data as fyle_data
 from tests.test_workspaces.fixtures import data
@@ -169,3 +170,11 @@ def test_async_update_workspace_name(mocker):
 
     workspace = Workspace.objects.get(id=1)
     assert workspace.name == 'Test Org'
+
+
+def test_async_create_admin_subcriptions(db, mocker):
+    mocker.patch(
+        'fyle.platform.apis.v1beta.admin.Subscriptions.post',
+        return_value={}
+    )
+    async_create_admin_subcriptions(1)
