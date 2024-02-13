@@ -18,7 +18,7 @@ from apps.workspaces.signals import post_delete_xero_connection
 from apps.workspaces.utils import generate_xero_refresh_token
 from apps.xero.utils import XeroConnector
 from apps.fyle.enums import FundSourceEnum
-from apps.xero.tasks import schedule_bank_transaction_creation, schedule_bills_creation
+from apps.xero.queue import schedule_bank_transaction_creation, schedule_bills_creation
 
 logger = logging.getLogger(__name__)
 

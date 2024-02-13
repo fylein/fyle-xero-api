@@ -1,11 +1,11 @@
 import json
 import traceback
 import logging
-from typing import List
+from typing import List, Union
 
 import requests
 from django.conf import settings
-from apps.fyle.models import ExpenseGroupSettings
+from apps.fyle.models import ExpenseGroupSettings, Expense
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings
 
@@ -151,3 +151,34 @@ def get_cluster_domain(refresh_token: str) -> str:
     cluster_api_url = "{0}/oauth/cluster/".format(settings.FYLE_BASE_URL)
 
     return post_request(cluster_api_url, {}, refresh_token)["cluster_domain"]
+
+
+def get_updated_accounting_export_summary(
+        expense_id: str, state: str, error_type: Union[str, None], url: Union[str, None], is_synced: bool) -> dict:
+    """
+    Get updated accounting export summary
+    :param expense_id: expense id
+    :param state: state
+    :param error_type: error type
+    :param url: url
+    :param is_synced: is synced
+    :return: updated accounting export summary
+    """
+    return {
+        'id': expense_id,
+        'state': state,
+        'error_type': error_type,
+        'url': url,
+        'synced': is_synced
+    }
+
+
+def get_batched_expenses(batched_payload: List[dict], workspace_id: int) -> List[Expense]:
+    """
+    Get batched expenses
+    :param batched_payload: batched payload
+    :param workspace_id: workspace id
+    :return: batched expenses
+    """
+    expense_ids = [expense['id'] for expense in batched_payload]
+    return Expense.objects.filter(expense_id__in=expense_ids, workspace_id=workspace_id)
