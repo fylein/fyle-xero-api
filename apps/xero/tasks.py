@@ -339,9 +339,9 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             try:
                 xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
+                __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
             except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
-                xero_connection = None
-            __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
+                xero_connection = None            
 
 
 def get_linked_transaction_object(export_instance, line_items: list):
