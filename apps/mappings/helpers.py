@@ -3,9 +3,8 @@ from datetime import datetime
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import MappingSetting
 
-from apps.workspaces.models import WorkspaceGeneralSettings
-
 from apps.fyle.enums import FyleAttributeEnum
+from apps.workspaces.models import WorkspaceGeneralSettings
 
 
 def schedule_or_delete_fyle_import_tasks(configuration: WorkspaceGeneralSettings):

@@ -1,11 +1,12 @@
 import json
-import traceback
 import logging
+import traceback
 from typing import List, Union
 
 import requests
 from django.conf import settings
-from apps.fyle.models import ExpenseGroupSettings, Expense
+
+from apps.fyle.models import Expense, ExpenseGroupSettings
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import WorkspaceGeneralSettings
 
