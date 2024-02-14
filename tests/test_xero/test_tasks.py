@@ -13,22 +13,25 @@ from apps.tasks.models import TaskLog
 from apps.workspaces.models import LastExportDetail, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.exceptions import update_last_export_details
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem
-from apps.xero.queue import schedule_payment_creation, schedule_reimbursements_sync, schedule_xero_objects_status_sync
+from apps.xero.queue import (
+    schedule_bank_transaction_creation,
+    schedule_bills_creation,
+    schedule_payment_creation,
+    schedule_reimbursements_sync,
+    schedule_xero_objects_status_sync,
+)
 from apps.xero.tasks import (
     __validate_expense_group,
     attach_customer_to_export,
     check_xero_object_status,
     create_bank_transaction,
     create_bill,
-    create_chain_and_export,
     create_missing_currency,
     create_or_update_employee_mapping,
     create_payment,
     get_or_create_credit_card_contact,
     load_attachments,
     process_reimbursements,
-    schedule_bank_transaction_creation,
-    schedule_bills_creation,
     update_xero_short_code,
 )
 from apps.xero.utils import XeroConnector
@@ -412,10 +415,9 @@ def test_schedule_bills_creation(db):
     task_log.status = "READY"
     task_log.save()
 
-    chaining_attributes = schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4]
+    schedule_bills_creation(
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, fund_source="PERSONAL"
     )
-    assert len(chaining_attributes) == 1
 
 
 def test_post_create_bank_transaction_success(mocker, db):
@@ -511,10 +513,9 @@ def test_schedule_bank_transaction_creation(db):
     task_log.status = "READY"
     task_log.save()
 
-    chaining_attributes = schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5]
+    schedule_bank_transaction_creation(
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, fund_source="CCC"
     )
-    assert len(chaining_attributes) == 1
 
 
 def test_create_bank_transactions_exceptions(db):
@@ -930,20 +931,6 @@ def test_update_xero_short_code(db, mocker):
     tenant_mapping.delete()
 
     update_xero_short_code(workspace_id)
-
-
-def test_create_chain_and_export(db):
-    workspace_id = 1
-
-    chaining_attributes = [
-        {
-            "expense_group_id": 4,
-            "export_type": "bill",
-            "task_log_id": 3,
-            "last_export": False,
-        }
-    ]
-    create_chain_and_export(chaining_attributes, workspace_id)
 
 
 def test_update_last_export_details(db):

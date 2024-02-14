@@ -12,15 +12,12 @@ from xerosdk.exceptions import (
     XeroSDKError,
 )
 
-from fyle_xero_api.exceptions import BulkError
-
+from apps.fyle.actions import update_failed_expenses
 from apps.fyle.models import ExpenseGroup
-
+from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
-from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum, ErrorTypeEnum
-
 from apps.workspaces.models import FyleCredential, LastExportDetail, XeroCredentials
-
+from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -127,6 +124,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
 
     task_log.detail = None
     task_log.status = TaskLogStatusEnum.FAILED
+    update_failed_expenses(expense_group.expenses.all(), False)
 
     task_log.save()
 
@@ -148,6 +146,7 @@ def handle_xero_exceptions(payment=False):
 
             try:
                 if not payment and not xero_connection:
+                    update_failed_expenses(expense_group.expenses.all(), False)
                     raise XeroCredentials.DoesNotExist
                 func(*args)
 
@@ -215,6 +214,7 @@ def handle_xero_exceptions(payment=False):
                 ]
 
                 task_log.save()
+                update_failed_expenses(expense_group.expenses.all(), False)
 
             except XeroCredentials.DoesNotExist:
                 logger.info(
@@ -227,6 +227,7 @@ def handle_xero_exceptions(payment=False):
                 task_log.detail = detail
 
                 task_log.save()
+                update_failed_expenses(expense_group.expenses.all(), False)
 
             except XeroSDKError as exception:
                 logger.info(exception.response)
@@ -236,6 +237,7 @@ def handle_xero_exceptions(payment=False):
                 task_log.xero_errors = detail
 
                 task_log.save()
+                update_failed_expenses(expense_group.expenses.all(), False)
 
             except BulkError as exception:
                 logger.info(exception.response)
@@ -243,6 +245,7 @@ def handle_xero_exceptions(payment=False):
                 task_log.status = TaskLogStatusEnum.FAILED
                 task_log.detail = detail
                 task_log.save()
+                update_failed_expenses(expense_group.expenses.all(), True)
 
             except Exception as error:
                 error = traceback.format_exc()
@@ -254,6 +257,7 @@ def handle_xero_exceptions(payment=False):
                     task_log.workspace_id,
                     task_log.detail,
                 )
+                update_failed_expenses(expense_group.expenses.all(), False)
 
             if not payment and args[-1] == True:
                 update_last_export_details(workspace_id=expense_group.workspace_id)

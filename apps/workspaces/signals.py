@@ -1,9 +1,8 @@
 from fyle_accounting_mappings.models import DestinationAttribute, Mapping
 
+from apps.fyle.enums import FyleAttributeEnum
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import Workspace
-
-from apps.fyle.enums import FyleAttributeEnum
 
 
 def post_delete_xero_connection(workspace_id):

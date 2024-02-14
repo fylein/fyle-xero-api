@@ -1,26 +1,21 @@
+import json
 import logging
 from datetime import datetime
-from django.conf import settings
 
+from django.conf import settings
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_rest_auth.helpers import get_fyle_admin
 
-from apps.fyle.models import ExpenseGroup
-from apps.fyle.tasks import async_create_expense_groups
 from apps.fyle.enums import FundSourceEnum
-
+from apps.fyle.helpers import post_request
+from apps.fyle.tasks import async_create_expense_groups
 from apps.mappings.models import TenantMapping
-
-from apps.tasks.models import TaskLog
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
-
+from apps.tasks.models import TaskLog
 from apps.users.models import User
-
+from apps.workspaces.actions import export_to_xero
 from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, send_failure_notification_email
-from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
-
-from apps.xero.tasks import create_chain_and_export, schedule_bank_transaction_creation, schedule_bills_creation
-
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -53,37 +48,6 @@ def run_sync_schedule(workspace_id):
 
     if task_log.status == TaskLogStatusEnum.COMPLETE:
         export_to_xero(workspace_id, "AUTO")
-
-
-def export_to_xero(workspace_id, export_mode="MANUAL"):
-    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
-    last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
-    last_exported_at = datetime.now()
-    chaining_attributes = []
-
-    if general_settings.reimbursable_expenses_object:
-        expense_group_ids = ExpenseGroup.objects.filter(
-            fund_source=FundSourceEnum.PERSONAL,
-            workspace_id=workspace_id
-        ).values_list("id", flat=True)
-        chaining_attributes.extend(
-            schedule_bills_creation(workspace_id, expense_group_ids)
-        )
-
-    if general_settings.corporate_credit_card_expenses_object:
-        expense_group_ids = ExpenseGroup.objects.filter(
-            fund_source=FundSourceEnum.CCC,
-            workspace_id=workspace_id
-        ).values_list("id", flat=True)
-        chaining_attributes.extend(
-            schedule_bank_transaction_creation(workspace_id, expense_group_ids)
-        )
-
-    if chaining_attributes:
-        create_chain_and_export(chaining_attributes, workspace_id)
-        last_export_detail.last_exported_at = last_exported_at
-        last_export_detail.export_mode = export_mode
-        last_export_detail.save()
 
 
 def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
@@ -170,3 +134,23 @@ def async_create_admin_subcriptions(workspace_id: int) -> None:
         'webhook_url': '{}/workspaces/{}/fyle/exports/'.format(settings.API_URL, workspace_id)
     }
     platform.subscriptions.post(payload)
+
+
+def post_to_integration_settings(workspace_id: int, active: bool):
+    """
+    Post to integration settings
+    """
+    refresh_token = FyleCredential.objects.get(workspace_id=workspace_id).refresh_token
+    url = '{}/integrations/'.format(settings.INTEGRATIONS_SETTINGS_API)
+    payload = {
+        'tpa_id': settings.FYLE_CLIENT_ID,
+        'tpa_name': 'Fyle Xero Integration',
+        'type': 'ACCOUNTING',
+        'is_active': active,
+        'connected_at': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    }
+
+    try:
+        post_request(url, json.dumps(payload), refresh_token)
+    except Exception as error:
+        logger.error(error)

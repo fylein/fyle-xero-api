@@ -29,3 +29,10 @@ class AdvancedSettingsTriggers:
             sync_xero_to_fyle_payments=workspace_general_settings_instance.sync_xero_to_fyle_payments,
             workspace_id=workspace_general_settings_instance.workspace.id,
         )
+
+        @staticmethod
+        def post_to_integration_settings(workspace_id: int, active: bool):
+            """
+            Post to integration settings
+            """
+            post_to_integration_settings(workspace_id, active)
