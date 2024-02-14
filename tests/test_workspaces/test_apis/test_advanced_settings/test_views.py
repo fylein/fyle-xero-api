@@ -1,6 +1,6 @@
 import json
 
-from apps.workspaces.models import Workspace, WorkspaceGeneralSettings, FyleCredential
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 from tests.helper import dict_compare_keys
 from tests.test_workspaces.test_apis.test_advanced_settings.fixtures import data
 
