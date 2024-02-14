@@ -1,18 +1,18 @@
 from datetime import datetime
 
-from django.db.models import Q
 from django.conf import settings
+from django.db.models import Q
 
-from apps.tasks.models import TaskLog
-from apps.workspaces.models import Workspace
+from apps.fyle.actions import __bulk_update_expenses
 from apps.fyle.helpers import get_updated_accounting_export_summary
 from apps.fyle.models import Expense
-from apps.fyle.actions import __bulk_update_expenses
+from apps.tasks.models import TaskLog
+from apps.workspaces.models import Workspace
 
 # PLEASE RUN sql/scripts/022-fill-skipped-accounting-export-summary.sql BEFORE RUNNING THIS SCRIPT
 
 
-export_types = ['CREATING_JOURNAL_ENTRIES', 'CREATING_EXPENSE_REPORTS', 'CREATING_BILLS', 'CREATING_CHARGE_CARD_TRANSACTIONS']
+export_types = ['CREATING_BILL', 'CREATING_BANK_TRANSACTION']
 task_statuses = ['COMPLETE', 'FAILED', 'FATAL']
 
 
@@ -73,6 +73,7 @@ for workspace in workspaces:
                 except Exception as error:
                     # Defaulting it to Intacct app url, worst case scenario if we're not able to parse it properly
                     url = 'https://go.xero.com'
+                    print('Error while parsing response logs for expense group - {}. Error - {}'.format(expense_group.id, error))
             for expense in expense_group.expenses.filter(accounting_export_summary__state__isnull=True):
                 if url:
                     expense_to_be_updated.append(
