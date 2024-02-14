@@ -5,32 +5,22 @@ from time import sleep
 from typing import List
 
 from django.db import transaction
-from django.db.models import Q
-
-from django_q.tasks import Chain
-
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
-
 from fyle_integrations_platform_connector import PlatformConnector
-
-from fyle_xero_api.exceptions import BulkError
-
 from xerosdk.exceptions import UnsuccessfulAuthentication, WrongParamsError
 
-from apps.fyle.models import Expense, ExpenseGroup, Reimbursement
+from apps.fyle.actions import update_complete_expenses, update_expenses_in_progress
 from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum, PlatformExpensesEnum
-
+from apps.fyle.models import Expense, ExpenseGroup, Reimbursement
+from apps.fyle.tasks import post_accounting_export_summary
 from apps.mappings.models import GeneralMapping, TenantMapping
-
+from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
-from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum, ErrorTypeEnum
-
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, XeroCredentials
-
 from apps.xero.exceptions import handle_xero_exceptions
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem, Payment
 from apps.xero.utils import XeroConnector
-
+from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -191,6 +181,19 @@ def create_or_update_employee_mapping(
             )
 
 
+def update_expense_and_post_summary(in_progress_expenses: List[Expense], workspace_id: int, fund_source: str) -> None:
+    """
+    Update expense and post accounting export summary
+    :param in_progress_expenses: List of expenses
+    :param workspace_id: Workspace ID
+    :param fund_source: Fund source
+    :return: None
+    """
+    fyle_org_id = Workspace.objects.get(pk=workspace_id).fyle_org_id
+    update_expenses_in_progress(in_progress_expenses)
+    post_accounting_export_summary(fyle_org_id, workspace_id, fund_source)
+
+
 @handle_xero_exceptions(payment=False)
 def create_bill(
     expense_group_id: int,
@@ -242,6 +245,7 @@ def create_bill(
         expense_group.response_logs = created_bill
         expense_group.save()
         resolve_errors_for_exported_expense_group(expense_group)
+        generate_export_url_and_update_expense(expense_group, 'BILL')
 
         # Assign billable expenses to customers
         if general_settings.import_customers:
@@ -266,82 +270,6 @@ def create_bill(
             "invoices",
             expense_group,
         )
-
-
-def __create_chain_and_run(fyle_credentials: FyleCredential, xero_connection, in_progress_expenses: List[Expense],
-        workspace_id: int, chain_tasks: List[dict], fund_source: str) -> None:
-    """
-    Create chain and run
-    :param fyle_credentials: Fyle credentials
-    :param in_progress_expenses: List of in progress expenses
-    :param workspace_id: workspace id
-    :param chain_tasks: List of chain tasks
-    :param fund_source: Fund source
-    :return: None
-    """
-    chain = Chain()
-    chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials)
-
-    # chain.append('apps.netsuite.tasks.update_expense_and_post_summary', in_progress_expenses, workspace_id, fund_source)
-
-    for task in chain_tasks:
-        chain.append(task['target'], task['expense_group_id'], task['task_log_id'], xero_connection, task['last_export'])
-
-    # chain.append('apps.fyle.tasks.post_accounting_export_summary', fyle_credentials.workspace.fyle_org_id, workspace_id, fund_source)
-    chain.run()
-
-
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str) -> list:
-    """
-    Schedule bills creation
-    :param expense_group_ids: List of expense group ids
-    :param workspace_id: workspace id
-    :return: List of chaining attributes
-    """
-    if expense_group_ids:
-        expense_groups = ExpenseGroup.objects.filter(
-            Q(tasklog__id__isnull=True)
-            | ~Q(tasklog__status__in=[TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]),
-            workspace_id=workspace_id,
-            id__in=expense_group_ids,
-            bill__id__isnull=True,
-            exported_at__isnull=True,
-        ).all()
-
-        chain_tasks = []
-        in_progress_expenses = []
-
-        for index, expense_group in enumerate(expense_groups):
-            task_log, _ = TaskLog.objects.get_or_create(
-                workspace_id=expense_group.workspace_id,
-                expense_group=expense_group,
-                defaults={"status": TaskLogStatusEnum.ENQUEUED, "type": TaskLogTypeEnum.CREATING_BILL},
-            )
-            if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
-                task_log.status = TaskLogStatusEnum.ENQUEUED
-                task_log.save()
-
-            last_export = False
-            if expense_groups.count() == index + 1:
-                last_export = True
-
-            chain_tasks.append({
-                'target': 'apps.xero.tasks.create_bill',
-                'expense_group_id': expense_group.id,
-                'task_log_id': task_log.id,
-                'last_export': last_export})
-
-            if not (is_auto_export and expense_group.expenses.first().previous_export_state == 'ERROR'):
-                in_progress_expenses.extend(expense_group.expenses.all())
-
-        if len(chain_tasks) > 0:
-            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-            try:
-                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-                xero_connection = XeroConnector(xero_credentials, workspace_id)
-                __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
-            except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
-                xero_connection = None            
 
 
 def get_linked_transaction_object(export_instance, line_items: list):
@@ -485,6 +413,7 @@ def create_bank_transaction(
         expense_group.response_logs = created_bank_transaction
         expense_group.save()
         resolve_errors_for_exported_expense_group(expense_group)
+        generate_export_url_and_update_expense(expense_group, 'BANK TRANSACTION')
 
         # Assign billable expenses to customers
         if general_settings.import_customers:
@@ -513,61 +442,6 @@ def create_bank_transaction(
             "banktransactions",
             expense_group,
         )
-
-
-def schedule_bank_transaction_creation(
-    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str
-) -> list:
-    """
-    Schedule bank transaction creation
-    :param expense_group_ids: List of expense group ids
-    :param workspace_id: workspace id
-    :return: List of chaining attributes
-    """
-    if expense_group_ids:
-        expense_groups = ExpenseGroup.objects.filter(
-            Q(tasklog__id__isnull=True)
-            | ~Q(tasklog__status__in=[TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]),
-            workspace_id=workspace_id,
-            id__in=expense_group_ids,
-            banktransaction__id__isnull=True,
-            exported_at__isnull=True,
-        ).all()
-
-        chain_tasks = []
-        in_progress_expenses = []
-
-        for index, expense_group in enumerate(expense_groups):
-            task_log, _ = TaskLog.objects.get_or_create(
-                workspace_id=expense_group.workspace_id,
-                expense_group=expense_group,
-                defaults={"status": TaskLogStatusEnum.ENQUEUED, "type": TaskLogTypeEnum.CREATING_BANK_TRANSACTION},
-            )
-            if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
-                task_log.status = TaskLogStatusEnum.ENQUEUED
-                task_log.save()
-
-            last_export = False
-            if expense_groups.count() == index + 1:
-                last_export = True
-
-            chain_tasks.append({
-                'target': 'apps.xero.tasks.create_bank_transaction',
-                'expense_group_id': expense_group.id,
-                'task_log_id': task_log.id,
-                'last_export': last_export})
-
-            if not (is_auto_export and expense_group.expenses.first().previous_export_state == 'ERROR'):
-                in_progress_expenses.extend(expense_group.expenses.all())
-
-        if len(chain_tasks) > 0:
-            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-            try:
-                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-                xero_connection = XeroConnector(xero_credentials, workspace_id)
-            except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
-                xero_connection = None
-            __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):
@@ -950,3 +824,32 @@ def update_xero_short_code(workspace_id: int):
 
     except Exception as exception:
         logger.exception("Error updating Xero short code", exception)
+
+
+def generate_export_url_and_update_expense(expense_group: ExpenseGroup, export_type: str) -> None:
+    """
+    Generate export url and update expense
+    :param expense_group: Expense Group
+    :return: None
+    """
+    workspace = Workspace.objects.get(id=expense_group.workspace_id)
+    try:
+        if export_type == 'BILL':
+            export_id = expense_group.response_logs['Invoices'][0]['InvoiceID']
+            if workspace.xero_short_code:
+                url = f'https://go.xero.com/organisationlogin/default.aspx?shortcode={workspace.xero_short_code}&redirecturl=/AccountsPayable/Edit.aspx?InvoiceID={export_id}'
+            else:
+                url = f'https://go.xero.com/AccountsPayable/View.aspx?invoiceID={export_id}'
+        else:
+            export_id = expense_group.response_logs['BankTransactions'][0]['BankTransactionID']
+            account_id = expense_group.response_logs['BankTransactions'][0]['BankAccount']['AccountID']
+            if workspace.xero_short_code:
+                url = f'https://go.xero.com/organisationlogin/default.aspx?shortcode={workspace.xero_short_code}&redirecturl=/Bank/ViewTransaction.aspx?bankTransactionID={export_id}&accountID={account_id}'
+            else:
+                url = f'https://go.xero.com/Bank/ViewTransaction.aspx?bankTransactionID={export_id}&accountID={account_id}'
+    except Exception as error:
+        # Defaulting it to Intacct app url, worst case scenario if we're not able to parse it properly
+        url = 'https://go.xero.com'
+        logger.error('Error while generating export url %s', error)
+
+    update_complete_expenses(expense_group.expenses.all(), url)
