@@ -844,7 +844,7 @@ def generate_export_url_and_update_expense(expense_group: ExpenseGroup, export_t
             export_id = expense_group.response_logs['BankTransactions'][0]['BankTransactionID']
             account_id = expense_group.response_logs['BankTransactions'][0]['BankAccount']['AccountID']
             if workspace.xero_short_code:
-                url = f'https://go.xero.com/organisationlogin/default.aspx?shortcode={workspace.xero_short_code}&redirecturl=/Bank/ViewTransaction.aspx?bankTransactionID={export_id}'
+                url = f'https://go.xero.com/organisationlogin/default.aspx?shortcode={workspace.xero_short_code}&redirecturl=/Bank/ViewTransaction.aspx?bankTransactionID={export_id}&accountID={account_id}'
             else:
                 url = f'https://go.xero.com/Bank/ViewTransaction.aspx?bankTransactionID={export_id}&accountID={account_id}'
     except Exception as error:
