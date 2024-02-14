@@ -6,15 +6,11 @@ from django.db.models import Q
 from django.template.loader import render_to_string
 from fyle_accounting_mappings.models import ExpenseAttribute
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import (
-    Mail, From
-)
+from sendgrid.helpers.mail import From, Mail
 
 from apps.mappings.models import TenantMapping
-
+from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
-from apps.tasks.enums import TaskLogTypeEnum, TaskLogStatusEnum
-
 from apps.workspaces.models import Workspace, WorkspaceSchedule
 
 

@@ -13,10 +13,8 @@ from django.db import models
 from django.db.models import Count, JSONField
 from fyle_accounting_mappings.models import ExpenseAttribute
 
+from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.workspaces.models import Workspace
-
-from .enums import FundSourceEnum, PlatformExpensesEnum, ExpenseStateEnum
-
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -212,6 +210,7 @@ class Expense(models.Model):
                         "billable": expense["billable"]
                         if expense["billable"]
                         else False,
+                        'workspace_id': workspace_id
                     },
                 )
 
