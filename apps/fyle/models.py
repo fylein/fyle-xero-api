@@ -13,10 +13,8 @@ from django.db import models
 from django.db.models import Count, JSONField
 from fyle_accounting_mappings.models import ExpenseAttribute
 
+from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.workspaces.models import Workspace
-
-from .enums import FundSourceEnum, PlatformExpensesEnum, ExpenseStateEnum
-
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -149,6 +147,9 @@ class Expense(models.Model):
     )
     tax_amount = models.FloatField(null=True, help_text="Tax Amount")
     tax_group_id = models.CharField(null=True, max_length=255, help_text="Tax Group ID")
+    accounting_export_summary = JSONField(default=dict)
+    previous_export_state = models.CharField(max_length=255, help_text='Previous export state', null=True)
+    workspace = models.ForeignKey(Workspace, on_delete=models.PROTECT, help_text='To which workspace this expense belongs to', null=True)
 
     class Meta:
         db_table = "expenses"
@@ -209,6 +210,7 @@ class Expense(models.Model):
                         "billable": expense["billable"]
                         if expense["billable"]
                         else False,
+                        'workspace_id': workspace_id
                     },
                 )
 
