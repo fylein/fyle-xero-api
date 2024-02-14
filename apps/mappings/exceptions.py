@@ -1,7 +1,13 @@
 import logging
 import traceback
 
-from fyle.platform.exceptions import InternalServerError, InvalidTokenError, PlatformError, WrongParamsError
+from fyle.platform.exceptions import (
+    InternalServerError,
+    InvalidTokenError,
+    PlatformError,
+    WrongParamsError,
+    RetryException
+)
 from xerosdk.exceptions import InvalidGrant
 from xerosdk.exceptions import InvalidTokenError as XeroInvalidTokenError
 from xerosdk.exceptions import UnsuccessfulAuthentication
@@ -36,6 +42,10 @@ def handle_import_exceptions(task_name):
                 error["message"] = exception.message
                 error["response"] = exception.response
                 error["alert"] = True
+
+            except RetryException as exception:
+                error["message"] = "Retry exception"
+                error["response"] = exception.__dict__
 
             except InternalServerError as exception:
                 error["message"] = "Internal server error while importing to Fyle"
