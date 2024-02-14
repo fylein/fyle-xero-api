@@ -9,12 +9,12 @@ from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, 
 from apps.workspaces.queue import schedule_sync
 from apps.workspaces.tasks import (
     async_add_admins_to_workspace,
+    async_create_admin_subcriptions,
     async_update_fyle_credentials,
     async_update_workspace_name,
+    post_to_integration_settings,
     run_email_notification,
     run_sync_schedule,
-    async_create_admin_subcriptions,
-    post_to_integration_settings
 )
 from tests.test_fyle.fixtures import data as fyle_data
 from tests.test_workspaces.fixtures import data

@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from django.db.models import Q
 from django.conf import settings
+from django.db.models import Q
 
-from apps.tasks.models import TaskLog
-from apps.workspaces.models import Workspace
+from apps.fyle.actions import __bulk_update_expenses
 from apps.fyle.helpers import get_updated_accounting_export_summary
 from apps.fyle.models import Expense
-from apps.fyle.actions import __bulk_update_expenses
+from apps.tasks.models import TaskLog
+from apps.workspaces.models import Workspace
 
 # PLEASE RUN sql/scripts/022-fill-skipped-accounting-export-summary.sql BEFORE RUNNING THIS SCRIPT
 
@@ -73,6 +73,7 @@ for workspace in workspaces:
                 except Exception as error:
                     # Defaulting it to Intacct app url, worst case scenario if we're not able to parse it properly
                     url = 'https://go.xero.com'
+                    print('Error while parsing url for task log - {}. Error - {}'.format(task_log.id, error))
             for expense in expense_group.expenses.filter(accounting_export_summary__state__isnull=True):
                 if url:
                     expense_to_be_updated.append(

@@ -5,13 +5,12 @@ from django_q.tasks import Chain
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping, MappingSetting
 from fyle_integrations_platform_connector import PlatformConnector
 
+from apps.fyle.enums import FyleAttributeEnum
 from apps.mappings.constants import FYLE_EXPENSE_SYSTEM_FIELDS
 from apps.mappings.exceptions import handle_import_exceptions
 from apps.tasks.models import Error
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
-from apps.fyle.enums import FyleAttributeEnum
-
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
