@@ -73,7 +73,7 @@ for workspace in workspaces:
                 except Exception as error:
                     # Defaulting it to Intacct app url, worst case scenario if we're not able to parse it properly
                     url = 'https://go.xero.com'
-                    print('Error while parsing response logs for expense group - {}. Error - {}'.format(expense_group.id, error))
+                    print('Error while parsing url for task log - {}. Error - {}'.format(task_log.id, error))
             for expense in expense_group.expenses.filter(accounting_export_summary__state__isnull=True):
                 if url:
                     expense_to_be_updated.append(

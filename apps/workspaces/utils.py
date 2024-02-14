@@ -10,15 +10,11 @@ from future.moves.urllib.parse import urlencode
 from fyle_accounting_mappings.models import MappingSetting
 from xerosdk import InternalServerError, InvalidTokenError, XeroSDK
 
-from apps.fyle.models import ExpenseGroupSettings
 from apps.fyle.enums import FyleAttributeEnum
-
+from apps.fyle.models import ExpenseGroupSettings
 from apps.mappings.queue import schedule_auto_map_employees, schedule_tax_groups_creation
-
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
-
 from apps.xero.queue import schedule_payment_creation, schedule_reimbursements_sync, schedule_xero_objects_status_sync
-
 from fyle_xero_api.utils import assert_valid
 
 

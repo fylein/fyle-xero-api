@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 from django_q.tasks import Chain
 from fyle_accounting_mappings.models import MappingSetting
 
+from apps.fyle.enums import FyleAttributeEnum
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
-from apps.fyle.enums import FyleAttributeEnum
 
 
 def get_xero_connector(workspace_id):

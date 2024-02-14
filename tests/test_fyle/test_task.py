@@ -2,13 +2,12 @@ from unittest import mock
 
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 
-from apps.fyle.models import ExpenseGroupSettings, Expense, ExpenseGroup
-from django.db.models import Q
-from apps.tasks.models import TaskLog
-from apps.workspaces.models import FyleCredential, Workspace
-from tests.test_fyle.fixtures import data
-from apps.fyle.tasks import create_expense_groups, post_accounting_export_summary
 from apps.fyle.actions import update_expenses_in_progress
+from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
+from apps.fyle.tasks import create_expense_groups, post_accounting_export_summary
+from apps.tasks.models import TaskLog
+from apps.workspaces.models import FyleCredential
+from tests.test_fyle.fixtures import data
 
 
 def test_create_expense_groups(mocker, db):
@@ -68,8 +67,6 @@ def test_post_accounting_export_summary(db, mocker):
     expense_group = ExpenseGroup.objects.filter(workspace_id=1).first()
     expense = expense_group.expenses.first()
     expense_group.expenses.remove(expense.id)
-
-    workspace = Workspace.objects.get(id=1)
 
     expense = Expense.objects.filter(id=expense.id).first()
     expense.workspace_id = 1
