@@ -4,7 +4,7 @@ from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 
 from apps.fyle.actions import update_expenses_in_progress
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
-from apps.fyle.tasks import create_expense_groups, post_accounting_export_summary
+from apps.fyle.tasks import create_expense_groups, import_and_export_expenses, post_accounting_export_summary
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import FyleCredential
 from tests.test_fyle.fixtures import data
@@ -83,3 +83,7 @@ def test_post_accounting_export_summary(db, mocker):
     post_accounting_export_summary('orPJvXuoLqvJ', 1)
 
     assert Expense.objects.filter(id=expense.id).first().accounting_export_summary['synced'] == True
+
+
+def test_import_and_export_expenses(db):
+    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ')
