@@ -1,4 +1,5 @@
 from apps.workspaces.models import WorkspaceGeneralSettings
+from apps.workspaces.tasks import post_to_integration_settings
 from apps.xero.queue import schedule_payment_creation, schedule_reimbursements_sync, schedule_xero_objects_status_sync
 
 
@@ -30,9 +31,9 @@ class AdvancedSettingsTriggers:
             workspace_id=workspace_general_settings_instance.workspace.id,
         )
 
-        @staticmethod
-        def post_to_integration_settings(workspace_id: int, active: bool):
-            """
-            Post to integration settings
-            """
-            post_to_integration_settings(workspace_id, active)
+    @staticmethod
+    def post_to_integration_settings(workspace_id: int, active: bool):
+        """
+        Post to integration settings
+        """
+        post_to_integration_settings(workspace_id, active)
