@@ -172,7 +172,6 @@ def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: 
     async_post_accounting_export_summary(workspace.fyle_org_id, workspace.id)
 
     filtered_expenses = Expense.objects.filter(
-        is_skipped=False,
         id__in=expenses_object_ids,
         expensegroup__isnull=True,
         org_id=workspace.fyle_org_id
