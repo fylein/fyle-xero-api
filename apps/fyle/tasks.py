@@ -165,7 +165,6 @@ def sync_dimensions(fyle_credentials):
 
 def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: Workspace):
     expense_objects = Expense.create_expense_objects(expenses, workspace.id)
-    configuration: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace.id)
     filtered_expenses = expense_objects
     expenses_object_ids = [expense_object.id for expense_object in expense_objects]
 
@@ -178,7 +177,7 @@ def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: 
     )
 
     ExpenseGroup.create_expense_groups_by_report_id_fund_source(
-        filtered_expenses, configuration, workspace.id
+        filtered_expenses, workspace.id
     )
 
     task_log.status = 'COMPLETE'
