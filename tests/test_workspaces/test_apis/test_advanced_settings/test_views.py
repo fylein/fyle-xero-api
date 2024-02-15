@@ -1,11 +1,18 @@
 import json
 
-from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 from tests.helper import dict_compare_keys
 from tests.test_workspaces.test_apis.test_advanced_settings.fixtures import data
 
 
 def test_advanced_settings(api_client, test_connection):
+    FyleCredential.objects.update_or_create(
+        workspace_id=1,
+        defaults={
+            'refresh_token': 'ey.ey.ey',
+            'cluster_domain': 'cluster_domain'
+        }
+    )
     workspace = Workspace.objects.get(id=1)
     workspace.onboarding_state = "ADVANCED_SETTINGS"
     workspace.save()
