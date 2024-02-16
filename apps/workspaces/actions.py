@@ -69,10 +69,7 @@ def post_workspace(access_token, request):
         async_task(
             "apps.workspaces.tasks.async_add_admins_to_workspace",
             workspace.id,
-            request.user.user_id,
-            q_options={
-                'cluster': 'import'
-            }
+            request.user.user_id
         )
 
     return workspace

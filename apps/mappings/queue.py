@@ -8,7 +8,7 @@ def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: 
     if employee_mapping_preference:
         Schedule.objects.update_or_create(
             func="apps.mappings.tasks.async_auto_map_employees",
-            cluster="import",
+            cluster='import',
             args="{}".format(workspace_id),
             defaults={
                 "schedule_type": Schedule.MINUTES,
@@ -30,7 +30,7 @@ def schedule_cost_centers_creation(import_to_fyle, workspace_id: int):
     if import_to_fyle:
         schedule, _ = Schedule.objects.update_or_create(
             func="apps.mappings.tasks.auto_create_cost_center_mappings",
-            cluster="import",
+            cluster='import',
             args="{}".format(workspace_id),
             defaults={
                 "schedule_type": Schedule.MINUTES,
@@ -52,7 +52,7 @@ def schedule_tax_groups_creation(import_tax_codes, workspace_id):
     if import_tax_codes:
         schedule, _ = Schedule.objects.update_or_create(
             func="apps.mappings.tasks.auto_create_tax_codes_mappings",
-            cluster="import",
+            cluster='import',
             args="{}".format(workspace_id),
             defaults={
                 "schedule_type": Schedule.MINUTES,
@@ -78,7 +78,7 @@ def schedule_fyle_attributes_creation(workspace_id: int):
     if mapping_settings:
         schedule, _ = Schedule.objects.get_or_create(
             func="apps.mappings.tasks.async_auto_create_custom_field_mappings",
-            cluster="import",
+            cluster='import',
             args="{0}".format(workspace_id),
             defaults={
                 "schedule_type": Schedule.MINUTES,
