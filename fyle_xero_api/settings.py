@@ -136,8 +136,8 @@ Q_CLUSTER = {
     "max_rss": 100000,  # 100mb
     'ALT_CLUSTERS': {
         'import': {
-            "retry": 14400,
-            "timeout": 3600
+            'retry': 14400,
+            'timeout': 3600
         },
     }
 }
