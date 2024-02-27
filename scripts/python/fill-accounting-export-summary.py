@@ -27,70 +27,73 @@ number_of_expenses_without_accounting_export_summary = Expense.objects.filter(
 ).count()
 print('Number of expenses without accounting export summary - {}'.format(number_of_expenses_without_accounting_export_summary))
 for workspace in workspaces:
-    task_logs_count = TaskLog.objects.filter(
-        type__in=export_types,
-        workspace_id=workspace.id,
-        status__in=task_statuses
-    ).count()
-    print('Updating summary from workspace - {} with ID - {}'.format(workspace.name, workspace.id))
-    print('Number of task logs to be updated - {}'.format(task_logs_count))
-    page_size = 200
-    for offset in range(0, task_logs_count, page_size):
-        expense_to_be_updated = []
-        limit = offset + page_size
-        paginated_task_logs = TaskLog.objects.filter(
+    try:
+        task_logs_count = TaskLog.objects.filter(
             type__in=export_types,
             workspace_id=workspace.id,
             status__in=task_statuses
-        )[offset:limit]
-        for task_log in paginated_task_logs:
-            expense_group = task_log.expense_group
-            state = 'ERROR' if task_log.status == 'FAILED' or task_log.status == 'FATAL' else 'COMPLETE'
-            error_type = None
-            url = None
-            if task_log.status == 'FAILED' or task_log.status == 'FATAL':
-                for item in task_log.detail:
-                    if item.get('type') and item.get('type') == 'Category Mapping':
-                        error_type = 'MAPPING'
-                    else:
-                        error_type = 'ACCOUNTING_INTEGRATION_ERROR'
-                url = '{}/workspaces/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL)
-            else:
-                try:
-                    if task_log.type == 'CREATING_BILL':
-                        export_id = expense_group.response_logs['Invoices'][0]['InvoiceID']
-                        if workspace.xero_short_code:
-                            url = f'https://go.xero.com/organisationlogin/default.aspx?shortcode={workspace.xero_short_code}&redirecturl=/AccountsPayable/Edit.aspx?InvoiceID={export_id}'
+        ).count()
+        print('Updating summary from workspace - {} with ID - {}'.format(workspace.name, workspace.id))
+        print('Number of task logs to be updated - {}'.format(task_logs_count))
+        page_size = 200
+        for offset in range(0, task_logs_count, page_size):
+            expense_to_be_updated = []
+            limit = offset + page_size
+            paginated_task_logs = TaskLog.objects.filter(
+                type__in=export_types,
+                workspace_id=workspace.id,
+                status__in=task_statuses
+            )[offset:limit]
+            for task_log in paginated_task_logs:
+                expense_group = task_log.expense_group
+                state = 'ERROR' if task_log.status == 'FAILED' or task_log.status == 'FATAL' else 'COMPLETE'
+                error_type = None
+                url = None
+                if task_log.status == 'FAILED' or task_log.status == 'FATAL':
+                    for item in task_log.detail:
+                        if item.get('type') and item.get('type') == 'Category Mapping':
+                            error_type = 'MAPPING'
                         else:
-                            url = f'https://go.xero.com/AccountsPayable/View.aspx?invoiceID={export_id}'
-                    else:
-                        export_id = expense_group.response_logs['BankTransactions'][0]['BankTransactionID']
-                        account_id = expense_group.response_logs['BankTransactions'][0]['BankAccount']['AccountID']
-                        if workspace.xero_short_code:
-                            url = f'https://go.xero.com/organisationlogin/default.aspx?shortcode={workspace.xero_short_code}&redirecturl=/Bank/ViewTransaction.aspx?bankTransactionID={export_id}&accountID={account_id}'
+                            error_type = 'ACCOUNTING_INTEGRATION_ERROR'
+                    url = '{}/workspaces/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL)
+                else:
+                    try:
+                        if task_log.type == 'CREATING_BILL':
+                            export_id = expense_group.response_logs['Invoices'][0]['InvoiceID']
+                            if workspace.xero_short_code:
+                                url = f'https://go.xero.com/organisationlogin/default.aspx?shortcode={workspace.xero_short_code}&redirecturl=/AccountsPayable/Edit.aspx?InvoiceID={export_id}'
+                            else:
+                                url = f'https://go.xero.com/AccountsPayable/View.aspx?invoiceID={export_id}'
                         else:
-                            url = f'https://go.xero.com/Bank/ViewTransaction.aspx?bankTransactionID={export_id}&accountID={account_id}'
-                except Exception as error:
-                    # Defaulting it to Intacct app url, worst case scenario if we're not able to parse it properly
-                    url = 'https://go.xero.com'
-                    print('Error while parsing url for task log - {}. Error - {}'.format(task_log.id, error))
-            for expense in expense_group.expenses.filter(accounting_export_summary__state__isnull=True):
-                if url:
-                    expense_to_be_updated.append(
-                        Expense(
-                            id=expense.id,
-                            accounting_export_summary=get_updated_accounting_export_summary(
-                                expense.expense_id,
-                                state,
-                                error_type,
-                                url,
-                                False
+                            export_id = expense_group.response_logs['BankTransactions'][0]['BankTransactionID']
+                            account_id = expense_group.response_logs['BankTransactions'][0]['BankAccount']['AccountID']
+                            if workspace.xero_short_code:
+                                url = f'https://go.xero.com/organisationlogin/default.aspx?shortcode={workspace.xero_short_code}&redirecturl=/Bank/ViewTransaction.aspx?bankTransactionID={export_id}&accountID={account_id}'
+                            else:
+                                url = f'https://go.xero.com/Bank/ViewTransaction.aspx?bankTransactionID={export_id}&accountID={account_id}'
+                    except Exception as error:
+                        # Defaulting it to Intacct app url, worst case scenario if we're not able to parse it properly
+                        url = 'https://go.xero.com'
+                        print('Error while parsing url for task log - {}. Error - {}'.format(task_log.id, error))
+                for expense in expense_group.expenses.filter(accounting_export_summary__state__isnull=True):
+                    if url:
+                        expense_to_be_updated.append(
+                            Expense(
+                                id=expense.id,
+                                accounting_export_summary=get_updated_accounting_export_summary(
+                                    expense.expense_id,
+                                    state,
+                                    error_type,
+                                    url,
+                                    False
+                                )
                             )
                         )
-                    )
-        print('Updating {} expenses in batches of 50'.format(len(expense_to_be_updated)))
-        __bulk_update_expenses(expense_to_be_updated)
-
+            print('Updating {} expenses in batches of 50'.format(len(expense_to_be_updated)))
+            __bulk_update_expenses(expense_to_be_updated)
+    except Exception as error:
+        print('Error while updating expenses for workspace - {}. Error - {}'.format(workspace.id, error))
+        continue
 
 number_of_expenses_without_accounting_export_summary = Expense.objects.filter(
     accounting_export_summary__state__isnull=True
