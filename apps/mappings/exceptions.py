@@ -100,7 +100,7 @@ def handle_import_exceptions_v2(func):
             import_log.status = 'FAILED'
 
         except (XeroWrongParamsError, XeroInvalidTokenError, XeroCredentials.DoesNotExist) as exception:
-            error['message'] = 'Invalid Token or QBO credentials does not exist workspace_id - {0}'.format(workspace_id)
+            error['message'] = 'Invalid Token or Xero credentials does not exist workspace_id - {0}'.format(workspace_id)
             error['alert'] = False
             error['response'] = exception.__dict__
             import_log.status = 'FAILED'
