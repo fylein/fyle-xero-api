@@ -9,12 +9,13 @@ from django_q.tasks import async_task
 from fyle_accounting_mappings.models import Mapping, MappingSetting
 
 from apps.fyle.enums import FyleAttributeEnum
-from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
+# from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
 from apps.mappings.models import TenantMapping
 from apps.mappings.queue import schedule_cost_centers_creation, schedule_fyle_attributes_creation
 from apps.mappings.tasks import upload_attributes_to_fyle
 from apps.tasks.models import Error
 from apps.workspaces.models import WorkspaceGeneralSettings
+from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
 
 
 @receiver(post_save, sender=Mapping)
@@ -40,7 +41,13 @@ def run_post_mapping_settings_triggers(sender, instance: MappingSetting, **kwarg
         workspace_id=instance.workspace_id
     ).first()
     if instance.source_field == FyleAttributeEnum.PROJECT:
-        schedule_or_delete_fyle_import_tasks(workspace_general_settings)
+        # schedule_or_delete_fyle_import_tasks(workspace_general_settings)
+        new_schedule_or_delete_fyle_import_tasks(
+            workspace_general_settings_instance=workspace_general_settings,
+            mapping_settings=MappingSetting.objects.filter(
+                workspace_id=instance.workspace_id
+            ).values()
+        )
 
     if instance.source_field == FyleAttributeEnum.COST_CENTER:
         schedule_cost_centers_creation(

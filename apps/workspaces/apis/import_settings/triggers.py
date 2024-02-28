@@ -10,6 +10,7 @@ from apps.mappings.queue import (
     schedule_tax_groups_creation,
 )
 from apps.workspaces.models import WorkspaceGeneralSettings
+from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
 
 
 class ImportSettingsTrigger:
@@ -46,7 +47,11 @@ class ImportSettingsTrigger:
                 destination_field="CUSTOMER",
             ).delete()
 
-        schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
+        # schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
+        new_schedule_or_delete_fyle_import_tasks(
+            workspace_general_settings_instance=workspace_general_settings_instance,
+            mapping_settings=self.__mapping_settings,
+        )
 
     def pre_save_mapping_settings(self):
         """
@@ -97,3 +102,7 @@ class ImportSettingsTrigger:
         ).delete()
 
         schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
+        new_schedule_or_delete_fyle_import_tasks(
+            workspace_general_settings_instance=workspace_general_settings_instance,
+            mapping_settings=self.__mapping_settings,
+        )
