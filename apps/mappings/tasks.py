@@ -2,11 +2,10 @@ import logging
 from typing import Dict, List
 
 from django_q.tasks import Chain
-from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping, MappingSetting
+from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
 from fyle_integrations_platform_connector import PlatformConnector
 
 from apps.fyle.enums import FyleAttributeEnum
-from apps.mappings.constants import FYLE_EXPENSE_SYSTEM_FIELDS
 from apps.mappings.exceptions import handle_import_exceptions
 from apps.tasks.models import Error
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
@@ -315,165 +314,6 @@ def disable_renamed_projects(workspace_id, destination_field):
                 expense_attribute_to_be_disabled.append(fyle_project.id)
 
     return expense_attribute_to_be_disabled
-
-
-def create_fyle_expense_custom_fields_payload(
-    xero_attributes: List[DestinationAttribute],
-    workspace_id: int,
-    fyle_attribute: str,
-    platform: PlatformConnector,
-    source_placeholder: str = None,
-):
-    """
-    Create Fyle Expense Custom Field Payload from Xero Objects
-    :param workspace_id: Workspace ID
-    :param xero_attributes: Xero Objects
-    :param fyle_attribute: Fyle Attribute
-    :return: Fyle Expense Custom Field Payload
-    """
-
-    fyle_expense_custom_field_options = []
-
-    [
-        fyle_expense_custom_field_options.append(xero_attribute.value)
-        for xero_attribute in xero_attributes
-    ]
-
-    if fyle_attribute.lower() not in FYLE_EXPENSE_SYSTEM_FIELDS:
-        existing_attribute = (
-            ExpenseAttribute.objects.filter(
-                attribute_type=fyle_attribute, workspace_id=workspace_id
-            )
-            .values_list("detail", flat=True)
-            .first()
-        )
-
-        custom_field_id = None
-        placeholder = None
-        if existing_attribute is not None:
-            custom_field_id = existing_attribute["custom_field_id"]
-            placeholder = (
-                existing_attribute["placeholder"]
-                if "placeholder" in existing_attribute
-                else None
-            )
-
-        fyle_attribute = fyle_attribute.replace("_", " ").title()
-
-        new_placeholder = None
-
-        # Here is the explanation of what's happening in the if-else ladder below
-        # source_field is the field that's save in mapping settings, this field user may or may not fill in the custom field form
-        # placeholder is the field that's saved in the detail column of destination attributes
-        # fyle_attribute is what we're constructing when both of these fields would not be available
-
-        if not (source_placeholder or placeholder):
-            # If source_placeholder and placeholder are both None, then we're creating adding a self constructed placeholder
-            new_placeholder = "Select {0}".format(fyle_attribute)
-        elif not source_placeholder and placeholder:
-            # If source_placeholder is None but placeholder is not, then we're choosing same place holder as 1 in detail section
-            new_placeholder = placeholder
-        elif source_placeholder and not placeholder:
-            # If source_placeholder is not None but placeholder is None, then we're choosing the placeholder as filled by user in form
-            new_placeholder = source_placeholder
-        else:
-            # Else, we're choosing the placeholder as filled by user in form or None
-            new_placeholder = source_placeholder
-
-        expense_custom_field_payload = {
-            "field_name": fyle_attribute,
-            "type": "SELECT",
-            "is_enabled": True,
-            "is_mandatory": False,
-            "placeholder": new_placeholder,
-            "options": fyle_expense_custom_field_options,
-            "code": None,
-        }
-
-        if custom_field_id:
-            expense_field = platform.expense_custom_fields.get_by_id(custom_field_id)
-            expense_custom_field_payload["id"] = custom_field_id
-            expense_custom_field_payload["is_mandatory"] = expense_field["is_mandatory"]
-
-        logger.info("| Importing Custom Fields to Fyle | Content: {{Fyle Payload count: {}}}".format(len(expense_custom_field_payload)))
-        return expense_custom_field_payload
-
-
-def upload_attributes_to_fyle(
-    workspace_id: int,
-    xero_attribute_type: str,
-    fyle_attribute_type: str,
-    source_placeholder: str = None,
-):
-    """
-    Upload attributes to Fyle
-    """
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(
-        workspace_id=workspace_id
-    )
-
-    platform = PlatformConnector(fyle_credentials)
-
-    xero_attributes: List[DestinationAttribute] = DestinationAttribute.objects.filter(
-        workspace_id=workspace_id, attribute_type=xero_attribute_type
-    )
-
-    xero_attributes = remove_duplicates(xero_attributes)
-
-    fyle_custom_field_payload = create_fyle_expense_custom_fields_payload(
-        xero_attributes=xero_attributes,
-        workspace_id=workspace_id,
-        fyle_attribute=fyle_attribute_type,
-        source_placeholder=source_placeholder,
-        platform=platform,
-    )
-
-    if fyle_custom_field_payload:
-        platform.expense_custom_fields.post(fyle_custom_field_payload)
-        platform.expense_custom_fields.sync()
-
-    return xero_attributes
-
-
-@handle_import_exceptions(task_name="auto create expense fields_mappings")
-def auto_create_expense_fields_mappings(
-    workspace_id: int,
-    xero_attribute_type: str,
-    fyle_attribute_type: str,
-    source_placeholder: str = None,
-):
-    """
-    Create Fyle Attributes Mappings
-    :return: mappings
-    """
-
-    fyle_attributes = upload_attributes_to_fyle(
-        workspace_id=workspace_id,
-        xero_attribute_type=xero_attribute_type,
-        fyle_attribute_type=fyle_attribute_type,
-        source_placeholder=source_placeholder,
-    )
-    if fyle_attributes:
-        Mapping.bulk_create_mappings(
-            fyle_attributes, fyle_attribute_type, xero_attribute_type, workspace_id
-        )
-
-
-@handle_import_exceptions(task_name="async auto create custom field_mappings")
-def async_auto_create_custom_field_mappings(workspace_id: str):
-    mapping_settings = MappingSetting.objects.filter(
-        is_custom=True, import_to_fyle=True, workspace_id=workspace_id
-    ).all()
-
-    for mapping_setting in mapping_settings:
-        if mapping_setting.import_to_fyle:
-            sync_xero_attributes(mapping_setting.destination_field, workspace_id)
-            auto_create_expense_fields_mappings(
-                workspace_id,
-                mapping_setting.destination_field,
-                mapping_setting.source_field,
-                mapping_setting.source_placeholder,
-            )
 
 
 def upload_tax_groups_to_fyle(

@@ -4,8 +4,7 @@ from django.db.models import Q
 from fyle_accounting_mappings.models import MappingSetting
 
 from apps.mappings.queue import (
-    schedule_fyle_attributes_creation,
-    schedule_tax_groups_creation,
+    schedule_tax_groups_creation
 )
 from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
@@ -52,25 +51,9 @@ class ImportSettingsTrigger:
 
     def pre_save_mapping_settings(self):
         """
-        Post save action for mapping settings
+        Pre save action for mapping settings
         """
-        mapping_settings = self.__mapping_settings
-
-        cost_center_mapping_available = False
-
-        # Here we are checking if any of the mappings have PROJECT and COST_CENTER mapping
-        for setting in mapping_settings:
-            if setting["source_field"] == "COST_CENTER":
-                cost_center_mapping_available = True
-
-        if not cost_center_mapping_available:
-            new_schedule_or_delete_fyle_import_tasks(
-                workspace_general_settings_instance=self.__workspace_general_settings,
-                mapping_settings=self.__mapping_settings,
-            )
-
-        # Schdule for auto creating custom field mappings
-        schedule_fyle_attributes_creation(self.__workspace_id)
+        pass
 
     def post_save_mapping_settings(
         self, workspace_general_settings_instance: WorkspaceGeneralSettings
