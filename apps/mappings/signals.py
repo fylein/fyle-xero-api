@@ -41,7 +41,6 @@ def run_post_mapping_settings_triggers(sender, instance: MappingSetting, **kwarg
         workspace_id=instance.workspace_id
     ).first()
     if instance.source_field == FyleAttributeEnum.PROJECT:
-        # schedule_or_delete_fyle_import_tasks(workspace_general_settings)
         new_schedule_or_delete_fyle_import_tasks(
             workspace_general_settings_instance=workspace_general_settings,
             mapping_settings=MappingSetting.objects.filter(

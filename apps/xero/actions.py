@@ -55,12 +55,6 @@ def refersh_xero_dimension(workspace_id):
     for mapping_setting in mapping_settings:
         if mapping_setting.source_field == FyleAttributeEnum.PROJECT:
             # run auto_import_and_map_fyle_fields
-            # chain.append(
-            #     "apps.mappings.tasks.auto_import_and_map_fyle_fields", int(workspace_id),
-            #     q_options={
-            #         'cluster': 'import'
-            #     }
-            # )
             chain.append(
                 'fyle_integrations_imports.tasks.trigger_import_via_schedule',
                 workspace_id,
