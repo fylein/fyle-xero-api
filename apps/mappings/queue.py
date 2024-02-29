@@ -132,7 +132,8 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
 
     # For now adding only for PROJECT
     ALLOWED_SOURCE_FIELDS = [
-        FyleAttributeEnum.PROJECT
+        FyleAttributeEnum.PROJECT,
+        FyleAttributeEnum.COST_CENTER,
     ]
 
     if mapping_settings:
@@ -143,7 +144,7 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
                         'source_field': mapping_setting.source_field,
                         'destination_field': mapping_setting.destination_field,
                         'is_custom': mapping_setting.is_custom,
-                        'destination_sync_methods': [SYNC_METHODS[mapping_setting.destination_field.upper()]],
+                        'destination_sync_methods': [SYNC_METHODS.get(mapping_setting.destination_field.upper(), 'tracking_categories')],
                         'is_auto_sync_enabled': is_auto_sync_allowed(workspace_general_settings, mapping_setting)
                     }
                 )
