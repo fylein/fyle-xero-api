@@ -5,11 +5,9 @@ from django.db import models
 from django.db.models import JSONField
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping, MappingSetting
 
-from apps.fyle.models import Expense, ExpenseGroup
 from apps.fyle.enums import FyleAttributeEnum
-
+from apps.fyle.models import Expense, ExpenseGroup
 from apps.mappings.models import GeneralMapping
-
 from apps.workspaces.models import FyleCredential, Workspace
 
 

@@ -136,8 +136,8 @@ Q_CLUSTER = {
     "max_rss": 100000,  # 100mb
     'ALT_CLUSTERS': {
         'import': {
-            "retry": 14400,
-            "timeout": 3600
+            'retry': 14400,
+            'timeout': 3600
         },
     }
 }
@@ -264,6 +264,8 @@ FYLE_CLIENT_SECRET = os.environ.get("FYLE_CLIENT_SECRET")
 FYLE_BASE_URL = os.environ.get("FYLE_BASE_URL")
 FYLE_APP_URL = os.environ.get("FYLE_APP_URL")
 XERO_APP_URL = os.environ.get("APP_URL")
+INTEGRATIONS_SETTINGS_API = os.environ.get('INTEGRATIONS_SETTINGS_API')
+XERO_INTEGRATION_APP_URL = os.environ.get('XERO_INTEGRATION_APP_URL')
 
 
 # XERO Settings
