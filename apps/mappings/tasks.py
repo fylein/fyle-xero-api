@@ -379,163 +379,6 @@ def auto_create_cost_center_mappings(workspace_id: int):
     )
 
 
-def create_fyle_projects_payload(
-    projects: List[DestinationAttribute],
-    existing_project_names: list,
-    updated_projects: List[ExpenseAttribute] = None,
-):
-    """
-    Create Fyle Projects Payload from Xero Projects and Customers
-    :param projects: Xero Projects
-    :return: Fyle Projects Payload
-    """
-    payload = []
-    if updated_projects:
-        for project in updated_projects:
-            destination_id_of_project = (
-                project.mapping.first().destination.destination_id
-            )
-            payload.append(
-                {
-                    "id": project.source_id,
-                    "name": project.value,
-                    "code": destination_id_of_project,
-                    "description": "Project - {0}, Id - {1}".format(
-                        project.value, destination_id_of_project
-                    ),
-                    "is_enabled": project.active,
-                }
-            )
-    else:
-        existing_project_names = [
-            project_name.lower() for project_name in existing_project_names
-        ]
-
-        for project in projects:
-            if project.value.lower() not in existing_project_names:
-                payload.append(
-                    {
-                        "name": project.value,
-                        "code": project.destination_id,
-                        "description": "Project - {0}, Id - {1}".format(
-                            project.value, project.destination_id
-                        ),
-                        "is_enabled": True
-                        if project.active is None
-                        else project.active,
-                    }
-                )
-
-    logger.info("| Importing Projects to Fyle | Content: {{Fyle Payload count: {}}}".format(len(payload)))
-    return payload
-
-
-def disable_renamed_projects(workspace_id, destination_field):
-    page_size = 200
-    expense_attributes_count = ExpenseAttribute.objects.filter(
-        attribute_type=FyleAttributeEnum.PROJECT, workspace_id=workspace_id, auto_mapped=True
-    ).count()
-    expense_attribute_to_be_disabled = []
-    for offset in range(0, expense_attributes_count, page_size):
-        limit = offset + page_size
-
-        fyle_projects = ExpenseAttribute.objects.filter(
-            workspace_id=workspace_id, attribute_type=FyleAttributeEnum.PROJECT, auto_mapped=True
-        ).order_by("value", "id")[offset:limit]
-
-        project_names = list(set(field.value for field in fyle_projects))
-
-        xero_customers = DestinationAttribute.objects.filter(
-            attribute_type=destination_field,
-            workspace_id=workspace_id,
-            value__in=project_names,
-        ).values_list("value", flat=True)
-
-        for fyle_project in fyle_projects:
-            if fyle_project.value not in xero_customers:
-                fyle_project.active = False
-                fyle_project.save()
-                expense_attribute_to_be_disabled.append(fyle_project.id)
-
-    return expense_attribute_to_be_disabled
-
-
-def post_projects_in_batches(
-    platform: PlatformConnector, workspace_id: int, destination_field: str
-):
-    existing_project_names = ExpenseAttribute.objects.filter(
-        attribute_type=FyleAttributeEnum.PROJECT, workspace_id=workspace_id
-    ).values_list("value", flat=True)
-    xero_attributes_count = DestinationAttribute.objects.filter(
-        attribute_type=destination_field, workspace_id=workspace_id
-    ).count()
-    page_size = 200
-
-    for offset in range(0, xero_attributes_count, page_size):
-        limit = offset + page_size
-        paginated_xero_attributes = DestinationAttribute.objects.filter(
-            attribute_type=destination_field, workspace_id=workspace_id
-        ).order_by("value", "id")[offset:limit]
-
-        paginated_xero_attributes = remove_duplicates(paginated_xero_attributes)
-
-        fyle_payload: List[Dict] = create_fyle_projects_payload(
-            paginated_xero_attributes, existing_project_names
-        )
-
-        if fyle_payload:
-            platform.projects.post_bulk(fyle_payload)
-            platform.projects.sync()
-
-        Mapping.bulk_create_mappings(
-            paginated_xero_attributes, FyleAttributeEnum.PROJECT, destination_field, workspace_id
-        )
-
-    if destination_field == "CUSTOMER":
-        expense_attribute_to_be_disable = disable_renamed_projects(
-            workspace_id, destination_field
-        )
-        project_ids_to_be_changed = disable_expense_attributes(
-            FyleAttributeEnum.PROJECT, "CUSTOMER", workspace_id
-        )
-        project_ids_to_be_changed.extend(expense_attribute_to_be_disable)
-        if project_ids_to_be_changed:
-            expense_attributes = ExpenseAttribute.objects.filter(
-                id__in=project_ids_to_be_changed
-            )
-            fyle_payload: List[Dict] = create_fyle_projects_payload(
-                projects=[],
-                existing_project_names=[],
-                updated_projects=expense_attributes,
-            )
-            platform.projects.post_bulk(fyle_payload)
-            platform.projects.sync()
-
-
-@handle_import_exceptions(task_name="auto_create_project_mappings")
-def auto_create_project_mappings(workspace_id: int):
-    """
-    Create Project Mappings
-    :return: mappings
-    """
-
-    fyle_credentials: FyleCredential = FyleCredential.objects.get(
-        workspace_id=workspace_id
-    )
-
-    platform = PlatformConnector(fyle_credentials)
-
-    platform.projects.sync()
-
-    mapping_setting = MappingSetting.objects.get(
-        source_field=FyleAttributeEnum.PROJECT, workspace_id=workspace_id
-    )
-
-    sync_xero_attributes(mapping_setting.destination_field, workspace_id)
-
-    post_projects_in_batches(platform, workspace_id, mapping_setting.destination_field)
-
-
 def create_fyle_expense_custom_fields_payload(
     xero_attributes: List[DestinationAttribute],
     workspace_id: int,
@@ -789,19 +632,11 @@ def auto_import_and_map_fyle_fields(workspace_id):
     workspace_general_settings: WorkspaceGeneralSettings = (
         WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     )
-    project_mapping = MappingSetting.objects.filter(
-        source_field=FyleAttributeEnum.PROJECT, workspace_id=workspace_general_settings.workspace_id
-    ).first()
 
     chain = Chain()
 
     if workspace_general_settings.import_categories:
         chain.append("apps.mappings.tasks.auto_create_category_mappings", workspace_id, q_options={
-            'cluster': 'import'
-        })
-
-    if project_mapping and project_mapping.import_to_fyle:
-        chain.append("apps.mappings.tasks.auto_create_project_mappings", workspace_id, q_options={
             'cluster': 'import'
         })
 
