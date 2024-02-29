@@ -4,7 +4,10 @@ from datetime import datetime
 from typing import Dict, List
 
 from django.db import transaction
-from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
+from fyle.platform.exceptions import (
+    InvalidTokenError as FyleInvalidTokenError,
+    RetryException,
+)
 from fyle_integrations_platform_connector import PlatformConnector
 
 from apps.fyle.actions import create_generator_and_post_in_batches
@@ -146,6 +149,13 @@ def async_create_expense_groups(
 
     except FyleInvalidTokenError:
         logger.info("Invalid Token for Fyle")
+
+    except RetryException:
+        logger.info("Fyle Retry Exception occured in workspace_id: %s", workspace_id)
+        task_log.detail = {"message": "Fyle Retry Exception"}
+        task_log.status = TaskLogStatusEnum.FATAL
+        task_log.save()
+
     except Exception:
         error = traceback.format_exc()
         task_log.detail = {"error": error}
