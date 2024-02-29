@@ -379,36 +379,6 @@ def auto_create_cost_center_mappings(workspace_id: int):
     )
 
 
-def disable_renamed_projects(workspace_id, destination_field):
-    page_size = 200
-    expense_attributes_count = ExpenseAttribute.objects.filter(
-        attribute_type=FyleAttributeEnum.PROJECT, workspace_id=workspace_id, auto_mapped=True
-    ).count()
-    expense_attribute_to_be_disabled = []
-    for offset in range(0, expense_attributes_count, page_size):
-        limit = offset + page_size
-
-        fyle_projects = ExpenseAttribute.objects.filter(
-            workspace_id=workspace_id, attribute_type=FyleAttributeEnum.PROJECT, auto_mapped=True
-        ).order_by("value", "id")[offset:limit]
-
-        project_names = list(set(field.value for field in fyle_projects))
-
-        xero_customers = DestinationAttribute.objects.filter(
-            attribute_type=destination_field,
-            workspace_id=workspace_id,
-            value__in=project_names,
-        ).values_list("value", flat=True)
-
-        for fyle_project in fyle_projects:
-            if fyle_project.value not in xero_customers:
-                fyle_project.active = False
-                fyle_project.save()
-                expense_attribute_to_be_disabled.append(fyle_project.id)
-
-    return expense_attribute_to_be_disabled
-
-
 def create_fyle_expense_custom_fields_payload(
     xero_attributes: List[DestinationAttribute],
     workspace_id: int,

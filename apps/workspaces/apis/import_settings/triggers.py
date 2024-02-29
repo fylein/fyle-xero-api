@@ -47,7 +47,7 @@ class ImportSettingsTrigger:
                 destination_field="CUSTOMER",
             ).delete()
 
-        # schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
+        schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
         new_schedule_or_delete_fyle_import_tasks(
             workspace_general_settings_instance=workspace_general_settings_instance,
             mapping_settings=self.__mapping_settings,

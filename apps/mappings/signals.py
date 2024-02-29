@@ -9,7 +9,6 @@ from django_q.tasks import async_task
 from fyle_accounting_mappings.models import Mapping, MappingSetting
 
 from apps.fyle.enums import FyleAttributeEnum
-# from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
 from apps.mappings.models import TenantMapping
 from apps.mappings.queue import schedule_cost_centers_creation, schedule_fyle_attributes_creation
 from apps.mappings.tasks import upload_attributes_to_fyle
