@@ -52,9 +52,14 @@ def refersh_xero_dimension(workspace_id):
     )
     chain = Chain()
 
+    ALLOWED_SOURCE_FIELDS = [
+        FyleAttributeEnum.PROJECT,
+        FyleAttributeEnum.COST_CENTER,
+    ]
+
     for mapping_setting in mapping_settings:
-        if mapping_setting.source_field == FyleAttributeEnum.PROJECT:
-            # run auto_import_and_map_fyle_fields
+        if mapping_setting.source_field in ALLOWED_SOURCE_FIELDS:
+            # run new_schedule_or_delete_fyle_import_tasks
             chain.append(
                 'fyle_integrations_imports.tasks.trigger_import_via_schedule',
                 workspace_id,
@@ -62,21 +67,13 @@ def refersh_xero_dimension(workspace_id):
                 mapping_setting.source_field,
                 'apps.xero.utils.XeroConnector',
                 xero_credentials,
-                [SYNC_METHODS[mapping_setting.destination_field]],
+                [SYNC_METHODS.get(mapping_setting.destination_field.upper(), 'tracking_categories')],
                 is_auto_sync_allowed(workspace_general_settings, mapping_setting),
                 False,
                 None,
                 mapping_setting.is_custom
             )
-        elif mapping_setting.source_field == FyleAttributeEnum.COST_CENTER:
-            # run auto_create_cost_center_mappings
-            chain.append(
-                "apps.mappings.tasks.auto_create_cost_center_mappings",
-                int(workspace_id),
-                q_options={
-                    'cluster': 'import'
-                }
-            )
+
         elif mapping_setting.is_custom:
             # run async_auto_create_custom_field_mappings
             chain.append(

@@ -3,9 +3,7 @@ from typing import Dict, List
 from django.db.models import Q
 from fyle_accounting_mappings.models import MappingSetting
 
-from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
 from apps.mappings.queue import (
-    schedule_cost_centers_creation,
     schedule_fyle_attributes_creation,
     schedule_tax_groups_creation,
 )
@@ -47,7 +45,6 @@ class ImportSettingsTrigger:
                 destination_field="CUSTOMER",
             ).delete()
 
-        # schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
         new_schedule_or_delete_fyle_import_tasks(
             workspace_general_settings_instance=workspace_general_settings_instance,
             mapping_settings=self.__mapping_settings,
@@ -67,7 +64,10 @@ class ImportSettingsTrigger:
                 cost_center_mapping_available = True
 
         if not cost_center_mapping_available:
-            schedule_cost_centers_creation(False, self.__workspace_id)
+            new_schedule_or_delete_fyle_import_tasks(
+                workspace_general_settings_instance=self.__workspace_general_settings,
+                mapping_settings=self.__mapping_settings,
+            )
 
         # Schdule for auto creating custom field mappings
         schedule_fyle_attributes_creation(self.__workspace_id)
@@ -101,7 +101,6 @@ class ImportSettingsTrigger:
             workspace_id=self.__workspace_id,
         ).delete()
 
-        schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
         new_schedule_or_delete_fyle_import_tasks(
             workspace_general_settings_instance=workspace_general_settings_instance,
             mapping_settings=self.__mapping_settings,
