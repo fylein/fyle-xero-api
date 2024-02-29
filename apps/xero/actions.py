@@ -71,7 +71,10 @@ def refersh_xero_dimension(workspace_id):
                 is_auto_sync_allowed(workspace_general_settings, mapping_setting),
                 False,
                 None,
-                mapping_setting.is_custom
+                mapping_setting.is_custom,
+                q_options={
+                    'cluster': 'import'
+                }
             )
 
         elif mapping_setting.is_custom:
