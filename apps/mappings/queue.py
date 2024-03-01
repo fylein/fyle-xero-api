@@ -144,6 +144,15 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
             'is_3d_mapping': False
         }
 
+    if workspace_general_settings.import_categories:
+        task_settings['import_categories'] = {
+            'destination_field': 'ACCOUNT',
+            'destination_sync_methods': [SYNC_METHODS['ACCOUNT']],
+            'is_auto_sync_enabled': is_auto_sync_allowed(workspace_general_settings, None),
+            'is_3d_mapping': False,
+            'charts_of_accounts': workspace_general_settings.charts_of_accounts
+        }
+
     if mapping_settings:
         for mapping_setting in mapping_settings:
             if mapping_setting.source_field in ALLOWED_SOURCE_FIELDS or mapping_setting.is_custom:
