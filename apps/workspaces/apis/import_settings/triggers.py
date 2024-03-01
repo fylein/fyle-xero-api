@@ -3,9 +3,6 @@ from typing import Dict, List
 from django.db.models import Q
 from fyle_accounting_mappings.models import MappingSetting
 
-from apps.mappings.queue import (
-    schedule_tax_groups_creation
-)
 from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
 from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
@@ -32,12 +29,6 @@ class ImportSettingsTrigger:
         """
         Post save action for workspace general settings
         """
-        # This will take care of auto creating tax mappings
-        schedule_tax_groups_creation(
-            import_tax_codes=self.__workspace_general_settings.get("import_tax_codes"),
-            workspace_id=self.__workspace_id,
-        )
-
         if not self.__workspace_general_settings.get("import_customers"):
             MappingSetting.objects.filter(
                 workspace_id=self.__workspace_id,

@@ -19,10 +19,10 @@ def new_schedule_or_delete_fyle_import_tasks(
     # short-hand notation, it returns True as soon as it encounters import_to_fyle as True
     task_to_be_scheduled = any(mapping_setting['import_to_fyle'] for mapping_setting in mapping_settings)
 
-    # if task_to_be_scheduled is True or import_customers(as Project) is True
     if (
         task_to_be_scheduled
         or workspace_general_settings_instance.import_customers
+        or workspace_general_settings_instance.import_tax_codes
     ):
         Schedule.objects.update_or_create(
             func='apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle',

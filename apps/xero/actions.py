@@ -42,9 +42,6 @@ def refersh_xero_dimension(workspace_id):
     xero_credentials = XeroCredentials.get_active_xero_credentials(
         workspace_id=workspace_id
     )
-    xero_credentials = XeroCredentials.get_active_xero_credentials(
-        workspace_id=workspace_id
-    )
     xero_connector = get_xero_connector(workspace_id=workspace_id)
 
     mapping_settings = MappingSetting.objects.filter(
@@ -75,16 +72,6 @@ def refersh_xero_dimension(workspace_id):
                 False,
                 None,
                 mapping_setting.is_custom,
-                q_options={
-                    'cluster': 'import'
-                }
-            )
-
-        elif mapping_setting.is_custom:
-            # run async_auto_create_custom_field_mappings
-            chain.append(
-                "apps.mappings.tasks.async_auto_create_custom_field_mappings",
-                int(workspace_id),
                 q_options={
                     'cluster': 'import'
                 }

@@ -136,6 +136,14 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         FyleAttributeEnum.COST_CENTER,
     ]
 
+    if workspace_general_settings.import_tax_codes:
+        task_settings['import_tax'] = {
+            'destination_field': 'TAX_CODE',
+            'destination_sync_methods': [SYNC_METHODS['TAX_CODE']],
+            'is_auto_sync_enabled': is_auto_sync_allowed(workspace_general_settings, None),
+            'is_3d_mapping': False
+        }
+
     if mapping_settings:
         for mapping_setting in mapping_settings:
             if mapping_setting.source_field in ALLOWED_SOURCE_FIELDS or mapping_setting.is_custom:
