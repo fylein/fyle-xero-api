@@ -3,6 +3,7 @@ from typing import Dict, List
 from django.db.models import Q
 from fyle_accounting_mappings.models import MappingSetting
 
+from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
 from apps.mappings.queue import (
     schedule_tax_groups_creation
 )
