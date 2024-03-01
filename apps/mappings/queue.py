@@ -118,9 +118,11 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         workspace_id=workspace_id
     )
 
+    # import_vendors_as_merchants is not used in xero, placeholder to avoid KeyError
     task_settings: TaskSetting = {
         'import_tax': None,
         'import_vendors_as_merchants': None,
+        'import_suppliers_as_merchants': None,
         'import_categories': None,
         'import_items': None,
         'mapping_settings': [],

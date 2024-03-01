@@ -30,7 +30,8 @@ def new_schedule_or_delete_fyle_import_tasks(
             defaults={
                 'schedule_type':Schedule.MINUTES,
                 'minutes': 24 * 60,
-                'next_run': datetime.now()
+                'next_run': datetime.now(),
+                'cluster': 'import'
             }
         )
     else:
@@ -42,6 +43,6 @@ def new_schedule_or_delete_fyle_import_tasks(
         # if there are no import fields, delete the schedule
         if import_fields_count == 0:
             Schedule.objects.filter(
-                func='apps.mappings.queues.construct_tasks_and_chain_import_fields_to_fyle',
-                args={}.format(workspace_general_settings_instance.workspace_id)
+                func='apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle',
+                args='{}'.format(workspace_general_settings_instance.workspace_id)
             ).delete()

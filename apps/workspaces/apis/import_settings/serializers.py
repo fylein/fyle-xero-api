@@ -154,7 +154,6 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
             trigger.post_save_workspace_general_settings(
                 workspace_general_settings_instance
             )
-            trigger.pre_save_mapping_settings()
 
             if workspace_general_settings["import_tax_codes"]:
                 mapping_settings.append(
