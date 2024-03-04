@@ -140,7 +140,7 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         task_settings['import_tax'] = {
             'destination_field': 'TAX_CODE',
             'destination_sync_methods': [SYNC_METHODS['TAX_CODE']],
-            'is_auto_sync_enabled': is_auto_sync_allowed(workspace_general_settings, None),
+            'is_auto_sync_enabled': False,
             'is_3d_mapping': False
         }
 
