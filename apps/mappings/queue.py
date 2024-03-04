@@ -148,7 +148,7 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         task_settings['import_categories'] = {
             'destination_field': 'ACCOUNT',
             'destination_sync_methods': [SYNC_METHODS['ACCOUNT']],
-            'is_auto_sync_enabled': is_auto_sync_allowed(workspace_general_settings, None),
+            'is_auto_sync_enabled': True,
             'is_3d_mapping': False,
             'charts_of_accounts': workspace_general_settings.charts_of_accounts
         }
