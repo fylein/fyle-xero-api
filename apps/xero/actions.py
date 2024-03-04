@@ -79,16 +79,6 @@ def refersh_xero_dimension(workspace_id):
                     'cluster': 'import'
                 }
             )
-
-        elif mapping_setting.is_custom:
-            # run async_auto_create_custom_field_mappings
-            chain.append(
-                "apps.mappings.tasks.async_auto_create_custom_field_mappings",
-                int(workspace_id),
-                q_options={
-                    'cluster': 'import'
-                }
-            )
         elif workspace_general_settings.import_suppliers_as_merchants:
             # run auto_create_suppliers_as_merchant
             chain.append(
