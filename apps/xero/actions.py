@@ -42,6 +42,9 @@ def refersh_xero_dimension(workspace_id):
     xero_credentials = XeroCredentials.get_active_xero_credentials(
         workspace_id=workspace_id
     )
+    xero_credentials = XeroCredentials.get_active_xero_credentials(
+        workspace_id=workspace_id
+    )
     xero_connector = get_xero_connector(workspace_id=workspace_id)
 
     mapping_settings = MappingSetting.objects.filter(
@@ -58,7 +61,7 @@ def refersh_xero_dimension(workspace_id):
     ]
 
     for mapping_setting in mapping_settings:
-        if mapping_setting.source_field in ALLOWED_SOURCE_FIELDS:
+        if mapping_setting.source_field in ALLOWED_SOURCE_FIELDS or mapping_setting.is_custom:
             # run new_schedule_or_delete_fyle_import_tasks
             chain.append(
                 'fyle_integrations_imports.tasks.trigger_import_via_schedule',
