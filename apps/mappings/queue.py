@@ -128,6 +128,7 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         'mapping_settings': [],
         'credentials': credentials,
         'sdk_connection_string': 'apps.xero.utils.XeroConnector',
+        'custom_properties': None
     }
 
     # For now adding only for PROJECT
@@ -140,7 +141,7 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         task_settings['import_tax'] = {
             'destination_field': 'TAX_CODE',
             'destination_sync_methods': [SYNC_METHODS['TAX_CODE']],
-            'is_auto_sync_enabled': is_auto_sync_allowed(workspace_general_settings, None),
+            'is_auto_sync_enabled': False,
             'is_3d_mapping': False
         }
 
@@ -148,9 +149,17 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         task_settings['import_categories'] = {
             'destination_field': 'ACCOUNT',
             'destination_sync_methods': [SYNC_METHODS['ACCOUNT']],
-            'is_auto_sync_enabled': is_auto_sync_allowed(workspace_general_settings, None),
+            'is_auto_sync_enabled': True,
             'is_3d_mapping': False,
             'charts_of_accounts': workspace_general_settings.charts_of_accounts
+        }
+
+    if workspace_general_settings.import_suppliers_as_merchants:
+        task_settings['custom_properties'] = {
+            'func': 'apps.mappings.tasks.auto_create_suppliers_as_merchants',
+            'args': {
+                'workspace_id': workspace_id
+            }
         }
 
     if mapping_settings:

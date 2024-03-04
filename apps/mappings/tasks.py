@@ -1,7 +1,7 @@
 import logging
 from typing import List
+from datetime import datetime, timedelta, timezone
 
-from django_q.tasks import Chain
 from fyle_accounting_mappings.models import Mapping
 from fyle_integrations_platform_connector import PlatformConnector
 
@@ -10,38 +10,10 @@ from apps.mappings.exceptions import handle_import_exceptions
 from apps.tasks.models import Error
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
+from fyle_integrations_imports.models import ImportLog
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
-
-DEFAULT_FYLE_CATEGORIES = [
-    "Activity",
-    "Train",
-    "Fuel",
-    "Snacks",
-    "Office Supplies",
-    "Utility",
-    "Entertainment",
-    "Others",
-    "Mileage",
-    "Food",
-    "Per Diem",
-    "Bus",
-    "Internet",
-    "Taxi",
-    "Courier",
-    "Hotel",
-    "Professional Services",
-    "Phone",
-    "Office Party",
-    "Flight",
-    "Software",
-    "Parking",
-    "Toll Charge",
-    "Tax",
-    "Training",
-    "Unspecified",
-]
 
 
 def resolve_expense_attribute_errors(
@@ -93,6 +65,34 @@ def async_auto_map_employees(workspace_id: int):
 
 
 def auto_create_suppliers_as_merchants(workspace_id):
+    logger.info("| Importing Suppliers as Merchant to Fyle | Content: {{WORKSPACE_ID: {}}}".format(workspace_id))
+
+    import_log, is_created = ImportLog.objects.get_or_create(
+        workspace_id=workspace_id,
+        attribute_type="MERCHANT",
+        defaults={
+            'status': 'IN_PROGRESS'
+        }
+    )
+
+    sync_after = None
+
+    if not is_created:
+        sync_after = import_log.last_successful_run_at if import_log.last_successful_run_at else None
+
+    time_difference = datetime.now() - timedelta(minutes=30)
+    offset_aware_time_difference = time_difference.replace(tzinfo=timezone.utc)
+
+    if (import_log.status == 'IN_PROGRESS' and not is_created) \
+        or (sync_after and (sync_after > offset_aware_time_difference)):
+        return
+
+    else:
+        import_log.status = 'IN_PROGRESS'
+        import_log.processed_batches_count = 0
+        import_log.total_batches_count = 0
+        import_log.save()
+
     fyle_credentials: FyleCredential = FyleCredential.objects.get(
         workspace_id=workspace_id
     )
@@ -106,24 +106,9 @@ def auto_create_suppliers_as_merchants(workspace_id):
     if merchant_names:
         fyle_connection.merchants.post(merchant_names, skip_existing_merchants=True)
 
-
-def auto_import_and_map_fyle_fields(workspace_id):
-    """
-    Auto import and map fyle fields
-    """
-    workspace_general_settings: WorkspaceGeneralSettings = (
-        WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
-    )
-
-    chain = Chain()
-
-    if workspace_general_settings.import_suppliers_as_merchants:
-        chain.append(
-            "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id,
-            q_options={
-                'cluster': 'import'
-            }
-        )
-
-    if chain.length() > 0:
-        chain.run()
+    import_log.status = 'COMPLETE'
+    import_log.last_successful_run_at = datetime.now()
+    import_log.error_log = []
+    import_log.total_batches_count = 0
+    import_log.processed_batches_count = 0
+    import_log.save()
