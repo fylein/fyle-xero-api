@@ -42,9 +42,6 @@ def refersh_xero_dimension(workspace_id):
     xero_credentials = XeroCredentials.get_active_xero_credentials(
         workspace_id=workspace_id
     )
-    xero_credentials = XeroCredentials.get_active_xero_credentials(
-        workspace_id=workspace_id
-    )
     xero_connector = get_xero_connector(workspace_id=workspace_id)
 
     mapping_settings = MappingSetting.objects.filter(
