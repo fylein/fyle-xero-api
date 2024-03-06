@@ -4,10 +4,8 @@ from datetime import datetime
 from typing import Dict, List
 
 from django.db import transaction
-from fyle.platform.exceptions import (
-    InvalidTokenError as FyleInvalidTokenError,
-    RetryException,
-)
+from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
+from fyle.platform.exceptions import RetryException
 from fyle_integrations_platform_connector import PlatformConnector
 
 from apps.fyle.actions import create_generator_and_post_in_batches
@@ -103,7 +101,7 @@ def async_create_expense_groups(
                     )
                 )
 
-            if expenses:
+            if workspace.last_synced_at or expenses:
                 workspace.last_synced_at = datetime.now()
                 reimbursable_expenses_count += len(expenses)
 
@@ -126,7 +124,7 @@ def async_create_expense_groups(
                     )
                 )
 
-            if len(expenses) != reimbursable_expenses_count:
+            if workspace.ccc_last_synced_at or len(expenses) != reimbursable_expenses_count:
                 workspace.ccc_last_synced_at = datetime.now()
 
             workspace.save()
