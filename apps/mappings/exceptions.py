@@ -8,10 +8,12 @@ from fyle.platform.exceptions import (
     WrongParamsError,
     RetryException
 )
-from xerosdk.exceptions import InvalidGrant
-from xerosdk.exceptions import InvalidTokenError as XeroInvalidTokenError
-from xerosdk.exceptions import UnsuccessfulAuthentication
-from xerosdk.exceptions import WrongParamsError as XeroWrongParamsError
+from xerosdk.exceptions import (
+    InvalidGrant,
+    InvalidTokenError as XeroInvalidTokenError,
+    UnsuccessfulAuthentication,
+    WrongParamsError as XeroWrongParamsError
+)
 
 from apps.workspaces.models import XeroCredentials
 from fyle_integrations_imports.models import ImportLog
