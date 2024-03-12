@@ -32,11 +32,11 @@ def test_run_post_mapping_settings_triggers(db, mocker, test_connection):
     mapping_setting.save()
 
     schedule = Schedule.objects.filter(
-        func="apps.mappings.tasks.auto_create_project_mappings",
+        func="apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle",
         args="{}".format(workspace_id),
     ).first()
 
-    assert schedule.func == "apps.mappings.tasks.auto_create_project_mappings"
+    assert schedule.func == "apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle"
     assert schedule.args == "1"
 
     mapping_setting = MappingSetting(
@@ -49,11 +49,11 @@ def test_run_post_mapping_settings_triggers(db, mocker, test_connection):
     mapping_setting.save()
 
     schedule = Schedule.objects.filter(
-        func="apps.mappings.tasks.auto_create_cost_center_mappings",
+        func="apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle",
         args="{}".format(workspace_id),
     ).first()
 
-    assert schedule.func == "apps.mappings.tasks.auto_create_cost_center_mappings"
+    assert schedule.func == "apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle"
     assert schedule.args == "1"
 
     mapping_setting = MappingSetting(
@@ -66,12 +66,12 @@ def test_run_post_mapping_settings_triggers(db, mocker, test_connection):
     mapping_setting.save()
 
     schedule = Schedule.objects.filter(
-        func="apps.mappings.tasks.async_auto_create_custom_field_mappings",
+        func="apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle",
         args="{}".format(workspace_id),
     ).first()
 
     assert (
-        schedule.func == "apps.mappings.tasks.async_auto_create_custom_field_mappings"
+        schedule.func == "apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle"
     )
     assert schedule.args == "1"
 
@@ -95,11 +95,11 @@ def test_run_post_mapping_settings_triggers(db, mocker, test_connection):
     mapping_setting.save()
 
     schedule = Schedule.objects.filter(
-        func="apps.mappings.tasks.auto_import_and_map_fyle_fields",
+        func="apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle",
         args="{}".format(workspace_id),
     ).first()
 
-    assert schedule.func == "apps.mappings.tasks.auto_import_and_map_fyle_fields"
+    assert schedule.func == "apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle"
 
 
 def test_run_pre_mapping_settings_triggers(db, mocker, test_connection):

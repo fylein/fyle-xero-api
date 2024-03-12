@@ -118,7 +118,9 @@ def test_post_sync_dimensions(mocker, api_client, test_connection):
 
 def test_post_refresh_dimensions(mocker, api_client, test_connection):
     mocker.patch("apps.xero.utils.XeroConnector.sync_dimensions", return_value=None)
-    mocker.patch("apps.mappings.signals.upload_attributes_to_fyle", return_value=[])
+    expense_field_mock = mocker.patch("apps.mappings.signals.ExpenseCustomField")
+    expense_field_mock.return_value.sync_expense_attributes.return_value = []
+
     workspace_id = 1
 
     MappingSetting.objects.update_or_create(

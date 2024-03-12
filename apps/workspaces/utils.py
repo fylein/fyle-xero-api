@@ -12,10 +12,11 @@ from xerosdk import InternalServerError, InvalidTokenError, XeroSDK
 
 from apps.fyle.enums import FyleAttributeEnum
 from apps.fyle.models import ExpenseGroupSettings
-from apps.mappings.queue import schedule_auto_map_employees, schedule_tax_groups_creation
+from apps.mappings.queue import schedule_auto_map_employees
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from apps.xero.queue import schedule_payment_creation, schedule_reimbursements_sync, schedule_xero_objects_status_sync
 from fyle_xero_api.utils import assert_valid
+from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
 
 
 def generate_token(authorization_code: str, redirect_uri: str = None) -> str:
@@ -221,8 +222,12 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
         general_settings_payload["auto_map_employees"], workspace_id
     )
 
-    schedule_tax_groups_creation(
-        import_tax_codes=general_settings.import_tax_codes, workspace_id=workspace_id
+    new_schedule_or_delete_fyle_import_tasks(
+        workspace_general_settings_instance=workspace_general_settings,
+        mapping_settings=MappingSetting.objects.filter(
+            workspace_id=workspace_id,
+            source_field=FyleAttributeEnum.TAX_GROUP
+        ).first(),
     )
 
     return general_settings

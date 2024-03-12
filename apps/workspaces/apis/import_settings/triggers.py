@@ -3,13 +3,8 @@ from typing import Dict, List
 from django.db.models import Q
 from fyle_accounting_mappings.models import MappingSetting
 
-from apps.mappings.helpers import schedule_or_delete_fyle_import_tasks
-from apps.mappings.queue import (
-    schedule_cost_centers_creation,
-    schedule_fyle_attributes_creation,
-    schedule_tax_groups_creation,
-)
 from apps.workspaces.models import WorkspaceGeneralSettings
+from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
 
 
 class ImportSettingsTrigger:
@@ -33,12 +28,6 @@ class ImportSettingsTrigger:
         """
         Post save action for workspace general settings
         """
-        # This will take care of auto creating tax mappings
-        schedule_tax_groups_creation(
-            import_tax_codes=self.__workspace_general_settings.get("import_tax_codes"),
-            workspace_id=self.__workspace_id,
-        )
-
         if not self.__workspace_general_settings.get("import_customers"):
             MappingSetting.objects.filter(
                 workspace_id=self.__workspace_id,
@@ -46,26 +35,10 @@ class ImportSettingsTrigger:
                 destination_field="CUSTOMER",
             ).delete()
 
-        schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
-
-    def pre_save_mapping_settings(self):
-        """
-        Post save action for mapping settings
-        """
-        mapping_settings = self.__mapping_settings
-
-        cost_center_mapping_available = False
-
-        # Here we are checking if any of the mappings have PROJECT and COST_CENTER mapping
-        for setting in mapping_settings:
-            if setting["source_field"] == "COST_CENTER":
-                cost_center_mapping_available = True
-
-        if not cost_center_mapping_available:
-            schedule_cost_centers_creation(False, self.__workspace_id)
-
-        # Schdule for auto creating custom field mappings
-        schedule_fyle_attributes_creation(self.__workspace_id)
+        new_schedule_or_delete_fyle_import_tasks(
+            workspace_general_settings_instance=workspace_general_settings_instance,
+            mapping_settings=self.__mapping_settings,
+        )
 
     def post_save_mapping_settings(
         self, workspace_general_settings_instance: WorkspaceGeneralSettings
@@ -96,4 +69,7 @@ class ImportSettingsTrigger:
             workspace_id=self.__workspace_id,
         ).delete()
 
-        schedule_or_delete_fyle_import_tasks(workspace_general_settings_instance)
+        new_schedule_or_delete_fyle_import_tasks(
+            workspace_general_settings_instance=workspace_general_settings_instance,
+            mapping_settings=self.__mapping_settings,
+        )
