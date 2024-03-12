@@ -6,6 +6,8 @@ from fyle_accounting_mappings.models import MappingSetting
 from apps.fyle.enums import FyleAttributeEnum
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
+from apps.mappings.helpers import is_auto_sync_allowed
+from apps.mappings.constants import SYNC_METHODS
 
 
 def get_xero_connector(workspace_id):
@@ -37,6 +39,9 @@ def sync_dimensions(workspace_id):
 
 def refersh_xero_dimension(workspace_id):
     workspace_id = workspace_id
+    xero_credentials = XeroCredentials.get_active_xero_credentials(
+        workspace_id=workspace_id
+    )
     xero_connector = get_xero_connector(workspace_id=workspace_id)
 
     mapping_settings = MappingSetting.objects.filter(
@@ -47,29 +52,26 @@ def refersh_xero_dimension(workspace_id):
     )
     chain = Chain()
 
+    ALLOWED_SOURCE_FIELDS = [
+        FyleAttributeEnum.PROJECT,
+        FyleAttributeEnum.COST_CENTER,
+    ]
+
     for mapping_setting in mapping_settings:
-        if mapping_setting.source_field == FyleAttributeEnum.PROJECT:
-            # run auto_import_and_map_fyle_fields
+        if mapping_setting.source_field in ALLOWED_SOURCE_FIELDS or mapping_setting.is_custom:
+            # run new_schedule_or_delete_fyle_import_tasks
             chain.append(
-                "apps.mappings.tasks.auto_import_and_map_fyle_fields", int(workspace_id),
-                q_options={
-                    'cluster': 'import'
-                }
-            )
-        elif mapping_setting.source_field == FyleAttributeEnum.COST_CENTER:
-            # run auto_create_cost_center_mappings
-            chain.append(
-                "apps.mappings.tasks.auto_create_cost_center_mappings",
-                int(workspace_id),
-                q_options={
-                    'cluster': 'import'
-                }
-            )
-        elif mapping_setting.is_custom:
-            # run async_auto_create_custom_field_mappings
-            chain.append(
-                "apps.mappings.tasks.async_auto_create_custom_field_mappings",
-                int(workspace_id),
+                'fyle_integrations_imports.tasks.trigger_import_via_schedule',
+                workspace_id,
+                mapping_setting.destination_field,
+                mapping_setting.source_field,
+                'apps.xero.utils.XeroConnector',
+                xero_credentials,
+                [SYNC_METHODS.get(mapping_setting.destination_field.upper(), 'tracking_categories')],
+                is_auto_sync_allowed(workspace_general_settings, mapping_setting),
+                False,
+                None,
+                mapping_setting.is_custom,
                 q_options={
                     'cluster': 'import'
                 }

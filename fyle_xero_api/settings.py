@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "fyle_rest_auth",
     "fyle_accounting_mappings",
+    "fyle_integrations_imports",
     # User Created Apps
     "apps.users",
     "apps.workspaces",
@@ -190,7 +191,15 @@ LOGGING = {
             "handlers": ["debug_logs"],
             "propagate": True,
         },
-        "gunicorn": {"handlers": ["request_logs"], "level": "INFO", "propagate": False},
+        "gunicorn": {
+            "handlers": ["request_logs"],
+            "level": "INFO",
+            "propagate": False
+        },
+        "fyle_integrations_imports": {
+            "handlers": ["debug_logs"],
+            "propagate": True
+        },
     },
 }
 
