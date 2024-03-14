@@ -83,7 +83,7 @@ def test_get_xero_fields_view(api_client, test_connection):
     assert response.status_code == 200
 
     response = json.loads(response.content)
-    assert len(response) == 2
+    assert len(response) == 3
 
 
 def test_post_sync_dimensions(mocker, api_client, test_connection):
