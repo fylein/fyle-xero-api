@@ -47,46 +47,45 @@ def refersh_xero_dimension(workspace_id):
     mapping_settings = MappingSetting.objects.filter(
         workspace_id=workspace_id, import_to_fyle=True
     )
-    workspace_general_settings: WorkspaceGeneralSettings = (
-        WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
-    )
-    chain = Chain()
+    workspace_general_settings: WorkspaceGeneralSettings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
 
     ALLOWED_SOURCE_FIELDS = [
         FyleAttributeEnum.PROJECT,
         FyleAttributeEnum.COST_CENTER,
     ]
 
-    for mapping_setting in mapping_settings:
-        if mapping_setting.source_field in ALLOWED_SOURCE_FIELDS or mapping_setting.is_custom:
-            # run new_schedule_or_delete_fyle_import_tasks
-            chain.append(
-                'fyle_integrations_imports.tasks.trigger_import_via_schedule',
-                workspace_id,
-                mapping_setting.destination_field,
-                mapping_setting.source_field,
-                'apps.xero.utils.XeroConnector',
-                xero_credentials,
-                [SYNC_METHODS.get(mapping_setting.destination_field.upper(), 'tracking_categories')],
-                is_auto_sync_allowed(workspace_general_settings, mapping_setting),
-                False,
-                None,
-                mapping_setting.is_custom,
-                q_options={
-                    'cluster': 'import'
-                }
-            )
-        elif workspace_general_settings.import_suppliers_as_merchants:
-            # run auto_create_suppliers_as_merchant
-            chain.append(
-                "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id,
-                q_options={
-                    'cluster': 'import'
-                }
-            )
+    if workspace_general_settings:
+        chain = Chain()
+        for mapping_setting in mapping_settings:
+            if mapping_setting.source_field in ALLOWED_SOURCE_FIELDS or mapping_setting.is_custom:
+                # run new_schedule_or_delete_fyle_import_tasks
+                chain.append(
+                    'fyle_integrations_imports.tasks.trigger_import_via_schedule',
+                    workspace_id,
+                    mapping_setting.destination_field,
+                    mapping_setting.source_field,
+                    'apps.xero.utils.XeroConnector',
+                    xero_credentials,
+                    [SYNC_METHODS.get(mapping_setting.destination_field.upper(), 'tracking_categories')],
+                    is_auto_sync_allowed(workspace_general_settings, mapping_setting),
+                    False,
+                    None,
+                    mapping_setting.is_custom,
+                    q_options={
+                        'cluster': 'import'
+                    }
+                )
+            elif workspace_general_settings.import_suppliers_as_merchants:
+                # run auto_create_suppliers_as_merchant
+                chain.append(
+                    "apps.mappings.tasks.auto_create_suppliers_as_merchants", workspace_id,
+                    q_options={
+                        'cluster': 'import'
+                    }
+                )
 
-    if chain.length() > 0:
-        chain.run()
+        if chain.length() > 0:
+            chain.run()
 
     xero_connector.sync_dimensions(workspace_id)
 
