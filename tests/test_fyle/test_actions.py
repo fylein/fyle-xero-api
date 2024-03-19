@@ -122,7 +122,7 @@ def test_mark_accounting_export_summary_as_synced(db):
             'tx_123',
             'SKIPPED',
             None,
-            '{}mainexport_log'.format(settings.XERO_INTEGRATION_APP_URL),
+            '{}/main/export_log'.format(settings.XERO_INTEGRATION_APP_URL),
             True
         )
         expense.save()
