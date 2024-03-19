@@ -45,7 +45,6 @@ def create_tenant_mapping(workspace_id, tenant_mapping_payload):
                 workspace.onboarding_state = 'EXPORT_SETTINGS'
                 workspace.save()
 
-
     except UnsuccessfulAuthentication:
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
 
