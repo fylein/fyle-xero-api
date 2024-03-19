@@ -100,22 +100,22 @@ def connect_xero(authorization_code, redirect_uri, workspace_id):
         connections = xero_connector.connection.connections.get_all()
         connection = list(
             filter(
-                lambda connection: connection["tenantId"] == tenant_mapping.tenant_id,
+                lambda connection: connection['tenantId'] == tenant_mapping.tenant_id,
                 connections,
             )
         )
 
         if connection:
-            tenant_mapping.connection_id = connection[0]["id"]
+            tenant_mapping.connection_id = connection[0]['id']
             tenant_mapping.save()
 
     if tenant_mapping:
         try:
             xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
             company_info = xero_connector.get_organisations()[0]
-            workspace.xero_currency = company_info["BaseCurrency"]
+            workspace.xero_currency = company_info['BaseCurrency']
             workspace.save()
-            xero_credentials.country = company_info["CountryCode"]
+            xero_credentials.country = company_info['CountryCode']
             xero_credentials.save()
         except (
             xero_exc.WrongParamsError,
@@ -123,8 +123,8 @@ def connect_xero(authorization_code, redirect_uri, workspace_id):
         ) as exception:
             logger.info(exception.response)
 
-    if workspace.onboarding_state == "CONNECTION":
-        workspace.onboarding_state = "EXPORT_SETTINGS"
+    if workspace.onboarding_state == 'CONNECTION':
+        workspace.onboarding_state = 'TENANT_MAPPING'
         workspace.save()
 
     return xero_credentials
