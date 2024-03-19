@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import status
 
 from apps.exceptions import handle_view_exceptions
-from apps.mappings.actions import tenant_mapping_view
+from apps.mappings.actions import create_tenant_mapping
 from apps.mappings.models import TenantMapping
 from apps.mappings.serializers import TenantMappingSerializer
 from apps.workspaces.models import WorkspaceGeneralSettings
