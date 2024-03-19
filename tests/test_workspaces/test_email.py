@@ -82,7 +82,7 @@ def test_render_email_template_returns_expected_output():
         "xero_tenant": tenant_name,
         "export_time": last_synced_at.strftime("%d %b %Y | %H:%M"),
         "year": date.today().year,
-        "app_url": "{0}/workspaces/main/dashboard".format(settings.FYLE_APP_URL),
+        "app_url": "{0}/main/dashboard".format(settings.FYLE_APP_URL),
         "errors": errors,
         "error_type": ", ".join(error_types),
     }

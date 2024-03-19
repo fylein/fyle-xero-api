@@ -55,7 +55,7 @@ for workspace in workspaces:
                             error_type = 'MAPPING'
                         else:
                             error_type = 'ACCOUNTING_INTEGRATION_ERROR'
-                    url = '{}/workspaces/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL)
+                    url = '{}/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL)
                 else:
                     try:
                         if task_log.type == 'CREATING_BILL':

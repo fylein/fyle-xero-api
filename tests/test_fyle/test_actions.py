@@ -26,7 +26,7 @@ def test_update_expenses_in_progress(db):
     for expense in expenses:
         assert expense.accounting_export_summary['synced'] == False
         assert expense.accounting_export_summary['state'] == 'IN_PROGRESS'
-        assert expense.accounting_export_summary['url'] == '{}/workspaces/main/dashboard'.format(
+        assert expense.accounting_export_summary['url'] == '{}/main/dashboard'.format(
             settings.XERO_INTEGRATION_APP_URL
         )
         assert expense.accounting_export_summary['error_type'] == None
@@ -43,7 +43,7 @@ def test_update_failed_expenses(db):
         assert expense.accounting_export_summary['synced'] == False
         assert expense.accounting_export_summary['state'] == 'ERROR'
         assert expense.accounting_export_summary['error_type'] == 'MAPPING'
-        assert expense.accounting_export_summary['url'] == '{}/workspaces/main/dashboard'.format(
+        assert expense.accounting_export_summary['url'] == '{}/main/dashboard'.format(
             settings.XERO_INTEGRATION_APP_URL
         )
         assert expense.accounting_export_summary['id'] == expense.expense_id
@@ -109,7 +109,7 @@ def test_handle_post_accounting_export_summary_exception(db):
     assert expense.accounting_export_summary['synced'] == True
     assert expense.accounting_export_summary['state'] == 'DELETED'
     assert expense.accounting_export_summary['error_type'] == None
-    assert expense.accounting_export_summary['url'] == '{}/workspaces/main/dashboard'.format(
+    assert expense.accounting_export_summary['url'] == '{}/main/dashboard'.format(
         settings.XERO_INTEGRATION_APP_URL
     )
     assert expense.accounting_export_summary['id'] == expense_id
@@ -122,7 +122,7 @@ def test_mark_accounting_export_summary_as_synced(db):
             'tx_123',
             'SKIPPED',
             None,
-            '{}/workspaces/main/export_log'.format(settings.XERO_INTEGRATION_APP_URL),
+            '{}mainexport_log'.format(settings.XERO_INTEGRATION_APP_URL),
             True
         )
         expense.save()
