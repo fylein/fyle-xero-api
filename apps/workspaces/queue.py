@@ -47,8 +47,9 @@ def schedule_sync(
         ws_schedule.interval_hours = hours
         ws_schedule.emails_selected = emails_selected
 
-        if email_added:
-            ws_schedule.additional_email_options.append(email_added)
+        for email in email_added:
+            if email not in ws_schedule.additional_email_options:
+                ws_schedule.additional_email_options.append(email)
 
         schedule, _ = Schedule.objects.update_or_create(
             func="apps.workspaces.tasks.run_sync_schedule",
