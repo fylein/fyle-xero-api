@@ -126,7 +126,7 @@ def send_failure_notification_email(
         "app_url": "{0}/workspaces/main/dashboard".format(settings.XERO_APP_URL),
         "errors": errors,
         "error_type": ", ".join(error_types),
-        "fyle_xero_url": settings.FYLE_XERO_URL
+        "integrations_app_url": settings.INTEGRATIONS_APP_URL
     }
     message = render_email_template(context)
     send_email_notification(admin_email, message)
