@@ -1,2 +1,5 @@
 setup.sh
 cache.db
+env
+venv
+debugger
