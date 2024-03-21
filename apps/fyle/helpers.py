@@ -187,7 +187,6 @@ def get_batched_expenses(batched_payload: List[dict], workspace_id: int) -> List
     return Expense.objects.filter(expense_id__in=expense_ids, workspace_id=workspace_id)
 
 
-
 class AdvanceSearchFilter(django_filters.FilterSet):
     def filter_queryset(self, queryset):
         or_filtered_queryset = queryset.none()
