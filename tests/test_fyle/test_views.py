@@ -17,7 +17,10 @@ def test_expense_group_view(api_client, test_connection):
 
     response = api_client.get(
         url,
-        {   "tasklog__status": "COMPLETE"
+        {
+            "tasklog__status": "COMPLETE",
+            "exported_at_gte": "2022-08-02 20:25:00",
+            "exported_at_lte": "2022-08-02 20:30:00"
         },
     )
     assert response.status_code == 200
