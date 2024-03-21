@@ -157,5 +157,4 @@ cache.db
 cache.db-journal
 
 # Dev files
-fyle_integrations_platform_connector/
 fylesdk/
