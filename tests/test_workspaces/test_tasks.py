@@ -24,13 +24,13 @@ def test_schedule_sync(db):
     workspace_id = 1
 
     # Test with email_added
-    email_added = {"email": "test@example.com", "name": "Test User"}
+    email_added = [{"email": "test@example.com", "name": "Test User"}]
     schedule_sync(workspace_id, True, 1, email_added, [])
 
     ws_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace_id).first()
 
     assert ws_schedule.schedule.func == "apps.workspaces.tasks.run_sync_schedule"
-    assert ws_schedule.additional_email_options == [email_added]
+    assert ws_schedule.additional_email_options == email_added
 
     # Test without email_added
     schedule_sync(workspace_id, False, 1, {}, [])
