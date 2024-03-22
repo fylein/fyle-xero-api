@@ -123,7 +123,7 @@ def send_failure_notification_email(
         "xero_tenant": tenant_detail.tenant_name,
         "export_time": workspace.last_synced_at.strftime("%d %b %Y | %H:%M"),
         "year": date.today().year,
-        "app_url": "{0}/main/dashboard".format(settings.XERO_APP_URL),
+        "app_url": "{0}/workspaces/main/dashboard".format(settings.XERO_APP_URL),
         "errors": errors,
         "error_type": ", ".join(error_types),
     }
