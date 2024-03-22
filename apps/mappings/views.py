@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import status
 
 from apps.exceptions import handle_view_exceptions
-from apps.mappings.actions import tenant_mapping_view
+from apps.mappings.actions import create_tenant_mapping
 from apps.mappings.models import TenantMapping
 from apps.mappings.serializers import TenantMappingSerializer
 from apps.workspaces.models import WorkspaceGeneralSettings
@@ -20,8 +20,8 @@ class TenantMappingView(generics.CreateAPIView, generics.RetrieveAPIView):
     Tenant mappings view
     """
 
-    lookup_field = "workspace_id"
-    lookup_url_kwarg = "workspace_id"
+    lookup_field = 'workspace_id'
+    lookup_url_kwarg = 'workspace_id'
     serializer_class = TenantMappingSerializer
     queryset = TenantMapping.objects.all()
 
@@ -31,10 +31,10 @@ class TenantMappingView(generics.CreateAPIView, generics.RetrieveAPIView):
         """
         tenant_mapping_payload = request.data
 
-        assert_valid(tenant_mapping_payload is not None, "Request body is empty")
+        assert_valid(tenant_mapping_payload is not None, 'Request body is empty')
 
-        tenant_mapping_object = tenant_mapping_view(
-            workspace_id=kwargs["workspace_id"],
+        tenant_mapping_object = create_tenant_mapping(
+            workspace_id=kwargs['workspace_id'],
             tenant_mapping_payload=tenant_mapping_payload,
         )
 
