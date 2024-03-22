@@ -167,7 +167,7 @@ def async_create_expense_groups(
         )
 
 
-def sync_dimensions(fyle_credentials, is_export: bool=False):
+def sync_dimensions(fyle_credentials, is_export: bool = False):
     platform = PlatformConnector(fyle_credentials)
     platform.import_fyle_dimensions(is_export=is_export)
     if is_export:
