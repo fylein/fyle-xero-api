@@ -157,6 +157,8 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
                 __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
             except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
                 xero_connection = None
+                task_log.status = TaskLogStatusEnum.FAILED
+                task_log.save()
 
 
 def schedule_bank_transaction_creation(
@@ -209,6 +211,8 @@ def schedule_bank_transaction_creation(
             try:
                 xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
+                __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
             except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
                 xero_connection = None
-            __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
+                task_log.status = TaskLogStatusEnum.FAILED
+                task_log.save()
