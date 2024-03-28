@@ -159,3 +159,4 @@ cache.db-journal
 # Dev files
 fyle_integrations_platform_connector/
 fylesdk/
+fyle_accounting_mappings/

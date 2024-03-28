@@ -95,7 +95,7 @@ def __create_chain_and_run(fyle_credentials: FyleCredential, xero_connection, in
     :return: None
     """
     chain = Chain()
-    chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials)
+    chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials, True)
 
     chain.append('apps.xero.tasks.update_expense_and_post_summary', in_progress_expenses, workspace_id, fund_source)
 

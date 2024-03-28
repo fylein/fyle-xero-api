@@ -114,7 +114,7 @@ def update_expenses_in_progress(in_progress_expenses: List[Expense]) -> None:
                     expense.expense_id,
                     'IN_PROGRESS',
                     None,
-                    '{}/workspaces/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL),
+                    '{}/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL),
                     False
                 )
             )
@@ -164,7 +164,7 @@ def update_failed_expenses(failed_expenses: List[Expense], is_mapping_error: boo
                         expense.expense_id,
                         'ERROR',
                         error_type,
-                        '{}/workspaces/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL),
+                        '{}/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL),
                         False
                     )
                 )
@@ -222,7 +222,7 @@ def __handle_post_accounting_export_summary_exception(exception: Exception, work
                             expense_instance.expense_id,
                             'DELETED',
                             None,
-                            '{}/workspaces/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL),
+                            '{}/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL),
                             True
                         )
                     )
