@@ -61,7 +61,6 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         'custom_properties': None
     }
 
-    # For now adding only for PROJECT
     ALLOWED_SOURCE_FIELDS = [
         FyleAttributeEnum.PROJECT,
         FyleAttributeEnum.COST_CENTER,
