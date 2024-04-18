@@ -103,6 +103,9 @@ class XeroConnector:
             '"', ""
         )  # remove double quotes from merchant name
         contact_name = contact_name.replace("&", "")  # remove & merchant name
+        split_contact_name = contact_name.split()   # Split contact name by space
+
+        contact_name = ' '.join(split_contact_name)  # Join contact name by space
 
         contact = self.connection.contacts.search_contact_by_contact_name(contact_name)
 

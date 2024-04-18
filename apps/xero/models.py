@@ -349,6 +349,9 @@ class BankTransaction(models.Model):
 
         if map_merchant_to_contact:
             merchant = expense.vendor if expense.vendor else ""
+            split_merchant = merchant.split()
+
+            merchant = ' '.join(split_merchant)
 
             contact_id = DestinationAttribute.objects.filter(
                 value__iexact=merchant,
