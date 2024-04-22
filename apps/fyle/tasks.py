@@ -4,8 +4,11 @@ from datetime import datetime
 from typing import Dict, List
 
 from django.db import transaction
-from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
-from fyle.platform.exceptions import RetryException
+from fyle.platform.exceptions import (
+    RetryException,
+    InternalServerError,
+    InvalidTokenError as FyleInvalidTokenError
+)
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_accounting_mappings.models import ExpenseAttribute
 
@@ -155,6 +158,14 @@ def async_create_expense_groups(
         task_log.status = TaskLogStatusEnum.FATAL
         task_log.save()
 
+    except InternalServerError:
+        logger.info('Fyle Internal Server Error occured in workspace_id: %s', workspace_id)
+        task_log.detail = {
+            'message': 'Fyle Internal Server Error occured'
+        }
+        task_log.status = 'FAILED'
+        task_log.save()
+
     except Exception:
         error = traceback.format_exc()
         task_log.detail = {"error": error}
@@ -246,6 +257,9 @@ def import_and_export_expenses(report_id: str, org_id: str) -> None:
 
         if len(expense_group_ids):
             export_to_xero(workspace.id, None, expense_group_ids)
+
+    except WorkspaceGeneralSettings.DoesNotExist:
+        logger.info('Configuration does not exist for workspace_id: %s', workspace.id)
 
     except Exception:
         handle_import_exception(task_log)
