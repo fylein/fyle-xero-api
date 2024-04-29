@@ -4,8 +4,11 @@ from apps.workspaces.models import XeroCredentials
 from apps.xero.utils import XeroConnector
 from apps.mappings.exceptions import handle_import_exceptions_v2
 from fyle.platform.exceptions import InternalServerError, InvalidTokenError, WrongParamsError
-from xerosdk.exceptions import InvalidTokenError as XeroInvalidTokenError
-from xerosdk.exceptions import WrongParamsError as XeroWrongParamsError
+from xerosdk.exceptions import (
+    InvalidTokenError as XeroInvalidTokenError,
+    UnsuccessfulAuthentication,
+    WrongParamsError as XeroWrongParamsError
+)
 
 
 def test_handle_import_exceptions(db, create_temp_workspace, add_xero_credentials, add_fyle_credentials):
@@ -94,6 +97,18 @@ def test_handle_import_exceptions(db, create_temp_workspace, add_xero_credential
     assert import_log.status == 'FAILED'
     assert import_log.error_log['task'] == 'Import PROJECT to Fyle and Auto Create Mappings'
     assert import_log.error_log['message'] == 'Invalid Token or Xero credentials does not exist workspace_id - 3'
+    assert import_log.error_log['alert'] == False
+
+    # Exception
+    @handle_import_exceptions_v2
+    def to_be_decoreated(expense_attribute_instance, import_log):
+        raise UnsuccessfulAuthentication('Invalid xero tenant ID')
+
+    to_be_decoreated(project, import_log)
+
+    assert import_log.status == 'FAILED'
+    assert import_log.error_log['task'] == 'Import PROJECT to Fyle and Auto Create Mappings'
+    assert import_log.error_log['message'] == 'Invalid xero tenant ID or xero-tenant-id header missing in workspace_id - 3'
     assert import_log.error_log['alert'] == False
 
     # Exception
