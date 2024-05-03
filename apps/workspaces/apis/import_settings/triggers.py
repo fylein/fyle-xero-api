@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from django.db.models import Q
-from fyle_accounting_mappings.models import MappingSetting
+from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute
 
 from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
@@ -39,6 +39,31 @@ class ImportSettingsTrigger:
             workspace_general_settings_instance=workspace_general_settings_instance,
             mapping_settings=self.__mapping_settings,
         )
+
+    def __unset_auto_mapped_flag(self, current_mapping_settings: List[MappingSetting], new_mappings_settings: List[Dict]):
+        """
+        Set the auto_mapped flag to false for the expense_attributes for the attributes
+        whose mapping is changed.
+        """
+        changed_source_fields = []
+
+        for new_setting in new_mappings_settings:
+            destination_field = new_setting['destination_field']
+            source_field = new_setting['source_field']
+            current_setting = current_mapping_settings.filter(destination_field=destination_field).first()
+            if current_setting and current_setting.source_field != source_field:
+                changed_source_fields.append(source_field)
+
+        ExpenseAttribute.objects.filter(workspace_id=self.__workspace_id, attribute_type__in=changed_source_fields).update(auto_mapped=False)
+
+    def pre_save_mapping_settings(self):
+        """
+        Post save action for mapping settings
+        """
+        mapping_settings = self.__mapping_settings
+
+        current_mapping_settings = MappingSetting.objects.filter(workspace_id=self.__workspace_id).all()
+        self.__unset_auto_mapped_flag(current_mapping_settings, mapping_settings)
 
     def post_save_mapping_settings(
         self, workspace_general_settings_instance: WorkspaceGeneralSettings
