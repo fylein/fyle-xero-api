@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List
 
+from django.conf import settings
 from django.db import models
 from django.db.models import JSONField
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping, MappingSetting
@@ -148,8 +149,10 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
 
     org_id = Workspace.objects.get(id=workspace_id).fyle_org_id
 
+    fyle_url = fyle_credentials.cluster_domain if settings.BRAND_ID == 'fyle' else settings.FYLE_APP_URL
+
     expense_link = "{0}/app/admin/#/enterprise/view_expense/{1}?org_id={2}".format(
-        fyle_credentials.cluster_domain, lineitem.expense_id, org_id
+        fyle_url, lineitem.expense_id, org_id
     )
 
     expense_purpose = (
