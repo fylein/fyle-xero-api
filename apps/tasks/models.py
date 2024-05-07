@@ -88,6 +88,7 @@ class Error(models.Model):
         null=True,
         help_text="Reference to Expense Attribute",
     )
+    repetition_count = models.IntegerField(help_text='repetition count for the error', default=0)
     is_resolved = models.BooleanField(default=False, help_text="Is resolved")
     error_title = models.CharField(max_length=255, help_text="Error title")
     error_detail = models.TextField(help_text="Error detail")
@@ -95,6 +96,14 @@ class Error(models.Model):
         auto_now_add=True, help_text="Created at datetime"
     )
     updated_at = models.DateTimeField(auto_now=True, help_text="Updated at datetime")
+
+    def increase_repetition_count_by_one(self, is_created: bool):
+        """
+        Increase the repetition count by 1.
+        """
+        if not is_created:
+            self.repetition_count += 1
+            self.save()
 
     class Meta:
         db_table = "errors"
