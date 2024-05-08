@@ -72,7 +72,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
                 }
             }
         ]
-        Error.objects.update_or_create(
+        error, created = Error.objects.update_or_create(
             workspace_id=expense_group.workspace_id,
             expense_group=expense_group,
             defaults={
@@ -82,6 +82,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
                 "is_resolved": False,
             },
         )
+        error.increase_repetition_count_by_one(created)
 
     else:
         all_details = []
@@ -109,7 +110,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
                 "Message"
             ]
 
-        Error.objects.update_or_create(
+        error, created = Error.objects.update_or_create(
             workspace_id=expense_group.workspace_id,
             expense_group=expense_group,
             defaults={
@@ -119,6 +120,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
                 "is_resolved": False,
             },
         )
+        error.increase_repetition_count_by_one(created)
 
         task_log.xero_errors = all_details
 

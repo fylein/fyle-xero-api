@@ -497,7 +497,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
             )
 
             if employee_attribute:
-                Error.objects.update_or_create(
+                error, created = Error.objects.update_or_create(
                     workspace_id=expense_group.workspace_id,
                     expense_attribute=employee_attribute,
                     defaults={
@@ -507,6 +507,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                         "is_resolved": False,
                     },
                 )
+                error.increase_repetition_count_by_one(created)
 
     if general_settings.import_tax_codes:
         if not general_mapping:
@@ -568,7 +569,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
             )
 
             if category_attribute:
-                Error.objects.update_or_create(
+                error, created = Error.objects.update_or_create(
                     workspace_id=expense_group.workspace_id,
                     expense_attribute=category_attribute,
                     defaults={
@@ -578,6 +579,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
                         "is_resolved": False,
                     },
                 )
+                error.increase_repetition_count_by_one(created)
 
         row = row + 1
 

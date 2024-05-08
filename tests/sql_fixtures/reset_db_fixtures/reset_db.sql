@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.5 (Debian 15.5-1.pgdg120+1)
+-- Dumped from database version 15.6 (Debian 15.6-1.pgdg120+2)
 -- Dumped by pg_dump version 15.6 (Debian 15.6-1.pgdg120+2)
 
 SET statement_timeout = 0;
@@ -671,7 +671,8 @@ CREATE TABLE public.errors (
     updated_at timestamp with time zone NOT NULL,
     expense_attribute_id integer,
     expense_group_id integer,
-    workspace_id integer NOT NULL
+    workspace_id integer NOT NULL,
+    repetition_count integer NOT NULL
 );
 
 
@@ -720,6 +721,42 @@ CREATE TABLE public.expense_attributes (
 
 
 ALTER TABLE public.expense_attributes OWNER TO postgres;
+
+--
+-- Name: expense_attributes_deletion_cache; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.expense_attributes_deletion_cache (
+    id integer NOT NULL,
+    category_ids character varying(255)[] NOT NULL,
+    project_ids character varying(255)[] NOT NULL,
+    workspace_id integer NOT NULL
+);
+
+
+ALTER TABLE public.expense_attributes_deletion_cache OWNER TO postgres;
+
+--
+-- Name: expense_attributes_deletion_cache_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.expense_attributes_deletion_cache_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.expense_attributes_deletion_cache_id_seq OWNER TO postgres;
+
+--
+-- Name: expense_attributes_deletion_cache_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.expense_attributes_deletion_cache_id_seq OWNED BY public.expense_attributes_deletion_cache.id;
+
 
 --
 -- Name: expense_fields; Type: TABLE; Schema: public; Owner: postgres
@@ -1178,6 +1215,48 @@ ALTER TABLE public.general_mappings_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.general_mappings_id_seq OWNED BY public.general_mappings.id;
+
+
+--
+-- Name: import_logs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.import_logs (
+    id integer NOT NULL,
+    attribute_type character varying(150) NOT NULL,
+    status character varying(255),
+    error_log jsonb NOT NULL,
+    total_batches_count integer NOT NULL,
+    processed_batches_count integer NOT NULL,
+    last_successful_run_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    workspace_id integer NOT NULL
+);
+
+
+ALTER TABLE public.import_logs OWNER TO postgres;
+
+--
+-- Name: import_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.import_logs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.import_logs_id_seq OWNER TO postgres;
+
+--
+-- Name: import_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.import_logs_id_seq OWNED BY public.import_logs.id;
 
 
 --
@@ -1766,6 +1845,13 @@ ALTER TABLE ONLY public.expense_attributes ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: expense_attributes_deletion_cache id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_attributes_deletion_cache ALTER COLUMN id SET DEFAULT nextval('public.expense_attributes_deletion_cache_id_seq'::regclass);
+
+
+--
 -- Name: expense_fields id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1812,6 +1898,13 @@ ALTER TABLE ONLY public.fyle_credentials ALTER COLUMN id SET DEFAULT nextval('pu
 --
 
 ALTER TABLE ONLY public.general_mappings ALTER COLUMN id SET DEFAULT nextval('public.general_mappings_id_seq'::regclass);
+
+
+--
+-- Name: import_logs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.import_logs ALTER COLUMN id SET DEFAULT nextval('public.import_logs_id_seq'::regclass);
 
 
 --
@@ -2086,6 +2179,14 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 150	Can change expense field	38	change_expensefield
 151	Can delete expense field	38	delete_expensefield
 152	Can view expense field	38	view_expensefield
+153	Can add expense attributes deletion cache	39	add_expenseattributesdeletioncache
+154	Can change expense attributes deletion cache	39	change_expenseattributesdeletioncache
+155	Can delete expense attributes deletion cache	39	delete_expenseattributesdeletioncache
+156	Can view expense attributes deletion cache	39	view_expenseattributesdeletioncache
+157	Can add import log	40	add_importlog
+158	Can change import log	40	change_importlog
+159	Can delete import log	40	delete_importlog
+160	Can view import log	40	view_importlog
 \.
 
 
@@ -2366,6 +2467,8 @@ COPY public.django_content_type (id, app_label, model) FROM stdin;
 36	tasks	error
 37	workspaces	lastexportdetail
 38	fyle_accounting_mappings	expensefield
+39	fyle_accounting_mappings	expenseattributesdeletioncache
+40	fyle_integrations_imports	importlog
 \.
 
 
@@ -2519,6 +2622,12 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 143	django_q	0016_schedule_intended_date_kwarg	2024-02-07 11:26:26.046856+00
 144	django_q	0017_task_cluster_alter	2024-02-07 11:26:26.055692+00
 145	fyle	0018_auto_20240213_0450	2024-02-13 04:54:22.357613+00
+146	fyle_accounting_mappings	0023_auto_20230918_1316	2024-05-07 09:15:02.630637+00
+147	fyle_accounting_mappings	0024_auto_20230922_0819	2024-05-07 09:15:02.686018+00
+148	fyle_accounting_mappings	0025_expenseattributesdeletioncache	2024-05-07 09:15:02.720495+00
+149	fyle_integrations_imports	0001_initial	2024-05-07 09:15:02.744843+00
+150	tasks	0009_error_repetition_count	2024-05-07 09:15:02.757657+00
+151	workspaces	0038_alter_workspace_onboarding_state	2024-05-07 09:15:02.787555+00
 \.
 
 
@@ -2598,8 +2707,8 @@ COPY public.employee_mappings (id, created_at, updated_at, destination_card_acco
 -- Data for Name: errors; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.errors (id, type, is_resolved, error_title, error_detail, created_at, updated_at, expense_attribute_id, expense_group_id, workspace_id) FROM stdin;
-18	CATEGORY_MAPPING	t	Software	Category mapping is missing	2022-05-23 13:01:02.210349+00	2022-05-23 13:01:59.787365+00	112	\N	1
+COPY public.errors (id, type, is_resolved, error_title, error_detail, created_at, updated_at, expense_attribute_id, expense_group_id, workspace_id, repetition_count) FROM stdin;
+18	CATEGORY_MAPPING	t	Software	Category mapping is missing	2022-05-23 13:01:02.210349+00	2022-05-23 13:01:59.787365+00	112	\N	1	0
 \.
 
 
@@ -4695,6 +4804,14 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 
 
 --
+-- Data for Name: expense_attributes_deletion_cache; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.expense_attributes_deletion_cache (id, category_ids, project_ids, workspace_id) FROM stdin;
+\.
+
+
+--
 -- Data for Name: expense_fields; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -4780,6 +4897,14 @@ COPY public.fyle_credentials (id, refresh_token, created_at, updated_at, workspa
 
 COPY public.general_mappings (id, bank_account_name, bank_account_id, created_at, updated_at, workspace_id, payment_account_id, payment_account_name, default_tax_code_id, default_tax_code_name) FROM stdin;
 1	Business Bank Account	562555f2-8cde-4ce9-8203-0363922537a4	2022-08-02 20:27:35.368956+00	2022-08-02 20:27:35.368996+00	1	\N	\N	INPUT	Tax on Purchases @8.25%
+\.
+
+
+--
+-- Data for Name: import_logs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.import_logs (id, attribute_type, status, error_log, total_batches_count, processed_batches_count, last_successful_run_at, created_at, updated_at, workspace_id) FROM stdin;
 \.
 
 
@@ -4984,7 +5109,7 @@ SELECT pg_catalog.setval('public.auth_group_permissions_id_seq', 1, false);
 -- Name: auth_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.auth_permission_id_seq', 152, true);
+SELECT pg_catalog.setval('public.auth_permission_id_seq', 160, true);
 
 
 --
@@ -5033,14 +5158,14 @@ SELECT pg_catalog.setval('public.django_admin_log_id_seq', 1, false);
 -- Name: django_content_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_content_type_id_seq', 38, true);
+SELECT pg_catalog.setval('public.django_content_type_id_seq', 40, true);
 
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 145, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 151, true);
 
 
 --
@@ -5069,6 +5194,13 @@ SELECT pg_catalog.setval('public.employee_mappings_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.errors_id_seq', 1, false);
+
+
+--
+-- Name: expense_attributes_deletion_cache_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.expense_attributes_deletion_cache_id_seq', 1, false);
 
 
 --
@@ -5153,6 +5285,13 @@ SELECT pg_catalog.setval('public.fyle_rest_auth_authtokens_id_seq', 1, true);
 --
 
 SELECT pg_catalog.setval('public.general_mappings_id_seq', 1, true);
+
+
+--
+-- Name: import_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.import_logs_id_seq', 1, false);
 
 
 --
@@ -5361,14 +5500,6 @@ ALTER TABLE ONLY public.category_mappings
 
 
 --
--- Name: category_mappings category_mappings_source_category_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.category_mappings
-    ADD CONSTRAINT category_mappings_source_category_id_key UNIQUE (source_category_id);
-
-
---
 -- Name: destination_attributes destination_attributes_destination_id_attribute_d22ab1fe_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5462,6 +5593,22 @@ ALTER TABLE ONLY public.errors
 
 ALTER TABLE ONLY public.errors
     ADD CONSTRAINT errors_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: expense_attributes_deletion_cache expense_attributes_deletion_cache_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_attributes_deletion_cache
+    ADD CONSTRAINT expense_attributes_deletion_cache_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: expense_attributes_deletion_cache expense_attributes_deletion_cache_workspace_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_attributes_deletion_cache
+    ADD CONSTRAINT expense_attributes_deletion_cache_workspace_id_key UNIQUE (workspace_id);
 
 
 --
@@ -5638,6 +5785,22 @@ ALTER TABLE ONLY public.general_mappings
 
 ALTER TABLE ONLY public.general_mappings
     ADD CONSTRAINT general_mappings_workspace_id_key UNIQUE (workspace_id);
+
+
+--
+-- Name: import_logs import_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.import_logs
+    ADD CONSTRAINT import_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: import_logs import_logs_workspace_id_attribute_type_42f69b7b_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.import_logs
+    ADD CONSTRAINT import_logs_workspace_id_attribute_type_42f69b7b_uniq UNIQUE (workspace_id, attribute_type);
 
 
 --
@@ -5888,6 +6051,13 @@ CREATE INDEX category_mappings_destination_expense_head_id_0ed87fbd ON public.ca
 
 
 --
+-- Name: category_mappings_source_category_id_46f19d95; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX category_mappings_source_category_id_46f19d95 ON public.category_mappings USING btree (source_category_id);
+
+
+--
 -- Name: category_mappings_workspace_id_222ea301; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -6060,6 +6230,13 @@ CREATE INDEX fyle_accounting_mappings_mapping_workspace_id_10d6edd3 ON public.ma
 --
 
 CREATE INDEX fyle_accounting_mappings_mappingsetting_workspace_id_c123c088 ON public.mapping_settings USING btree (workspace_id);
+
+
+--
+-- Name: import_logs_workspace_id_e5acf2ff; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX import_logs_workspace_id_e5acf2ff ON public.import_logs USING btree (workspace_id);
 
 
 --
@@ -6331,6 +6508,14 @@ ALTER TABLE ONLY public.errors
 
 
 --
+-- Name: expense_attributes_deletion_cache expense_attributes_d_workspace_id_e00d2384_fk_workspace; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.expense_attributes_deletion_cache
+    ADD CONSTRAINT expense_attributes_d_workspace_id_e00d2384_fk_workspace FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: expense_fields expense_fields_workspace_id_b60af18c_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6432,6 +6617,14 @@ ALTER TABLE ONLY public.auth_tokens
 
 ALTER TABLE ONLY public.general_mappings
     ADD CONSTRAINT general_mappings_workspace_id_19666c5c_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: import_logs import_logs_workspace_id_e5acf2ff_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.import_logs
+    ADD CONSTRAINT import_logs_workspace_id_e5acf2ff_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -6589,3 +6782,4 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
+
