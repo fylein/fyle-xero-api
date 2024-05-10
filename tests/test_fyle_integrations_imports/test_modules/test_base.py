@@ -72,11 +72,11 @@ def test_construct_attributes_filter(db):
 
     filters = base.construct_attributes_filter('COST_CENTER', False,  paginated_destination_attribute_values)
 
-    assert filters == {'active': True, 'attribute_type': 'COST_CENTER', 'workspace_id': 1, 'value__in__iexact': paginated_destination_attribute_values}
+    assert filters == {'active': True, 'attribute_type': 'COST_CENTER', 'workspace_id': 1, 'value__in': paginated_destination_attribute_values}
 
     filters = base.construct_attributes_filter('CUSTOMER', True,  paginated_destination_attribute_values)
 
-    assert filters == {'active': True, 'attribute_type': 'CUSTOMER', 'workspace_id': 1, 'updated_at__gte': sync_after, 'value__in__iexact': paginated_destination_attribute_values}
+    assert filters == {'active': True, 'attribute_type': 'CUSTOMER', 'workspace_id': 1, 'updated_at__gte': sync_after, 'value__in': paginated_destination_attribute_values}
 
 
 def test_expense_attributes_sync_after(db, create_temp_workspace, add_xero_credentials, create_project_mapping):
