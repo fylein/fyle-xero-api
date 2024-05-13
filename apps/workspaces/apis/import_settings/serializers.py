@@ -108,6 +108,14 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
         general_mappings = validated.pop("general_mappings")
         mapping_settings = validated.pop("mapping_settings")
 
+        trigger: ImportSettingsTrigger = ImportSettingsTrigger(
+            workspace_general_settings=workspace_general_settings,
+            mapping_settings=mapping_settings,
+            workspace_id=instance.id,
+        )
+
+        trigger.pre_save_workspace_general_settings(workspace_general_settings)
+
         with transaction.atomic():
             (
                 workspace_general_settings_instance,
@@ -143,12 +151,6 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                         "id"
                     ),
                 },
-            )
-
-            trigger: ImportSettingsTrigger = ImportSettingsTrigger(
-                workspace_general_settings=workspace_general_settings,
-                mapping_settings=mapping_settings,
-                workspace_id=instance.id,
             )
 
             trigger.post_save_workspace_general_settings(

@@ -5,6 +5,7 @@ from fyle_accounting_mappings.models import MappingSetting, ExpenseAttribute
 
 from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
+from fyle_integrations_imports.models import ImportLog
 
 
 class ImportSettingsTrigger:
@@ -21,6 +22,18 @@ class ImportSettingsTrigger:
         self.__workspace_general_settings = workspace_general_settings
         self.__mapping_settings = mapping_settings
         self.__workspace_id = workspace_id
+
+    def pre_save_workspace_general_settings(self, workspace_general_settings):
+        """
+        Pre save action for workspace general settings
+        """
+        current_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=self.__workspace_id).first()
+
+        if current_general_settings and current_general_settings.charts_of_accounts and current_general_settings.charts_of_accounts != workspace_general_settings.get("charts_of_accounts"):
+            import_log = ImportLog.objects.filter(workspace_id=self.__workspace_id, attribute_type='CATEGORY').first()
+            if import_log:
+                import_log.last_successful_run_at = None
+                import_log.save()
 
     def post_save_workspace_general_settings(
         self, workspace_general_settings_instance: WorkspaceGeneralSettings
