@@ -28,7 +28,7 @@ class ImportSettingsTrigger:
         """
         current_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=self.__workspace_id).first()
 
-        if current_general_settings.charts_of_accounts and current_general_settings.charts_of_accounts != workspace_general_settings.get("charts_of_accounts"):
+        if current_general_settings and current_general_settings.charts_of_accounts and current_general_settings.charts_of_accounts != workspace_general_settings.get("charts_of_accounts"):
             ImportLog.objects.filter(workspace_id=self.__workspace_id, attribute_type='CATEGORY').update(last_successful_run_at=None)
 
     def post_save_workspace_general_settings(
