@@ -63,7 +63,7 @@ def test_construct_attributes_filter(db):
     paginated_destination_attribute_values = ['Mobile App Redesign', 'Platform APIs', 'Fyle NetSuite Integration', 'Fyle Sage Intacct Integration', 'Support Taxes', 'T&M Project with Five Tasks', 'Fixed Fee Project with Five Tasks', 'General Overhead', 'General Overhead-Current', 'Youtube proj', 'Integrations', 'Yujiro', 'Pickle']
     base = get_base_class_instance()
 
-    assert base.construct_attributes_filter('PROJECT', False) == {'attribute_type': 'PROJECT', 'workspace_id': 1}
+    assert base.construct_attributes_filter('PROJECT', False) == {'active': True, 'attribute_type': 'PROJECT', 'workspace_id': 1}
 
     date_string = '2023-08-06 12:50:05.875029'
     sync_after = datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S.%f')
@@ -72,11 +72,11 @@ def test_construct_attributes_filter(db):
 
     filters = base.construct_attributes_filter('COST_CENTER', False,  paginated_destination_attribute_values)
 
-    assert filters == {'attribute_type': 'COST_CENTER', 'workspace_id': 1, 'value__in': paginated_destination_attribute_values}
+    assert filters == {'active': True, 'attribute_type': 'COST_CENTER', 'workspace_id': 1, 'value__in': paginated_destination_attribute_values}
 
     filters = base.construct_attributes_filter('CUSTOMER', True,  paginated_destination_attribute_values)
 
-    assert filters == {'attribute_type': 'CUSTOMER', 'workspace_id': 1, 'updated_at__gte': sync_after, 'value__in': paginated_destination_attribute_values}
+    assert filters == {'active': True, 'attribute_type': 'CUSTOMER', 'workspace_id': 1, 'updated_at__gte': sync_after, 'value__in': paginated_destination_attribute_values}
 
 
 def test_expense_attributes_sync_after(db, create_temp_workspace, add_xero_credentials, create_project_mapping):
