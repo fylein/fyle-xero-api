@@ -7,6 +7,7 @@ from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
 from fyle_integrations_imports.models import ImportLog
 
+
 class ImportSettingsTrigger:
     """
     All the post save actions of Import Settings API
