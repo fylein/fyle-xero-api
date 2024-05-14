@@ -143,6 +143,7 @@ class XeroConnector:
                     "display_name": "Tenant",
                     "value": tenant["tenantName"],
                     "destination_id": tenant["tenantId"],
+                    "active": True
                 }
             )
 
