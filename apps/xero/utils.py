@@ -194,6 +194,7 @@ class XeroConnector:
                             "tax_rate": effective_tax_rate,
                             "tax_refs": tax_code["TaxComponents"],
                         },
+                        "active": True
                     }
                 )
 
@@ -386,6 +387,7 @@ class XeroConnector:
                         "display_name": tracking_category["Name"],
                         "value": option["Name"],
                         "destination_id": option["TrackingOptionID"],
+                        "active": True if option["Status"] == "ACTIVE" else False,
                     }
                 )
 
@@ -419,6 +421,7 @@ class XeroConnector:
                     "display_name": "Item",
                     "value": item["Code"],
                     "destination_id": item["ItemID"],
+                    "active": True
                 }
             )
         DestinationAttribute.bulk_create_or_update_destination_attributes(
@@ -438,6 +441,7 @@ class XeroConnector:
                     if "EmailAddress" in contact
                     else None
                 },
+                "active": True
             },
             self.workspace_id,
         )
