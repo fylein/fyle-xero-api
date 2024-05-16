@@ -204,6 +204,8 @@ def create_bill(
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
+    logger.info('Creating Bill for Expense Group %s, current state is %s', expense_group.id, task_log.status)
+
     if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
         task_log.status = TaskLogStatusEnum.IN_PROGRESS
         task_log.save()
@@ -224,6 +226,7 @@ def create_bill(
         )
 
     __validate_expense_group(expense_group)
+    logger.info('Validated Expense Group %s successfully', expense_group.id)
 
     with transaction.atomic():
         bill_object = Bill.create_bill(expense_group)
@@ -233,6 +236,7 @@ def create_bill(
         created_bill = xero_connection.post_bill(
             bill_object, bill_lineitems_objects, general_settings
         )
+        logger.info('Created Bill with Expense Group %s successfully', expense_group.id)
 
         task_log.detail = created_bill
         task_log.bill = bill_object
@@ -246,6 +250,7 @@ def create_bill(
         expense_group.save()
         resolve_errors_for_exported_expense_group(expense_group)
         generate_export_url_and_update_expense(expense_group, 'BILL')
+        logger.info('Updated Expense Group %s successfully', expense_group.id)
 
         # Assign billable expenses to customers
         if general_settings.import_customers:
@@ -358,6 +363,8 @@ def create_bank_transaction(
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
+    logger.info('Creating Bank Transaction for Expense Group %s, current state is %s', expense_group.id, task_log.status)
+
     if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
         task_log.status = TaskLogStatusEnum.IN_PROGRESS
         task_log.save()
@@ -386,6 +393,7 @@ def create_bank_transaction(
         )
 
     __validate_expense_group(expense_group)
+    logger.info('Validated Expense Group %s successfully', expense_group.id)
 
     with transaction.atomic():
         bank_transaction_object = BankTransaction.create_bank_transaction(
@@ -401,6 +409,7 @@ def create_bank_transaction(
             bank_transaction_lineitems_objects,
             general_settings,
         )
+        logger.info('Created Bank Transaction with Expense Group %s successfully', expense_group.id)
 
         task_log.detail = created_bank_transaction
         task_log.bank_transaction = bank_transaction_object
@@ -414,6 +423,7 @@ def create_bank_transaction(
         expense_group.save()
         resolve_errors_for_exported_expense_group(expense_group)
         generate_export_url_and_update_expense(expense_group, 'BANK TRANSACTION')
+        logger.info('Updated Expense Group %s successfully', expense_group.id)
 
         # Assign billable expenses to customers
         if general_settings.import_customers:
@@ -855,3 +865,4 @@ def generate_export_url_and_update_expense(expense_group: ExpenseGroup, export_t
         logger.error('Error while generating export url %s', error)
 
     update_complete_expenses(expense_group.expenses.all(), url)
+    post_accounting_export_summary(workspace.fyle_org_id, workspace.id, expense_group.fund_source)
