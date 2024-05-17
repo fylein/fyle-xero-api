@@ -118,12 +118,59 @@ def load_attachments(
         )
 
 
+def get_employee_expense_attribute(value: str, workspace_id: int) -> ExpenseAttribute:
+    """
+    Get employee expense attribute
+    :param value: value
+    :param workspace_id: workspace id
+    """
+    return ExpenseAttribute.objects.filter(
+        attribute_type='EMPLOYEE',
+        value=value,
+        workspace_id=workspace_id
+    ).first()
+
+
+def sync_inactive_employee(expense_group: ExpenseGroup) -> ExpenseAttribute:
+    fyle_credentials = FyleCredential.objects.get(workspace_id=expense_group.workspace_id)
+    platform = PlatformConnector(fyle_credentials=fyle_credentials)
+    fyle_employee = platform.employees.get_employee_by_email(expense_group.description.get('employee_email'))
+    if len(fyle_employee):
+        fyle_employee = fyle_employee[0]
+        attribute = {
+            'attribute_type': 'EMPLOYEE',
+            'display_name': 'Employee',
+            'value': fyle_employee['user']['email'],
+            'source_id': fyle_employee['id'],
+            'active': True if fyle_employee['is_enabled'] and fyle_employee['has_accepted_invite'] else False,
+            'detail': {
+                'user_id': fyle_employee['user_id'],
+                'employee_code': fyle_employee['code'],
+                'full_name': fyle_employee['user']['full_name'],
+                'location': fyle_employee['location'],
+                'department': fyle_employee['department']['name'] if fyle_employee['department'] else None,
+                'department_id': fyle_employee['department_id'],
+                'department_code': fyle_employee['department']['code'] if fyle_employee['department'] else None
+            }
+        }
+        ExpenseAttribute.bulk_create_or_update_expense_attributes([attribute], 'EMPLOYEE', expense_group.workspace_id, True)
+        return get_employee_expense_attribute(expense_group.description.get('employee_email'), expense_group.workspace_id)
+
+    return None
+
+
 def create_or_update_employee_mapping(
     expense_group: ExpenseGroup,
     xero_connection: XeroConnector,
     auto_map_employees_preference: str,
 ):
     try:
+        employee = get_employee_expense_attribute(expense_group.description.get('employee_email'), expense_group.workspace_id)
+
+        if not employee:
+            # Sync inactive employee and gracefully handle export failure
+            employee = sync_inactive_employee(expense_group)
+
         Mapping.objects.get(
             destination_type="CONTACT",
             source_type=FyleAttributeEnum.EMPLOYEE,
