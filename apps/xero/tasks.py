@@ -169,7 +169,7 @@ def create_or_update_employee_mapping(
 
         if not employee:
             # Sync inactive employee and gracefully handle export failure
-            employee = sync_inactive_employee(expense_group)
+            sync_inactive_employee(expense_group)
 
         Mapping.objects.get(
             destination_type="CONTACT",
