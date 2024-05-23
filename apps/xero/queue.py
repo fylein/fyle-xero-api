@@ -4,7 +4,7 @@ from typing import List
 from django.db.models import Q
 from django_q.models import Schedule
 from django_q.tasks import Chain
-from xerosdk.exceptions import UnsuccessfulAuthentication
+from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
 
 from apps.fyle.models import Expense, ExpenseGroup
 from apps.mappings.models import GeneralMapping
@@ -155,7 +155,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
                 xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
                 __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
-            except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
+            except (UnsuccessfulAuthentication, InvalidGrant, XeroCredentials.DoesNotExist):
                 xero_connection = None
                 for task in chain_tasks:
                     task_log = TaskLog.objects.get(id=task['task_log_id'])
@@ -223,7 +223,7 @@ def schedule_bank_transaction_creation(
                 xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
                 __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, fund_source)
-            except (UnsuccessfulAuthentication, XeroCredentials.DoesNotExist):
+            except (UnsuccessfulAuthentication, InvalidGrant, XeroCredentials.DoesNotExist):
                 xero_connection = None
                 for task in chain_tasks:
                     task_log = TaskLog.objects.get(id=task['task_log_id'])
