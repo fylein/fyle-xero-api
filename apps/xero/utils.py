@@ -575,7 +575,6 @@ class XeroConnector:
             "Type": "ACCPAY",
             "Contact": {"ContactID": bill.contact_id},
             "Url": f'{settings.FYLE_APP_URL}/app/admin/#/view_expense/{bill_lineitems[0].expense.expense_id}?org_id={workspace.fyle_org_id}' if settings.BRAND_ID == 'fyle' else None,
-,
             "LineAmountTypes": "Exclusive"
             if general_settings.import_tax_codes
             else "NoTax",
