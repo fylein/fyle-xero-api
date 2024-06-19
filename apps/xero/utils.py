@@ -578,7 +578,7 @@ class XeroConnector:
                 settings.FYLE_APP_URL,
                 bill_lineitems[0].expense.report_id,
                 workspace.fyle_org_id,
-            ),
+            ) if settings.BRAND_ID == 'fyle' else None,
             "LineAmountTypes": "Exclusive"
             if general_settings.import_tax_codes
             else "NoTax",
@@ -703,7 +703,7 @@ class XeroConnector:
                 settings.FYLE_APP_URL,
                 bank_transaction_lineitems[0].expense.expense_id,
                 workspace.fyle_org_id,
-            ),
+            ) if settings.BRAND_ID == 'fyle' else None,
             "LineAmountTypes": "Exclusive"
             if general_settings.import_tax_codes
             else "NoTax",
