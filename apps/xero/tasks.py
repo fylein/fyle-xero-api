@@ -791,6 +791,7 @@ def process_reimbursements(workspace_id):
     ).all()
 
     reimbursement_ids = []
+    expenses_paid_on_fyle = []
 
     if reimbursements:
         for reimbursement in reimbursements:
@@ -805,6 +806,7 @@ def process_reimbursements(workspace_id):
 
             if all_expense_paid:
                 reimbursement_ids.append(reimbursement.reimbursement_id)
+                expenses_paid_on_fyle.extend(expenses)
 
     if reimbursement_ids:
         reimbursements_list = []
@@ -814,6 +816,10 @@ def process_reimbursements(workspace_id):
 
         platform.reimbursements.bulk_post_reimbursements(reimbursements_list)
         platform.reimbursements.sync()
+
+        for expense in expenses_paid_on_fyle:
+            expense.paid_on_fyle = True
+            expense.save()
 
 
 def create_missing_currency(workspace_id: int):
