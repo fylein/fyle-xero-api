@@ -3,6 +3,12 @@ Django Rest Framework API for Fyle Xero Integration
 
 ### Setup
 
+* Add and update the `fyle_integrations_imports` submodule
+    ```bash
+    $ git submodule init
+    $ git submodule update
+    ```
+
 * Download and install Docker desktop for Mac from [here.](https://www.docker.com/products/docker-desktop)
 
 * If you're using a linux machine, please download docker according to the distrubution you're on.
