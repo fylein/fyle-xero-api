@@ -815,6 +815,7 @@ def process_reimbursements(workspace_id):
             }
             logger.exception(error)
 
+
 def create_missing_currency(workspace_id: int):
     """
     Create missing currency in Xero
