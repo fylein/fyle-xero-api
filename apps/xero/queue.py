@@ -3,7 +3,7 @@ from typing import List
 
 from django.db.models import Q
 from django_q.models import Schedule
-from django_q.tasks import Chain
+from django_q.tasks import async_task
 from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
 
 from apps.fyle.models import Expense, ExpenseGroup
@@ -94,16 +94,14 @@ def __create_chain_and_run(fyle_credentials: FyleCredential, xero_connection, in
     :param fund_source: Fund source
     :return: None
     """
-    chain = Chain()
-    chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials, True)
+    async_task("apps.fyle.tasks.sync_dimensions", fyle_credentials, True)
 
-    chain.append('apps.xero.tasks.update_expense_and_post_summary', in_progress_expenses, workspace_id, fund_source)
+    async_task('apps.xero.tasks.update_expense_and_post_summary', in_progress_expenses, workspace_id, fund_source)
 
     for task in chain_tasks:
-        chain.append(task['target'], task['expense_group_id'], task['task_log_id'], xero_connection, task['last_export'])
+        async_task(task['target'], task['expense_group_id'], task['task_log_id'], xero_connection, task['last_export'])
 
-    chain.append('apps.fyle.tasks.post_accounting_export_summary', fyle_credentials.workspace.fyle_org_id, workspace_id, fund_source, True)
-    chain.run()
+    async_task('apps.fyle.tasks.post_accounting_export_summary', fyle_credentials.workspace.fyle_org_id, workspace_id, fund_source, True)
 
 
 def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str) -> list:
