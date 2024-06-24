@@ -1,6 +1,6 @@
 import logging
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from time import sleep
 from typing import List
 
@@ -783,37 +783,37 @@ def check_xero_object_status(workspace_id):
 def process_reimbursements(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
-    platform = PlatformConnector(fyle_credentials)
-    platform.reimbursements.sync()
+    platform = PlatformConnector(fyle_credentials=fyle_credentials)
 
-    reimbursements = Reimbursement.objects.filter(
-        state=PlatformExpensesEnum.REIMBURSEMENT_PENDING, workspace_id=workspace_id
-    ).all()
+    expenses_to_be_marked = []
+    payloads = []
 
-    reimbursement_ids = []
+    report_ids = Expense.objects.filter(fund_source='PERSONAL', paid_on_fyle=False, workspace_id=workspace_id).values_list('report_id').distinct()
+    for report_id in report_ids:
+        report_id = report_id[0]
+        expenses = Expense.objects.filter(fund_source='PERSONAL', report_id=report_id, workspace_id=workspace_id).all()
+        paid_expenses = expenses.filter(paid_on_xero=True)
 
-    if reimbursements:
-        for reimbursement in reimbursements:
-            expenses = Expense.objects.filter(
-                settlement_id=reimbursement.settlement_id, fund_source=FundSourceEnum.PERSONAL
-            ).all()
-            paid_expenses = expenses.filter(paid_on_xero=True)
+        all_expense_paid = False
+        if len(expenses):
+            all_expense_paid = len(expenses) == len(paid_expenses)
 
-            all_expense_paid = False
-            if len(expenses):
-                all_expense_paid = len(expenses) == len(paid_expenses)
+        if all_expense_paid:
+            payloads.append({'id': report_id, 'paid_notify_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')})
+            expenses_to_be_marked.extend(paid_expenses)
 
-            if all_expense_paid:
-                reimbursement_ids.append(reimbursement.reimbursement_id)
-
-    if reimbursement_ids:
-        reimbursements_list = []
-        for reimbursement_id in reimbursement_ids:
-            reimbursement_object = {"id": reimbursement_id}
-            reimbursements_list.append(reimbursement_object)
-
-        platform.reimbursements.bulk_post_reimbursements(reimbursements_list)
-        platform.reimbursements.sync()
+    if payloads:
+        try:
+            platform.reports.bulk_mark_as_paid(payloads)
+            if expenses_to_be_marked:
+                expense_ids_to_mark = [expense.id for expense in expenses_to_be_marked]
+                Expense.objects.filter(id__in=expense_ids_to_mark).update(paid_on_fyle=True)
+        except Exception as error:
+            error = traceback.format_exc()
+            error = {
+                'error': error
+            }
+            logger.exception(error)
 
 
 def create_missing_currency(workspace_id: int):

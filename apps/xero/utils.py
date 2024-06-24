@@ -574,11 +574,7 @@ class XeroConnector:
         bill_payload = {
             "Type": "ACCPAY",
             "Contact": {"ContactID": bill.contact_id},
-            "Url": "{}/app/admin/#/reports/{}?org_id={}".format(
-                settings.FYLE_APP_URL,
-                bill_lineitems[0].expense.report_id,
-                workspace.fyle_org_id,
-            ),
+            "Url": f'{settings.FYLE_APP_URL}/app/admin/#/view_expense/{bill_lineitems[0].expense.expense_id}?org_id={workspace.fyle_org_id}' if settings.BRAND_ID == 'fyle' else None,
             "LineAmountTypes": "Exclusive"
             if general_settings.import_tax_codes
             else "NoTax",
@@ -699,11 +695,7 @@ class XeroConnector:
             "Type": "SPEND",
             "Contact": {"ContactID": bank_transaction.contact_id},
             "BankAccount": {"AccountID": bank_transaction.bank_account_code},
-            "Url": "{}/app/admin/#/view_expense/{}?org_id={}".format(
-                settings.FYLE_APP_URL,
-                bank_transaction_lineitems[0].expense.expense_id,
-                workspace.fyle_org_id,
-            ),
+            "Url": f'{settings.FYLE_APP_URL}/app/admin/#/view_expense/{bank_transaction_lineitems[0].expense.expense_id}?org_id={workspace.fyle_org_id}' if settings.BRAND_ID == 'fyle' else None,
             "LineAmountTypes": "Exclusive"
             if general_settings.import_tax_codes
             else "NoTax",
