@@ -815,7 +815,7 @@ def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, workspace_i
     except Exception as e:
         error = traceback.format_exc()
         target_message = "Report is not in APPROVED or PAYMENT_PROCESSING State"
-        error_response = json.loads(e.response)
+        error_response = e.response
         to_remove = set()
 
         for item in error_response.get('data', []):
