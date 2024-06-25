@@ -812,10 +812,10 @@ def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, workspace_i
         logger.info('Marking reports paid on fyle for report ids - %s', reports_to_be_marked)
         platform.reports.bulk_mark_as_paid(payloads)
         Expense.objects.filter(report_id__in=list(reports_to_be_marked), workspace_id=workspace_id, paid_on_fyle=False).update(paid_on_fyle=True)
-    except Exception as error:
+    except Exception as e:
         error = traceback.format_exc()
         target_message = "Report is not in APPROVED or PAYMENT_PROCESSING State"
-        error_response = json.loads(error.response)
+        error_response = json.loads(e.response)
         to_remove = set()
 
         for item in error_response.get('data', []):
