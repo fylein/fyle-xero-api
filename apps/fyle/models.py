@@ -145,6 +145,7 @@ class Expense(models.Model):
     paid_on_xero = models.BooleanField(
         help_text="Expense Payment status on Xero", default=False
     )
+    paid_on_fyle = models.BooleanField(help_text="Expense Payment status on Fyle", default=False)
     tax_amount = models.FloatField(null=True, help_text="Tax Amount")
     tax_group_id = models.CharField(null=True, max_length=255, help_text="Tax Group ID")
     accounting_export_summary = JSONField(default=dict)
@@ -182,7 +183,6 @@ class Expense(models.Model):
                         "currency": expense["currency"],
                         "foreign_amount": expense["foreign_amount"],
                         "foreign_currency": expense["foreign_currency"],
-                        "settlement_id": expense["settlement_id"],
                         "reimbursable": expense["reimbursable"],
                         "state": expense["state"],
                         "vendor": expense["vendor"][:250]
