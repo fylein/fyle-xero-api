@@ -805,7 +805,8 @@ def process_reimbursements(workspace_id):
     if payloads:
         mark_paid_on_fyle(platform, payloads, reports_to_be_marked)
 
-def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked ,retry_num=10):
+
+def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, retry_num=10):
     try:
         logger.info('Marking reports paid on fyle for report ids - %s', reports_to_be_marked)
         platform.reports.bulk_mark_as_paid(payloads)
@@ -820,13 +821,14 @@ def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked ,retry_num=1
                 del payloads[item['key']]
                 reports_to_be_marked.remove(item['key'])
                 if retry_num > 0:
-                    mark_paid_on_fyle(platform, payloads, reports_to_be_marked, retry_num-1)
+                    mark_paid_on_fyle(platform, payloads, reports_to_be_marked, retry_num - 1)
                 else:
                     logger.info('Retry limit reached. Failed to process payloads - %s:', reports_to_be_marked)
         error = {
             'error': error
         }
         logger.exception(error)
+
 
 def create_missing_currency(workspace_id: int):
     """
