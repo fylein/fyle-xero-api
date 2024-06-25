@@ -1,3 +1,4 @@
+import json
 import logging
 import traceback
 from datetime import datetime, timezone
@@ -814,7 +815,7 @@ def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, workspace_i
     except Exception as error:
         error = traceback.format_exc()
         target_message = "Report is not in APPROVED or PAYMENT_PROCESSING State"
-        error_response = error.response.json()
+        error_response = json.loads(error.response)
         to_remove = set()
 
         for item in error_response.get('data', []):
