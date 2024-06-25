@@ -819,7 +819,7 @@ def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, workspace_i
 
         for item in error_response.get('data', []):
             if target_message in item.get('message', ''):
-                Expense.objects.filter(report_id=item['key'], workspace_id=workspace_id).update(paid_on_fyle=True)
+                Expense.objects.filter(report_id=item['key'], workspace_id=workspace_id, paid_on_fyle=False).update(paid_on_fyle=True)
                 to_remove.add(item['key'])
 
         for report_id in to_remove:
