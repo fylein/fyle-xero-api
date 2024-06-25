@@ -821,7 +821,7 @@ def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, workspace_i
             if target_message in item.get('message', ''):
                 Expense.objects.filter(report_id=item['key'], workspace_id=workspace_id).update(paid_on_fyle=True)
                 to_remove.add(item['key'])
-        
+
         for report_id in to_remove:
             payloads = [payload for payload in payloads if payload['id'] != report_id]
             reports_to_be_marked.remove(report_id)
@@ -830,7 +830,7 @@ def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, workspace_i
             retry_num -= 1
             logger.info('Retrying to mark reports paid on fyle, retry_num=%d', retry_num)
             mark_paid_on_fyle(platform, payloads, reports_to_be_marked, retry_num)
-        
+
         else:
             logger.info('Retry limit reached or no payloads left. Failed to process payloads - %s:', reports_to_be_marked)
 
@@ -838,6 +838,7 @@ def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, workspace_i
             'error': error
         }
         logger.exception(error)
+
 
 def create_missing_currency(workspace_id: int):
     """
