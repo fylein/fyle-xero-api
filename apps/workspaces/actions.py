@@ -64,8 +64,6 @@ def post_workspace(access_token, request):
             cluster_domain=cluster_domain,
         )
 
-        async_task('apps.workspaces.tasks.async_create_admin_subcriptions', workspace.id)
-
         async_task(
             "apps.workspaces.tasks.async_add_admins_to_workspace",
             workspace.id,
