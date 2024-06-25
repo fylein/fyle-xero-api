@@ -785,7 +785,7 @@ def process_reimbursements(workspace_id):
 
     platform = PlatformConnector(fyle_credentials=fyle_credentials)
 
-    expenses_to_be_marked = []
+    reports_to_be_marked = set()
     payloads = []
 
     report_ids = Expense.objects.filter(fund_source='PERSONAL', paid_on_fyle=False, workspace_id=workspace_id).values_list('report_id').distinct()
@@ -800,21 +800,33 @@ def process_reimbursements(workspace_id):
 
         if all_expense_paid:
             payloads.append({'id': report_id, 'paid_notify_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')})
-            expenses_to_be_marked.extend(paid_expenses)
+            reports_to_be_marked.add(report_id)
 
     if payloads:
-        try:
-            platform.reports.bulk_mark_as_paid(payloads)
-            if expenses_to_be_marked:
-                expense_ids_to_mark = [expense.id for expense in expenses_to_be_marked]
-                Expense.objects.filter(id__in=expense_ids_to_mark).update(paid_on_fyle=True)
-        except Exception as error:
-            error = traceback.format_exc()
-            error = {
-                'error': error
-            }
-            logger.exception(error)
+        mark_paid_on_fyle(platform, payloads, reports_to_be_marked)
 
+def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked ,retry_num=10):
+    try:
+        logger.info('Marking reports paid on fyle for report ids - %s', reports_to_be_marked)
+        platform.reports.bulk_mark_as_paid(payloads)
+        Expense.objects.filter(report_id__in=list(reports_to_be_marked), paid_on_fyle=False).update(paid_on_fyle=True)
+    except Exception as error:
+        error = traceback.format_exc()
+        target_message = "Report is not in APPROVED or PAYMENT_PROCESSING State"
+        error_response = error.response.json()
+        for item in error_response.get('data', []):
+            if target_message in item.get('message', ''):
+                Expense.objects.filter(report_id=item['key']).update(paid_on_fyle=True)
+                del payloads[item['key']]
+                reports_to_be_marked.remove(item['key'])
+                if retry_num > 0:
+                    mark_paid_on_fyle(platform, payloads, reports_to_be_marked, retry_num-1)
+                else:
+                    logger.info('Retry limit reached. Failed to process payloads - %s:', reports_to_be_marked)
+        error = {
+            'error': error
+        }
+        logger.exception(error)
 
 def create_missing_currency(workspace_id: int):
     """
