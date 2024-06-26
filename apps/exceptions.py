@@ -106,7 +106,7 @@ def handle_view_exceptions():
                 logger.exception(e)
                 return Response(
                     {"message": e.detail},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             except Exception as exception:
