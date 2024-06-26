@@ -2,6 +2,7 @@ import logging
 
 from rest_framework.response import Response
 from rest_framework.views import status
+from rest_framework.exceptions import ValidationError
 from xerosdk.exceptions import (
     InternalServerError,
     InvalidClientError,
@@ -99,6 +100,13 @@ def handle_view_exceptions():
                 return Response(
                     {"message": "Internal server error"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            except ValidationError as e:
+                logger.exception(e)
+                return Response(
+                    {"message": e.detail},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             except Exception as exception:
