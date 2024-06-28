@@ -665,6 +665,8 @@ def test_create_payment(mocker, db):
         return_value=fyle_data["get_all_reimbursements"],
     )
 
+    mocker.patch('fyle_integrations_platform_connector.apis.Expenses.get', return_value=data['expense'])
+
     bills = Bill.objects.all()
     expenses = []
 
@@ -710,6 +712,8 @@ def test_create_payment_exceptions(mocker, db):
         "fyle.platform.apis.v1beta.admin.Reimbursements.list_all",
         return_value=fyle_data["get_all_reimbursements"],
     )
+
+    mocker.patch('fyle_integrations_platform_connector.apis.Expenses.get', return_value=data['expense'])
 
     bills = Bill.objects.all()
     expenses = []
