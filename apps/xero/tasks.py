@@ -5,13 +5,14 @@ from time import sleep
 from typing import List
 
 from django.db import transaction
+from apps.fyle.helpers import get_filter_credit_expenses
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
 from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk.exceptions import UnsuccessfulAuthentication, WrongParamsError
 
 from apps.fyle.actions import update_complete_expenses, update_expenses_in_progress
-from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum, PlatformExpensesEnum
-from apps.fyle.models import Expense, ExpenseGroup, Reimbursement
+from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum
+from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.tasks import post_accounting_export_summary
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
@@ -644,18 +645,27 @@ def __validate_expense_group(expense_group: ExpenseGroup):
         raise BulkError("Mappings are missing", bulk_errors)
 
 
-def check_expenses_reimbursement_status(expenses):
-    all_expenses_paid = True
+def check_expenses_reimbursement_status(expenses, workspace_id, platform, filter_credit_expenses):
 
-    for expense in expenses:
-        reimbursement = Reimbursement.objects.filter(
-            settlement_id=expense.settlement_id
-        ).first()
+    if expenses.first().paid_on_fyle:
+        return True
 
-        if reimbursement.state != PlatformExpensesEnum.REIMBURSEMENT_COMPLETE:
-            all_expenses_paid = False
+    report_id = expenses.first().report_id
 
-    return all_expenses_paid
+    expenses = platform.expenses.get(
+        source_account_type=['PERSONAL_CASH_ACCOUNT'],
+        filter_credit_expenses=filter_credit_expenses,
+        report_id=report_id
+    )
+
+    is_paid = False
+    if expenses:
+        is_paid = expenses[0]['state'] == 'PAID'
+
+    if is_paid:
+        Expense.objects.filter(workspace_id=workspace_id, report_id=report_id, paid_on_fyle=False).update(paid_on_fyle=True)
+
+    return is_paid
 
 
 @handle_xero_exceptions(payment=True)
@@ -693,7 +703,8 @@ def create_payment(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
     platform = PlatformConnector(fyle_credentials)
-    platform.reimbursements.sync()
+    expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
+    filter_credit_expenses = get_filter_credit_expenses(expense_group_settings=expense_group_settings)
 
     bills: List[Bill] = Bill.objects.filter(
         payment_synced=False,
@@ -707,7 +718,7 @@ def create_payment(workspace_id):
 
     for bill in bills:
         expense_group_reimbursement_status = check_expenses_reimbursement_status(
-            bill.expense_group.expenses.all()
+            bill.expense_group.expenses.all(), workspace_id=workspace_id, platform=platform, filter_credit_expenses=filter_credit_expenses
         )
 
         if expense_group_reimbursement_status:
