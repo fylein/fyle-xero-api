@@ -165,13 +165,16 @@ class Expense(models.Model):
 
         for expense in expenses:
             cutoff_date = _format_date("2021-08-01T00:00:00.000Z")
-            expense_created_at = _format_date(expense["expense_created_at"])
+            if expense["expense_created_at"]:
+                expense_created_at = _format_date(expense["expense_created_at"])
 
             expense_data_to_append = None
             if not skip_update:
                 expense_data_to_append = {
                     'claim_number': expense['claim_number'],
-                    'approved_at': expense['approved_at']
+                    'approved_at': expense['approved_at'],
+                    "expense_created_at": expense["expense_created_at"],
+                    "expense_updated_at": expense["expense_updated_at"]
                 }
 
             defaults = {
@@ -198,8 +201,6 @@ class Expense(models.Model):
                 "file_ids": expense["file_ids"],
                 "spent_at": expense["spent_at"],
                 "posted_at": expense["posted_at"],
-                "expense_created_at": expense["expense_created_at"],
-                "expense_updated_at": expense["expense_updated_at"],
                 "fund_source": SOURCE_ACCOUNT_MAP[
                     expense["source_account_type"]
                 ],
@@ -218,7 +219,7 @@ class Expense(models.Model):
             if expense_data_to_append:
                 defaults.update(expense_data_to_append)
 
-            if expense_created_at > cutoff_date:
+            if skip_update or expense_created_at > cutoff_date:
                 expense_object, _ = Expense.objects.update_or_create(
                     expense_id=expense["id"],
                     defaults=defaults
