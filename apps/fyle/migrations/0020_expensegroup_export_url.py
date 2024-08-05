@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='expensegroup',
             name='export_url',
-            field=models.CharField(help_text='Netsuite URL for the exported expenses', max_length=255, null=True),
+            field=models.CharField(help_text='Xero URL for the exported expenses', max_length=255, null=True),
         ),
     ]
