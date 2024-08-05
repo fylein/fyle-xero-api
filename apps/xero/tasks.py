@@ -5,13 +5,13 @@ from time import sleep
 from typing import List
 
 from django.db import transaction
-from apps.fyle.helpers import get_filter_credit_expenses
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
 from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk.exceptions import UnsuccessfulAuthentication, WrongParamsError
 
 from apps.fyle.actions import update_complete_expenses, update_expenses_in_progress
 from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum
+from apps.fyle.helpers import get_filter_credit_expenses
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.tasks import post_accounting_export_summary
 from apps.mappings.models import GeneralMapping, TenantMapping
@@ -946,6 +946,9 @@ def generate_export_url_and_update_expense(expense_group: ExpenseGroup, export_t
         # Defaulting it to Intacct app url, worst case scenario if we're not able to parse it properly
         url = 'https://go.xero.com'
         logger.error('Error while generating export url %s', error)
+
+    expense_group.export_url = url
+    expense_group.save()
 
     update_complete_expenses(expense_group.expenses.all(), url)
     post_accounting_export_summary(workspace.fyle_org_id, workspace.id, expense_group.fund_source)
