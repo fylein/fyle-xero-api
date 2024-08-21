@@ -3,15 +3,17 @@ from rest_framework.response import Response
 from rest_framework.views import status
 
 from apps.exceptions import handle_view_exceptions
-from apps.fyle.actions import exportable_expense_group, get_expense_field, refresh_fyle_dimension, sync_fyle_dimension
+from apps.fyle.actions import exportable_expense_group, get_expense_field
 from apps.fyle.helpers import ExpenseGroupSearchFilter
 from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.queue import async_import_and_export_expenses
 from apps.fyle.serializers import ExpenseFieldSerializer, ExpenseGroupSerializer, ExpenseGroupSettingsSerializer
 from apps.fyle.tasks import async_create_expense_groups, get_task_log_and_fund_source
+from apps.workspaces.models import FyleCredential, Workspace
 from fyle_xero_api.utils import LookupFieldMixin
 
 from django_filters.rest_framework import DjangoFilterBackend
+from django_q.tasks import async_task
 
 
 class ExpenseGroupView(LookupFieldMixin, generics.ListCreateAPIView):
@@ -73,7 +75,11 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
         Sync Data From Fyle
         """
 
-        sync_fyle_dimension(workspace_id=kwargs["workspace_id"])
+        # Check for a valid workspace and fyle creds and respond with 400 if not found
+        Workspace.objects.get(id=kwargs['workspace_id'])
+        FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
+
+        async_task('apps.fyle.actions.sync_fyle_dimension', kwargs['workspace_id'])
 
         return Response(status=status.HTTP_200_OK)
 
@@ -89,7 +95,11 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         Sync data from Fyle
         """
 
-        refresh_fyle_dimension(workspace_id=kwargs["workspace_id"])
+        # Check for a valid workspace and fyle creds and respond with 400 if not found
+        Workspace.objects.get(id=kwargs['workspace_id'])
+        FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
+
+        async_task('apps.fyle.actions.refresh_fyle_dimension', kwargs['workspace_id'])
 
         return Response(status=status.HTTP_200_OK)
 
