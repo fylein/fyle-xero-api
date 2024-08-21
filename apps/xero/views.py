@@ -1,5 +1,7 @@
 from django.db.models import Q
+from apps.workspaces.models import Workspace, XeroCredentials
 from django_filters.rest_framework import DjangoFilterBackend
+from django_q.tasks import async_task
 from fyle_accounting_mappings.models import DestinationAttribute
 from fyle_accounting_mappings.serializers import DestinationAttributeSerializer
 from rest_framework import generics
@@ -7,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import status
 
 from apps.exceptions import handle_view_exceptions
-from apps.xero.actions import get_xero_connector, refersh_xero_dimension, sync_dimensions, sync_tenant
+from apps.xero.actions import get_xero_connector, sync_tenant
 from apps.xero.serializers import XeroFieldSerializer
 from fyle_xero_api.utils import LookupFieldMixin
 
@@ -82,7 +84,11 @@ class SyncXeroDimensionView(generics.ListCreateAPIView):
         Sync Data From Xero
         """
 
-        sync_dimensions(workspace_id=self.kwargs["workspace_id"])
+        # Check for a valid workspace and fyle creds and respond with 400 if not found
+        Workspace.objects.get(id=kwargs['workspace_id'])
+        XeroCredentials.get_active_xero_credentials(kwargs['workspace_id'])
+
+        async_task('apps.xero.actions.sync_dimensions', kwargs['workspace_id'])
 
         return Response(status=status.HTTP_200_OK)
 
@@ -98,7 +104,11 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
         Sync data from Xero
         """
 
-        refersh_xero_dimension(workspace_id=self.kwargs["workspace_id"])
+        # Check for a valid workspace and fyle creds and respond with 400 if not found
+        Workspace.objects.get(id=kwargs['workspace_id'])
+        XeroCredentials.get_active_xero_credentials(kwargs['workspace_id'])
+
+        async_task('apps.xero.actions.refersh_xero_dimension', kwargs['workspace_id'])
 
         return Response(status=status.HTTP_200_OK)
 
