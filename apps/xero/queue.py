@@ -17,6 +17,7 @@ from apps.xero.utils import XeroConnector
 
 logger = logging.getLogger(__name__)
 
+
 def validate_failing_export(is_auto_export: bool, interval_hours: int, error: Error):
     """
     Validate failing export
@@ -227,7 +228,7 @@ def schedule_bank_transaction_creation(
             if skip_export:
                 logger.info('Skipping expense group %s as it has %s errors', expense_group.id, error.repetition_count)
                 continue
-            
+
             task_log, _ = TaskLog.objects.get_or_create(
                 workspace_id=expense_group.workspace_id,
                 expense_group=expense_group,

@@ -1053,7 +1053,7 @@ def test_skipping_schedule_bills_creation(db):
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
     assert task_log.type == 'FETCHING_EXPENSES'
-    
+
     Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
 
     schedule_bills_creation(
@@ -1096,7 +1096,7 @@ def test_skipping_schedule_bank_transaction_creation(db):
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
     assert task_log.type == 'FETCHING_EXPENSES'
-    
+
     Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
 
     schedule_bank_transaction_creation(
