@@ -16,7 +16,7 @@ from apps.xero.utils import XeroConnector
 
 
 logger = logging.getLogger(__name__)
-
+logger.level = logging.INFO
 
 def validate_failing_export(is_auto_export: bool, interval_hours: int, error: Error):
     """
