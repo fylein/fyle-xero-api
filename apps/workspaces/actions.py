@@ -27,6 +27,7 @@ from apps.xero.queue import schedule_bank_transaction_creation, schedule_bills_c
 from apps.xero.utils import XeroConnector
 
 logger = logging.getLogger(__name__)
+logger.level = logging.INFO
 
 
 def post_workspace(access_token, request):
