@@ -216,8 +216,6 @@ def schedule_bank_transaction_creation(
             exported_at__isnull=True,
         ).all()
 
-        print(len(expense_groups))
-
         errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
 
         chain_tasks = []
@@ -235,13 +233,11 @@ def schedule_bank_transaction_creation(
                 expense_group=expense_group,
                 defaults={"status": TaskLogStatusEnum.ENQUEUED, "type": TaskLogTypeEnum.CREATING_BANK_TRANSACTION},
             )
-            print('task_log', task_log.__dict__)
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
                 task_log.type = TaskLogTypeEnum.CREATING_BANK_TRANSACTION
                 task_log.status = TaskLogStatusEnum.ENQUEUED
                 task_log.save()
 
-            print('task_log', task_log.__dict__)
             last_export = False
             if expense_groups.count() == index + 1:
                 last_export = True
