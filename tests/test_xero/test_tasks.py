@@ -9,7 +9,7 @@ from xerosdk.exceptions import InvalidGrant, NoPrivilegeError, RateLimitError, W
 
 from apps.fyle.models import Expense, ExpenseGroup, Reimbursement
 from apps.mappings.models import GeneralMapping, TenantMapping
-from apps.tasks.models import TaskLog
+from apps.tasks.models import Error, TaskLog
 from apps.workspaces.models import LastExportDetail, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.exceptions import update_last_export_details
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem
@@ -416,7 +416,7 @@ def test_schedule_bills_creation(db):
     task_log.save()
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, fund_source="PERSONAL"
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, fund_source="PERSONAL", interval_hours=0
     )
 
 
@@ -514,7 +514,7 @@ def test_schedule_bank_transaction_creation(db):
     task_log.save()
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, fund_source="CCC"
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, fund_source="CCC", interval_hours=0
     )
 
 
@@ -1019,3 +1019,89 @@ def test__validate_expense_group(mocker, db):
         __validate_expense_group(expense_group)
     except Exception:
         logger.info("Mappings are missing")
+
+
+def test_skipping_schedule_bills_creation(db):
+    workspace_id = 1
+
+    expense_group = ExpenseGroup.objects.get(id=4)
+    expense_group.exported_at = None
+    expense_group.save()
+
+    bill = Bill.objects.get(expense_group_id=4)
+    BillLineItem.objects.filter(bill=bill).delete()
+    TaskLog.objects.filter(bill=bill).update(bill=None)
+    bill.delete()
+
+    task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
+    task_log.type = 'FETCHING_EXPENSES'
+    task_log.status = "READY"
+    task_log.save()
+
+    error = Error.objects.create(
+        workspace_id=workspace_id,
+        type='NETSUITE_ERROR',
+        error_title='NetSuite System Error',
+        error_detail='An error occured in a upsert request: Please enter value(s) for: Location',
+        expense_group_id=expense_group.id,
+        repetition_count=106
+    )
+
+    schedule_bills_creation(
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, fund_source="CCC", interval_hours=1
+    )
+
+    task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
+    assert task_log.type == 'FETCHING_EXPENSES'
+
+    Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
+
+    schedule_bills_creation(
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, fund_source="CCC", interval_hours=1
+    )
+
+    task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
+    assert task_log.type == 'CREATING_BILL'
+
+
+def test_skipping_schedule_bank_transaction_creation(db):
+    workspace_id = 1
+
+    expense_group = ExpenseGroup.objects.get(id=5)
+    expense_group.exported_at = None
+    expense_group.save()
+
+    bank_tran = BankTransaction.objects.get(expense_group_id=5)
+    BankTransactionLineItem.objects.filter(bank_transaction=bank_tran).delete()
+    TaskLog.objects.filter(bank_transaction=bank_tran).update(bank_transaction=None)
+    bank_tran.delete()
+
+    task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
+    task_log.type = 'FETCHING_EXPENSES'
+    task_log.status = "READY"
+    task_log.save()
+
+    error = Error.objects.create(
+        workspace_id=workspace_id,
+        type='NETSUITE_ERROR',
+        error_title='NetSuite System Error',
+        error_detail='An error occured in a upsert request: Please enter value(s) for: Location',
+        expense_group_id=expense_group.id,
+        repetition_count=106
+    )
+
+    schedule_bank_transaction_creation(
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, fund_source="CCC", interval_hours=1
+    )
+
+    task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
+    assert task_log.type == 'FETCHING_EXPENSES'
+
+    Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
+
+    schedule_bank_transaction_creation(
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, fund_source="CCC", interval_hours=1
+    )
+
+    task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
+    assert task_log.type == 'CREATING_BANK_TRANSACTION'
