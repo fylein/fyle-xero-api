@@ -202,6 +202,7 @@ class Bill(models.Model):
     paid_on_xero = models.BooleanField(
         help_text="Payment status in Xero", default=False
     )
+    is_retired = models.BooleanField(help_text='Is Payment sync retried', default=False)
     export_id = models.CharField(max_length=255, help_text="Export ID", null=True)
     created_at = models.DateTimeField(auto_now_add=True, help_text="Created at")
     updated_at = models.DateTimeField(auto_now=True, help_text="Updated at")
