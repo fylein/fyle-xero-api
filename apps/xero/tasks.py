@@ -749,7 +749,7 @@ def create_payment(workspace_id):
         )
 
         if expense_group_reimbursement_status:
-  
+
             skip_payment = validate_for_skipping_payment(bill=bill, workspace_id=workspace_id)
             if skip_payment:
                 continue

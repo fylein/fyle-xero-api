@@ -2,7 +2,6 @@ import logging
 import random
 from datetime import datetime, timedelta, timezone
 from unittest import mock
-from dateutil.relativedelta import relativedelta
 
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import ExpenseAttribute, Mapping
@@ -1148,7 +1147,7 @@ def test_skipping_payment(mocker, db):
 
     task_log = TaskLog.objects.get(workspace_id=workspace_id, type='CREATING_PAYMENT', task_id='PAYMENT_{}'.format(bill.expense_group.id))
     assert task_log.updated_at == updated_at
-    
+
     now = datetime.now().replace(tzinfo=timezone.utc)
     updated_at = now - timedelta(days=25)
     # Update created_at to more than 2 months ago (more than 60 days)
