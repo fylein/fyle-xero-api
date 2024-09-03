@@ -27,6 +27,7 @@ from apps.xero.queue import schedule_bank_transaction_creation, schedule_bills_c
 from apps.xero.utils import XeroConnector
 
 logger = logging.getLogger(__name__)
+logger.level = logging.INFO
 
 
 def post_workspace(access_token, request):
@@ -205,7 +206,8 @@ def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[]):
             workspace_id=workspace_id,
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
-            fund_source='PERSONAL'
+            fund_source='PERSONAL',
+            interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0
         )
 
     if general_settings.corporate_credit_card_expenses_object:
@@ -221,7 +223,8 @@ def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[]):
             workspace_id=workspace_id,
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
-            fund_source='CCC'
+            fund_source='CCC',
+            interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0
         )
 
     if is_expenses_exported:
