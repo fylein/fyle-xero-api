@@ -1,6 +1,6 @@
 import logging
 import random
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 from django_q.models import Schedule
@@ -746,6 +746,11 @@ def test_create_payment_exceptions(mocker, db):
         mock_call.side_effect = WrongParamsError(
             msg="wrong parameter", response="invalid parameter"
         )
+
+        now = datetime.now().replace(tzinfo=timezone.utc)
+        updated_at = now - timedelta(days=10)
+
+        task_log = TaskLog.objects.filter(task_id='PAYMENT_{}'.format(bill.expense_group.id)).update(updated_at=updated_at)
         create_payment(workspace_id)
         task_log = TaskLog.objects.filter(
             workspace_id=workspace_id, detail="wrong parameter"
@@ -1105,3 +1110,64 @@ def test_skipping_schedule_bank_transaction_creation(db):
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
     assert task_log.type == 'CREATING_BANK_TRANSACTION'
+
+
+def test_skipping_payment(mocker, db):
+    mocker.patch("apps.xero.utils.XeroConnector.post_payment", return_value={})
+    workspace_id = 1
+
+    mocker.patch(
+        "fyle.platform.apis.v1beta.admin.Reimbursements.list_all",
+        return_value=fyle_data["get_all_reimbursements"],
+    )
+
+    mocker.patch('fyle_integrations_platform_connector.apis.Expenses.get', return_value=data['expense'])
+
+    bills = Bill.objects.all()
+    expenses = []
+
+    for bill in bills:
+        expenses.extend(bill.expense_group.expenses.all())
+
+    for expense in expenses:
+        Reimbursement.objects.update_or_create(
+            settlement_id=expense.settlement_id,
+            reimbursement_id="qwertyuio",
+            state="COMPLETE",
+            workspace_id=workspace_id,
+        )
+
+    general_mappings = GeneralMapping.objects.filter(workspace_id=workspace_id).first()
+    general_mappings.payment_account_id = "2"
+    general_mappings.save()
+
+    task_log = TaskLog.objects.create(workspace_id=workspace_id, type='CREATING_PAYMENT', task_id='PAYMENT_{}'.format(bill.expense_group.id), status='FAILED')
+    updated_at = task_log.updated_at
+    create_payment(workspace_id)
+
+    task_log = TaskLog.objects.get(workspace_id=workspace_id, type='CREATING_PAYMENT', task_id='PAYMENT_{}'.format(bill.expense_group.id))
+    assert task_log.updated_at == updated_at
+
+    now = datetime.now().replace(tzinfo=timezone.utc)
+    updated_at = now - timedelta(days=25)
+    # Update created_at to more than 2 months ago (more than 60 days)
+    TaskLog.objects.filter(task_id='PAYMENT_{}'.format(bill.expense_group.id)).update(
+        created_at=now - timedelta(days=61),  # More than 2 months ago
+        updated_at=updated_at  # Updated within the last 1 month
+    )
+
+    task_log = TaskLog.objects.get(task_id='PAYMENT_{}'.format(bill.expense_group.id))
+
+    create_payment(workspace_id)
+    task_log.refresh_from_db()
+    assert task_log.updated_at == updated_at
+
+    updated_at = now - timedelta(days=25)
+    # Update created_at to between 1 and 2 months ago (between 30 and 60 days)
+    TaskLog.objects.filter(task_id='PAYMENT_{}'.format(bill.expense_group.id)).update(
+        created_at=now - timedelta(days=45),  # Between 1 and 2 months ago
+        updated_at=updated_at  # Updated within the last 1 month
+    )
+    create_payment(workspace_id)
+    task_log.refresh_from_db()
+    assert task_log.updated_at == updated_at

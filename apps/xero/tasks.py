@@ -4,6 +4,9 @@ from datetime import datetime, timezone
 from time import sleep
 from typing import List
 
+from dateutil.relativedelta import relativedelta
+from django.utils import timezone as django_timezone
+
 from django.db import transaction
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
 from fyle_integrations_platform_connector import PlatformConnector
@@ -699,6 +702,30 @@ def process_payments(
         task_log.save()
 
 
+def validate_for_skipping_payment(bill: Bill, workspace_id: int):
+    task_log = TaskLog.objects.filter(task_id='PAYMENT_{}'.format(bill.expense_group.id), workspace_id=workspace_id, type='CREATING_PAYMENT').first()
+    if task_log:
+        now = django_timezone.now()
+
+        if now - relativedelta(months=2) > task_log.created_at:
+            bill.is_retired = True
+            bill.save()
+            return True
+
+        elif now - relativedelta(months=1) > task_log.created_at and now - relativedelta(months=2) < task_log.created_at:
+            # if updated_at is within 1 months will be skipped
+            if task_log.updated_at > now - relativedelta(months=1):
+                return True
+
+        # If created is within 1 month
+        elif now - relativedelta(months=1) < task_log.created_at:
+            # Skip if updated within the last week
+            if task_log.updated_at > now - relativedelta(weeks=1):
+                return True
+
+    return False
+
+
 def create_payment(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
@@ -722,6 +749,11 @@ def create_payment(workspace_id):
         )
 
         if expense_group_reimbursement_status:
+
+            skip_payment = validate_for_skipping_payment(bill=bill, workspace_id=workspace_id)
+            if skip_payment:
+                continue
+
             task_log, _ = TaskLog.objects.update_or_create(
                 workspace_id=workspace_id,
                 task_id="PAYMENT_{}".format(bill.expense_group.id),
