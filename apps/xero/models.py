@@ -362,7 +362,7 @@ class BankTransaction(models.Model):
                 attribute_type="CONTACT",
                 workspace_id=expense_group.workspace_id,
                 active=True
-            ).first()
+            ).order_by("-updated_at").first()
 
             if not contact_id:
                 contact_id = (
