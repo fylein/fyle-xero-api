@@ -361,7 +361,8 @@ class BankTransaction(models.Model):
                 value__iexact=merchant,
                 attribute_type="CONTACT",
                 workspace_id=expense_group.workspace_id,
-            ).first()
+                active=True
+            ).order_by("-updated_at").first()
 
             if not contact_id:
                 contact_id = (
