@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 15.7 (Debian 15.7-1.pgdg120+1)
--- Dumped by pg_dump version 15.7 (Debian 15.7-1.pgdg120+1)
+-- Dumped by pg_dump version 15.8 (Debian 15.8-1.pgdg120+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -298,7 +298,8 @@ CREATE TABLE public.bills (
     expense_group_id integer NOT NULL,
     paid_on_xero boolean NOT NULL,
     payment_synced boolean NOT NULL,
-    export_id character varying(255)
+    export_id character varying(255),
+    is_retired boolean NOT NULL
 );
 
 
@@ -2245,11 +2246,11 @@ COPY public.bill_lineitems (id, tracking_categories, item_code, account_id, desc
 -- Data for Name: bills; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.bills (id, currency, contact_id, reference, date, created_at, updated_at, expense_group_id, paid_on_xero, payment_synced, export_id) FROM stdin;
-1	USD	9eecdd86-78bb-47c9-95df-986369748151	2 - ashwin.t@fyle.in	2022-08-02 00:00:00+00	2022-08-02 20:27:44.058777+00	2022-08-02 20:27:44.877194+00	2	f	f	c35cf4b3-784a-408b-9ddf-df111dd2e073
-2	USD	229b7701-21a2-4539-b39e-5c34f56e1711	4 - sravan.kumar@fyle.in	2022-08-02 00:00:00+00	2022-08-02 20:27:48.290698+00	2022-08-02 20:27:48.932223+00	4	f	f	2780aebc-2f8c-4b47-a7e2-64b920c5e7c1
-3	USD	9eecdd86-78bb-47c9-95df-986369748151	1 - ashwin.t@fyle.in	2022-08-02 00:00:00+00	2022-08-02 20:27:51.443082+00	2022-08-02 20:27:52.020404+00	1	f	f	c70ce61b-5157-4e11-97c7-6d1f843b2a5f
-4	USD	9eecdd86-78bb-47c9-95df-986369748151	3 - ashwin.t@fyle.in	2022-08-02 00:00:00+00	2022-08-02 20:27:54.558597+00	2022-08-02 20:27:55.12968+00	3	f	f	9520557e-c20c-4fa4-b4b4-702102866beb
+COPY public.bills (id, currency, contact_id, reference, date, created_at, updated_at, expense_group_id, paid_on_xero, payment_synced, export_id, is_retired) FROM stdin;
+1	USD	9eecdd86-78bb-47c9-95df-986369748151	2 - ashwin.t@fyle.in	2022-08-02 00:00:00+00	2022-08-02 20:27:44.058777+00	2022-08-02 20:27:44.877194+00	2	f	f	c35cf4b3-784a-408b-9ddf-df111dd2e073	f
+2	USD	229b7701-21a2-4539-b39e-5c34f56e1711	4 - sravan.kumar@fyle.in	2022-08-02 00:00:00+00	2022-08-02 20:27:48.290698+00	2022-08-02 20:27:48.932223+00	4	f	f	2780aebc-2f8c-4b47-a7e2-64b920c5e7c1	f
+3	USD	9eecdd86-78bb-47c9-95df-986369748151	1 - ashwin.t@fyle.in	2022-08-02 00:00:00+00	2022-08-02 20:27:51.443082+00	2022-08-02 20:27:52.020404+00	1	f	f	c70ce61b-5157-4e11-97c7-6d1f843b2a5f	f
+4	USD	9eecdd86-78bb-47c9-95df-986369748151	3 - ashwin.t@fyle.in	2022-08-02 00:00:00+00	2022-08-02 20:27:54.558597+00	2022-08-02 20:27:55.12968+00	3	f	f	9520557e-c20c-4fa4-b4b4-702102866beb	f
 \.
 
 
@@ -2632,6 +2633,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 151	workspaces	0038_alter_workspace_onboarding_state	2024-05-07 09:15:02.787555+00
 152	fyle	0019_expense_paid_on_fyle	2024-06-18 16:26:06.802359+00
 153	fyle	0020_expensegroup_export_url	2024-08-03 14:33:54.988078+00
+154	xero	0010_bill_is_retired	2024-09-03 11:40:50.93784+00
 \.
 
 
@@ -5169,7 +5171,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 40, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 153, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 154, true);
 
 
 --
@@ -6786,3 +6788,4 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
+

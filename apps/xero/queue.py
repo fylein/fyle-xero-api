@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
+import logging
 
 from django.db.models import Q
 from django_q.models import Schedule
@@ -9,9 +10,24 @@ from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
 from apps.fyle.models import Expense, ExpenseGroup
 from apps.mappings.models import GeneralMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
-from apps.tasks.models import TaskLog
+from apps.tasks.models import TaskLog, Error
 from apps.workspaces.models import FyleCredential, XeroCredentials
 from apps.xero.utils import XeroConnector
+
+
+logger = logging.getLogger(__name__)
+logger.level = logging.INFO
+
+
+def validate_failing_export(is_auto_export: bool, interval_hours: int, error: Error):
+    """
+    Validate failing export
+    :param is_auto_export: Is auto export
+    :param interval_hours: Interval hours
+    :param error: Error
+    """
+    # If auto export is enabled and interval hours is set and error repetition count is greater than 100, export only once a day
+    return is_auto_export and interval_hours and error and error.repetition_count > 100 and datetime.now().replace(tzinfo=timezone.utc) - error.updated_at <= timedelta(hours=24)
 
 
 def schedule_payment_creation(sync_fyle_to_xero_payments, workspace_id):
@@ -106,7 +122,7 @@ def __create_chain_and_run(fyle_credentials: FyleCredential, xero_connection, in
     chain.run()
 
 
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str) -> list:
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str, interval_hours: int) -> list:
     """
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
@@ -123,16 +139,25 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             exported_at__isnull=True,
         ).all()
 
+        errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
+
         chain_tasks = []
         in_progress_expenses = []
 
         for index, expense_group in enumerate(expense_groups):
+            error = errors.filter(workspace_id=workspace_id, expense_group=expense_group, is_resolved=False).first()
+            skip_export = validate_failing_export(is_auto_export, interval_hours, error)
+            if skip_export:
+                logger.info('Skipping expense group %s as it has %s errors', expense_group.id, error.repetition_count)
+                continue
+
             task_log, _ = TaskLog.objects.get_or_create(
                 workspace_id=expense_group.workspace_id,
                 expense_group=expense_group,
                 defaults={"status": TaskLogStatusEnum.ENQUEUED, "type": TaskLogTypeEnum.CREATING_BILL},
             )
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
+                task_log.type = TaskLogTypeEnum.CREATING_BILL
                 task_log.status = TaskLogStatusEnum.ENQUEUED
                 task_log.save()
 
@@ -173,7 +198,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
 
 
 def schedule_bank_transaction_creation(
-    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str
+    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str, interval_hours: int
 ) -> list:
     """
     Schedule bank transaction creation
@@ -191,16 +216,25 @@ def schedule_bank_transaction_creation(
             exported_at__isnull=True,
         ).all()
 
+        errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
+
         chain_tasks = []
         in_progress_expenses = []
 
         for index, expense_group in enumerate(expense_groups):
+            error = errors.filter(workspace_id=workspace_id, expense_group=expense_group, is_resolved=False).first()
+            skip_export = validate_failing_export(is_auto_export, interval_hours, error)
+            if skip_export:
+                logger.info('Skipping expense group %s as it has %s errors', expense_group.id, error.repetition_count)
+                continue
+
             task_log, _ = TaskLog.objects.get_or_create(
                 workspace_id=expense_group.workspace_id,
                 expense_group=expense_group,
                 defaults={"status": TaskLogStatusEnum.ENQUEUED, "type": TaskLogTypeEnum.CREATING_BANK_TRANSACTION},
             )
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
+                task_log.type = TaskLogTypeEnum.CREATING_BANK_TRANSACTION
                 task_log.status = TaskLogStatusEnum.ENQUEUED
                 task_log.save()
 
