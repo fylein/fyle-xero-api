@@ -5,9 +5,8 @@ from time import sleep
 from typing import List
 
 from dateutil.relativedelta import relativedelta
-from django.utils import timezone as django_timezone
-
 from django.db import transaction
+from django.utils import timezone as django_timezone
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
 from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk.exceptions import UnsuccessfulAuthentication, WrongParamsError
@@ -300,7 +299,7 @@ def create_bill(
         expense_group.response_logs = created_bill
         expense_group.save()
         resolve_errors_for_exported_expense_group(expense_group)
-        generate_export_url_and_update_expense(expense_group, 'BILL')
+
         logger.info('Updated Expense Group %s successfully', expense_group.id)
 
         # Assign billable expenses to customers
@@ -319,6 +318,11 @@ def create_bill(
                 index += 1
 
             attach_customer_to_export(xero_connection, task_log)
+
+        try:
+            generate_export_url_and_update_expense(expense_group, 'BILL')
+        except Exception as e:
+            logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
 
         load_attachments(
             xero_connection,
@@ -473,7 +477,7 @@ def create_bank_transaction(
         expense_group.response_logs = created_bank_transaction
         expense_group.save()
         resolve_errors_for_exported_expense_group(expense_group)
-        generate_export_url_and_update_expense(expense_group, 'BANK TRANSACTION')
+
         logger.info('Updated Expense Group %s successfully', expense_group.id)
 
         # Assign billable expenses to customers
@@ -497,6 +501,10 @@ def create_bank_transaction(
 
             attach_customer_to_export(xero_connection, task_log)
 
+        try:
+            generate_export_url_and_update_expense(expense_group, 'BANK TRANSACTION')
+        except Exception as e:
+            logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
         load_attachments(
             xero_connection,
             created_bank_transaction["BankTransactions"][0]["BankTransactionID"],
