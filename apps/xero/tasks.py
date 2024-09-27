@@ -319,17 +319,17 @@ def create_bill(
 
             attach_customer_to_export(xero_connection, task_log)
 
-        try:
-            generate_export_url_and_update_expense(expense_group, 'BILL')
-        except Exception as e:
-            logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
+    try:
+        generate_export_url_and_update_expense(expense_group, 'BILL')
+    except Exception as e:
+        logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
 
-        load_attachments(
-            xero_connection,
-            created_bill["Invoices"][0]["InvoiceID"],
-            "invoices",
-            expense_group,
-        )
+    load_attachments(
+        xero_connection,
+        created_bill["Invoices"][0]["InvoiceID"],
+        "invoices",
+        expense_group,
+    )
 
 
 def get_linked_transaction_object(export_instance, line_items: list):
@@ -501,16 +501,17 @@ def create_bank_transaction(
 
             attach_customer_to_export(xero_connection, task_log)
 
-        try:
-            generate_export_url_and_update_expense(expense_group, 'BANK TRANSACTION')
-        except Exception as e:
-            logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
-        load_attachments(
-            xero_connection,
-            created_bank_transaction["BankTransactions"][0]["BankTransactionID"],
-            "banktransactions",
-            expense_group,
-        )
+    try:
+        generate_export_url_and_update_expense(expense_group, 'BANK TRANSACTION')
+    except Exception as e:
+        logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
+
+    load_attachments(
+        xero_connection,
+        created_bank_transaction["BankTransactions"][0]["BankTransactionID"],
+        "banktransactions",
+        expense_group,
+    )
 
 
 def __validate_expense_group(expense_group: ExpenseGroup):
