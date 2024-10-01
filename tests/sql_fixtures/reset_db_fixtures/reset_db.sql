@@ -381,7 +381,8 @@ CREATE TABLE public.destination_attributes (
     workspace_id integer NOT NULL,
     active boolean,
     detail jsonb,
-    auto_created boolean NOT NULL
+    auto_created boolean NOT NULL,
+    code character varying(255)
 );
 
 
@@ -2266,156 +2267,156 @@ COPY public.category_mappings (id, created_at, updated_at, destination_account_i
 -- Data for Name: destination_attributes; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.destination_attributes (id, attribute_type, display_name, value, destination_id, created_at, updated_at, workspace_id, active, detail, auto_created) FROM stdin;
-1	TENANT	Tenant	Demo Company (Global)	36ab1910-11b3-4325-b545-8d1170668ab3	2022-08-02 20:24:57.176235+00	2022-08-02 20:24:57.176295+00	1	\N	\N	f
-2	BANK_ACCOUNT	Bank Account	Business Bank Account	562555f2-8cde-4ce9-8203-0363922537a4	2022-08-02 20:25:06.834102+00	2022-08-02 20:25:06.8342+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-3	BANK_ACCOUNT	Bank Account	Business Savings Account	72f1dcfe-5d7d-4239-bf9d-e12469309716	2022-08-02 20:25:06.834588+00	2022-08-02 20:25:06.834631+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-4	ACCOUNT	Account	Sales	200	2022-08-02 20:25:06.849237+00	2022-08-02 20:25:06.849281+00	1	\N	{"active": true, "account_type": "REVENUE", "enable_payments_to_account": false}	f
-5	ACCOUNT	Account	Other Revenue	260	2022-08-02 20:25:06.849477+00	2022-08-02 20:25:06.849508+00	1	\N	{"active": true, "account_type": "REVENUE", "enable_payments_to_account": false}	f
-6	ACCOUNT	Account	Interest Income	270	2022-08-02 20:25:06.849634+00	2022-08-02 20:25:06.849665+00	1	\N	{"active": true, "account_type": "REVENUE", "enable_payments_to_account": false}	f
-7	ACCOUNT	Account	Purchases	300	2022-08-02 20:25:06.849734+00	2022-08-02 20:25:06.849763+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-8	ACCOUNT	Account	Cost of Goods Sold	310	2022-08-02 20:25:06.849831+00	2022-08-02 20:25:06.849861+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-9	ACCOUNT	Account	Advertising	400	2022-08-02 20:25:06.849929+00	2022-08-02 20:25:06.850065+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-10	ACCOUNT	Account	Bank Fees	404	2022-08-02 20:25:06.850152+00	2022-08-02 20:25:06.8502+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-11	ACCOUNT	Account	Cleaning	408	2022-08-02 20:25:06.850582+00	2022-08-02 20:25:06.850621+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-12	ACCOUNT	Account	Consulting & Accounting	412	2022-08-02 20:25:06.850725+00	2022-08-02 20:25:06.850767+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-13	ACCOUNT	Account	Depreciation	416	2022-08-02 20:25:06.85094+00	2022-08-02 20:25:06.851022+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-14	ACCOUNT	Account	Entertainment	420	2022-08-02 20:25:06.851564+00	2022-08-02 20:25:06.851622+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-15	ACCOUNT	Account	Freight & Courier	425	2022-08-02 20:25:06.851818+00	2022-08-02 20:25:06.851871+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-16	ACCOUNT	Account	General Expenses	429	2022-08-02 20:25:06.851943+00	2022-08-02 20:25:06.851971+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-17	ACCOUNT	Account	Insurance	433	2022-08-02 20:25:06.852035+00	2022-08-02 20:25:06.852063+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-18	ACCOUNT	Account	Interest Expense	437	2022-08-02 20:25:06.852232+00	2022-08-02 20:25:06.852261+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-19	ACCOUNT	Account	Legal expenses	441	2022-08-02 20:25:06.852325+00	2022-08-02 20:25:06.852352+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-20	ACCOUNT	Account	Light, Power, Heating	445	2022-08-02 20:25:06.852416+00	2022-08-02 20:25:06.852444+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-21	ACCOUNT	Account	Motor Vehicle Expenses	449	2022-08-02 20:25:06.852507+00	2022-08-02 20:25:06.852535+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-22	ACCOUNT	Account	Office Expenses	453	2022-08-02 20:25:06.852597+00	2022-08-02 20:25:06.852625+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-23	ACCOUNT	Account	Printing & Stationery	461	2022-08-02 20:25:06.852687+00	2022-08-02 20:25:06.852714+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-24	ACCOUNT	Account	Rent	469	2022-08-02 20:25:06.852777+00	2022-08-02 20:25:06.852805+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-25	ACCOUNT	Account	Repairs and Maintenance	473	2022-08-02 20:25:06.852868+00	2022-08-02 20:25:06.852895+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-26	ACCOUNT	Account	Wages and Salaries	477	2022-08-02 20:25:06.852958+00	2022-08-02 20:25:06.852986+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-27	ACCOUNT	Account	Superannuation	478	2022-08-02 20:25:06.853048+00	2022-08-02 20:25:06.853076+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-28	ACCOUNT	Account	Subscriptions	485	2022-08-02 20:25:06.853138+00	2022-08-02 20:25:06.853165+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-29	ACCOUNT	Account	Telephone & Internet	489	2022-08-02 20:25:06.853228+00	2022-08-02 20:25:06.853257+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-30	ACCOUNT	Account	Travel - National	493	2022-08-02 20:25:06.853438+00	2022-08-02 20:25:06.853466+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-31	ACCOUNT	Account	Travel - International	494	2022-08-02 20:25:06.853528+00	2022-08-02 20:25:06.853556+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-32	ACCOUNT	Account	Bank Revaluations	497	2022-08-02 20:25:06.853618+00	2022-08-02 20:25:06.853646+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-33	ACCOUNT	Account	Unrealised Currency Gains	498	2022-08-02 20:25:06.853707+00	2022-08-02 20:25:06.853735+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-34	ACCOUNT	Account	Realised Currency Gains	499	2022-08-02 20:25:06.853797+00	2022-08-02 20:25:06.853825+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-35	ACCOUNT	Account	Income Tax Expense	505	2022-08-02 20:25:06.853887+00	2022-08-02 20:25:06.853915+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f
-36	ACCOUNT	Account	Accounts Receivable	610	2022-08-02 20:25:06.853977+00	2022-08-02 20:25:06.854005+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-37	ACCOUNT	Account	Prepayments	620	2022-08-02 20:25:06.854066+00	2022-08-02 20:25:06.854094+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-38	ACCOUNT	Account	Inventory	630	2022-08-02 20:25:06.854156+00	2022-08-02 20:25:06.854184+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-39	ACCOUNT	Account	Office Equipment	710	2022-08-02 20:25:06.854344+00	2022-08-02 20:25:06.854508+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-40	ACCOUNT	Account	Less Accumulated Depreciation on Office Equipment	711	2022-08-02 20:25:06.854693+00	2022-08-02 20:25:06.855219+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-41	ACCOUNT	Account	Computer Equipment	720	2022-08-02 20:25:06.855554+00	2022-08-02 20:25:06.855586+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-42	ACCOUNT	Account	Less Accumulated Depreciation on Computer Equipment	721	2022-08-02 20:25:06.855657+00	2022-08-02 20:25:06.855685+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f
-43	ACCOUNT	Account	Accounts Payable	800	2022-08-02 20:25:06.855751+00	2022-08-02 20:25:06.855779+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-44	ACCOUNT	Account	Unpaid Expense Claims	801	2022-08-02 20:25:06.855844+00	2022-08-02 20:25:06.855872+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-45	ACCOUNT	Account	Sales Tax	820	2022-08-02 20:25:06.855935+00	2022-08-02 20:25:06.855963+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-46	ACCOUNT	Account	Employee Tax Payable	825	2022-08-02 20:25:06.856026+00	2022-08-02 20:25:06.856054+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-47	ACCOUNT	Account	Superannuation Payable	826	2022-08-02 20:25:06.856116+00	2022-08-02 20:25:06.856144+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-48	ACCOUNT	Account	Income Tax Payable	830	2022-08-02 20:25:06.856207+00	2022-08-02 20:25:06.856235+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-49	ACCOUNT	Account	Revenue Received in Advance	835	2022-08-02 20:25:06.856451+00	2022-08-02 20:25:06.85648+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-50	ACCOUNT	Account	Historical Adjustment	840	2022-08-02 20:25:06.856543+00	2022-08-02 20:25:06.856572+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-51	ACCOUNT	Account	Suspense	850	2022-08-02 20:25:06.856635+00	2022-08-02 20:25:06.856663+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-52	ACCOUNT	Account	Clearing Account	855	2022-08-02 20:25:06.856725+00	2022-08-02 20:25:06.856754+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": true}	f
-53	ACCOUNT	Account	Rounding	860	2022-08-02 20:25:06.856816+00	2022-08-02 20:25:06.856844+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-54	ACCOUNT	Account	Tracking Transfers	877	2022-08-02 20:25:06.873717+00	2022-08-02 20:25:06.873766+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-55	ACCOUNT	Account	Owner A Drawings	880	2022-08-02 20:25:06.87384+00	2022-08-02 20:25:06.873918+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": true}	f
-56	ACCOUNT	Account	Owner A Funds Introduced	881	2022-08-02 20:25:06.874055+00	2022-08-02 20:25:06.874095+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": true}	f
-57	ACCOUNT	Account	Loan	900	2022-08-02 20:25:06.874187+00	2022-08-02 20:25:06.874228+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f
-58	ACCOUNT	Account	Retained Earnings	960	2022-08-02 20:25:06.874322+00	2022-08-02 20:25:06.874362+00	1	\N	{"active": true, "account_type": "EQUITY", "enable_payments_to_account": false}	f
-59	ACCOUNT	Account	Owner A Share Capital	970	2022-08-02 20:25:06.874566+00	2022-08-02 20:25:06.874609+00	1	\N	{"active": true, "account_type": "EQUITY", "enable_payments_to_account": true}	f
-60	CONTACT	Contact	Harshitha P	fbf56259-0a62-4582-8bc5-024f57f659f5	2022-08-02 20:25:07.631648+00	2022-08-02 20:25:07.631688+00	1	\N	{"email": "harshitha.p@fyle.in"}	f
-61	CONTACT	Contact	Coco Cafe	9a777d01-2bfb-4623-807d-129d3f077e21	2022-08-02 20:25:07.631754+00	2022-08-02 20:25:07.631782+00	1	\N	{"email": null}	f
-62	CONTACT	Contact	Ridgeway Bank	43d1337e-4360-4589-9a76-1d0538c4ce6f	2022-08-02 20:25:07.631845+00	2022-08-02 20:25:07.631872+00	1	\N	{"email": null}	f
-63	CONTACT	Contact	Office Supplies Company	cb906ad4-b1d7-44bf-b25a-4862c7059a43	2022-08-02 20:25:07.631933+00	2022-08-02 20:25:07.631961+00	1	\N	{"email": null}	f
-64	CONTACT	Contact	7-Eleven	f41cbe7c-de57-4927-b8a0-49fb0151be77	2022-08-02 20:25:07.632022+00	2022-08-02 20:25:07.63205+00	1	\N	{"email": ""}	f
-65	CONTACT	Contact	Woolworths Market	be4cfc19-c55a-4f19-817b-4eee4ccf2c01	2022-08-02 20:25:07.632111+00	2022-08-02 20:25:07.632138+00	1	\N	{"email": null}	f
-66	CONTACT	Contact	Gable Print	406e9eba-9939-48de-a300-57853bb1a6a4	2022-08-02 20:25:07.632199+00	2022-08-02 20:25:07.632239+00	1	\N	{"email": null}	f
-67	CONTACT	Contact	Orlena Greenville	940f1da6-6d14-46e5-a692-77de93732f96	2022-08-02 20:25:07.632451+00	2022-08-02 20:25:07.63248+00	1	\N	{"email": ""}	f
-68	CONTACT	Contact	Dimples Warehouse	733b5108-96cb-4d43-bc5b-7f37a2f77c26	2022-08-02 20:25:07.632542+00	2022-08-02 20:25:07.632569+00	1	\N	{"email": null}	f
-69	CONTACT	Contact	Fulton Airport Parking	d8ce2ea5-d312-4c34-9656-8554b8071a81	2022-08-02 20:25:07.63263+00	2022-08-02 20:25:07.632658+00	1	\N	{"email": null}	f
-70	CONTACT	Contact	Espresso 31	f5cb9bf0-7aa2-473e-8115-87863dee95f3	2022-08-02 20:25:07.632719+00	2022-08-02 20:25:07.632747+00	1	\N	{"email": ""}	f
-71	CONTACT	Contact	24 Locks	2e68080d-b3bd-4051-b33c-9f031550b958	2022-08-02 20:25:07.632808+00	2022-08-02 20:25:07.632835+00	1	\N	{"email": null}	f
-72	CONTACT	Contact	Epicenter Cafe	f6ecf9a4-ee5a-4e9c-b52b-bec4737e8623	2022-08-02 20:25:07.632896+00	2022-08-02 20:25:07.632923+00	1	\N	{"email": ""}	f
-73	CONTACT	Contact	Melrose Parking	b6c2d5e5-94f2-4df5-a7c2-f1de0bff034f	2022-08-02 20:25:07.632984+00	2022-08-02 20:25:07.633012+00	1	\N	{"email": null}	f
-74	CONTACT	Contact	Berry Brew	16cf5671-54a8-4d4e-9a55-f2be8ec3dcf4	2022-08-02 20:25:07.633072+00	2022-08-02 20:25:07.6331+00	1	\N	{"email": null}	f
-75	CONTACT	Contact	Brunswick Petals	162c177a-3391-4742-890f-f3ebfe0df1f3	2022-08-02 20:25:07.633161+00	2022-08-02 20:25:07.633189+00	1	\N	{"email": null}	f
-76	CONTACT	Contact	PC Complete	aacecb74-ef1e-44e0-ba52-0bc521639697	2022-08-02 20:25:07.633379+00	2022-08-02 20:25:07.633407+00	1	\N	{"email": null}	f
-77	CONTACT	Contact	Bayside Wholesale	c01292e3-1a1a-4a70-b120-1218f8f71096	2022-08-02 20:25:07.633469+00	2022-08-02 20:25:07.633496+00	1	\N	{"email": ""}	f
-78	CONTACT	Contact	SMART Agency	3f58af86-b4d9-4ac9-950c-2e4cdd94d5be	2022-08-02 20:25:07.633557+00	2022-08-02 20:25:07.633585+00	1	\N	{"email": null}	f
-79	CONTACT	Contact	Central Copiers	cade9142-f5fe-4970-b39e-2f388b8740c0	2022-08-02 20:25:07.633646+00	2022-08-02 20:25:07.633673+00	1	\N	{"email": null}	f
-80	CONTACT	Contact	Xero	3b30a108-9156-4a42-a893-3bbbe7af1ef8	2022-08-02 20:25:07.633734+00	2022-08-02 20:25:07.633761+00	1	\N	{"email": null}	f
-81	CONTACT	Contact	Truxton Property Management	f4af0a9b-e710-4611-8618-4360944ce1f3	2022-08-02 20:25:07.633822+00	2022-08-02 20:25:07.63385+00	1	\N	{"email": null}	f
-82	CONTACT	Contact	Swanston Security	78b7299c-4f1f-46d2-acc3-44a46bd361b1	2022-08-02 20:25:07.63391+00	2022-08-02 20:25:07.633938+00	1	\N	{"email": null}	f
-83	CONTACT	Contact	MCO Cleaning Services	537d4d64-2fc1-4521-89c3-489d20fae20d	2022-08-02 20:25:07.633999+00	2022-08-02 20:25:07.634027+00	1	\N	{"email": null}	f
-84	CONTACT	Contact	Carlton Functions	4ad99fdf-a0cc-4aaa-a1a6-6a1549b9df40	2022-08-02 20:25:07.634088+00	2022-08-02 20:25:07.634115+00	1	\N	{"email": null}	f
-85	CONTACT	Contact	Net Connect	b553bc60-5fb9-4d5e-b604-71aaf657cd3d	2022-08-02 20:25:07.634177+00	2022-08-02 20:25:07.634204+00	1	\N	{"email": ""}	f
-86	CONTACT	Contact	ABC Furniture	39efa556-8dda-4c81-83d3-a631e59eb6d3	2022-08-02 20:25:07.634399+00	2022-08-02 20:25:07.634428+00	1	\N	{"email": "info@abfl.com"}	f
-87	CONTACT	Contact	Capital Cab Co	f93cd75c-9412-4a8c-91a3-b41fe751aa01	2022-08-02 20:25:07.634488+00	2022-08-02 20:25:07.634516+00	1	\N	{"email": ""}	f
-88	CONTACT	Contact	Hoyt Productions	1d80716b-427e-4cad-80c6-c4b3a18eb23d	2022-08-02 20:25:07.634577+00	2022-08-02 20:25:07.634604+00	1	\N	{"email": null}	f
-89	CONTACT	Contact	PowerDirect	8f48b066-e047-459d-80dd-d495b36608d0	2022-08-02 20:25:07.634665+00	2022-08-02 20:25:07.634692+00	1	\N	{"email": ""}	f
-90	CONTACT	Contact	Gateway Motors	ddd4ba65-9b7e-4adf-be7a-e91efbb6c082	2022-08-02 20:25:07.634753+00	2022-08-02 20:25:07.63478+00	1	\N	{"email": null}	f
-91	CONTACT	Contact	Hamilton Smith Ltd	fd89489e-699c-4d77-a881-10c127bfbeb3	2022-08-02 20:25:07.634841+00	2022-08-02 20:25:07.634868+00	1	\N	{"email": "info@hsg.co"}	f
-92	CONTACT	Contact	Ridgeway University	65a44264-dea0-481a-b49d-18a334a72334	2022-08-02 20:25:07.634929+00	2022-08-02 20:25:07.634957+00	1	\N	{"email": ""}	f
-93	CONTACT	Contact	Boom FM	37918a06-92f6-4edb-bfe0-1fc041c90f8b	2022-08-02 20:25:07.635017+00	2022-08-02 20:25:07.635044+00	1	\N	{"email": null}	f
-94	CONTACT	Contact	Bayside Club	b68deed5-49c8-416a-9f35-2ab14bb1fb6b	2022-08-02 20:25:07.635105+00	2022-08-02 20:25:07.635132+00	1	\N	{"email": "secretarybob@bsclub.co"}	f
-95	CONTACT	Contact	Marine Systems	5b96e86b-418e-48e8-8949-308c14aec278	2022-08-02 20:25:07.635193+00	2022-08-02 20:25:07.635232+00	1	\N	{"email": ""}	f
-96	CONTACT	Contact	City Agency	fa52f698-1244-47cd-8fb9-5f32b6490a55	2022-08-02 20:25:07.635407+00	2022-08-02 20:25:07.635435+00	1	\N	{"email": null}	f
-97	CONTACT	Contact	DIISR - Small Business Services	a3cf95c5-9d26-42e1-80c0-69e5f24886d3	2022-08-02 20:25:07.635507+00	2022-08-02 20:25:07.635536+00	1	\N	{"email": ""}	f
-98	CONTACT	Contact	Young Bros Transport	021b18f8-b62f-4d8a-889e-71fd5427892a	2022-08-02 20:25:07.635601+00	2022-08-02 20:25:07.63563+00	1	\N	{"email": "rog@ybt.co"}	f
-99	CONTACT	Contact	Port & Philip Freight	378f211a-64c2-4327-bab3-9b057f4f51d9	2022-08-02 20:25:07.635695+00	2022-08-02 20:25:07.635724+00	1	\N	{"email": ""}	f
-100	CONTACT	Contact	Bank West	47f61ab1-5245-40a2-a3a5-bc224c850c8d	2022-08-02 20:25:07.635789+00	2022-08-02 20:25:07.63592+00	1	\N	{"email": ""}	f
-101	CONTACT	Contact	Rex Media Group	3cbd5263-0965-4c4e-932c-bf50e3297610	2022-08-02 20:25:07.636488+00	2022-08-02 20:25:07.636554+00	1	\N	{"email": "info@rexmedia.co"}	f
-102	CONTACT	Contact	Basket Case	85d15bf3-207f-4278-8449-e12dade98c66	2022-08-02 20:25:07.636769+00	2022-08-02 20:25:07.637245+00	1	\N	{"email": ""}	f
-103	CONTACT	Contact	Petrie McLoud Watson & Associates	2aaaeb6b-b519-4698-9b0a-f74ba1d39be6	2022-08-02 20:25:07.637625+00	2022-08-02 20:25:07.637678+00	1	\N	{"email": null}	f
-104	CONTACT	Contact	City Limousines	7c913d33-39d5-4a1c-b8b1-e23f5fc999e0	2022-08-02 20:25:07.637762+00	2022-08-02 20:25:07.638441+00	1	\N	{"email": ""}	f
-105	CONTACT	Contact	Joanna	9eecdd86-78bb-47c9-95df-986369748151	2022-08-02 20:25:07.638561+00	2022-08-02 20:25:07.638592+00	1	\N	{"email": "ashwin.t@fyle.in"}	f
-106	CONTACT	Contact	Sravan K	229b7701-21a2-4539-b39e-5c34f56e1711	2022-08-02 20:25:07.638661+00	2022-08-02 20:25:07.638691+00	1	\N	{"email": "sravan.kumar@fyle.in"}	f
-108	CUSTOMER	Customer	Hamilton Smith Ltd	fd89489e-699c-4d77-a881-10c127bfbeb3	2022-08-02 20:25:09.006121+00	2022-08-02 20:25:09.006197+00	1	\N	{"email": "info@hsg.co"}	f
-109	CUSTOMER	Customer	Ridgeway University	65a44264-dea0-481a-b49d-18a334a72334	2022-08-02 20:25:09.008587+00	2022-08-02 20:25:09.008686+00	1	\N	{"email": ""}	f
-110	CUSTOMER	Customer	Boom FM	37918a06-92f6-4edb-bfe0-1fc041c90f8b	2022-08-02 20:25:09.008782+00	2022-08-02 20:25:09.008819+00	1	\N	{"email": null}	f
-111	CUSTOMER	Customer	Bayside Club	b68deed5-49c8-416a-9f35-2ab14bb1fb6b	2022-08-02 20:25:09.008894+00	2022-08-02 20:25:09.008924+00	1	\N	{"email": "secretarybob@bsclub.co"}	f
-112	CUSTOMER	Customer	Marine Systems	5b96e86b-418e-48e8-8949-308c14aec278	2022-08-02 20:25:09.008994+00	2022-08-02 20:25:09.009596+00	1	\N	{"email": ""}	f
-113	CUSTOMER	Customer	City Agency	fa52f698-1244-47cd-8fb9-5f32b6490a55	2022-08-02 20:25:09.009978+00	2022-08-02 20:25:09.010133+00	1	\N	{"email": null}	f
-114	CUSTOMER	Customer	DIISR - Small Business Services	a3cf95c5-9d26-42e1-80c0-69e5f24886d3	2022-08-02 20:25:09.016791+00	2022-08-02 20:25:09.01684+00	1	\N	{"email": ""}	f
-115	CUSTOMER	Customer	Young Bros Transport	021b18f8-b62f-4d8a-889e-71fd5427892a	2022-08-02 20:25:09.016952+00	2022-08-02 20:25:09.017387+00	1	\N	{"email": "rog@ybt.co"}	f
-116	CUSTOMER	Customer	Port & Philip Freight	378f211a-64c2-4327-bab3-9b057f4f51d9	2022-08-02 20:25:09.01756+00	2022-08-02 20:25:09.017586+00	1	\N	{"email": ""}	f
-117	CUSTOMER	Customer	Bank West	47f61ab1-5245-40a2-a3a5-bc224c850c8d	2022-08-02 20:25:09.017657+00	2022-08-02 20:25:09.017668+00	1	\N	{"email": ""}	f
-118	CUSTOMER	Customer	Rex Media Group	3cbd5263-0965-4c4e-932c-bf50e3297610	2022-08-02 20:25:09.018006+00	2022-08-02 20:25:09.018037+00	1	\N	{"email": "info@rexmedia.co"}	f
-119	CUSTOMER	Customer	Basket Case	85d15bf3-207f-4278-8449-e12dade98c66	2022-08-02 20:25:09.018113+00	2022-08-02 20:25:09.018141+00	1	\N	{"email": ""}	f
-120	CUSTOMER	Customer	Petrie McLoud Watson & Associates	2aaaeb6b-b519-4698-9b0a-f74ba1d39be6	2022-08-02 20:25:09.018216+00	2022-08-02 20:25:09.018458+00	1	\N	{"email": null}	f
-121	CUSTOMER	Customer	City Limousines	7c913d33-39d5-4a1c-b8b1-e23f5fc999e0	2022-08-02 20:25:09.018579+00	2022-08-02 20:25:09.018635+00	1	\N	{"email": ""}	f
-122	ITEM	Item	BOOK	8bbaf73c-5a32-4458-addf-bd30a36c8551	2022-08-02 20:25:10.084723+00	2022-08-02 20:25:10.084913+00	1	\N	\N	f
-123	ITEM	Item	DevD	6cba12ac-e300-4745-838a-f57dfdb88e11	2022-08-02 20:25:10.085169+00	2022-08-02 20:25:10.085391+00	1	\N	\N	f
-124	ITEM	Item	DevH	b36131d5-f37e-4cb1-bb9c-320446c7b004	2022-08-02 20:25:10.085522+00	2022-08-02 20:25:10.085571+00	1	\N	\N	f
-125	ITEM	Item	GB1-White	3644c19f-7c46-4e18-93fa-5550c307bcdd	2022-08-02 20:25:10.085664+00	2022-08-02 20:25:10.085696+00	1	\N	\N	f
-126	ITEM	Item	GB3-White	53c1d46d-cf8e-45d2-8dc1-9bd73b0ca9e2	2022-08-02 20:25:10.085758+00	2022-08-02 20:25:10.085788+00	1	\N	\N	f
-127	ITEM	Item	GB6-White	9ce48e6a-118b-40a5-ae43-2e7dea8b18ad	2022-08-02 20:25:10.085861+00	2022-08-02 20:25:10.085892+00	1	\N	\N	f
-128	ITEM	Item	GB9-White	baaba2cb-9abf-4bd4-af24-9429a7e79cec	2022-08-02 20:25:10.085952+00	2022-08-02 20:25:10.085983+00	1	\N	\N	f
-129	ITEM	Item	PMBr	ec4362af-a038-4984-ab93-1bba3b6bd402	2022-08-02 20:25:10.086039+00	2022-08-02 20:25:10.086069+00	1	\N	\N	f
-130	ITEM	Item	PMD	ffb8b59d-17d8-4245-af16-cdf7a689dcb9	2022-08-02 20:25:10.086126+00	2022-08-02 20:25:10.086156+00	1	\N	\N	f
-131	ITEM	Item	PMDD	c8151f6e-09bd-43a4-8726-d9c9122d8200	2022-08-02 20:25:10.086212+00	2022-08-02 20:25:10.086255+00	1	\N	\N	f
-132	ITEM	Item	PMWe	3add2df0-f436-431e-a59b-0e76fb4d6720	2022-08-02 20:25:10.086577+00	2022-08-02 20:25:10.086711+00	1	\N	\N	f
-133	ITEM	Item	Support-M	e82eaa5c-3c5f-47ed-b2a9-7de266ab1eaf	2022-08-02 20:25:10.086816+00	2022-08-02 20:25:10.086859+00	1	\N	\N	f
-134	ITEM	Item	Train-MS	e5cc8904-5865-4846-ad0c-5d9b695b8af9	2022-08-02 20:25:10.086947+00	2022-08-02 20:25:10.086988+00	1	\N	\N	f
-135	ITEM	Item	TSL - Black	dc63985f-7e32-4669-b60b-8b550417ddbb	2022-08-02 20:25:10.087074+00	2022-08-02 20:25:10.087116+00	1	\N	\N	f
-136	ITEM	Item	TSM - Black	56268ecd-d722-4f39-ac6b-1f34b639393a	2022-08-02 20:25:10.087354+00	2022-08-02 20:25:10.087393+00	1	\N	\N	f
-137	ITEM	Item	TSS - Black	d3687dce-a3c2-4d07-9364-0c540f73c4f8	2022-08-02 20:25:10.087455+00	2022-08-02 20:25:10.087485+00	1	\N	\N	f
-138	REGION	Region	Eastside	7b354c1c-cf59-42fc-9449-a65c51988335	2022-08-02 20:25:10.478532+00	2022-08-02 20:25:10.478581+00	1	\N	\N	f
-139	REGION	Region	North	5e2974a2-097d-4f3b-bfd5-605d78c4a282	2022-08-02 20:25:10.478655+00	2022-08-02 20:25:10.478687+00	1	\N	\N	f
-140	REGION	Region	South	e83ea9f2-de2c-44d8-b4f8-a5065bed339e	2022-08-02 20:25:10.478751+00	2022-08-02 20:25:10.478773+00	1	\N	\N	f
-141	REGION	Region	West Coast	fc96efd9-b832-4b31-a93e-61f56158adad	2022-08-02 20:25:10.478833+00	2022-08-02 20:25:10.478862+00	1	\N	\N	f
-142	TAX_CODE	Tax Code	Exempt Sales @0.0%	CAN030	2022-08-02 20:25:10.961315+00	2022-08-02 20:25:10.961376+00	1	\N	{"tax_rate": 0.0, "tax_refs": [{"Name": "No Tax", "Rate": 0.0, "IsCompound": false, "IsNonRecoverable": false}]}	f
-143	TAX_CODE	Tax Code	MB - GST/RST on Purchases @12.0%	CAN029	2022-08-02 20:25:10.961472+00	2022-08-02 20:25:10.961502+00	1	\N	{"tax_rate": 12.0, "tax_refs": [{"Name": "RST", "Rate": 7.0, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "GST", "Rate": 5.0, "IsCompound": false, "IsNonRecoverable": false}]}	f
-144	TAX_CODE	Tax Code	MB - GST/RST on Sales @12.0%	CAN028	2022-08-02 20:25:10.961576+00	2022-08-02 20:25:10.961606+00	1	\N	{"tax_rate": 12.0, "tax_refs": [{"Name": "RST", "Rate": 7.0, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "GST", "Rate": 5.0, "IsCompound": false, "IsNonRecoverable": false}]}	f
-145	TAX_CODE	Tax Code	Sales Tax on Imports @0.0%	GSTONIMPORTS	2022-08-02 20:25:10.961764+00	2022-08-02 20:25:10.961798+00	1	\N	{"tax_rate": 0.0, "tax_refs": [{"Name": "TAX", "Rate": 0.0, "IsCompound": false, "IsNonRecoverable": false}]}	f
-146	TAX_CODE	Tax Code	Tax Exempt @0.0%	NONE	2022-08-02 20:25:10.961914+00	2022-08-02 20:25:10.961973+00	1	\N	{"tax_rate": 0.0, "tax_refs": [{"Name": "No Tax", "Rate": 0.0, "IsCompound": false, "IsNonRecoverable": false}]}	f
-147	TAX_CODE	Tax Code	Tax on Consulting @8.25%	OUTPUT	2022-08-02 20:25:10.962769+00	2022-08-02 20:25:10.962801+00	1	\N	{"tax_rate": 8.25, "tax_refs": [{"Name": "City Tax", "Rate": 4.0, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "State Tax", "Rate": 4.25, "IsCompound": false, "IsNonRecoverable": false}]}	f
-148	TAX_CODE	Tax Code	Tax on Goods @8.75%	TAX001	2022-08-02 20:25:10.962877+00	2022-08-02 20:25:10.962905+00	1	\N	{"tax_rate": 8.75, "tax_refs": [{"Name": "State Tax", "Rate": 4.5, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "City Tax", "Rate": 4.25, "IsCompound": false, "IsNonRecoverable": false}]}	f
-149	TAX_CODE	Tax Code	Tax on Purchases @8.25%	INPUT	2022-08-02 20:25:10.962973+00	2022-08-02 20:25:10.963001+00	1	\N	{"tax_rate": 8.25, "tax_refs": [{"Name": "State Tax", "Rate": 4.25, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "City Tax", "Rate": 4.0, "IsCompound": false, "IsNonRecoverable": false}]}	f
-107	CONTACT	Contact	Credit Card Misc	3aaf24ba-6d35-455f-b92a-9e0dc20d3d9a	2022-08-02 20:25:07.638758+00	2022-08-02 20:28:19.432122+00	1	\N	{"email": ""}	f
+COPY public.destination_attributes (id, attribute_type, display_name, value, destination_id, created_at, updated_at, workspace_id, active, detail, auto_created, code) FROM stdin;
+1	TENANT	Tenant	Demo Company (Global)	36ab1910-11b3-4325-b545-8d1170668ab3	2022-08-02 20:24:57.176235+00	2022-08-02 20:24:57.176295+00	1	\N	\N	f	\N
+2	BANK_ACCOUNT	Bank Account	Business Bank Account	562555f2-8cde-4ce9-8203-0363922537a4	2022-08-02 20:25:06.834102+00	2022-08-02 20:25:06.8342+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+3	BANK_ACCOUNT	Bank Account	Business Savings Account	72f1dcfe-5d7d-4239-bf9d-e12469309716	2022-08-02 20:25:06.834588+00	2022-08-02 20:25:06.834631+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+4	ACCOUNT	Account	Sales	200	2022-08-02 20:25:06.849237+00	2022-08-02 20:25:06.849281+00	1	\N	{"active": true, "account_type": "REVENUE", "enable_payments_to_account": false}	f	\N
+5	ACCOUNT	Account	Other Revenue	260	2022-08-02 20:25:06.849477+00	2022-08-02 20:25:06.849508+00	1	\N	{"active": true, "account_type": "REVENUE", "enable_payments_to_account": false}	f	\N
+6	ACCOUNT	Account	Interest Income	270	2022-08-02 20:25:06.849634+00	2022-08-02 20:25:06.849665+00	1	\N	{"active": true, "account_type": "REVENUE", "enable_payments_to_account": false}	f	\N
+7	ACCOUNT	Account	Purchases	300	2022-08-02 20:25:06.849734+00	2022-08-02 20:25:06.849763+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+8	ACCOUNT	Account	Cost of Goods Sold	310	2022-08-02 20:25:06.849831+00	2022-08-02 20:25:06.849861+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+9	ACCOUNT	Account	Advertising	400	2022-08-02 20:25:06.849929+00	2022-08-02 20:25:06.850065+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+10	ACCOUNT	Account	Bank Fees	404	2022-08-02 20:25:06.850152+00	2022-08-02 20:25:06.8502+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+11	ACCOUNT	Account	Cleaning	408	2022-08-02 20:25:06.850582+00	2022-08-02 20:25:06.850621+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+12	ACCOUNT	Account	Consulting & Accounting	412	2022-08-02 20:25:06.850725+00	2022-08-02 20:25:06.850767+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+13	ACCOUNT	Account	Depreciation	416	2022-08-02 20:25:06.85094+00	2022-08-02 20:25:06.851022+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+14	ACCOUNT	Account	Entertainment	420	2022-08-02 20:25:06.851564+00	2022-08-02 20:25:06.851622+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+15	ACCOUNT	Account	Freight & Courier	425	2022-08-02 20:25:06.851818+00	2022-08-02 20:25:06.851871+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+16	ACCOUNT	Account	General Expenses	429	2022-08-02 20:25:06.851943+00	2022-08-02 20:25:06.851971+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+17	ACCOUNT	Account	Insurance	433	2022-08-02 20:25:06.852035+00	2022-08-02 20:25:06.852063+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+18	ACCOUNT	Account	Interest Expense	437	2022-08-02 20:25:06.852232+00	2022-08-02 20:25:06.852261+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+19	ACCOUNT	Account	Legal expenses	441	2022-08-02 20:25:06.852325+00	2022-08-02 20:25:06.852352+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+20	ACCOUNT	Account	Light, Power, Heating	445	2022-08-02 20:25:06.852416+00	2022-08-02 20:25:06.852444+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+21	ACCOUNT	Account	Motor Vehicle Expenses	449	2022-08-02 20:25:06.852507+00	2022-08-02 20:25:06.852535+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+22	ACCOUNT	Account	Office Expenses	453	2022-08-02 20:25:06.852597+00	2022-08-02 20:25:06.852625+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+23	ACCOUNT	Account	Printing & Stationery	461	2022-08-02 20:25:06.852687+00	2022-08-02 20:25:06.852714+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+24	ACCOUNT	Account	Rent	469	2022-08-02 20:25:06.852777+00	2022-08-02 20:25:06.852805+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+25	ACCOUNT	Account	Repairs and Maintenance	473	2022-08-02 20:25:06.852868+00	2022-08-02 20:25:06.852895+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+26	ACCOUNT	Account	Wages and Salaries	477	2022-08-02 20:25:06.852958+00	2022-08-02 20:25:06.852986+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+27	ACCOUNT	Account	Superannuation	478	2022-08-02 20:25:06.853048+00	2022-08-02 20:25:06.853076+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+28	ACCOUNT	Account	Subscriptions	485	2022-08-02 20:25:06.853138+00	2022-08-02 20:25:06.853165+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+29	ACCOUNT	Account	Telephone & Internet	489	2022-08-02 20:25:06.853228+00	2022-08-02 20:25:06.853257+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+30	ACCOUNT	Account	Travel - National	493	2022-08-02 20:25:06.853438+00	2022-08-02 20:25:06.853466+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+31	ACCOUNT	Account	Travel - International	494	2022-08-02 20:25:06.853528+00	2022-08-02 20:25:06.853556+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+32	ACCOUNT	Account	Bank Revaluations	497	2022-08-02 20:25:06.853618+00	2022-08-02 20:25:06.853646+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+33	ACCOUNT	Account	Unrealised Currency Gains	498	2022-08-02 20:25:06.853707+00	2022-08-02 20:25:06.853735+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+34	ACCOUNT	Account	Realised Currency Gains	499	2022-08-02 20:25:06.853797+00	2022-08-02 20:25:06.853825+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+35	ACCOUNT	Account	Income Tax Expense	505	2022-08-02 20:25:06.853887+00	2022-08-02 20:25:06.853915+00	1	\N	{"active": true, "account_type": "EXPENSE", "enable_payments_to_account": false}	f	\N
+36	ACCOUNT	Account	Accounts Receivable	610	2022-08-02 20:25:06.853977+00	2022-08-02 20:25:06.854005+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+37	ACCOUNT	Account	Prepayments	620	2022-08-02 20:25:06.854066+00	2022-08-02 20:25:06.854094+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+38	ACCOUNT	Account	Inventory	630	2022-08-02 20:25:06.854156+00	2022-08-02 20:25:06.854184+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+39	ACCOUNT	Account	Office Equipment	710	2022-08-02 20:25:06.854344+00	2022-08-02 20:25:06.854508+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+40	ACCOUNT	Account	Less Accumulated Depreciation on Office Equipment	711	2022-08-02 20:25:06.854693+00	2022-08-02 20:25:06.855219+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+41	ACCOUNT	Account	Computer Equipment	720	2022-08-02 20:25:06.855554+00	2022-08-02 20:25:06.855586+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+42	ACCOUNT	Account	Less Accumulated Depreciation on Computer Equipment	721	2022-08-02 20:25:06.855657+00	2022-08-02 20:25:06.855685+00	1	\N	{"active": true, "account_type": "ASSET", "enable_payments_to_account": false}	f	\N
+43	ACCOUNT	Account	Accounts Payable	800	2022-08-02 20:25:06.855751+00	2022-08-02 20:25:06.855779+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+44	ACCOUNT	Account	Unpaid Expense Claims	801	2022-08-02 20:25:06.855844+00	2022-08-02 20:25:06.855872+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+45	ACCOUNT	Account	Sales Tax	820	2022-08-02 20:25:06.855935+00	2022-08-02 20:25:06.855963+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+46	ACCOUNT	Account	Employee Tax Payable	825	2022-08-02 20:25:06.856026+00	2022-08-02 20:25:06.856054+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+47	ACCOUNT	Account	Superannuation Payable	826	2022-08-02 20:25:06.856116+00	2022-08-02 20:25:06.856144+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+48	ACCOUNT	Account	Income Tax Payable	830	2022-08-02 20:25:06.856207+00	2022-08-02 20:25:06.856235+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+49	ACCOUNT	Account	Revenue Received in Advance	835	2022-08-02 20:25:06.856451+00	2022-08-02 20:25:06.85648+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+50	ACCOUNT	Account	Historical Adjustment	840	2022-08-02 20:25:06.856543+00	2022-08-02 20:25:06.856572+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+51	ACCOUNT	Account	Suspense	850	2022-08-02 20:25:06.856635+00	2022-08-02 20:25:06.856663+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+52	ACCOUNT	Account	Clearing Account	855	2022-08-02 20:25:06.856725+00	2022-08-02 20:25:06.856754+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": true}	f	\N
+53	ACCOUNT	Account	Rounding	860	2022-08-02 20:25:06.856816+00	2022-08-02 20:25:06.856844+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+54	ACCOUNT	Account	Tracking Transfers	877	2022-08-02 20:25:06.873717+00	2022-08-02 20:25:06.873766+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+55	ACCOUNT	Account	Owner A Drawings	880	2022-08-02 20:25:06.87384+00	2022-08-02 20:25:06.873918+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": true}	f	\N
+56	ACCOUNT	Account	Owner A Funds Introduced	881	2022-08-02 20:25:06.874055+00	2022-08-02 20:25:06.874095+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": true}	f	\N
+57	ACCOUNT	Account	Loan	900	2022-08-02 20:25:06.874187+00	2022-08-02 20:25:06.874228+00	1	\N	{"active": true, "account_type": "LIABILITY", "enable_payments_to_account": false}	f	\N
+58	ACCOUNT	Account	Retained Earnings	960	2022-08-02 20:25:06.874322+00	2022-08-02 20:25:06.874362+00	1	\N	{"active": true, "account_type": "EQUITY", "enable_payments_to_account": false}	f	\N
+59	ACCOUNT	Account	Owner A Share Capital	970	2022-08-02 20:25:06.874566+00	2022-08-02 20:25:06.874609+00	1	\N	{"active": true, "account_type": "EQUITY", "enable_payments_to_account": true}	f	\N
+60	CONTACT	Contact	Harshitha P	fbf56259-0a62-4582-8bc5-024f57f659f5	2022-08-02 20:25:07.631648+00	2022-08-02 20:25:07.631688+00	1	\N	{"email": "harshitha.p@fyle.in"}	f	\N
+61	CONTACT	Contact	Coco Cafe	9a777d01-2bfb-4623-807d-129d3f077e21	2022-08-02 20:25:07.631754+00	2022-08-02 20:25:07.631782+00	1	\N	{"email": null}	f	\N
+62	CONTACT	Contact	Ridgeway Bank	43d1337e-4360-4589-9a76-1d0538c4ce6f	2022-08-02 20:25:07.631845+00	2022-08-02 20:25:07.631872+00	1	\N	{"email": null}	f	\N
+63	CONTACT	Contact	Office Supplies Company	cb906ad4-b1d7-44bf-b25a-4862c7059a43	2022-08-02 20:25:07.631933+00	2022-08-02 20:25:07.631961+00	1	\N	{"email": null}	f	\N
+64	CONTACT	Contact	7-Eleven	f41cbe7c-de57-4927-b8a0-49fb0151be77	2022-08-02 20:25:07.632022+00	2022-08-02 20:25:07.63205+00	1	\N	{"email": ""}	f	\N
+65	CONTACT	Contact	Woolworths Market	be4cfc19-c55a-4f19-817b-4eee4ccf2c01	2022-08-02 20:25:07.632111+00	2022-08-02 20:25:07.632138+00	1	\N	{"email": null}	f	\N
+66	CONTACT	Contact	Gable Print	406e9eba-9939-48de-a300-57853bb1a6a4	2022-08-02 20:25:07.632199+00	2022-08-02 20:25:07.632239+00	1	\N	{"email": null}	f	\N
+67	CONTACT	Contact	Orlena Greenville	940f1da6-6d14-46e5-a692-77de93732f96	2022-08-02 20:25:07.632451+00	2022-08-02 20:25:07.63248+00	1	\N	{"email": ""}	f	\N
+68	CONTACT	Contact	Dimples Warehouse	733b5108-96cb-4d43-bc5b-7f37a2f77c26	2022-08-02 20:25:07.632542+00	2022-08-02 20:25:07.632569+00	1	\N	{"email": null}	f	\N
+69	CONTACT	Contact	Fulton Airport Parking	d8ce2ea5-d312-4c34-9656-8554b8071a81	2022-08-02 20:25:07.63263+00	2022-08-02 20:25:07.632658+00	1	\N	{"email": null}	f	\N
+70	CONTACT	Contact	Espresso 31	f5cb9bf0-7aa2-473e-8115-87863dee95f3	2022-08-02 20:25:07.632719+00	2022-08-02 20:25:07.632747+00	1	\N	{"email": ""}	f	\N
+71	CONTACT	Contact	24 Locks	2e68080d-b3bd-4051-b33c-9f031550b958	2022-08-02 20:25:07.632808+00	2022-08-02 20:25:07.632835+00	1	\N	{"email": null}	f	\N
+72	CONTACT	Contact	Epicenter Cafe	f6ecf9a4-ee5a-4e9c-b52b-bec4737e8623	2022-08-02 20:25:07.632896+00	2022-08-02 20:25:07.632923+00	1	\N	{"email": ""}	f	\N
+73	CONTACT	Contact	Melrose Parking	b6c2d5e5-94f2-4df5-a7c2-f1de0bff034f	2022-08-02 20:25:07.632984+00	2022-08-02 20:25:07.633012+00	1	\N	{"email": null}	f	\N
+74	CONTACT	Contact	Berry Brew	16cf5671-54a8-4d4e-9a55-f2be8ec3dcf4	2022-08-02 20:25:07.633072+00	2022-08-02 20:25:07.6331+00	1	\N	{"email": null}	f	\N
+75	CONTACT	Contact	Brunswick Petals	162c177a-3391-4742-890f-f3ebfe0df1f3	2022-08-02 20:25:07.633161+00	2022-08-02 20:25:07.633189+00	1	\N	{"email": null}	f	\N
+76	CONTACT	Contact	PC Complete	aacecb74-ef1e-44e0-ba52-0bc521639697	2022-08-02 20:25:07.633379+00	2022-08-02 20:25:07.633407+00	1	\N	{"email": null}	f	\N
+77	CONTACT	Contact	Bayside Wholesale	c01292e3-1a1a-4a70-b120-1218f8f71096	2022-08-02 20:25:07.633469+00	2022-08-02 20:25:07.633496+00	1	\N	{"email": ""}	f	\N
+78	CONTACT	Contact	SMART Agency	3f58af86-b4d9-4ac9-950c-2e4cdd94d5be	2022-08-02 20:25:07.633557+00	2022-08-02 20:25:07.633585+00	1	\N	{"email": null}	f	\N
+79	CONTACT	Contact	Central Copiers	cade9142-f5fe-4970-b39e-2f388b8740c0	2022-08-02 20:25:07.633646+00	2022-08-02 20:25:07.633673+00	1	\N	{"email": null}	f	\N
+80	CONTACT	Contact	Xero	3b30a108-9156-4a42-a893-3bbbe7af1ef8	2022-08-02 20:25:07.633734+00	2022-08-02 20:25:07.633761+00	1	\N	{"email": null}	f	\N
+81	CONTACT	Contact	Truxton Property Management	f4af0a9b-e710-4611-8618-4360944ce1f3	2022-08-02 20:25:07.633822+00	2022-08-02 20:25:07.63385+00	1	\N	{"email": null}	f	\N
+82	CONTACT	Contact	Swanston Security	78b7299c-4f1f-46d2-acc3-44a46bd361b1	2022-08-02 20:25:07.63391+00	2022-08-02 20:25:07.633938+00	1	\N	{"email": null}	f	\N
+83	CONTACT	Contact	MCO Cleaning Services	537d4d64-2fc1-4521-89c3-489d20fae20d	2022-08-02 20:25:07.633999+00	2022-08-02 20:25:07.634027+00	1	\N	{"email": null}	f	\N
+84	CONTACT	Contact	Carlton Functions	4ad99fdf-a0cc-4aaa-a1a6-6a1549b9df40	2022-08-02 20:25:07.634088+00	2022-08-02 20:25:07.634115+00	1	\N	{"email": null}	f	\N
+85	CONTACT	Contact	Net Connect	b553bc60-5fb9-4d5e-b604-71aaf657cd3d	2022-08-02 20:25:07.634177+00	2022-08-02 20:25:07.634204+00	1	\N	{"email": ""}	f	\N
+86	CONTACT	Contact	ABC Furniture	39efa556-8dda-4c81-83d3-a631e59eb6d3	2022-08-02 20:25:07.634399+00	2022-08-02 20:25:07.634428+00	1	\N	{"email": "info@abfl.com"}	f	\N
+87	CONTACT	Contact	Capital Cab Co	f93cd75c-9412-4a8c-91a3-b41fe751aa01	2022-08-02 20:25:07.634488+00	2022-08-02 20:25:07.634516+00	1	\N	{"email": ""}	f	\N
+88	CONTACT	Contact	Hoyt Productions	1d80716b-427e-4cad-80c6-c4b3a18eb23d	2022-08-02 20:25:07.634577+00	2022-08-02 20:25:07.634604+00	1	\N	{"email": null}	f	\N
+89	CONTACT	Contact	PowerDirect	8f48b066-e047-459d-80dd-d495b36608d0	2022-08-02 20:25:07.634665+00	2022-08-02 20:25:07.634692+00	1	\N	{"email": ""}	f	\N
+90	CONTACT	Contact	Gateway Motors	ddd4ba65-9b7e-4adf-be7a-e91efbb6c082	2022-08-02 20:25:07.634753+00	2022-08-02 20:25:07.63478+00	1	\N	{"email": null}	f	\N
+91	CONTACT	Contact	Hamilton Smith Ltd	fd89489e-699c-4d77-a881-10c127bfbeb3	2022-08-02 20:25:07.634841+00	2022-08-02 20:25:07.634868+00	1	\N	{"email": "info@hsg.co"}	f	\N
+92	CONTACT	Contact	Ridgeway University	65a44264-dea0-481a-b49d-18a334a72334	2022-08-02 20:25:07.634929+00	2022-08-02 20:25:07.634957+00	1	\N	{"email": ""}	f	\N
+93	CONTACT	Contact	Boom FM	37918a06-92f6-4edb-bfe0-1fc041c90f8b	2022-08-02 20:25:07.635017+00	2022-08-02 20:25:07.635044+00	1	\N	{"email": null}	f	\N
+94	CONTACT	Contact	Bayside Club	b68deed5-49c8-416a-9f35-2ab14bb1fb6b	2022-08-02 20:25:07.635105+00	2022-08-02 20:25:07.635132+00	1	\N	{"email": "secretarybob@bsclub.co"}	f	\N
+95	CONTACT	Contact	Marine Systems	5b96e86b-418e-48e8-8949-308c14aec278	2022-08-02 20:25:07.635193+00	2022-08-02 20:25:07.635232+00	1	\N	{"email": ""}	f	\N
+96	CONTACT	Contact	City Agency	fa52f698-1244-47cd-8fb9-5f32b6490a55	2022-08-02 20:25:07.635407+00	2022-08-02 20:25:07.635435+00	1	\N	{"email": null}	f	\N
+97	CONTACT	Contact	DIISR - Small Business Services	a3cf95c5-9d26-42e1-80c0-69e5f24886d3	2022-08-02 20:25:07.635507+00	2022-08-02 20:25:07.635536+00	1	\N	{"email": ""}	f	\N
+98	CONTACT	Contact	Young Bros Transport	021b18f8-b62f-4d8a-889e-71fd5427892a	2022-08-02 20:25:07.635601+00	2022-08-02 20:25:07.63563+00	1	\N	{"email": "rog@ybt.co"}	f	\N
+99	CONTACT	Contact	Port & Philip Freight	378f211a-64c2-4327-bab3-9b057f4f51d9	2022-08-02 20:25:07.635695+00	2022-08-02 20:25:07.635724+00	1	\N	{"email": ""}	f	\N
+100	CONTACT	Contact	Bank West	47f61ab1-5245-40a2-a3a5-bc224c850c8d	2022-08-02 20:25:07.635789+00	2022-08-02 20:25:07.63592+00	1	\N	{"email": ""}	f	\N
+101	CONTACT	Contact	Rex Media Group	3cbd5263-0965-4c4e-932c-bf50e3297610	2022-08-02 20:25:07.636488+00	2022-08-02 20:25:07.636554+00	1	\N	{"email": "info@rexmedia.co"}	f	\N
+102	CONTACT	Contact	Basket Case	85d15bf3-207f-4278-8449-e12dade98c66	2022-08-02 20:25:07.636769+00	2022-08-02 20:25:07.637245+00	1	\N	{"email": ""}	f	\N
+103	CONTACT	Contact	Petrie McLoud Watson & Associates	2aaaeb6b-b519-4698-9b0a-f74ba1d39be6	2022-08-02 20:25:07.637625+00	2022-08-02 20:25:07.637678+00	1	\N	{"email": null}	f	\N
+104	CONTACT	Contact	City Limousines	7c913d33-39d5-4a1c-b8b1-e23f5fc999e0	2022-08-02 20:25:07.637762+00	2022-08-02 20:25:07.638441+00	1	\N	{"email": ""}	f	\N
+105	CONTACT	Contact	Joanna	9eecdd86-78bb-47c9-95df-986369748151	2022-08-02 20:25:07.638561+00	2022-08-02 20:25:07.638592+00	1	\N	{"email": "ashwin.t@fyle.in"}	f	\N
+106	CONTACT	Contact	Sravan K	229b7701-21a2-4539-b39e-5c34f56e1711	2022-08-02 20:25:07.638661+00	2022-08-02 20:25:07.638691+00	1	\N	{"email": "sravan.kumar@fyle.in"}	f	\N
+108	CUSTOMER	Customer	Hamilton Smith Ltd	fd89489e-699c-4d77-a881-10c127bfbeb3	2022-08-02 20:25:09.006121+00	2022-08-02 20:25:09.006197+00	1	\N	{"email": "info@hsg.co"}	f	\N
+109	CUSTOMER	Customer	Ridgeway University	65a44264-dea0-481a-b49d-18a334a72334	2022-08-02 20:25:09.008587+00	2022-08-02 20:25:09.008686+00	1	\N	{"email": ""}	f	\N
+110	CUSTOMER	Customer	Boom FM	37918a06-92f6-4edb-bfe0-1fc041c90f8b	2022-08-02 20:25:09.008782+00	2022-08-02 20:25:09.008819+00	1	\N	{"email": null}	f	\N
+111	CUSTOMER	Customer	Bayside Club	b68deed5-49c8-416a-9f35-2ab14bb1fb6b	2022-08-02 20:25:09.008894+00	2022-08-02 20:25:09.008924+00	1	\N	{"email": "secretarybob@bsclub.co"}	f	\N
+112	CUSTOMER	Customer	Marine Systems	5b96e86b-418e-48e8-8949-308c14aec278	2022-08-02 20:25:09.008994+00	2022-08-02 20:25:09.009596+00	1	\N	{"email": ""}	f	\N
+113	CUSTOMER	Customer	City Agency	fa52f698-1244-47cd-8fb9-5f32b6490a55	2022-08-02 20:25:09.009978+00	2022-08-02 20:25:09.010133+00	1	\N	{"email": null}	f	\N
+114	CUSTOMER	Customer	DIISR - Small Business Services	a3cf95c5-9d26-42e1-80c0-69e5f24886d3	2022-08-02 20:25:09.016791+00	2022-08-02 20:25:09.01684+00	1	\N	{"email": ""}	f	\N
+115	CUSTOMER	Customer	Young Bros Transport	021b18f8-b62f-4d8a-889e-71fd5427892a	2022-08-02 20:25:09.016952+00	2022-08-02 20:25:09.017387+00	1	\N	{"email": "rog@ybt.co"}	f	\N
+116	CUSTOMER	Customer	Port & Philip Freight	378f211a-64c2-4327-bab3-9b057f4f51d9	2022-08-02 20:25:09.01756+00	2022-08-02 20:25:09.017586+00	1	\N	{"email": ""}	f	\N
+117	CUSTOMER	Customer	Bank West	47f61ab1-5245-40a2-a3a5-bc224c850c8d	2022-08-02 20:25:09.017657+00	2022-08-02 20:25:09.017668+00	1	\N	{"email": ""}	f	\N
+118	CUSTOMER	Customer	Rex Media Group	3cbd5263-0965-4c4e-932c-bf50e3297610	2022-08-02 20:25:09.018006+00	2022-08-02 20:25:09.018037+00	1	\N	{"email": "info@rexmedia.co"}	f	\N
+119	CUSTOMER	Customer	Basket Case	85d15bf3-207f-4278-8449-e12dade98c66	2022-08-02 20:25:09.018113+00	2022-08-02 20:25:09.018141+00	1	\N	{"email": ""}	f	\N
+120	CUSTOMER	Customer	Petrie McLoud Watson & Associates	2aaaeb6b-b519-4698-9b0a-f74ba1d39be6	2022-08-02 20:25:09.018216+00	2022-08-02 20:25:09.018458+00	1	\N	{"email": null}	f	\N
+121	CUSTOMER	Customer	City Limousines	7c913d33-39d5-4a1c-b8b1-e23f5fc999e0	2022-08-02 20:25:09.018579+00	2022-08-02 20:25:09.018635+00	1	\N	{"email": ""}	f	\N
+122	ITEM	Item	BOOK	8bbaf73c-5a32-4458-addf-bd30a36c8551	2022-08-02 20:25:10.084723+00	2022-08-02 20:25:10.084913+00	1	\N	\N	f	\N
+123	ITEM	Item	DevD	6cba12ac-e300-4745-838a-f57dfdb88e11	2022-08-02 20:25:10.085169+00	2022-08-02 20:25:10.085391+00	1	\N	\N	f	\N
+124	ITEM	Item	DevH	b36131d5-f37e-4cb1-bb9c-320446c7b004	2022-08-02 20:25:10.085522+00	2022-08-02 20:25:10.085571+00	1	\N	\N	f	\N
+125	ITEM	Item	GB1-White	3644c19f-7c46-4e18-93fa-5550c307bcdd	2022-08-02 20:25:10.085664+00	2022-08-02 20:25:10.085696+00	1	\N	\N	f	\N
+126	ITEM	Item	GB3-White	53c1d46d-cf8e-45d2-8dc1-9bd73b0ca9e2	2022-08-02 20:25:10.085758+00	2022-08-02 20:25:10.085788+00	1	\N	\N	f	\N
+127	ITEM	Item	GB6-White	9ce48e6a-118b-40a5-ae43-2e7dea8b18ad	2022-08-02 20:25:10.085861+00	2022-08-02 20:25:10.085892+00	1	\N	\N	f	\N
+128	ITEM	Item	GB9-White	baaba2cb-9abf-4bd4-af24-9429a7e79cec	2022-08-02 20:25:10.085952+00	2022-08-02 20:25:10.085983+00	1	\N	\N	f	\N
+129	ITEM	Item	PMBr	ec4362af-a038-4984-ab93-1bba3b6bd402	2022-08-02 20:25:10.086039+00	2022-08-02 20:25:10.086069+00	1	\N	\N	f	\N
+130	ITEM	Item	PMD	ffb8b59d-17d8-4245-af16-cdf7a689dcb9	2022-08-02 20:25:10.086126+00	2022-08-02 20:25:10.086156+00	1	\N	\N	f	\N
+131	ITEM	Item	PMDD	c8151f6e-09bd-43a4-8726-d9c9122d8200	2022-08-02 20:25:10.086212+00	2022-08-02 20:25:10.086255+00	1	\N	\N	f	\N
+132	ITEM	Item	PMWe	3add2df0-f436-431e-a59b-0e76fb4d6720	2022-08-02 20:25:10.086577+00	2022-08-02 20:25:10.086711+00	1	\N	\N	f	\N
+133	ITEM	Item	Support-M	e82eaa5c-3c5f-47ed-b2a9-7de266ab1eaf	2022-08-02 20:25:10.086816+00	2022-08-02 20:25:10.086859+00	1	\N	\N	f	\N
+134	ITEM	Item	Train-MS	e5cc8904-5865-4846-ad0c-5d9b695b8af9	2022-08-02 20:25:10.086947+00	2022-08-02 20:25:10.086988+00	1	\N	\N	f	\N
+135	ITEM	Item	TSL - Black	dc63985f-7e32-4669-b60b-8b550417ddbb	2022-08-02 20:25:10.087074+00	2022-08-02 20:25:10.087116+00	1	\N	\N	f	\N
+136	ITEM	Item	TSM - Black	56268ecd-d722-4f39-ac6b-1f34b639393a	2022-08-02 20:25:10.087354+00	2022-08-02 20:25:10.087393+00	1	\N	\N	f	\N
+137	ITEM	Item	TSS - Black	d3687dce-a3c2-4d07-9364-0c540f73c4f8	2022-08-02 20:25:10.087455+00	2022-08-02 20:25:10.087485+00	1	\N	\N	f	\N
+138	REGION	Region	Eastside	7b354c1c-cf59-42fc-9449-a65c51988335	2022-08-02 20:25:10.478532+00	2022-08-02 20:25:10.478581+00	1	\N	\N	f	\N
+139	REGION	Region	North	5e2974a2-097d-4f3b-bfd5-605d78c4a282	2022-08-02 20:25:10.478655+00	2022-08-02 20:25:10.478687+00	1	\N	\N	f	\N
+140	REGION	Region	South	e83ea9f2-de2c-44d8-b4f8-a5065bed339e	2022-08-02 20:25:10.478751+00	2022-08-02 20:25:10.478773+00	1	\N	\N	f	\N
+141	REGION	Region	West Coast	fc96efd9-b832-4b31-a93e-61f56158adad	2022-08-02 20:25:10.478833+00	2022-08-02 20:25:10.478862+00	1	\N	\N	f	\N
+142	TAX_CODE	Tax Code	Exempt Sales @0.0%	CAN030	2022-08-02 20:25:10.961315+00	2022-08-02 20:25:10.961376+00	1	\N	{"tax_rate": 0.0, "tax_refs": [{"Name": "No Tax", "Rate": 0.0, "IsCompound": false, "IsNonRecoverable": false}]}	f	\N
+143	TAX_CODE	Tax Code	MB - GST/RST on Purchases @12.0%	CAN029	2022-08-02 20:25:10.961472+00	2022-08-02 20:25:10.961502+00	1	\N	{"tax_rate": 12.0, "tax_refs": [{"Name": "RST", "Rate": 7.0, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "GST", "Rate": 5.0, "IsCompound": false, "IsNonRecoverable": false}]}	f	\N
+144	TAX_CODE	Tax Code	MB - GST/RST on Sales @12.0%	CAN028	2022-08-02 20:25:10.961576+00	2022-08-02 20:25:10.961606+00	1	\N	{"tax_rate": 12.0, "tax_refs": [{"Name": "RST", "Rate": 7.0, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "GST", "Rate": 5.0, "IsCompound": false, "IsNonRecoverable": false}]}	f	\N
+145	TAX_CODE	Tax Code	Sales Tax on Imports @0.0%	GSTONIMPORTS	2022-08-02 20:25:10.961764+00	2022-08-02 20:25:10.961798+00	1	\N	{"tax_rate": 0.0, "tax_refs": [{"Name": "TAX", "Rate": 0.0, "IsCompound": false, "IsNonRecoverable": false}]}	f	\N
+146	TAX_CODE	Tax Code	Tax Exempt @0.0%	NONE	2022-08-02 20:25:10.961914+00	2022-08-02 20:25:10.961973+00	1	\N	{"tax_rate": 0.0, "tax_refs": [{"Name": "No Tax", "Rate": 0.0, "IsCompound": false, "IsNonRecoverable": false}]}	f	\N
+147	TAX_CODE	Tax Code	Tax on Consulting @8.25%	OUTPUT	2022-08-02 20:25:10.962769+00	2022-08-02 20:25:10.962801+00	1	\N	{"tax_rate": 8.25, "tax_refs": [{"Name": "City Tax", "Rate": 4.0, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "State Tax", "Rate": 4.25, "IsCompound": false, "IsNonRecoverable": false}]}	f	\N
+148	TAX_CODE	Tax Code	Tax on Goods @8.75%	TAX001	2022-08-02 20:25:10.962877+00	2022-08-02 20:25:10.962905+00	1	\N	{"tax_rate": 8.75, "tax_refs": [{"Name": "State Tax", "Rate": 4.5, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "City Tax", "Rate": 4.25, "IsCompound": false, "IsNonRecoverable": false}]}	f	\N
+149	TAX_CODE	Tax Code	Tax on Purchases @8.25%	INPUT	2022-08-02 20:25:10.962973+00	2022-08-02 20:25:10.963001+00	1	\N	{"tax_rate": 8.25, "tax_refs": [{"Name": "State Tax", "Rate": 4.25, "IsCompound": false, "IsNonRecoverable": false}, {"Name": "City Tax", "Rate": 4.0, "IsCompound": false, "IsNonRecoverable": false}]}	f	\N
+107	CONTACT	Contact	Credit Card Misc	3aaf24ba-6d35-455f-b92a-9e0dc20d3d9a	2022-08-02 20:25:07.638758+00	2022-08-02 20:28:19.432122+00	1	\N	{"email": ""}	f	\N
 \.
 
 
@@ -2634,6 +2635,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 152	fyle	0019_expense_paid_on_fyle	2024-06-18 16:26:06.802359+00
 153	fyle	0020_expensegroup_export_url	2024-08-03 14:33:54.988078+00
 154	xero	0010_bill_is_retired	2024-09-03 11:40:50.93784+00
+155	fyle_accounting_mappings	0026_destinationattribute_code	2024-10-01 09:00:27.71815+00
 \.
 
 
@@ -5171,7 +5173,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 40, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 154, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 155, true);
 
 
 --
@@ -6788,4 +6790,3 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
-
