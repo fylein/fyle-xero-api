@@ -33,7 +33,7 @@ class LogPostRequestMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.method in ['POST', 'PUT'] :
+        if request.method in ['POST', 'PUT']:
             try:
                 body_unicode = request.body.decode('utf-8')
                 request_body = json.loads(body_unicode)
