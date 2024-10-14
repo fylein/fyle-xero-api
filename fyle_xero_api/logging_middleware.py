@@ -8,6 +8,7 @@ from django.http import HttpResponse
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
+
 class ErrorHandlerMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -27,9 +28,11 @@ class ErrorHandlerMiddleware:
 
             return HttpResponse("Error processing the request.", status=500)
 
+
 class LogPostRequestMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
+
     def __call__(self, request):
         if request.method in ['POST', 'PUT']:
             try:
