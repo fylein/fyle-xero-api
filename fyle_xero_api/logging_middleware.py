@@ -1,4 +1,3 @@
-import json
 import logging
 import traceback
 
@@ -26,22 +25,3 @@ class ErrorHandlerMiddleware:
                 logger.error(str(message).replace("\n", ""))
 
             return HttpResponse("Error processing the request.", status=500)
-
-
-class LogPostRequestMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        if request.method in ['POST', 'PUT']:
-            try:
-                body_unicode = request.body.decode('utf-8')
-                request_body = json.loads(body_unicode)
-                logger.info("POST request to %s: %s", request.path, request_body)
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                logger.warning("Failed to decode POST request body for %s", request.path)
-            except Exception as e:
-                logger.info('Something went wrong when logging post call - %s', e)
-
-        response = self.get_response(request)
-        return response
