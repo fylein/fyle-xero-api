@@ -201,6 +201,11 @@ LOGGING = {
             "handlers": ["debug_logs"],
             "propagate": True
         },
+        'xerosdk.apis.api_base': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True
+        },
     },
 }
 
