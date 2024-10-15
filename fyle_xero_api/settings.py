@@ -58,6 +58,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "fyle_xero_api.logging_middleware.LogPostRequestMiddleware",
     "request_logging.middleware.LoggingMiddleware",
     "fyle_xero_api.logging_middleware.ErrorHandlerMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -148,7 +149,7 @@ Q_CLUSTER = {
 
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": True,
+    "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
             "format": "{levelname} %s {asctime} {module} {message} " % SERVICE_NAME,
@@ -156,6 +157,10 @@ LOGGING = {
         },
         "requests": {
             "format": "request {levelname} %s {asctime} {message}" % SERVICE_NAME,
+            "style": "{",
+        },
+        "standard": {
+            "format": "{levelname} %s {asctime} {name} {message}" % SERVICE_NAME,
             "style": "{",
         },
     },
@@ -169,6 +174,10 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "stream": sys.stdout,
             "formatter": "requests",
+        },
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
         },
     },
     "loggers": {
@@ -198,6 +207,11 @@ LOGGING = {
         },
         "fyle_integrations_imports": {
             "handlers": ["debug_logs"],
+            "propagate": True
+        },
+        "xerosdk.apis.api_base": {
+            "handlers": ["console"],
+            "level": "INFO",
             "propagate": True
         },
     },
