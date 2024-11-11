@@ -7,6 +7,7 @@ data = {
             "import_card_credits": True,
             "ccc_export_date_type": "",
             "expense_state": "",
+            "split_expense_grouping": "MULTIPLE_LINE_ITEM",
         },
         "workspace_general_settings": {
             "reimbursable_expenses_object": "PURCHASE BILL",
@@ -45,6 +46,7 @@ data = {
             "ccc_export_date_type": "spent_at",
             "ccc_expense_state": "PAYMENT_PROCESSING",
             "import_card_credits": True,
+            "split_expense_grouping": "MULTIPLE_LINE_ITEM",
         },
         "general_mappings": {
             "bank_account": {"id": "10", "name": "Visa"},
