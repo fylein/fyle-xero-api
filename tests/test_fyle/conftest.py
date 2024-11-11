@@ -33,6 +33,7 @@ def create_temp_workspace(db):
         ccc_export_date_type="spent_at",
     )
 
+
 @pytest.fixture
 def update_config_for_split_expense_grouping(db):
     def _update_config_for_split_expense_grouping(general_settings, expense_group_settings):

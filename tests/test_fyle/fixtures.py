@@ -282,7 +282,7 @@ data = {
             "bank_transaction_id": None,
         },
     ],
-    
+
     "ccc_split_expenses": [
         {
             "id": 15133,
