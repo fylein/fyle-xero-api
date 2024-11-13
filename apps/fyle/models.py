@@ -543,7 +543,7 @@ class ExpenseGroup(models.Model):
                 if ccc_expenses_with_bank_transaction_id:
                     split_expense_group_fields = [
                         field for field in corporate_credit_card_expense_group_field
-                        if field not in ('spent_at', 'posted_at', 'expense_id')
+                        if field not in ('expense_id', 'expense_number')
                     ]
                     split_expense_group_fields.append('bank_transaction_id')
 
