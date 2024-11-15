@@ -57,7 +57,7 @@ def schedule_sync(
             defaults={
                 "schedule_type": Schedule.MINUTES,
                 "minutes": hours * 60,
-                "next_run": datetime.now(),
+                "next_run": datetime.now() + timedelta(hours=hours),
             }
         )
 
