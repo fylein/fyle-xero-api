@@ -7,6 +7,7 @@ from apps.fyle.models import (
     get_default_expense_group_fields,
     get_default_expense_state,
 )
+from apps.workspaces.models import WorkspaceGeneralSettings
 from tests.test_fyle.fixtures import data
 
 
@@ -104,3 +105,106 @@ def test_create_expense_groups_by_report_id_fund_source(db):
 
     expense_groups = ExpenseGroup.objects.last()
     assert expense_groups.exported_at == None
+
+
+def test_split_expense_grouping_with_no_bank_transaction_id(db, update_config_for_split_expense_grouping):
+    '''
+    Test for grouping of 2 expenses with no bank transaction id
+    '''
+    workspace_id = 1
+
+    # Update settings
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
+    update_config_for_split_expense_grouping(general_settings, expense_group_settings)
+
+    # Get reference to expense objects
+    expenses = data['ccc_split_expenses'][:2]
+    for expense in expenses:
+        expense['bank_transaction_id'] = None
+
+    Expense.create_expense_objects(expenses, workspace_id=workspace_id)
+    expense_objects = Expense.objects.filter(expense_id__in=[expense['id'] for expense in expenses])
+
+    assert len(expense_objects) == 2, f'Expected 2 expenses, got {len(expense_objects)}'
+
+    # Test for SINGLE_LINE_ITEM split expense grouping
+    groups = ExpenseGroup.create_expense_groups_by_report_id_fund_source(expense_objects, workspace_id)
+    assert len(groups) == 2, f'Expected 2 groups, got {len(groups)}'
+
+    # Test for MULTIPLE_LINE_ITEM split expense grouping
+    expense_group_settings.split_expense_grouping = 'MULTIPLE_LINE_ITEM'
+    expense_group_settings.save()
+
+    groups = ExpenseGroup.create_expense_groups_by_report_id_fund_source(expense_objects, workspace_id)
+    assert len(groups) == 2, f'Expected 2 groups, got {len(groups)}'
+
+
+def test_split_expense_grouping_with_same_and_different_ids(db, update_config_for_split_expense_grouping):
+    '''
+    Test for grouping of 2 expenses with the same bank transaction id,
+    and one expense with a different bank transaction id
+    '''
+    workspace_id = 1
+
+    # Update settings
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
+    update_config_for_split_expense_grouping(general_settings, expense_group_settings)
+
+    # Get reference to expense objects
+    expenses = data['ccc_split_expenses'][:3]
+    expenses[0]['bank_transaction_id'] = 'sample_1'
+    expenses[1]['bank_transaction_id'] = 'sample_1'
+    expenses[2]['bank_transaction_id'] = 'sample_2'
+
+    Expense.create_expense_objects(expenses, workspace_id=workspace_id)
+    expense_objects = Expense.objects.filter(expense_id__in=[expense['id'] for expense in expenses])
+
+    assert len(expense_objects) == 3, f'Expected 3 expenses, got {len(expense_objects)}'
+
+    # Test for SINGLE_LINE_ITEM split expense grouping
+    groups = ExpenseGroup.create_expense_groups_by_report_id_fund_source(expense_objects, workspace_id)
+    assert len(groups) == 3, f'Expected 3 groups, got {len(groups)}'
+
+    # Test for MULTIPLE_LINE_ITEM split expense grouping
+    expense_group_settings.split_expense_grouping = 'MULTIPLE_LINE_ITEM'
+    expense_group_settings.save()
+
+    groups = ExpenseGroup.create_expense_groups_by_report_id_fund_source(expense_objects, workspace_id)
+    assert len(groups) == 2, f'Expected 2 groups, got {len(groups)}'
+
+
+def test_split_expense_grouping_pairs_of_same_ids(db, update_config_for_split_expense_grouping):
+    '''
+    Test for grouping of 2 pairs of expenses with the same bank transaction ids
+    '''
+    workspace_id = 1
+
+    # Update settings
+    general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
+    update_config_for_split_expense_grouping(general_settings, expense_group_settings)
+
+    # Get reference to expense objects
+    expenses = data['ccc_split_expenses'][:4]
+    expenses[0]['bank_transaction_id'] = 'sample_1'
+    expenses[1]['bank_transaction_id'] = 'sample_1'
+    expenses[2]['bank_transaction_id'] = 'sample_2'
+    expenses[3]['bank_transaction_id'] = 'sample_2'
+
+    Expense.create_expense_objects(expenses, workspace_id=workspace_id)
+    expense_objects = Expense.objects.filter(expense_id__in=[expense['id'] for expense in expenses])
+
+    assert len(expense_objects) == 4, f'Expected 4 expenses, got {len(expense_objects)}'
+
+    # Test for SINGLE_LINE_ITEM split expense grouping
+    groups = ExpenseGroup.create_expense_groups_by_report_id_fund_source(expense_objects, workspace_id)
+    assert len(groups) == 4, f'Expected 4 groups, got {len(groups)}'
+
+    # Test for MULTIPLE_LINE_ITEM split expense grouping
+    expense_group_settings.split_expense_grouping = 'MULTIPLE_LINE_ITEM'
+    expense_group_settings.save()
+
+    groups = ExpenseGroup.create_expense_groups_by_report_id_fund_source(expense_objects, workspace_id)
+    assert len(groups) == 2, f'Expected 2 groups, got {len(groups)}'
