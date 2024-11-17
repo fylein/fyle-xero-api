@@ -32,6 +32,7 @@ class TaskLog(models.Model):
         on_delete=models.PROTECT,
         null=True,
         help_text="Reference to Expense group",
+        unique=True
     )
     payment = models.ForeignKey(
         Payment, on_delete=models.PROTECT, help_text="Reference to Payment", null=True

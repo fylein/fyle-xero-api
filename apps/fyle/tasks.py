@@ -1,6 +1,6 @@
 import logging
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List
 
 from django.db import transaction
@@ -88,6 +88,9 @@ def async_create_expense_groups(
             expenses = []
             reimbursable_expenses_count = 0
 
+            if last_synced_at:
+                last_synced_at = last_synced_at - timedelta(minutes=5)
+
             if FundSourceEnum.PERSONAL in fund_source:
                 expenses.extend(
                     platform.expenses.get(
@@ -107,6 +110,9 @@ def async_create_expense_groups(
             if workspace.last_synced_at or expenses:
                 workspace.last_synced_at = datetime.now()
                 reimbursable_expenses_count += len(expenses)
+
+            if ccc_last_synced_at:
+                ccc_last_synced_at = ccc_last_synced_at - timedelta(minutes=5)
 
             if FundSourceEnum.CCC in fund_source:
                 expenses.extend(
