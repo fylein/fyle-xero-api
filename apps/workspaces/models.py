@@ -167,7 +167,7 @@ class WorkspaceGeneralSettings(models.Model):
         default=False, help_text="Map Merchant to Contact for CCC Expenses"
     )
     change_accounting_period = models.BooleanField(
-        default=False, help_text="Change the accounting period"
+        default=True, help_text="Change the accounting period"
     )
     import_categories = models.BooleanField(
         default=False, help_text="Auto import Categories to Fyle"
