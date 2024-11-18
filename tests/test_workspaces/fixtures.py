@@ -96,6 +96,7 @@ data = {
             },
             "paid_on_qbo": False,
             "payment_number": "P/2022/05/R/7",
+            "bank_transaction_id": None,
         }
     ],
     "workspace_schedule": {
