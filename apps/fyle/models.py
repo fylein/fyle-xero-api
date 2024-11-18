@@ -14,7 +14,7 @@ from django.db.models import Count, JSONField
 from fyle_accounting_mappings.models import ExpenseAttribute
 
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
-from apps.workspaces.models import Workspace
+from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -35,6 +35,7 @@ ALLOWED_FIELDS = [
     "spent_at",
     "expense_id",
     "posted_at",
+    "bank_transaction_id",
 ]
 
 
@@ -61,6 +62,8 @@ SOURCE_ACCOUNT_MAP = {
     PlatformExpensesEnum.PERSONAL_CASH_ACCOUNT: FundSourceEnum.PERSONAL,
     PlatformExpensesEnum.PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT: FundSourceEnum.CCC,
 }
+
+SPLIT_EXPENSE_GROUPING = (('SINGLE_LINE_ITEM', 'SINGLE_LINE_ITEM'), ('MULTIPLE_LINE_ITEM', 'MULTIPLE_LINE_ITEM'))
 
 
 def _format_date(date_string) -> datetime:
@@ -126,6 +129,7 @@ class Expense(models.Model):
     )
     purpose = models.TextField(null=True, blank=True, help_text="Purpose")
     report_id = models.CharField(max_length=255, help_text="Report ID")
+    bank_transaction_id = models.CharField(max_length=255, null=True, blank=True, help_text='Bank Transaction ID')
     billable = models.BooleanField(default=False, help_text="Expense billable or not")
     file_ids = ArrayField(
         base_field=models.CharField(max_length=255), null=True, help_text="File IDs"
@@ -199,6 +203,7 @@ class Expense(models.Model):
                 "corporate_card_id": expense["corporate_card_id"],
                 "purpose": expense["purpose"],
                 "report_id": expense["report_id"],
+                "bank_transaction_id": expense["bank_transaction_id"],
                 "file_ids": expense["file_ids"],
                 "spent_at": expense["spent_at"],
                 "posted_at": expense["posted_at"],
@@ -260,6 +265,10 @@ def get_default_ccc_expense_state():
     return ExpenseStateEnum.PAID
 
 
+def get_default_split_expense_grouping():
+    return 'MULTIPLE_LINE_ITEM'
+
+
 CCC_EXPENSE_STATE = (
     (ExpenseStateEnum.APPROVED, ExpenseStateEnum.APPROVED),
     (ExpenseStateEnum.PAYMENT_PROCESSING, ExpenseStateEnum.PAYMENT_PROCESSING),
@@ -314,6 +323,7 @@ class ExpenseGroupSettings(models.Model):
     import_card_credits = models.BooleanField(
         help_text="Import Card Credits", default=False
     )
+    split_expense_grouping = models.CharField(max_length=100, default=get_default_split_expense_grouping, choices=SPLIT_EXPENSE_GROUPING, help_text='specify line items for split expenses grouping')
     workspace = models.OneToOneField(
         Workspace,
         on_delete=models.PROTECT,
@@ -421,6 +431,7 @@ class ExpenseGroupSettings(models.Model):
                 ],
                 "ccc_export_date_type": expense_group_settings["ccc_export_date_type"],
                 "import_card_credits": import_card_credits,
+                'split_expense_grouping': expense_group_settings['split_expense_grouping'],
             },
         )
 
@@ -506,13 +517,52 @@ class ExpenseGroup(models.Model):
         corporate_credit_card_expenses = list(
             filter(lambda expense: expense.fund_source == "CCC", expense_objects)
         )
-        corporate_credit_card_expense_groups = _group_expenses(
-            corporate_credit_card_expenses,
-            corporate_credit_card_expense_group_field,
-            workspace_id,
-        )
 
-        expense_groups.extend(corporate_credit_card_expense_groups)
+        if corporate_credit_card_expenses:
+            workspace_general_settings = WorkspaceGeneralSettings.objects.get(
+                workspace_id=workspace_id
+            )
+            ccc_export_module = workspace_general_settings.corporate_credit_card_expenses_object
+
+            if ccc_export_module == "BANK TRANSACTION" and expense_group_settings.split_expense_grouping == 'MULTIPLE_LINE_ITEM':
+                ccc_expenses_without_bank_transaction_id = list(
+                    filter(lambda expense: not expense.bank_transaction_id, corporate_credit_card_expenses)
+                )
+
+                ccc_expenses_with_bank_transaction_id = list(
+                    filter(lambda expense: expense.bank_transaction_id, corporate_credit_card_expenses)
+                )
+
+                if ccc_expenses_without_bank_transaction_id:
+                    groups_without_bank_transaction_id = _group_expenses(
+                        ccc_expenses_without_bank_transaction_id,
+                        corporate_credit_card_expense_group_field,
+                        workspace_id,
+                    )
+                    expense_groups.extend(groups_without_bank_transaction_id)
+
+                if ccc_expenses_with_bank_transaction_id:
+                    split_expense_group_fields = [
+                        field for field in corporate_credit_card_expense_group_field
+                        if field not in ('expense_id', 'expense_number')
+                    ]
+                    split_expense_group_fields.append('bank_transaction_id')
+
+                    groups_with_bank_transaction_id = _group_expenses(
+                        ccc_expenses_with_bank_transaction_id,
+                        split_expense_group_fields,
+                        workspace_id,
+                    )
+                    expense_groups.extend(groups_with_bank_transaction_id)
+
+            else:
+                corporate_credit_card_expense_groups = _group_expenses(
+                    corporate_credit_card_expenses,
+                    corporate_credit_card_expense_group_field,
+                    workspace_id,
+                )
+
+                expense_groups.extend(corporate_credit_card_expense_groups)
 
         expense_group_objects = []
 
