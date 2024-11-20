@@ -154,6 +154,7 @@ class Expense(models.Model):
     tax_amount = models.FloatField(null=True, help_text="Tax Amount")
     tax_group_id = models.CharField(null=True, max_length=255, help_text="Tax Group ID")
     accounting_export_summary = JSONField(default=dict)
+    masked_corporate_card_number = models.CharField(max_length=255, help_text='Masked Corporate Card Number', null=True)
     previous_export_state = models.CharField(max_length=255, help_text='Previous export state', null=True)
     workspace = models.ForeignKey(Workspace, on_delete=models.PROTECT, help_text='To which workspace this expense belongs to', null=True)
 

@@ -162,9 +162,13 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
         "spent on {0}".format(lineitem.spent_at.date()) if lineitem.spent_at else ""
     )
     vendor = "{} - ".format(lineitem.vendor) if lineitem.vendor else ""
-    return "{0}{1}, category - {2} {3}, report number - {4} {5} - {6}".format(
+    card_number = " - card {}".format(lineitem.masked_corporate_card_number) if lineitem.masked_corporate_card_number else ""
+    
+    return "{0}{1} ({2}){3}, category - {4} {5}, report number - {6} {7} - {8}".format(
         vendor,
         lineitem.employee_email,
+        lineitem.employee_name,
+        card_number,
         category,
         spent_at,
         lineitem.claim_number,
