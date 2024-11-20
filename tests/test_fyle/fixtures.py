@@ -280,6 +280,7 @@ data = {
                 "Fyle Categories": "",
             },
             "bank_transaction_id": None,
+            "is_posted_at_null": False
         },
     ],
 
@@ -326,7 +327,8 @@ data = {
             "previous_export_state": None,
             "workspace_id": 399,
             "source_account_type": "PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT",
-            "bank_transaction_id": "btxnQe02cfpD9n"
+            "bank_transaction_id": "btxnQe02cfpD9n",
+            "is_posted_at_null": False
         },
         {
             "id": 15134,
@@ -370,7 +372,8 @@ data = {
             "previous_export_state": None,
             "workspace_id": 399,
             "source_account_type": "PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT",
-            "bank_transaction_id": "btxnQe02cfpD9n"
+            "bank_transaction_id": "btxnQe02cfpD9n",
+            "is_posted_at_null": False
         },
         {
             "id": 15135,
@@ -414,7 +417,8 @@ data = {
             "previous_export_state": None,
             "workspace_id": 399,
             "source_account_type": "PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT",
-            "bank_transaction_id": "btxnQe02cfpD9n"
+            "bank_transaction_id": "btxnQe02cfpD9n",
+            "is_posted_at_null": False
         },
         {
             "id": 15136,
@@ -458,7 +462,8 @@ data = {
             "previous_export_state": None,
             "workspace_id": 399,
             "source_account_type": "PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT",
-            "bank_transaction_id": "btxnQe02cfpD9n"
+            "bank_transaction_id": "btxnQe02cfpD9n",
+            "is_posted_at_null": False
         },
     ],
 
@@ -503,6 +508,7 @@ data = {
                 "Fyle Categories": "",
             },
             "bank_transaction_id": None,
+            "is_posted_at_null": False
         }
     ],
     "expense_group_id": {
@@ -711,6 +717,7 @@ data = {
                 "paid_on_xero": False,
                 "tax_amount": "None",
                 "tax_group_id": "None",
+                "is_posted_at_null": False
             }
         ],
         "fund_source": "PERSONAL",
@@ -780,6 +787,7 @@ data = {
                 "tax_amount": "None",
                 "tax_group_id": "None",
                 "bank_transaction_id": None,
+                "is_posted_at_null": False
             }
         ],
         "fund_source": "PERSONAL",
