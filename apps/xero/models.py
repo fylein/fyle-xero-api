@@ -163,7 +163,7 @@ def get_expense_purpose(workspace_id, lineitem, category) -> str:
     )
     vendor = "{} - ".format(lineitem.vendor) if lineitem.vendor else ""
     card_number = " - card {}".format(lineitem.masked_corporate_card_number) if lineitem.masked_corporate_card_number else ""
-    
+
     return "{0}{1} ({2}){3}, category - {4} {5}, report number - {6} {7} - {8}".format(
         vendor,
         lineitem.employee_email,

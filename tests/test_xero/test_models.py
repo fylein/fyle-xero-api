@@ -34,7 +34,7 @@ def test_create_bill(db):
         assert bill_lineitem.amount == 10.0
         assert (
             bill_lineitem.description
-            == "sravan.kumar@fyle.in, category - Food spent on 2020-01-01, report number - C/2022/06/R/1  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txGilVGolf60?org_id=orPJvXuoLqvJ"
+            == "sravan.kumar@fyle.in (None), category - Food spent on 2020-01-01, report number - C/2022/06/R/1  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txGilVGolf60?org_id=orPJvXuoLqvJ"
         )
 
     assert bill.currency == "USD"
@@ -168,7 +168,7 @@ def test_get_expense_purpose(db):
 
         assert (
             expense_purpose
-            == "sravan.kumar@fyle.in, category - WIP / None spent on 2022-05-25, report number - C/2022/05/R/13  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txBMQRkBQciI?org_id=orPJvXuoLqvJ"
+            == "sravan.kumar@fyle.in (None), category - WIP / None spent on 2022-05-25, report number - C/2022/05/R/13  - https://staging.fyle.tech/app/admin/#/enterprise/view_expense/txBMQRkBQciI?org_id=orPJvXuoLqvJ"
         )
 
 
