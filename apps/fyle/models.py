@@ -202,6 +202,7 @@ class Expense(models.Model):
                 else None,
                 "cost_center": expense["cost_center"],
                 "corporate_card_id": expense["corporate_card_id"],
+                'masked_corporate_card_number': expense['masked_corporate_card_number'],
                 "purpose": expense["purpose"],
                 "report_id": expense["report_id"],
                 "bank_transaction_id": expense["bank_transaction_id"],
