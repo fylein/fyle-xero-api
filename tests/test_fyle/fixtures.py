@@ -224,6 +224,8 @@ data = {
         'spent_at': '2024-05-10 17:00:00',
         'approved_at': '2024-05-10 07:53:25',
         'posted_at': None,
+        'is_posted_at_null': True,
+        'masked_corporate_card_number': '**** 4567',
         'expense_created_at': '2024-05-10 07:52:10',
         'expense_updated_at': '2024-05-13 05:53:25',
         'fund_source': 'PERSONAL',
