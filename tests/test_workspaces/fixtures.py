@@ -12,6 +12,7 @@ data = {
         "import_suppliers_as_merchants": True,
         "auto_map_employees": "EMAIL",
         "auto_create_destination_entity": True,
+        "memo_structure": ["report_number", "spent_on"],
         "skip_cards_mapping": False,
         "import_tax_codes": True,
         "import_customers": False,

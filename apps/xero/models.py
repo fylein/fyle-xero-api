@@ -148,6 +148,7 @@ def get_expense_purpose(workspace_id, lineitem, category, workspace_general_sett
 
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     org_id = Workspace.objects.get(id=workspace_id).fyle_org_id
+    memo_structure = workspace_general_settings.memo_structure
 
     fyle_url = fyle_credentials.cluster_domain if settings.BRAND_ID == 'fyle' else settings.FYLE_APP_URL
 
@@ -162,8 +163,6 @@ def get_expense_purpose(workspace_id, lineitem, category, workspace_general_sett
     }
 
     memo = ''
-    memo_structure = workspace_general_settings.memo_structure
-
     for id, field in enumerate(memo_structure):
         if field in details:
             memo += details[field]

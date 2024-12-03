@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.9 (Debian 15.9-1.pgdg120+1)
--- Dumped by pg_dump version 15.8 (Debian 15.8-1.pgdg120+1)
+-- Dumped from database version 15.10 (Debian 15.10-1.pgdg120+1)
+-- Dumped by pg_dump version 15.10 (Debian 15.10-1.pgdg120+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1535,7 +1535,8 @@ CREATE TABLE public.workspace_general_settings (
     change_accounting_period boolean NOT NULL,
     auto_create_merchant_destination_entity boolean NOT NULL,
     is_simplify_report_closure_enabled boolean NOT NULL,
-    import_suppliers_as_merchants boolean NOT NULL
+    import_suppliers_as_merchants boolean NOT NULL,
+    memo_structure character varying(100)[] NOT NULL
 );
 
 
@@ -2643,6 +2644,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 157	tasks	0010_alter_tasklog_expense_group	2024-11-17 21:11:41.133814+00
 158	workspaces	0039_alter_workspacegeneralsettings_change_accounting_period	2024-11-18 04:43:45.472917+00
 159	fyle	0022_support_split_expense_grouping	2024-11-18 10:49:49.550689+00
+160	workspaces	0040_workspacegeneralsettings_memo_structure	2024-12-03 21:13:46.617079+00
 \.
 
 
@@ -5066,8 +5068,8 @@ COPY public.users (password, last_login, id, email, user_id, full_name, active, 
 -- Data for Name: workspace_general_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, skip_cards_mapping, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity, is_simplify_report_closure_enabled, import_suppliers_as_merchants) FROM stdin;
-1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	\N	t	t	f	t	{EXPENSE}	t	t	f	f	f
+COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, skip_cards_mapping, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity, is_simplify_report_closure_enabled, import_suppliers_as_merchants, memo_structure) FROM stdin;
+1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	\N	t	t	f	t	{EXPENSE}	t	t	f	f	f	{employee_email,category,merchant,spent_on,report_number,purpose}
 \.
 
 
@@ -5180,7 +5182,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 40, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 159, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 160, true);
 
 
 --
