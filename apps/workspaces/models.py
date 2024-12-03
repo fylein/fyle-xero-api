@@ -30,6 +30,10 @@ APP_VERSION_CHOICES = (("v1", "v1"), ("v2", "v2"))
 EXPORT_MODE_CHOICES = (("MANUAL", "MANUAL"), ("AUTO", "AUTO"))
 
 
+def get_default_memo_fields():
+    return ['employee_email', 'category', 'merchant', 'spent_on', 'report_number', 'purpose']
+
+
 def get_default_chart_of_accounts():
     return ["EXPENSE"]
 
@@ -178,6 +182,11 @@ class WorkspaceGeneralSettings(models.Model):
         null=True,
         choices=AUTO_MAP_EMPLOYEE,
     )
+    memo_structure = ArrayField(
+        base_field=models.CharField(max_length=100), default=get_default_memo_fields,
+        help_text='list of system fields for creating custom memo'
+    )
+
     auto_create_destination_entity = models.BooleanField(
         default=False, help_text="Auto create contact"
     )

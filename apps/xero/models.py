@@ -9,7 +9,7 @@ from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribu
 from apps.fyle.enums import FyleAttributeEnum
 from apps.fyle.models import Expense, ExpenseGroup
 from apps.mappings.models import GeneralMapping
-from apps.workspaces.models import FyleCredential, Workspace
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 
 
 def get_tracking_category(expense_group: ExpenseGroup, lineitem: Expense):
@@ -144,33 +144,33 @@ def get_customer_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
     return customer_id
 
 
-def get_expense_purpose(workspace_id, lineitem, category) -> str:
-    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+def get_expense_purpose(workspace_id, lineitem, category, workspace_general_settings) -> str:
 
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     org_id = Workspace.objects.get(id=workspace_id).fyle_org_id
 
     fyle_url = fyle_credentials.cluster_domain if settings.BRAND_ID == 'fyle' else settings.FYLE_APP_URL
 
-    expense_link = "{0}/app/admin/#/enterprise/view_expense/{1}?org_id={2}".format(
-        fyle_url, lineitem.expense_id, org_id
-    )
+    details = {
+        'employee_email': lineitem.employee_email,
+        'merchant': '{} - '.format(lineitem.vendor) if lineitem.vendor else '',
+        'category': '{0}'.format(category) if lineitem.category else '',
+        'purpose': '{0}'.format(lineitem.purpose) if lineitem.purpose else '',
+        'report_number': '{0}'.format(lineitem.claim_number),
+        'spent_on': '{0}'.format(lineitem.spent_at.date()) if lineitem.spent_at else '',
+        'expense_link': '{0}/app/admin/#/enterprise/view_expense/{1}?org_id={2}'.format(fyle_url, lineitem.expense_id, org_id)
+    }
 
-    expense_purpose = (
-        "purpose - {0}".format(lineitem.purpose) if lineitem.purpose else ""
-    )
-    spent_at = (
-        "spent on {0}".format(lineitem.spent_at.date()) if lineitem.spent_at else ""
-    )
-    vendor = "{} - ".format(lineitem.vendor) if lineitem.vendor else ""
-    return "{0}{1}, category - {2} {3}, report number - {4} {5} - {6}".format(
-        vendor,
-        lineitem.employee_email,
-        category,
-        spent_at,
-        lineitem.claim_number,
-        expense_purpose,
-        expense_link,
-    )
+    memo = ''
+    memo_structure = workspace_general_settings.memo_structure
+
+    for id, field in enumerate(memo_structure):
+        if field in details:
+            memo += details[field]
+            if id + 1 != len(memo_structure):
+                memo = '{0} - '.format(memo)
+
+    return memo
 
 
 def get_tax_code_id_or_none(expense_group: ExpenseGroup, lineitem: Expense):
@@ -262,7 +262,7 @@ class BillLineItem(models.Model):
         db_table = "bill_lineitems"
 
     @staticmethod
-    def create_bill_lineitems(expense_group: ExpenseGroup):
+    def create_bill_lineitems(expense_group: ExpenseGroup, workspace_general_settings: WorkspaceGeneralSettings):
         expenses = expense_group.expenses.all()
         bill = Bill.objects.get(expense_group=expense_group)
 
@@ -289,7 +289,7 @@ class BillLineItem(models.Model):
             customer_id = get_customer_id_or_none(expense_group, lineitem)
 
             description = get_expense_purpose(
-                expense_group.workspace_id, lineitem, category
+                expense_group.workspace_id, lineitem, category, workspace_general_settings
             )
 
             tracking_categories = get_tracking_category(expense_group, lineitem)
@@ -449,7 +449,7 @@ class BankTransactionLineItem(models.Model):
         db_table = "bank_transaction_lineitems"
 
     @staticmethod
-    def create_bank_transaction_lineitems(expense_group: ExpenseGroup):
+    def create_bank_transaction_lineitems(expense_group: ExpenseGroup, workspace_general_settings: WorkspaceGeneralSettings):
         """
         Create bank transaction lineitems
         :param expense_group: expense group
@@ -481,7 +481,7 @@ class BankTransactionLineItem(models.Model):
             customer_id = get_customer_id_or_none(expense_group, lineitem)
 
             description = get_expense_purpose(
-                expense_group.workspace_id, lineitem, category
+                expense_group.workspace_id, lineitem, category, workspace_general_settings
             )
 
             tracking_categories = get_tracking_category(expense_group, lineitem)

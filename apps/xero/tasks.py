@@ -456,7 +456,7 @@ def create_bank_transaction(
         )
 
         bank_transaction_lineitems_objects = (
-            BankTransactionLineItem.create_bank_transaction_lineitems(expense_group)
+            BankTransactionLineItem.create_bank_transaction_lineitems(expense_group, general_settings)
         )
 
         created_bank_transaction = xero_connection.post_bank_transaction(
