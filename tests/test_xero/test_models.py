@@ -172,7 +172,7 @@ def test_get_expense_purpose(db):
 
         assert (
             expense_purpose
-            == "sravan.kumar@fyle.in - Food -  - 2020-01-01 - C/2022/06/R/1 - "
+            == "sravan.kumar@fyle.in - WIP / None -  - 2022-05-25 - C/2022/05/R/13 - "
         )
 
 
