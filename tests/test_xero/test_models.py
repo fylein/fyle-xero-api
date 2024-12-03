@@ -26,9 +26,10 @@ from tests.test_xero.fixtures import data as xero_data
 
 def test_create_bill(db):
     expense_group = ExpenseGroup.objects.get(id=4)
+    workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=expense_group.workspace_id).first()
 
     bill = Bill.create_bill(expense_group)
-    bill_lineitems = BillLineItem.create_bill_lineitems(expense_group)
+    bill_lineitems = BillLineItem.create_bill_lineitems(expense_group, workspace_general_settings)
 
     for bill_lineitem in bill_lineitems:
         assert bill_lineitem.amount == 10.0
@@ -42,10 +43,11 @@ def test_create_bill(db):
 
 def test_bank_transaction(db):
     expense_group = ExpenseGroup.objects.get(id=5)
+    workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=expense_group.workspace_id).first()
 
     bank_transaction = BankTransaction.create_bank_transaction(expense_group, True)
     bank_transaction_lineitems = (
-        BankTransactionLineItem.create_bank_transaction_lineitems(expense_group)
+        BankTransactionLineItem.create_bank_transaction_lineitems(expense_group, workspace_general_settings)
     )
 
     for bank_transaction_lineitem in bank_transaction_lineitems:
@@ -157,6 +159,8 @@ def test_get_expense_purpose(db):
     expense_group = ExpenseGroup.objects.get(id=10)
     expenses = expense_group.expenses.all()
 
+    workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id)
+
     for lineitem in expenses:
         category = (
             lineitem.category
@@ -164,7 +168,7 @@ def test_get_expense_purpose(db):
             else "{0} / {1}".format(lineitem.category, lineitem.sub_category)
         )
 
-        expense_purpose = get_expense_purpose(workspace_id, lineitem, category)
+        expense_purpose = get_expense_purpose(workspace_id, lineitem, category, workspace_general_settings)
 
         assert (
             expense_purpose

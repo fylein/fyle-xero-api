@@ -281,7 +281,7 @@ def create_bill(
     with transaction.atomic():
         bill_object = Bill.create_bill(expense_group)
 
-        bill_lineitems_objects = BillLineItem.create_bill_lineitems(expense_group)
+        bill_lineitems_objects = BillLineItem.create_bill_lineitems(expense_group, general_settings)
 
         created_bill = xero_connection.post_bill(
             bill_object, bill_lineitems_objects, general_settings
