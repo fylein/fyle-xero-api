@@ -158,7 +158,7 @@ class RevokeXeroConnectionView(generics.CreateAPIView):
         )
 
 
-class GeneralSettingsView(generics.RetrieveAPIView):
+class GeneralSettingsView(generics.RetrieveUpdateAPIView):
     """
     General Settings
     """

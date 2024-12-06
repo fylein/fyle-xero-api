@@ -40,6 +40,7 @@ class WorkspaceGeneralSettingsSerializer(serializers.ModelSerializer):
         model = WorkspaceGeneralSettings
         fields = [
             "change_accounting_period",
+            "memo_structure",
             "sync_fyle_to_xero_payments",
             "sync_xero_to_fyle_payments",
             "auto_create_destination_entity",
@@ -93,6 +94,9 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
             defaults={
                 "change_accounting_period": workspace_general_settings.get(
                     "change_accounting_period"
+                ),
+                "memo_structure": workspace_general_settings.get(
+                    "memo_structure"
                 ),
                 "sync_fyle_to_xero_payments": workspace_general_settings.get(
                     "sync_fyle_to_xero_payments"

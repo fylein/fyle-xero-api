@@ -69,6 +69,7 @@ data = {
                 "sync_xero_to_fyle_payments": True,
                 "auto_create_destination_entity": True,
                 "auto_create_merchant_destination_entity": True,
+                "memo_structure": ["report_number", "expense_link", "spent_on"]
             },
             "general_mappings": {
                 "payment_account": {"id": "2", "name": "Business Savings Account"}
@@ -122,6 +123,7 @@ data = {
                 "sync_xero_to_fyle_payments": False,
                 "auto_create_destination_entity": False,
                 "change_accounting_period": False,
+                "memo_structure": ["report_number", "expense_link", "spent_on"],
                 "auto_create_merchant_destination_entity": False,
             },
             "general_mappings": {"payment_account": {"name": None, "id": None}},
