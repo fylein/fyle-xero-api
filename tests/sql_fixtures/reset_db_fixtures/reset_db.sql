@@ -1555,7 +1555,9 @@ CREATE TABLE public.workspace_schedules (
     workspace_id integer NOT NULL,
     additional_email_options jsonb,
     emails_selected character varying(255)[],
-    error_count integer
+    error_count integer,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1615,7 +1617,8 @@ ALTER SEQUENCE public.workspaces_id_seq OWNED BY public.workspaces.id;
 CREATE TABLE public.workspaces_user (
     id integer NOT NULL,
     workspace_id integer NOT NULL,
-    user_id integer NOT NULL
+    user_id integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -2645,6 +2648,8 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 158	workspaces	0039_alter_workspacegeneralsettings_change_accounting_period	2024-11-18 04:43:45.472917+00
 159	fyle	0022_support_split_expense_grouping	2024-11-18 10:49:49.550689+00
 160	workspaces	0040_workspacegeneralsettings_memo_structure	2024-12-03 21:13:46.617079+00
+161	fyle_accounting_mappings	0027_alter_employeemapping_source_employee	2024-12-23 11:03:59.013177+00
+162	workspaces	0041_auto_20241223_1102	2024-12-23 11:03:59.043589+00
 \.
 
 
@@ -5077,7 +5082,7 @@ COPY public.workspace_general_settings (id, reimbursable_expenses_object, corpor
 -- Data for Name: workspace_schedules; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, schedule_id, workspace_id, additional_email_options, emails_selected, error_count) FROM stdin;
+COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, schedule_id, workspace_id, additional_email_options, emails_selected, error_count, created_at, updated_at) FROM stdin;
 \.
 
 
@@ -5094,8 +5099,8 @@ COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updat
 -- Data for Name: workspaces_user; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspaces_user (id, workspace_id, user_id) FROM stdin;
-1	1	1
+COPY public.workspaces_user (id, workspace_id, user_id, created_at) FROM stdin;
+1	1	1	2024-12-23 11:03:59.028742+00
 \.
 
 
@@ -5182,7 +5187,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 40, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 160, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 162, true);
 
 
 --
@@ -5594,6 +5599,14 @@ ALTER TABLE ONLY public.django_session
 
 ALTER TABLE ONLY public.employee_mappings
     ADD CONSTRAINT employee_mappings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: employee_mappings employee_mappings_source_employee_id_dd9948ba_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.employee_mappings
+    ADD CONSTRAINT employee_mappings_source_employee_id_dd9948ba_uniq UNIQUE (source_employee_id);
 
 
 --
@@ -6143,13 +6156,6 @@ CREATE INDEX employee_mappings_destination_employee_id_b6764819 ON public.employ
 --
 
 CREATE INDEX employee_mappings_destination_vendor_id_c4bd73df ON public.employee_mappings USING btree (destination_vendor_id);
-
-
---
--- Name: employee_mappings_source_employee_id_dd9948ba; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX employee_mappings_source_employee_id_dd9948ba ON public.employee_mappings USING btree (source_employee_id);
 
 
 --
