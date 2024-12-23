@@ -249,6 +249,8 @@ class WorkspaceSchedule(models.Model):
         null=True,
         help_text="Emails that has to be send mail",
     )
+    created_at = models.DateTimeField(auto_now_add=True, null=True, help_text='Created at datetime')
+    updated_at = models.DateTimeField(auto_now=True, null=True, help_text='Updated at datetime')
 
     class Meta:
         db_table = "workspace_schedules"
