@@ -82,6 +82,9 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
         return instance.id
 
     def update(self, instance, validated):
+        request = self.context.get('request')
+        user = request.user if request and hasattr(request, 'user') else None
+
         workspace_general_settings = validated.pop("workspace_general_settings")
         general_mappings = validated.pop("general_mappings")
         workspace_schedules = validated.pop("workspace_schedules")
@@ -111,6 +114,7 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
                     "auto_create_merchant_destination_entity"
                 ),
             },
+            user=user
         )
 
         GeneralMapping.objects.update_or_create(
@@ -121,6 +125,7 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
                 ),
                 "payment_account_id": general_mappings.get("payment_account").get("id"),
             },
+            user=user
         )
 
         schedule_sync(
