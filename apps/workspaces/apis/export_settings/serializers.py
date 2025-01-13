@@ -101,6 +101,9 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
         return instance.id
 
     def update(self, instance, validated):
+        request = self.context.get('request')
+        user = request.user if request and hasattr(request, 'user') else None
+
         workspace_general_settings = validated.pop("workspace_general_settings")
         expense_group_settings = validated.pop("expense_group_settings")
         general_mappings = validated.pop("general_mappings")
@@ -132,6 +135,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
                 ],
                 "map_merchant_to_contact": map_merchant_to_contact,
             },
+            user=user
         )
 
         expense_group_settings["import_card_credits"] = False
@@ -148,6 +152,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
                     "import_to_fyle": False,
                     "is_custom": False,
                 },
+                user=user
             )
             expense_group_settings["import_card_credits"] = True
 
@@ -181,7 +186,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
             expense_group_settings["ccc_export_date_type"] = "spent_at"
 
         ExpenseGroupSettings.update_expense_group_settings(
-            expense_group_settings, workspace_id=workspace_id
+            expense_group_settings, workspace_id=workspace_id, user=user
         )
         GeneralMapping.objects.update_or_create(
             workspace=instance,
@@ -189,6 +194,7 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
                 "bank_account_name": general_mappings.get("bank_account").get("name"),
                 "bank_account_id": general_mappings.get("bank_account").get("id"),
             },
+            user=user
         )
 
         if instance.onboarding_state == "EXPORT_SETTINGS":

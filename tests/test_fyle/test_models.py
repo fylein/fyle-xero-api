@@ -7,7 +7,7 @@ from apps.fyle.models import (
     get_default_expense_group_fields,
     get_default_expense_state,
 )
-from apps.workspaces.models import WorkspaceGeneralSettings
+from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from tests.test_fyle.fixtures import data
 
 
@@ -48,7 +48,9 @@ def test_expense_group_settings(create_temp_workspace, db):
     workspace_id = 98
     payload = data["expense_group_settings_payload"]
 
-    ExpenseGroupSettings.update_expense_group_settings(payload, workspace_id)
+    user = Workspace.objects.get(id=1).user
+
+    ExpenseGroupSettings.update_expense_group_settings(payload, workspace_id, user)
 
     settings = ExpenseGroupSettings.objects.last()
 

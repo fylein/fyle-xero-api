@@ -816,7 +816,9 @@ CREATE TABLE public.expense_group_settings (
     ccc_expense_state character varying(100),
     reimbursable_expense_state character varying(100),
     import_card_credits boolean NOT NULL,
-    split_expense_grouping character varying(100) NOT NULL
+    split_expense_grouping character varying(100) NOT NULL,
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 
@@ -1072,7 +1074,9 @@ CREATE TABLE public.mapping_settings (
     import_to_fyle boolean NOT NULL,
     is_custom boolean NOT NULL,
     source_placeholder text,
-    expense_field_id integer
+    expense_field_id integer,
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 
@@ -1196,7 +1200,9 @@ CREATE TABLE public.general_mappings (
     payment_account_id character varying(255),
     payment_account_name character varying(255),
     default_tax_code_id character varying(255),
-    default_tax_code_name character varying(255)
+    default_tax_code_name character varying(255),
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 
@@ -1536,7 +1542,9 @@ CREATE TABLE public.workspace_general_settings (
     auto_create_merchant_destination_entity boolean NOT NULL,
     is_simplify_report_closure_enabled boolean NOT NULL,
     import_suppliers_as_merchants boolean NOT NULL,
-    memo_structure character varying(100)[] NOT NULL
+    memo_structure character varying(100)[] NOT NULL,
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 
@@ -2650,6 +2658,10 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 160	workspaces	0040_workspacegeneralsettings_memo_structure	2024-12-03 21:13:46.617079+00
 161	fyle_accounting_mappings	0027_alter_employeemapping_source_employee	2024-12-23 11:03:59.013177+00
 162	workspaces	0041_auto_20241223_1102	2024-12-23 11:03:59.043589+00
+163	fyle	0023_auto_20250108_0817	2025-01-08 08:25:48.031084+00
+164	fyle_accounting_mappings	0028_auto_20241226_1030	2025-01-08 08:25:48.168713+00
+165	mappings	0007_auto_20250108_0817	2025-01-08 08:25:48.412455+00
+166	workspaces	0042_auto_20250108_0817	2025-01-08 08:25:48.561072+00
 \.
 
 
@@ -4845,8 +4857,8 @@ COPY public.expense_fields (id, attribute_type, source_field_id, is_enabled, cre
 -- Data for Name: expense_group_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corporate_credit_card_expense_group_fields, expense_state, reimbursable_export_date_type, created_at, updated_at, workspace_id, ccc_export_date_type, ccc_expense_state, reimbursable_expense_state, import_card_credits, split_expense_grouping) FROM stdin;
-1	{employee_email,report_id,claim_number,fund_source}	{report_id,fund_source,employee_email,claim_number,expense_id}	PAYMENT_PROCESSING	current_date	2022-08-02 20:24:42.329794+00	2022-08-02 20:25:24.6873+00	1	spent_at	PAYMENT_PROCESSING	PAYMENT_PROCESSING	t	MULTIPLE_LINE_ITEM
+COPY public.expense_group_settings (id, reimbursable_expense_group_fields, corporate_credit_card_expense_group_fields, expense_state, reimbursable_export_date_type, created_at, updated_at, workspace_id, ccc_export_date_type, ccc_expense_state, reimbursable_expense_state, import_card_credits, split_expense_grouping, created_by, updated_by) FROM stdin;
+1	{employee_email,report_id,claim_number,fund_source}	{report_id,fund_source,employee_email,claim_number,expense_id}	PAYMENT_PROCESSING	current_date	2022-08-02 20:24:42.329794+00	2022-08-02 20:25:24.6873+00	1	spent_at	PAYMENT_PROCESSING	PAYMENT_PROCESSING	t	MULTIPLE_LINE_ITEM	\N	\N
 \.
 
 
@@ -4917,8 +4929,8 @@ COPY public.fyle_credentials (id, refresh_token, created_at, updated_at, workspa
 -- Data for Name: general_mappings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.general_mappings (id, bank_account_name, bank_account_id, created_at, updated_at, workspace_id, payment_account_id, payment_account_name, default_tax_code_id, default_tax_code_name) FROM stdin;
-1	Business Bank Account	562555f2-8cde-4ce9-8203-0363922537a4	2022-08-02 20:27:35.368956+00	2022-08-02 20:27:35.368996+00	1	\N	\N	INPUT	Tax on Purchases @8.25%
+COPY public.general_mappings (id, bank_account_name, bank_account_id, created_at, updated_at, workspace_id, payment_account_id, payment_account_name, default_tax_code_id, default_tax_code_name, created_by, updated_by) FROM stdin;
+1	Business Bank Account	562555f2-8cde-4ce9-8203-0363922537a4	2022-08-02 20:27:35.368956+00	2022-08-02 20:27:35.368996+00	1	\N	\N	INPUT	Tax on Purchases @8.25%	\N	\N
 \.
 
 
@@ -4942,13 +4954,13 @@ COPY public.last_export_details (id, last_exported_at, export_mode, total_expens
 -- Data for Name: mapping_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.mapping_settings (id, source_field, destination_field, created_at, updated_at, workspace_id, import_to_fyle, is_custom, source_placeholder, expense_field_id) FROM stdin;
-1	CATEGORY	ACCOUNT	2022-08-02 20:25:24.632318+00	2022-08-02 20:25:24.632372+00	1	f	f	\N	\N
-2	EMPLOYEE	CONTACT	2022-08-02 20:25:24.647585+00	2022-08-02 20:25:24.647636+00	1	f	f	\N	\N
-3	PROJECT	CUSTOMER	2022-08-02 20:25:24.660915+00	2022-08-02 20:25:24.660954+00	1	t	f	\N	\N
-4	CORPORATE_CARD	BANK_ACCOUNT	2022-08-02 20:25:24.662017+00	2022-08-02 20:25:24.662053+00	1	f	f	\N	\N
-5	TAX_GROUP	TAX_CODE	2022-08-02 20:25:24.67454+00	2022-08-02 20:25:24.674589+00	1	f	f	\N	\N
-99	COST_CENTER	DEPARTMENT	2022-08-02 20:25:24.67454+00	2022-08-02 20:25:24.674589+00	1	f	f	\N	\N
+COPY public.mapping_settings (id, source_field, destination_field, created_at, updated_at, workspace_id, import_to_fyle, is_custom, source_placeholder, expense_field_id, created_by, updated_by) FROM stdin;
+1	CATEGORY	ACCOUNT	2022-08-02 20:25:24.632318+00	2022-08-02 20:25:24.632372+00	1	f	f	\N	\N	\N	\N
+2	EMPLOYEE	CONTACT	2022-08-02 20:25:24.647585+00	2022-08-02 20:25:24.647636+00	1	f	f	\N	\N	\N	\N
+3	PROJECT	CUSTOMER	2022-08-02 20:25:24.660915+00	2022-08-02 20:25:24.660954+00	1	t	f	\N	\N	\N	\N
+4	CORPORATE_CARD	BANK_ACCOUNT	2022-08-02 20:25:24.662017+00	2022-08-02 20:25:24.662053+00	1	f	f	\N	\N	\N	\N
+5	TAX_GROUP	TAX_CODE	2022-08-02 20:25:24.67454+00	2022-08-02 20:25:24.674589+00	1	f	f	\N	\N	\N	\N
+99	COST_CENTER	DEPARTMENT	2022-08-02 20:25:24.67454+00	2022-08-02 20:25:24.674589+00	1	f	f	\N	\N	\N	\N
 \.
 
 
@@ -5073,8 +5085,8 @@ COPY public.users (password, last_login, id, email, user_id, full_name, active, 
 -- Data for Name: workspace_general_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, skip_cards_mapping, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity, is_simplify_report_closure_enabled, import_suppliers_as_merchants, memo_structure) FROM stdin;
-1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	\N	t	t	f	t	{EXPENSE}	t	t	f	f	f	{employee_email,category,merchant,spent_on,report_number,purpose}
+COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, skip_cards_mapping, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity, is_simplify_report_closure_enabled, import_suppliers_as_merchants, memo_structure, created_by, updated_by) FROM stdin;
+1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	\N	t	t	f	t	{EXPENSE}	t	t	f	f	f	{employee_email,category,merchant,spent_on,report_number,purpose}	\N	\N
 \.
 
 
@@ -5187,7 +5199,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 40, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 162, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 166, true);
 
 
 --

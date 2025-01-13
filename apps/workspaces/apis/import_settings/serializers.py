@@ -104,6 +104,9 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
         return instance.id
 
     def update(self, instance, validated):
+        request = self.context.get('request')
+        user = request.user if request and hasattr(request, 'user') else None
+
         workspace_general_settings = validated.pop("workspace_general_settings")
         general_mappings = validated.pop("general_mappings")
         mapping_settings = validated.pop("mapping_settings")
@@ -139,6 +142,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                         "import_suppliers_as_merchants"
                     ),
                 },
+                user=user
             )
 
             GeneralMapping.objects.update_or_create(
@@ -151,6 +155,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                         "id"
                     ),
                 },
+                user=user
             )
 
             trigger.post_save_workspace_general_settings(
@@ -203,6 +208,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
                         if "source_placeholder" in setting
                         else None,
                     },
+                    user=user
                 )
 
             trigger.post_save_mapping_settings(workspace_general_settings_instance)

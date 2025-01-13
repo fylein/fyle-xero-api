@@ -21,6 +21,8 @@ data = {
         "auto_create_merchant_destination_entity": False,
         "charts_of_accounts": ["EXPENSE", "SAMPLE"],
         "workspace": 2,
+        "created_by": "asdvhjasb@anjfas.com",
+        "updated_by": "asbdja@nkasnd.com"
     },
     "workspace": {
         "id": 2,
