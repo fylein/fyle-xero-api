@@ -557,6 +557,8 @@ data = {
         "updated_at": "2021-11-15T08:46:16.069986Z",
         "split_expense_grouping": "MULTIPLE_LINE_ITEM",
         "workspace": 1,
+        "created_by": "ashut@asjkdnsa.com",
+        "updated_by": "asdksaj@gnioa.com"
     },
     "reimbursements": [
         {

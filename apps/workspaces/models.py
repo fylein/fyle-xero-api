@@ -7,6 +7,8 @@ from django.db import models
 from django.db.models import JSONField
 from django_q.models import Schedule
 
+from fyle_accounting_mappings.mixins import AutoAddCreateUpdateInfoMixin
+
 User = get_user_model()
 
 ONBOARDING_STATE_CHOICES = (
@@ -141,7 +143,7 @@ class FyleCredential(models.Model):
         db_table = "fyle_credentials"
 
 
-class WorkspaceGeneralSettings(models.Model):
+class WorkspaceGeneralSettings(AutoAddCreateUpdateInfoMixin, models.Model):
     """
     Workspace General Settings
     """
