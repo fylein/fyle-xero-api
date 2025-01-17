@@ -63,7 +63,6 @@ MIDDLEWARE = [
     "fyle_xero_api.logging_middleware.ErrorHandlerMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "corsheaders.middleware.CorsPostCsrfMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

@@ -8,11 +8,11 @@ from typing import Dict, List
 from dateutil import parser
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.postgres.fields import ArrayField
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
 from django.db import models
 from django.db.models import Count, JSONField
-from fyle_accounting_mappings.models import ExpenseAttribute
+from django.db.models.fields.json import KeyTextTransform
 from fyle_accounting_mappings.mixins import AutoAddCreateUpdateInfoMixin
+from fyle_accounting_mappings.models import ExpenseAttribute
 
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
