@@ -15,7 +15,7 @@ class Sentry:
             environment=os.environ.get("SENTRY_ENV"),
             attach_stacktrace=True,
             before_send=Sentry.before_send,
-            request_bodies="small",
+            max_request_body_size="small",
             in_app_include=[
                 "apps.users",
                 "apps.workspaces",
