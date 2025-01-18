@@ -13,6 +13,7 @@ from django.db.models import Count, JSONField
 from django.db.models.fields.json import KeyTextTransform
 from fyle_accounting_mappings.mixins import AutoAddCreateUpdateInfoMixin
 from fyle_accounting_mappings.models import ExpenseAttribute
+from fyle_accounting_mappings.mixins import AutoAddCreateUpdateInfoMixin
 
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
