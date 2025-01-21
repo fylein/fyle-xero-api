@@ -2,7 +2,7 @@
 
 import logging
 from django.db import migrations
-from apps.internal.helpers import load_sql_from_file_safe
+from apps.internal.helpers import safe_run_sql
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +12,4 @@ class Migration(migrations.Migration):
         ('fyle', '0023_auto_20250108_0817'),
     ]
 
-    operations = [
-        migrations.RunSQL(
-            sql=load_sql_from_file_safe('fyle-integrations-db-migrations/common/global_shared/functions/json_diff.sql')
-        )
-    ]
+    operations = safe_run_sql(['fyle-integrations-db-migrations/common/global_shared/functions/json_diff.sql'])

@@ -2,7 +2,7 @@
 
 import logging
 from django.db import migrations
-from apps.internal.helpers import load_sql_from_file_safe
+from apps.internal.helpers import safe_run_sql
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +13,4 @@ class Migration(migrations.Migration):
         ('fyle', '0024_auto_20250121_1232'),
     ]
 
-    operations = [
-
-        migrations.RunSQL(
-            sql=load_sql_from_file_safe('fyle-integrations-db-migrations/common/global_shared/functions/log_delete_event.sql')
-        )
-    ]
+    operations = safe_run_sql(['fyle-integrations-db-migrations/common/global_shared/functions/log_delete_event.sql'])
