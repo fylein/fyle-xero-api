@@ -1,9 +1,7 @@
 import os
-import logging
 from django.db import migrations
 from django.db.utils import ProgrammingError
 
-logger = logging.getLogger(__name__)
 
 def safe_run_sql(sql_files):
     """
@@ -20,9 +18,11 @@ def safe_run_sql(sql_files):
 
             operations.append(migrations.RunSQL(sql=sql, reverse_sql=None))
         except ProgrammingError as pe:
-            logger.error(f"SQL syntax error in file {file_path}: {pe}")
-            raise
+            raise ProgrammingError(
+                f"SQL syntax error in file {file_path}: {pe}"
+            ) from pe
         except Exception as e:
-            logger.error(f"Error processing SQL file {file_path}: {e}")
-            raise
+            raise RuntimeError(
+                f"Unexpected error in file {file_path}: {e}"
+            ) from e
     return operations
