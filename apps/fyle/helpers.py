@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import traceback
@@ -241,3 +242,16 @@ class ExpenseGroupSearchFilter(AdvanceSearchFilter):
         model = ExpenseGroup
         fields = ['exported_at__gte', 'exported_at__lte', 'tasklog__status']
         or_fields = ['expenses__expense_number', 'expenses__employee_name', 'expenses__employee_email', 'expenses__claim_number']
+
+
+def load_sql_from_file_safe(file_path):
+    """
+    Safely loads SQL content from a given file path.
+    Logs a warning if the file does not exist and returns an empty SQL string.
+    """
+    if not os.path.exists(file_path):
+        logger.warning(f"SQL file not found: {file_path}. Skipping SQL execution.")
+        return ""
+    
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return file.read()
