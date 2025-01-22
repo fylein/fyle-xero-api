@@ -29,10 +29,10 @@ Django Rest Framework API for Fyle Xero Integration
         - Replace `<file-path1>`, `<file-path2>`, etc., with the paths to your SQL files. You can add as many files as needed, separated by spaces.
         - Replace `<app_name>` with the name of your Django app where the migration should be created. If omitted, the migration will be created in the `internal` app by default.
 
-    **Example:**
-    ```bash
-    python3 manage.py create_sql_migration fyle-integrations-db-migrations/xero/functions/re_export_expenses_xero.sql fyle-integrations-db-migrations/xero/functions/delete_workspace.sql
-    ```
+        **Example:**
+        ```bash
+        python3 manage.py create_sql_migration fyle-integrations-db-migrations/xero/functions/re_export_expenses_xero.sql fyle-integrations-db-migrations/xero/functions/delete_workspace.sql
+        ```
 
 
 * Download and install Docker desktop for Mac from [here.](https://www.docker.com/products/docker-desktop)
