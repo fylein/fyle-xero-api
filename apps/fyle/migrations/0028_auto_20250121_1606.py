@@ -4,9 +4,8 @@ from django.db import migrations
 from apps.internal.helpers import safe_run_sql
 
 
-sql_files = ['fyle-integrations-db-migrations/xero/functions/delete_workspace.sql',
-             'fyle-integrations-db-migrations/xero/functions/re_export_expenses_xero.sql', 
-             'fyle-integrations-db-migrations/xero/functions/trigger_auto_import.sql']
+sql_files = ['fyle-integrations-db-migrations/xero/functions/trigger_auto_import.sql']
+
 
 class Migration(migrations.Migration):
 
