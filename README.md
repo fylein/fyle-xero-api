@@ -26,7 +26,7 @@ Django Rest Framework API for Fyle Xero Integration
         ```bash
         python3 manage.py create_sql_migration <file-path1>
         ```
-        - Replace `<file-path1>` with the relative path to your SQL file from the project root.
+        - Replace `<file-path1>` with the relative path to your SQL file from the fyle-integrations-db-migrations folder.
         - The migration will always be created in the `internal` app.
 
         **Example:**
