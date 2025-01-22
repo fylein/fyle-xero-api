@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "apps.mappings",
     "apps.xero",
     "django_q",
+    "apps.internal"
 ]
 
 MIDDLEWARE = [

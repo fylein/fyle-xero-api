@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
         parser.add_argument(
             '--app',
-            required=True,
+            default='internal',
             help='The Django app to create the migration for',
         )
 
