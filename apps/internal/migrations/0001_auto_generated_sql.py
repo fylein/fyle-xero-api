@@ -41,6 +41,7 @@ sql_files = [
     'fyle-integrations-db-migrations/common/qbo_intacct_netsuite_xero/views/alerts/_django_queue_fatal_tasks_view.sql',
     'fyle-integrations-db-migrations/common/qbo_intacct_netsuite_xero/views/alerts/_django_queue_in_progress_tasks_view.sql',
     'fyle-integrations-db-migrations/common/qbo_intacct_netsuite_xero/views/alerts/direct_export_errored_expenses_view.sql',
+    'fyle-integrations-db-migrations/common/qbo_intacct_netsuite_xero/views/alerts/_direct_export_errored_expenses_view.sql',
     'fyle-integrations-db-migrations/common/qbo_intacct_netsuite_xero/views/alerts/django_queue_fatal_tasks_view.sql',
     'fyle-integrations-db-migrations/common/qbo_intacct_netsuite_xero/views/alerts/django_queue_in_progress_tasks_view.sql',
     'fyle-integrations-db-migrations/common/qbo_intacct_netsuite_xero/views/alerts/inactive_workspaces_view.sql',
@@ -50,6 +51,7 @@ sql_files = [
     'fyle-integrations-db-migrations/xero/views/product_advance_settings_view.sql',
     'fyle-integrations-db-migrations/xero/views/product_export_settings_view.sql',
     'fyle-integrations-db-migrations/xero/views/product_import_settings_view.sql',
+    'fyle-integrations-db-migrations/xero/views/extended_expenses_view.sql',
 
     # Xero Specific Trigger
     'fyle-integrations-db-migrations/xero/triggers/update_logs.sql',
@@ -58,6 +60,13 @@ sql_files = [
 
 class Migration(migrations.Migration):
 
-    dependencies = []  # This is the first migration
+    dependencies = [
+        ('fyle', '0023_auto_20250108_0817'),
+        ('users', '0002_auto_20201228_0813'),
+        ('mappings', '0007_auto_20250108_0817'),
+        ('tasks', '0010_alter_tasklog_expense_group'),
+        ('workspaces', '0042_auto_20250108_0817'),
+        ('xero', '0010_bill_is_retired')
+    ]
 
     operations = safe_run_sql(sql_files)
