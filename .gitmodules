@@ -3,4 +3,4 @@
 	url = https://github.com/fylein/fyle_integrations_imports/
 [submodule "fyle-integrations-db-migrations"]
 	path = fyle-integrations-db-migrations
-	url = https://github.com/fylein/fyle-integrations-db-migrations.git
+	url = https://github.com/fylein/fyle-integrations-db-migrations/
