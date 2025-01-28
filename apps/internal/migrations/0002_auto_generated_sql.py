@@ -7,6 +7,7 @@ sql_files = [
     'fyle-integrations-db-migrations/xero/functions/delete_workspace.sql'
 ]
 
+
 class Migration(migrations.Migration):
 
     dependencies = [('internal', '0001_auto_generated_sql')]
