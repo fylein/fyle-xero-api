@@ -6,6 +6,7 @@ sql_files = [
     'fyle-integrations-db-migrations/common/qbo_intacct_netsuite_xero/views/alerts/inactive_workspaces_view.sql'
 ]
 
+
 class Migration(migrations.Migration):
 
     dependencies = [('internal', '0002_auto_generated_sql')]
