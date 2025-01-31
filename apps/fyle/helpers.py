@@ -3,16 +3,14 @@ import logging
 import traceback
 from typing import List, Union
 
+import django_filters
 import requests
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
-
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
-
-import django_filters
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +22,12 @@ def post_request(url, body, refresh_token=None):
     Create a HTTP post request.
     """
     access_token = None
-    api_headers = {}
+    api_headers = {
+        'content-type': 'application/json'
+    }
     if refresh_token:
         access_token = get_access_token(refresh_token)
 
-        api_headers["content-type"] = "application/json"
         api_headers["Authorization"] = "Bearer {0}".format(access_token)
 
     response = requests.post(url, headers=api_headers, data=body)
