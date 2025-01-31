@@ -30,7 +30,7 @@ def post_request(url, body, refresh_token=None):
 
         api_headers["Authorization"] = "Bearer {0}".format(access_token)
 
-    response = requests.post(url, headers=api_headers, data=body)
+    response = requests.post(url, headers=api_headers, data=json.dumps(body))
 
     if response.status_code in [200, 201]:
         return json.loads(response.text)
