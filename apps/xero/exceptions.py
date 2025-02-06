@@ -200,6 +200,7 @@ def handle_xero_exceptions(payment=False):
                 xero_credentials.is_expired = True
                 xero_credentials.save()
                 logger.info(exception.message)
+                patch_integration_settings(workspace_id, is_token_expired=True)
                 task_log.status = TaskLogStatusEnum.FAILED
                 task_log.detail = None
                 task_log.xero_errors = [

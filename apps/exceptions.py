@@ -15,6 +15,7 @@ from xerosdk.exceptions import (
 from apps.fyle.models import ExpenseGroup
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule, XeroCredentials
+from apps.workspaces.tasks import patch_integration_settings
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -72,6 +73,7 @@ def handle_view_exceptions():
                 InvalidClientError,
             ) as exception:
                 logger.info(exception)
+                patch_integration_settings(kwargs["workspace_id"], is_token_expired=True)
                 return Response(
                     data={"message": "Xero connection expired"},
                     status=status.HTTP_400_BAD_REQUEST,
