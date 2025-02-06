@@ -15,7 +15,7 @@ from xerosdk.exceptions import (
 from apps.fyle.models import ExpenseGroup
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule, XeroCredentials
-from apps.workspaces.tasks import patch_integration_settings
+from apps.workspaces.actions import patch_integration_settings
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO

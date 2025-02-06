@@ -17,7 +17,7 @@ from apps.fyle.models import ExpenseGroup
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.models import FyleCredential, LastExportDetail, XeroCredentials
-from apps.workspaces.tasks import patch_integration_settings
+from apps.workspaces.actions import patch_integration_settings
 from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
