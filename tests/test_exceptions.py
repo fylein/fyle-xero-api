@@ -6,8 +6,8 @@ from apps.exceptions import handle_view_exceptions
 def test_handle_view_exceptions(mocker):
     workspace_id = 123
 
-    mocked_patch = MagicMock()
-    mocker.patch('apps.exceptions.patch_integration_settings', side_effect=mocked_patch)
+    mocked_invalidate_call = MagicMock()
+    mocker.patch('apps.exceptions.invalidate_xero_credentials', side_effect=mocked_invalidate_call)
 
     @handle_view_exceptions()
     def func(*args, **kwargs):
@@ -15,7 +15,6 @@ def test_handle_view_exceptions(mocker):
 
     func(workspace_id=workspace_id)
 
-    args, kwargs = mocked_patch.call_args
+    args, _ = mocked_invalidate_call.call_args
 
     assert args[0] == workspace_id
-    assert kwargs['is_token_expired'] == True
