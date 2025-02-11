@@ -16,6 +16,7 @@ from xerosdk.exceptions import (
     WrongParamsError as XeroWrongParamsError
 )
 
+from apps.workspaces.helpers import invalidate_token
 from apps.workspaces.models import XeroCredentials
 from fyle_integrations_imports.models import ImportLog
 
@@ -58,6 +59,7 @@ def handle_import_exceptions(task_name):
             except (XeroWrongParamsError, XeroInvalidTokenError) as exception:
                 error["message"] = "Xero token expired"
                 error["response"] = exception.__dict__
+                invalidate_token(workspace_id)
 
             except PlatformError as exception:
                 error["message"] = "Platform error while importing to Fyle"
@@ -65,6 +67,7 @@ def handle_import_exceptions(task_name):
 
             except (UnsuccessfulAuthentication, InvalidGrant):
                 error["message"] = "Xero refresh token is invalid"
+                invalidate_token(workspace_id)
 
             except Exception:
                 response = traceback.format_exc()
@@ -117,12 +120,14 @@ def handle_import_exceptions_v2(func):
             error['alert'] = False
             error['response'] = exception.__dict__
             import_log.status = 'FAILED'
+            invalidate_token(workspace_id)
 
         except UnsuccessfulAuthentication as exception:
             error["message"] = "Invalid xero tenant ID or xero-tenant-id header missing in workspace_id - {0}".format(workspace_id)
             error["alert"] = False
             error['response'] = exception.__dict__
             import_log.status = 'FAILED'
+            invalidate_token(workspace_id)
 
         except Exception:
             response = traceback.format_exc()
