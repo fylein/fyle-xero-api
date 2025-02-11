@@ -17,7 +17,7 @@ from apps.fyle.models import ExpenseGroup
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.models import FyleCredential, LastExportDetail, XeroCredentials
-from apps.workspaces.helpers import invalidate_token, patch_integration_settings
+from apps.workspaces.helpers import invalidate_xero_credentials, patch_integration_settings
 from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
@@ -192,7 +192,7 @@ def handle_xero_exceptions(payment=False):
                     )
 
             except (NoPrivilegeError, UnsuccessfulAuthentication) as exception:
-                invalidate_token(workspace_id)
+                invalidate_xero_credentials(workspace_id)
                 xero_credentials = XeroCredentials.objects.filter(
                     workspace_id=workspace_id
                 ).first()

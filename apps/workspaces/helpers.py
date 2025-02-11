@@ -30,7 +30,7 @@ def patch_integration_settings(workspace_id: int, errors: int = None, is_token_e
         logger.error(error, exc_info=True)
 
 
-def invalidate_token(workspace_id):
+def invalidate_xero_credentials(workspace_id):
     try:
         xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
         if xero_credentials:

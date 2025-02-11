@@ -19,7 +19,7 @@ from apps.fyle.tasks import post_accounting_export_summary
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
-from apps.workspaces.helpers import invalidate_token
+from apps.workspaces.helpers import invalidate_xero_credentials
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.exceptions import handle_xero_exceptions
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem, Payment
@@ -831,7 +831,7 @@ def check_xero_object_status(workspace_id):
             "Xero refresh token expired for workspace_id %s",
             workspace_id,
         )
-        invalidate_token(workspace_id)
+        invalidate_xero_credentials(workspace_id)
 
 
 def process_reimbursements(workspace_id):
@@ -929,7 +929,7 @@ def create_missing_currency(workspace_id: int):
             "Xero refresh token expired for workspace_id %s",
             workspace_id,
         )
-        invalidate_token(workspace_id)
+        invalidate_xero_credentials(workspace_id)
 
     except Exception as exception:
         logger.exception("Error creating currency in Xero", exception)
@@ -960,7 +960,7 @@ def update_xero_short_code(workspace_id: int):
             "Xero refresh token expired for workspace_id %s",
             workspace_id,
         )
-        invalidate_token(workspace_id)
+        invalidate_xero_credentials(workspace_id)
 
     except Exception as exception:
         logger.exception("Error updating Xero short code", exception)

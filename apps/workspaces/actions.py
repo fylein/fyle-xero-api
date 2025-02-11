@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from apps.exceptions import invalidate_token
+from apps.exceptions import invalidate_xero_credentials
 from apps.workspaces.helpers import patch_integration_settings
 from django_q.tasks import async_task
 from fyle_accounting_mappings.models import ExpenseAttribute
@@ -124,7 +124,7 @@ def connect_xero(authorization_code, redirect_uri, workspace_id):
             xero_exc.WrongParamsError,
             xero_exc.UnsuccessfulAuthentication,
         ) as exception:
-            invalidate_token(workspace_id)
+            invalidate_xero_credentials(workspace_id)
             logger.info(exception.response)
 
     if workspace.onboarding_state == 'CONNECTION':

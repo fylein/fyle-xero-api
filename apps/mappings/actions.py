@@ -2,7 +2,7 @@ import logging
 
 from xerosdk.exceptions import UnsuccessfulAuthentication
 
-from apps.exceptions import invalidate_token
+from apps.exceptions import invalidate_xero_credentials
 from apps.mappings.models import TenantMapping
 from apps.mappings.utils import MappingUtils
 from apps.workspaces.models import Workspace, XeroCredentials
@@ -48,7 +48,7 @@ def create_tenant_mapping(workspace_id, tenant_mapping_payload):
 
     except UnsuccessfulAuthentication:
         logger.info('Xero refresh token is invalid for workspace_id - %s', workspace_id)
-        invalidate_token(workspace_id)
+        invalidate_xero_credentials(workspace_id)
 
     except Exception:
         logger.info('Error while fetching company information')
