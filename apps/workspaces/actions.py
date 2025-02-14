@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime, timedelta
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from apps.exceptions import invalidate_xero_credentials
+from apps.workspaces.helpers import patch_integration_settings
 from django_q.tasks import async_task
 from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_rest_auth.helpers import get_fyle_admin
@@ -11,7 +12,7 @@ from fyle_rest_auth.models import AuthToken
 from xerosdk import exceptions as xero_exc
 
 from apps.fyle.enums import FundSourceEnum
-from apps.fyle.helpers import get_cluster_domain, patch_request
+from apps.fyle.helpers import get_cluster_domain
 from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import (
@@ -123,6 +124,7 @@ def connect_xero(authorization_code, redirect_uri, workspace_id):
             xero_exc.WrongParamsError,
             xero_exc.UnsuccessfulAuthentication,
         ) as exception:
+            invalidate_xero_credentials(workspace_id)
             logger.info(exception.response)
 
     if workspace.onboarding_state == 'CONNECTION':
@@ -238,26 +240,3 @@ def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[]):
             last_export_detail.next_export_at = last_exported_at + timedelta(hours=workspace_schedule.interval_hours)
 
         last_export_detail.save()
-
-
-def patch_integration_settings(workspace_id: int, errors: int = None, is_token_expired = None):
-    """
-    Patch integration settings
-    """
-
-    refresh_token = FyleCredential.objects.get(workspace_id=workspace_id).refresh_token
-    url = '{}/integrations/'.format(settings.INTEGRATIONS_SETTINGS_API)
-    payload = {
-        'tpa_name': 'Fyle Xero Integration',
-    }
-
-    if errors is not None:
-        payload['errors_count'] = errors
-
-    if is_token_expired is not None:
-        payload['is_token_expired'] = is_token_expired
-
-    try:
-        patch_request(url, payload, refresh_token)
-    except Exception as error:
-        logger.error(error, exc_info=True)
