@@ -1,6 +1,7 @@
 import logging
 
 from django.contrib.auth import get_user_model
+from apps.workspaces.tasks import post_to_integration_settings
 from django_q.tasks import async_task
 from fyle_rest_auth.utils import AuthUtils
 from rest_framework import generics
@@ -118,6 +119,8 @@ class ConnectXeroView(generics.CreateAPIView, generics.RetrieveAPIView):
             workspace_id=kwargs["workspace_id"],
         )
 
+        post_to_integration_settings(kwargs["workspace_id"], True)
+
         return Response(
             data=XeroCredentialSerializer(xero_credentials).data,
             status=status.HTTP_200_OK,
@@ -152,6 +155,7 @@ class RevokeXeroConnectionView(generics.CreateAPIView):
         """
         # TODO: cleanup later - merge with ConnectXeroView
         revoke_connections(workspace_id=kwargs["workspace_id"])
+        post_to_integration_settings(kwargs["workspace_id"], False)
 
         return Response(
             data={"message": "Revoked Xero connection"}, status=status.HTTP_200_OK

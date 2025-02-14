@@ -115,6 +115,9 @@ def test_connect_xero_view_post(mocker, api_client, test_connection):
         return_value=xero_data["get_all_organisations"],
     )
 
+    mocked_patch = mock.MagicMock()
+    mocker.patch('apps.workspaces.actions.patch_integration_settings', side_effect=mocked_patch)
+
     code = "asdfghj"
     url = "/api/workspaces/{}/connect_xero/authorization_code/".format(workspace_id)
 
@@ -124,6 +127,11 @@ def test_connect_xero_view_post(mocker, api_client, test_connection):
 
     response = api_client.post(url, data={"code": code})
     assert response.status_code == 200
+
+    args, kwargs = mocked_patch.call_args
+
+    assert args[0] == workspace_id
+    assert kwargs['is_token_expired'] == False
 
     xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
     xero_credentials.delete()

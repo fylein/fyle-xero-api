@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from apps.exceptions import invalidate_xero_credentials
+from apps.workspaces.helpers import patch_integration_settings
 from django_q.tasks import async_task
 from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_rest_auth.helpers import get_fyle_admin
@@ -94,6 +96,8 @@ def connect_xero(authorization_code, redirect_uri, workspace_id):
         xero_credentials.is_expired = False
         xero_credentials.save()
 
+    patch_integration_settings(workspace_id, is_token_expired=False)
+
     if tenant_mapping and not tenant_mapping.connection_id:
         xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
         connections = xero_connector.connection.connections.get_all()
@@ -120,6 +124,7 @@ def connect_xero(authorization_code, redirect_uri, workspace_id):
             xero_exc.WrongParamsError,
             xero_exc.UnsuccessfulAuthentication,
         ) as exception:
+            invalidate_xero_credentials(workspace_id)
             logger.info(exception.response)
 
     if workspace.onboarding_state == 'CONNECTION':
