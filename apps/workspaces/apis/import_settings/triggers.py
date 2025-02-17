@@ -79,10 +79,10 @@ class ImportSettingsTrigger:
         current_mapping_settings = MappingSetting.objects.filter(workspace_id=self.__workspace_id).all()
         self.__unset_auto_mapped_flag(current_mapping_settings, mapping_settings)
         self.__reset_import_log_timestamp(
-                current_mapping_settings=current_mapping_settings,
-                new_mappings_settings=mapping_settings,
-                workspace_id=self.__workspace_id
-            )
+            current_mapping_settings=current_mapping_settings,
+            new_mappings_settings=mapping_settings,
+            workspace_id=self.__workspace_id
+        )
 
         workspace_settings = self.__workspace_general_settings
 
