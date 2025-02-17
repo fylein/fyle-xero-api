@@ -10,6 +10,8 @@ from fyle.platform.exceptions import RetryException
 from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_integrations_platform_connector.apis.expenses import Expenses as FyleExpenses
+from fyle_accounting_library.fyle_platform.helpers import get_expense_import_states, filter_expenses_based_on_state
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.fyle.actions import create_generator_and_post_in_batches
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
@@ -19,7 +21,7 @@ from apps.fyle.queue import async_post_accounting_export_summary
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
 from apps.workspaces.actions import export_to_xero
-from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -49,26 +51,8 @@ def get_task_log_and_fund_source(workspace_id: int):
     return task_log, fund_source
 
 
-def create_expense_groups(workspace_id: int, fund_source: List[str], task_log: TaskLog):
-    """
-    Create expense groups
-    :param task_log: Task log object
-    :param workspace_id: workspace id
-    :param state: expense state
-    :param fund_source: expense fund source
-    :return: task log
-    """
-
-    async_create_expense_groups(workspace_id, fund_source, task_log)
-
-    task_log.detail = {"message": "Creating expense groups"}
-    task_log.save()
-
-    return task_log
-
-
 def async_create_expense_groups(
-    workspace_id: int, fund_source: List[str], task_log: TaskLog
+    workspace_id: int, fund_source: List[str], task_log: TaskLog, imported_from: ExpenseImportSourceEnum
 ):
     try:
         with transaction.atomic():
@@ -138,7 +122,7 @@ def async_create_expense_groups(
 
             workspace.save()
 
-            expense_objects = Expense.create_expense_objects(expenses, workspace_id)
+            expense_objects = Expense.create_expense_objects(expenses, workspace_id, imported_from=imported_from)
 
             ExpenseGroup.create_expense_groups_by_report_id_fund_source(
                 expense_objects, workspace_id
@@ -206,8 +190,8 @@ def sync_dimensions(fyle_credentials, is_export: bool = False):
             platform.projects.sync()
 
 
-def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: Workspace):
-    expense_objects = Expense.create_expense_objects(expenses, workspace.id)
+def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: Workspace, imported_from: ExpenseImportSourceEnum = None):
+    expense_objects = Expense.create_expense_objects(expenses, workspace.id, imported_from=imported_from)
     filtered_expenses = expense_objects
     expenses_object_ids = [expense_object.id for expense_object in expense_objects]
 
@@ -227,7 +211,7 @@ def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: 
     task_log.save()
 
 
-def import_and_export_expenses(report_id: str, org_id: str) -> None:
+def import_and_export_expenses(report_id: str, org_id: str, is_state_change_event: bool, report_state: str = None, imported_from: ExpenseImportSourceEnum = None) -> None:
     """
     Import and export expenses
     :param report_id: report id
@@ -235,32 +219,43 @@ def import_and_export_expenses(report_id: str, org_id: str) -> None:
     :return: None
     """
     workspace = Workspace.objects.get(fyle_org_id=org_id)
-    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
     expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace.id)
+
+    import_states = get_expense_import_states(expense_group_settings)
+
+    # Don't call API if report state is not in import states, for example customer configured to import only PAID reports but webhook is triggered for APPROVED report
+    if report_state not in import_states:
+        return
+
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
 
     try:
         with transaction.atomic():
-            task_log, _ = TaskLog.objects.update_or_create(workspace_id=workspace.id, type='FETCHING_EXPENSES', defaults={'status': 'IN_PROGRESS'})
-
             fund_source = get_fund_source(workspace.id)
             source_account_type = get_source_account_type(fund_source)
             filter_credit_expenses = get_filter_credit_expenses(expense_group_settings)
+
+            task_log, _ = TaskLog.objects.update_or_create(workspace_id=workspace.id, type='FETCHING_EXPENSES', defaults={'status': 'IN_PROGRESS'})
 
             platform = PlatformConnector(fyle_credentials)
             expenses = platform.expenses.get(
                 source_account_type,
                 filter_credit_expenses=filter_credit_expenses,
-                report_id=report_id
+                report_id=report_id,
+                import_states=import_states
             )
 
-            group_expenses_and_save(expenses, task_log, workspace)
+            if is_state_change_event:
+                expenses = filter_expenses_based_on_state(expenses, expense_group_settings)
+
+            group_expenses_and_save(expenses, task_log, workspace, imported_from=imported_from)
 
         # Export only selected expense groups
         expense_ids = Expense.objects.filter(report_id=report_id, org_id=org_id).values_list('id', flat=True)
         expense_groups = ExpenseGroup.objects.filter(expenses__id__in=[expense_ids], workspace_id=workspace.id).distinct('id').values('id')
         expense_group_ids = [expense_group['id'] for expense_group in expense_groups]
 
-        if len(expense_group_ids):
+        if len(expense_group_ids) and not is_state_change_event:
             export_to_xero(workspace.id, None, expense_group_ids)
 
     except WorkspaceGeneralSettings.DoesNotExist:
