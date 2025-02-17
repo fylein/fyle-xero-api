@@ -119,6 +119,8 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
 
         trigger.pre_save_workspace_general_settings(workspace_general_settings)
 
+        pre_save_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=instance.id).first()
+
         with transaction.atomic():
             (
                 workspace_general_settings_instance,
@@ -161,7 +163,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
             trigger.post_save_workspace_general_settings(
                 workspace_general_settings_instance
             )
-            trigger.pre_save_mapping_settings()
+            trigger.pre_save_mapping_settings(pre_save_general_settings)
 
             if workspace_general_settings["import_tax_codes"]:
                 mapping_settings.append(
