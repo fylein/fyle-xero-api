@@ -165,7 +165,6 @@ class Expense(models.Model):
         db_table = "expenses"
 
     @staticmethod
-    # TODO: fix in fyle integrations platform connector as well
     def create_expense_objects(expenses: List[Dict], workspace_id: int, skip_update:bool = False, imported_from: ExpenseImportSourceEnum = None):
         """
         Bulk create expense objects
