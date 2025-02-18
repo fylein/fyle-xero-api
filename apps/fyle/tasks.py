@@ -21,7 +21,7 @@ from apps.fyle.queue import async_post_accounting_export_summary
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
 from apps.workspaces.actions import export_to_xero
-from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
