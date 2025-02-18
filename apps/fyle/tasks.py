@@ -224,7 +224,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
     import_states = get_expense_import_states(expense_group_settings)
 
     # Don't call API if report state is not in import states, for example customer configured to import only PAID reports but webhook is triggered for APPROVED report
-    if report_state not in import_states:
+    if report_state and report_state not in import_states:
         return
 
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)

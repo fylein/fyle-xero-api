@@ -109,6 +109,18 @@ def test_import_and_export_expenses(db, mocker):
     import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ', False)
 
     mock_call = mocker.patch('apps.fyle.helpers.get_fund_source')
+
+    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ', True, report_state='APPROVED', imported_from=ExpenseImportSourceEnum.WEBHOOK)
+    assert mock_call.call_count == 0
+
+    pre_insert_count = Expense.objects.filter(org_id='orPJvXuoLqvJ').count()
+    mocker.patch(
+        "fyle_integrations_platform_connector.apis.Expenses.get",
+        return_value=data["expenses_webhook"],
+    )
+    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ', True, report_state='PAID', imported_from=ExpenseImportSourceEnum.WEBHOOK)
+    assert Expense.objects.filter(org_id='orPJvXuoLqvJ').count() > pre_insert_count
+
     mock_call.side_effect = WorkspaceGeneralSettings.DoesNotExist('Error')
     import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ', False)
 
