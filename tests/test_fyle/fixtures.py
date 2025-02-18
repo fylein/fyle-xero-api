@@ -280,8 +280,7 @@ data = {
                 "Fyle Categories": "",
             },
             "bank_transaction_id": None,
-            "is_posted_at_null": False,
-            "fund_source": "PERSONAL"
+            "is_posted_at_null": False
         },
     ],
     "expenses_webhook": [
@@ -325,8 +324,7 @@ data = {
                 "Fyle Categories": "",
             },
             "bank_transaction_id": None,
-            "is_posted_at_null": False,
-            "fund_source": "PERSONAL"
+            "is_posted_at_null": False
         },
     ],
 
