@@ -7,6 +7,8 @@ from fyle.platform.exceptions import (
     InvalidTokenError as FyleInvalidTokenError,
     InternalServerError
 )
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
+
 from apps.fyle.actions import update_expenses_in_progress
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.tasks import (
@@ -39,7 +41,7 @@ def test_create_expense_groups(mocker, db):
     expense_group_settings.ccc_export_date_type = "last_spent_at"
     expense_group_settings.save()
 
-    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log)
+    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     task_log = TaskLog.objects.get(id=task_log.id)
 
@@ -53,7 +55,7 @@ def test_create_expense_groups(mocker, db):
         type="FETCHING_EXPENSES",
         defaults={"status": "IN_PROGRESS"},
     )
-    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log)
+    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     task_log = TaskLog.objects.get(id=task_log.id)
     assert task_log.status == "FAILED"
@@ -62,21 +64,21 @@ def test_create_expense_groups(mocker, db):
         mock_call.side_effect = FyleInvalidTokenError(
             msg="Invalid Token for Fyle", response="Invalid Token for Fyle"
         )
-        create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log)
+        create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
     expense_group_settings.delete()
 
-    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log)
+    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     task_log = TaskLog.objects.get(id=task_log.id)
     assert task_log.status == "FATAL"
 
     mock_call.side_effect = InternalServerError('Error')
-    create_expense_groups(1, ['PERSONAL', 'CCC'], task_log)
+    create_expense_groups(1, ['PERSONAL', 'CCC'], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     mock_call.side_effect = FyleInvalidTokenError('Invalid Token')
-    create_expense_groups(1, ['PERSONAL', 'CCC'], task_log)
+    create_expense_groups(1, ['PERSONAL', 'CCC'], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     mock_call.call_count = 2
 
@@ -104,11 +106,23 @@ def test_post_accounting_export_summary(db, mocker):
 
 
 def test_import_and_export_expenses(db, mocker):
-    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ')
+    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ', False)
 
     mock_call = mocker.patch('apps.fyle.helpers.get_fund_source')
+
+    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ', True, report_state='APPROVED', imported_from=ExpenseImportSourceEnum.WEBHOOK)
+    assert mock_call.call_count == 0
+
+    pre_insert_count = Expense.objects.filter(org_id='orPJvXuoLqvJ').count()
+    mocker.patch(
+        "fyle_integrations_platform_connector.apis.Expenses.get",
+        return_value=data["expenses_webhook"],
+    )
+    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ', True, report_state='PAID', imported_from=ExpenseImportSourceEnum.WEBHOOK)
+    assert Expense.objects.filter(org_id='orPJvXuoLqvJ').count() > pre_insert_count
+
     mock_call.side_effect = WorkspaceGeneralSettings.DoesNotExist('Error')
-    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ')
+    import_and_export_expenses('rp1s1L3QtMpF', 'orPJvXuoLqvJ', False)
 
     assert mock_call.call_count == 0
 

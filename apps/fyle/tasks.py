@@ -21,7 +21,7 @@ from apps.fyle.queue import async_post_accounting_export_summary
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
 from apps.workspaces.actions import export_to_xero
-from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -51,7 +51,7 @@ def get_task_log_and_fund_source(workspace_id: int):
     return task_log, fund_source
 
 
-def async_create_expense_groups(
+def create_expense_groups(
     workspace_id: int, fund_source: List[str], task_log: TaskLog, imported_from: ExpenseImportSourceEnum
 ):
     try:
@@ -224,7 +224,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
     import_states = get_expense_import_states(expense_group_settings)
 
     # Don't call API if report state is not in import states, for example customer configured to import only PAID reports but webhook is triggered for APPROVED report
-    if report_state not in import_states:
+    if report_state and report_state not in import_states:
         return
 
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
