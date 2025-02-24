@@ -1,5 +1,4 @@
 import os
-import json
 import signal
 
 from .actions import handle_exports
@@ -18,13 +17,15 @@ class ExportWorker(EventConsumer):
     def __init__(self, *, qconnector_cls, **kwargs):
         super().__init__(qconnector_cls=qconnector_cls, event_cls=None, **kwargs)
 
-    def process_message(self, routing_key, payload_dict):
+    def process_message(self, routing_key, payload_dict, delivery_tag):
         try:
+            logger.info('Processing message for workspace - %s with routing key - %s and payload - %s with delivery tag - %s', payload_dict['workspace_id'], routing_key, payload_dict, delivery_tag)
             handle_exports(payload_dict['data'])
+            self.qconnector.acknowledge_message(delivery_tag)
         except Exception as e:
-            self.handle_exception(routing_key, payload_dict, e)
+            self.handle_exception(routing_key, payload_dict, e, delivery_tag)
 
-    def handle_exception(self, routing_key, payload_dict, error):
+    def handle_exception(self, routing_key, payload_dict, error, delivery_tag):
         logger.error('Error while handling exports for workspace - %s, error: %s', payload_dict, str(error))
         FailedEvent.objects.create(
             routing_key=routing_key,
@@ -32,21 +33,8 @@ class ExportWorker(EventConsumer):
             error_traceback=str(error),
             workspace_id=payload_dict['workspace_id'] if payload_dict.get('workspace_id') else None
         )
-
-    def start_consuming(self):
-        def stream_consumer(routing_key, payload):
-            payload_dict = json.loads(payload)
-
-            self.process_message(routing_key, payload_dict)
-            self.check_shutdown()
-
-        self.qconnector.consume_stream(
-            callback_fn=stream_consumer
-        )
-
-    def shutdown(self, signum=None, frame=None):
-        """Override shutdown to handle signal arguments"""
-        super().shutdown()
+        # Reject the message and do not requeue it
+        self.qconnector.reject_message(delivery_tag, requeue=False)
 
 
 def consume():
