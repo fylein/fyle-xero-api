@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
 
-
 def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
     """
     Async'ly import and export expenses
