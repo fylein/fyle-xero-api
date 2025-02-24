@@ -2,20 +2,12 @@ import logging
 from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from apps.fyle.helpers import assert_valid_request
+from fyle_accounting_library.rabbitmq.connector import RabbitMQ
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
-
-def async_post_accounting_export_summary(org_id: str, workspace_id: int) -> None:
-    """
-    Async'ly post accounting export summary to Fyle
-    :param org_id: org id
-    :param workspace_id: workspace id
-    :return: None
-    """
-    # This function calls post_accounting_export_summary asynchrously
-    async_task('apps.fyle.tasks.post_accounting_export_summary', org_id, workspace_id)
+rabbitmq = RabbitMQ('xero_exchange')
 
 
 def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
@@ -29,7 +21,16 @@ def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
         org_id = body['data']['org_id']
         state = body['data']['state']
         assert_valid_request(workspace_id=workspace_id, fyle_org_id=org_id)
-        async_task('apps.fyle.tasks.import_and_export_expenses', report_id, org_id, True, state, ExpenseImportSourceEnum.WEBHOOK)
+        payload = {
+            'data': {
+                'report_id': report_id,
+                'org_id': org_id,
+                'is_state_change_event': True,
+                'report_state': state,
+                'imported_from': ExpenseImportSourceEnum.WEBHOOK
+            }
+        }
+        rabbitmq.publish('exports.p1', payload)
 
     if body.get('action') == 'ACCOUNTING_EXPORT_INITIATED' and body.get('data'):
         report_id = body['data']['id']
