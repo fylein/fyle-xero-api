@@ -47,7 +47,7 @@ def run_sync_schedule(workspace_id):
     )
 
     if task_log.status == TaskLogStatusEnum.COMPLETE:
-        export_to_xero(workspace_id, "AUTO")
+        export_to_xero(workspace_id, "AUTO", triggered_by=ExpenseImportSourceEnum.BACKGROUND_SCHEDULE)
 
 
 def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
