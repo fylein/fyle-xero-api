@@ -51,7 +51,7 @@ def get_task_log_and_fund_source(workspace_id: int):
     return task_log, fund_source
 
 
-def async_create_expense_groups(
+def create_expense_groups(
     workspace_id: int, fund_source: List[str], task_log: TaskLog, imported_from: ExpenseImportSourceEnum
 ):
     try:

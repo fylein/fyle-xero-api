@@ -12,7 +12,7 @@ from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from apps.fyle.actions import update_expenses_in_progress
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.tasks import (
-    async_create_expense_groups,
+    create_expense_groups,
     import_and_export_expenses,
     post_accounting_export_summary,
     update_non_exported_expenses
@@ -22,7 +22,7 @@ from apps.workspaces.models import Workspace, FyleCredential, WorkspaceGeneralSe
 from tests.test_fyle.fixtures import data
 
 
-def test_async_create_expense_groups(mocker, db):
+def test_create_expense_groups(mocker, db):
     workspace_id = 1
 
     mock_call = mocker.patch(
@@ -41,7 +41,7 @@ def test_async_create_expense_groups(mocker, db):
     expense_group_settings.ccc_export_date_type = "last_spent_at"
     expense_group_settings.save()
 
-    async_create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
+    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     task_log = TaskLog.objects.get(id=task_log.id)
 
@@ -55,7 +55,7 @@ def test_async_create_expense_groups(mocker, db):
         type="FETCHING_EXPENSES",
         defaults={"status": "IN_PROGRESS"},
     )
-    async_create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
+    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     task_log = TaskLog.objects.get(id=task_log.id)
     assert task_log.status == "FAILED"
@@ -64,21 +64,21 @@ def test_async_create_expense_groups(mocker, db):
         mock_call.side_effect = FyleInvalidTokenError(
             msg="Invalid Token for Fyle", response="Invalid Token for Fyle"
         )
-        async_create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
+        create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
     expense_group_settings.delete()
 
-    async_create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
+    create_expense_groups(workspace_id, ["PERSONAL", "CCC"], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     task_log = TaskLog.objects.get(id=task_log.id)
     assert task_log.status == "FATAL"
 
     mock_call.side_effect = InternalServerError('Error')
-    async_create_expense_groups(1, ['PERSONAL', 'CCC'], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
+    create_expense_groups(1, ['PERSONAL', 'CCC'], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     mock_call.side_effect = FyleInvalidTokenError('Invalid Token')
-    async_create_expense_groups(1, ['PERSONAL', 'CCC'], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
+    create_expense_groups(1, ['PERSONAL', 'CCC'], task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
     mock_call.call_count = 2
 
