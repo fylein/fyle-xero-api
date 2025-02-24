@@ -21,7 +21,6 @@ class ExportWorker(EventConsumer):
     def process_message(self, routing_key, payload_dict):
         try:
             handle_exports(payload_dict['data'])
-            raise Exception('Test error')
         except Exception as e:
             self.handle_exception(routing_key, payload_dict, e)
 

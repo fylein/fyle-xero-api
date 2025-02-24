@@ -23,6 +23,16 @@ def api_client():
     return APIClient()
 
 
+@pytest.fixture(autouse=True)
+def mock_rabbitmq():
+    with mock.patch('apps.fyle.queue.RabbitMQConnection.get_instance') as mock_rabbitmq:
+        mock_instance = mock.Mock()
+        mock_instance.publish.return_value = None
+        mock_instance.connect.return_value = None
+        mock_rabbitmq.return_value = mock_instance
+        yield mock_rabbitmq
+
+
 @pytest.fixture(scope="session", autouse=True)
 def default_session_fixture(request):
     patched_1 = mock.patch("xerosdk.XeroSDK.refresh_access_token")
