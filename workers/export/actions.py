@@ -15,6 +15,5 @@ logger.level = logging.INFO
 
 
 def handle_exports(data: Dict) -> None:
-    print(data)
     import_and_export_expenses(**data)
 

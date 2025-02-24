@@ -2,6 +2,7 @@ import os
 import json
 import signal
 
+from fyle_accounting_library.fyle_platform.enums import RoutingKeyEnum
 from consumer.event_consumer import EventConsumer
 from common import log
 from common.qconnector import RabbitMQConnector
@@ -16,8 +17,9 @@ class ExportWorker(EventConsumer):
     def __init__(self, *, qconnector_cls, **kwargs):
         super().__init__(qconnector_cls=qconnector_cls, event_cls=None, **kwargs)
 
-    def process_message(self, _, payload_dict):
+    def process_message(self, routing_key, payload_dict):
         try:
+            logger.info('Received payload: %s with routing key: %s', payload_dict, routing_key)
             handle_exports(payload_dict['data'])
         except Exception as e:
             logger.info('Error while handling exports for workspace - %s, error: %s', payload_dict, str(e))
@@ -45,7 +47,7 @@ def consume():
         rabbitmq_url=rabbitmq_url,
         rabbitmq_exchange='xero_exchange',
         queue_name='xero_p1_exports_queue',
-        binding_keys='exports.p1',
+        binding_keys=RoutingKeyEnum.EXPORT,
         qconnector_cls=RabbitMQConnector
     )
 

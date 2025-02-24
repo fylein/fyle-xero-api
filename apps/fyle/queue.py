@@ -3,6 +3,7 @@ from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from apps.fyle.helpers import assert_valid_request
 from fyle_accounting_library.rabbitmq.connector import RabbitMQ
+from fyle_accounting_library.fyle_platform.enums import RoutingKeyEnum
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -30,7 +31,7 @@ def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
                 'imported_from': ExpenseImportSourceEnum.WEBHOOK
             }
         }
-        rabbitmq.publish('exports.p1', payload)
+        rabbitmq.publish(RoutingKeyEnum.EXPORT, payload)
 
     if body.get('action') == 'ACCOUNTING_EXPORT_INITIATED' and body.get('data'):
         report_id = body['data']['id']
