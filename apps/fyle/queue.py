@@ -29,7 +29,8 @@ def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
                 'is_state_change_event': True,
                 'report_state': state,
                 'imported_from': ExpenseImportSourceEnum.WEBHOOK
-            }
+            },
+            'workspace_id': workspace_id
         }
         rabbitmq.publish(RoutingKeyEnum.EXPORT, payload)
 

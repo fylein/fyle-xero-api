@@ -2,12 +2,14 @@ import os
 import json
 import signal
 
+from .actions import handle_exports
+
 from fyle_accounting_library.fyle_platform.enums import RoutingKeyEnum
+from fyle_accounting_library.rabbitmq.models import FailedEvent
 from consumer.event_consumer import EventConsumer
 from common import log
 from common.qconnector import RabbitMQConnector
 
-from .actions import handle_exports
 
 
 logger = log.get_logger(__name__)
@@ -19,10 +21,19 @@ class ExportWorker(EventConsumer):
 
     def process_message(self, routing_key, payload_dict):
         try:
-            logger.info('Received payload: %s with routing key: %s', payload_dict, routing_key)
             handle_exports(payload_dict['data'])
+            raise Exception('Test error')
         except Exception as e:
-            logger.info('Error while handling exports for workspace - %s, error: %s', payload_dict, str(e))
+            self.handle_exception(routing_key, payload_dict, e)
+
+    def handle_exception(self, routing_key, payload_dict, error):
+        logger.error('Error while handling exports for workspace - %s, error: %s', payload_dict, str(error))
+        FailedEvent.objects.create(
+            routing_key=routing_key,
+            payload=payload_dict,
+            error_traceback=str(error),
+            workspace_id=payload_dict['workspace_id'] if payload_dict.get('workspace_id') else None
+        )
 
     def start_consuming(self):
         def stream_consumer(routing_key, payload):
