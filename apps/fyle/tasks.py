@@ -17,7 +17,6 @@ from apps.fyle.actions import create_generator_and_post_in_batches
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.fyle.helpers import get_filter_credit_expenses, get_fund_source, get_source_account_type, handle_import_exception
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
-from apps.fyle.queue import async_post_accounting_export_summary
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
 from apps.workspaces.actions import export_to_xero
@@ -195,7 +194,7 @@ def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: 
     filtered_expenses = expense_objects
     expenses_object_ids = [expense_object.id for expense_object in expense_objects]
 
-    async_post_accounting_export_summary(workspace.fyle_org_id, workspace.id)
+    post_accounting_export_summary(workspace.fyle_org_id, workspace.id)
 
     filtered_expenses = Expense.objects.filter(
         id__in=expenses_object_ids,
