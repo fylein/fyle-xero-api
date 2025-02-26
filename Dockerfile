@@ -29,7 +29,7 @@ COPY . /fyle-xero-api/
 WORKDIR /fyle-xero-api
 
 # Do linting checks
-RUN flake8 .
+RUN flake8 . --exclude=fyle_integrations_platform_connector/,fylesdk/,fyle_accounting_mappings/,fyle_accounting_library/,common/,consumer/
 
 # Expose development port
 EXPOSE 8000

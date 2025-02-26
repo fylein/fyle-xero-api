@@ -2,13 +2,11 @@ import logging
 from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from apps.fyle.helpers import assert_valid_request
-from fyle_accounting_library.rabbitmq.connector import RabbitMQ
+from fyle_accounting_library.rabbitmq.connector import RabbitMQConnection
 from fyle_accounting_library.fyle_platform.enums import RoutingKeyEnum
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
-
-rabbitmq = RabbitMQ('xero_exchange')
 
 
 def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
@@ -17,6 +15,7 @@ def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
     :param body: body
     :return: None
     """
+    rabbitmq = RabbitMQConnection.get_instance('xero_exchange')
     if body.get('action') in ('ADMIN_APPROVED', 'APPROVED', 'STATE_CHANGE_PAYMENT_PROCESSING', 'PAID') and body.get('data'):
         report_id = body['data']['id']
         org_id = body['data']['org_id']

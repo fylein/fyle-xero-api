@@ -162,3 +162,5 @@ fylesdk/
 fyle_accounting_mappings/
 commits.csv
 fyle_accounting_library/
+common/
+consumer/
