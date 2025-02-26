@@ -11,7 +11,6 @@ from common import log
 from common.qconnector import RabbitMQConnector
 
 
-
 logger = log.get_logger(__name__)
 
 

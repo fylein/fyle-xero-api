@@ -12,6 +12,7 @@ services:
     - ./:/fyle-xero-api
     depends_on:
     - db
+    - rabbitmq
     environment:
       SECRET_KEY: thisisthedjangosecretkey
       ALLOWED_HOSTS: "*"
@@ -30,6 +31,7 @@ services:
       XERO_BASE_URL: ${XERO_BASE_URL}
       XERO_REDIRECT_URI: ${XERO_REDIRECT_URI}
       XERO_TOKEN_URI: ${XERO_TOKEN_URI}
+      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672/?heartbeat=0
   db:
     image: "postgres:15"
     environment:
@@ -39,7 +41,17 @@ services:
     volumes:
       - data:/var/lib/postgresql/data/
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  rabbitmq:
+    image: rabbitmq:3.8.9-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+      - '5673:5672'
+    volumes:
+      - rabbitmq-data:/data/
 
 volumes:
   api:
   data:
+  rabbitmq-data:
