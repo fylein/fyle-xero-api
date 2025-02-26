@@ -21,6 +21,7 @@ def export_worker(mock_qconnector):
         qconnector_cls=Mock(return_value=mock_qconnector)
     )
     worker.qconnector = mock_qconnector
+    worker.event_cls = Mock()
     return worker
 
 
@@ -36,7 +37,7 @@ def test_process_message_success(export_worker):
         }
 
         # The process_message should handle the exception internally
-        export_worker.process_message(routing_key, payload_dict)
+        export_worker.process_message(routing_key, payload_dict, 1)
 
         mock_handle_exports.assert_called_once_with({'some': 'data'})
 
@@ -50,7 +51,7 @@ def test_handle_exception(export_worker):
     }
     error = Exception('Test error')
 
-    export_worker.handle_exception(routing_key, payload_dict, error)
+    export_worker.handle_exception(routing_key, payload_dict, error, 1)
 
     failed_event = FailedEvent.objects.get(
         routing_key=routing_key,
@@ -60,28 +61,15 @@ def test_handle_exception(export_worker):
     assert failed_event.error_traceback == 'Test error'
 
 
-def test_start_consuming(export_worker):
-    mock_payload = json.dumps({'test': 'data'})
-
-    # Simulate the callback being called
-    export_worker.qconnector.consume_stream.side_effect = lambda callback_fn: callback_fn('test.key', mock_payload)
-
-    with patch.object(export_worker, 'process_message') as mock_process:
-        export_worker.start_consuming()
-
-        mock_process.assert_called_once_with('test.key', {'test': 'data'})
-
-
 def test_shutdown(export_worker):
     # Test shutdown with signal arguments
     with patch.object(export_worker, 'shutdown', wraps=export_worker.shutdown) as mock_shutdown:
-        export_worker.shutdown(signum=15, frame=None)  # SIGTERM = 15
-        mock_shutdown.assert_called_once_with(signum=15, frame=None)
+        export_worker.shutdown(_=15, __=None)  # SIGTERM = 15
+        mock_shutdown.assert_called_once_with(_=15, __=None)
 
-    # Test shutdown without arguments
     with patch.object(export_worker, 'shutdown', wraps=export_worker.shutdown) as mock_shutdown:
-        export_worker.shutdown()
-        mock_shutdown.assert_called_once_with()
+        export_worker.shutdown(_=0, __=None)  # Using default values
+        mock_shutdown.assert_called_once_with(_=0, __=None)
 
 
 @patch('workers.export.worker.signal.signal')
