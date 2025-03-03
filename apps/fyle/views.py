@@ -1,6 +1,7 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import status
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.exceptions import handle_view_exceptions
 from apps.fyle.actions import exportable_expense_group, get_expense_field
@@ -8,7 +9,7 @@ from apps.fyle.helpers import ExpenseGroupSearchFilter
 from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.queue import async_import_and_export_expenses
 from apps.fyle.serializers import ExpenseFieldSerializer, ExpenseGroupSerializer, ExpenseGroupSettingsSerializer
-from apps.fyle.tasks import async_create_expense_groups, get_task_log_and_fund_source
+from apps.fyle.tasks import create_expense_groups, get_task_log_and_fund_source
 from apps.workspaces.models import FyleCredential, Workspace
 from fyle_xero_api.utils import LookupFieldMixin
 
@@ -59,7 +60,7 @@ class ExpenseGroupSyncView(generics.CreateAPIView):
         """
         task_log, fund_source = get_task_log_and_fund_source(kwargs["workspace_id"])
 
-        async_create_expense_groups(kwargs["workspace_id"], fund_source, task_log)
+        create_expense_groups(kwargs["workspace_id"], fund_source, task_log, ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
         return Response(status=status.HTTP_200_OK)
 
