@@ -30,7 +30,5 @@ max-line-length = 99
 max-complexity = 19
 ban-relative-imports = true
 select = B,C,E,F,N,W,I25
-exclude =
-    fyle_accounting_library,
-    fyle_accounting_mappings,
-    fyle_integrations_platform_connector
+
+exclude = *env, *.yml, .flake8, *.txt, *.yaml, gunicorn_config.py, apps/*/migrations/*, manage.py, fyle_accounting_library/*, fyle_accounting_mappings/*, fyle_integrations_platform_connector/*
