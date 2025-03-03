@@ -31,4 +31,4 @@ max-complexity = 19
 ban-relative-imports = true
 select = B,C,E,F,N,W,I25
 
-exclude = *env, *.yml, .flake8, *.txt, *.yaml, gunicorn_config.py, apps/*/migrations/*, manage.py, fyle_integrations_imports/*, fyle_xero_api/*
+exclude = *env, *.yml, .flake8, *.txt, *.yaml, gunicorn_config.py, apps/*/migrations/*, manage.py, fyle_accounting_library/*, fyle_accounting_mappings/*, fyle_integrations_platform_connector/*, common/*, consumer/*

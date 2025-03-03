@@ -13,6 +13,8 @@ from django.db.models import Count, JSONField
 from django.db.models.fields.json import KeyTextTransform
 from fyle_accounting_mappings.mixins import AutoAddCreateUpdateInfoMixin
 from fyle_accounting_mappings.models import ExpenseAttribute
+from fyle_accounting_library.fyle_platform.constants import IMPORTED_FROM_CHOICES
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
@@ -156,13 +158,14 @@ class Expense(models.Model):
     tax_group_id = models.CharField(null=True, max_length=255, help_text="Tax Group ID")
     accounting_export_summary = JSONField(default=dict)
     previous_export_state = models.CharField(max_length=255, help_text='Previous export state', null=True)
+    imported_from = models.CharField(choices=IMPORTED_FROM_CHOICES, max_length=255, help_text='Imported from source', null=True)
     workspace = models.ForeignKey(Workspace, on_delete=models.PROTECT, help_text='To which workspace this expense belongs to', null=True)
 
     class Meta:
         db_table = "expenses"
 
     @staticmethod
-    def create_expense_objects(expenses: List[Dict], workspace_id: int, skip_update:bool = False):
+    def create_expense_objects(expenses: List[Dict], workspace_id: int, skip_update:bool = False, imported_from: ExpenseImportSourceEnum = None):
         """
         Bulk create expense objects
         """
@@ -228,10 +231,17 @@ class Expense(models.Model):
                 defaults.update(expense_data_to_append)
 
             if skip_update or expense_created_at > cutoff_date:
-                expense_object, _ = Expense.objects.update_or_create(
+                expense_object, created = Expense.objects.update_or_create(
                     expense_id=expense["id"],
                     defaults=defaults
                 )
+
+                # Only set imported_from for newly created expenses
+                if created and imported_from:
+                    expense_object.imported_from = imported_from
+                    expense_object.save(
+                        update_fields=['imported_from']
+                    )
 
                 if not ExpenseGroup.objects.filter(
                     expenses__id=expense_object.id
