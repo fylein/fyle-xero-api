@@ -5,7 +5,7 @@ FROM python:3.10-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN apt-get update && apt-get -y install libpq-dev gcc && apt-get install git -y --no-install-recommends
+RUN apt-get update && apt-get -y install libpq-dev gcc && apt-get install git curl postgresql-client -y --no-install-recommends
 
 ARG CI
 RUN if [ "$CI" = "ENABLED" ]; then \
