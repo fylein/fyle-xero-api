@@ -182,7 +182,14 @@ def async_create_expense_groups(
         )
 
 
-def sync_dimensions(fyle_credentials, is_export: bool = False):
+def sync_dimensions(workspace_id: int, is_export: bool = False):
+    """
+    Sync dimensions
+    :param workspace_id: workspace id
+    :param is_export: is export
+    :return: None
+    """
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     platform = PlatformConnector(fyle_credentials)
     platform.import_fyle_dimensions(is_export=is_export)
     if is_export:

@@ -416,7 +416,7 @@ def test_schedule_bills_creation(db):
     task_log.save()
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, fund_source="PERSONAL", interval_hours=0
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, interval_hours=0
     )
 
 
@@ -514,7 +514,7 @@ def test_schedule_bank_transaction_creation(db):
     task_log.save()
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, fund_source="CCC", interval_hours=0
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, interval_hours=0
     )
 
 
@@ -1053,7 +1053,7 @@ def test_skipping_schedule_bills_creation(db):
     )
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, fund_source="CCC", interval_hours=1
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1062,7 +1062,7 @@ def test_skipping_schedule_bills_creation(db):
     Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, fund_source="CCC", interval_hours=1
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1096,7 +1096,7 @@ def test_skipping_schedule_bank_transaction_creation(db):
     )
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, fund_source="CCC", interval_hours=1
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1105,7 +1105,7 @@ def test_skipping_schedule_bank_transaction_creation(db):
     Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, fund_source="CCC", interval_hours=1
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()

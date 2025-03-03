@@ -98,15 +98,16 @@ def schedule_reimbursements_sync(sync_xero_to_fyle_payments, workspace_id):
             schedule.delete()
 
 
-def __create_chain_and_run(fyle_credentials: FyleCredential, xero_connection, chain_tasks: List[dict], is_auto_export:bool) -> None:
+def __create_chain_and_run(workspace_id: int, xero_connection, chain_tasks: List[dict], is_auto_export: bool) -> None:
     """
     Create chain and run
-    :param fyle_credentials: Fyle credentials
+    :param workspace_id: workspace id
+    :param xero_connection: Xero connection
     :param chain_tasks: List of chain tasks
     :return: None
     """
     chain = Chain()
-    chain.append("apps.fyle.tasks.sync_dimensions", fyle_credentials, True)
+    chain.append("apps.fyle.tasks.sync_dimensions", workspace_id, True)
 
     for task in chain_tasks:
         chain.append(task['target'], task['expense_group_id'], task['task_log_id'], xero_connection, task['last_export'], is_auto_export)
@@ -114,7 +115,7 @@ def __create_chain_and_run(fyle_credentials: FyleCredential, xero_connection, ch
     chain.run()
 
 
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str, interval_hours: int) -> list:
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int) -> list:
     """
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
@@ -134,7 +135,6 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
         errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
 
         chain_tasks = []
-        in_progress_expenses = []
 
         for index, expense_group in enumerate(expense_groups):
             error = errors.filter(workspace_id=workspace_id, expense_group=expense_group, is_resolved=False).first()
@@ -163,15 +163,11 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
                 'task_log_id': task_log.id,
                 'last_export': last_export})
 
-            if not (is_auto_export and expense_group.expenses.first().previous_export_state == 'ERROR'):
-                in_progress_expenses.extend(expense_group.expenses.all())
-
         if len(chain_tasks) > 0:
-            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
             try:
                 xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
-                __create_chain_and_run(fyle_credentials, xero_connection, chain_tasks, is_auto_export)
+                __create_chain_and_run(workspace_id, xero_connection, chain_tasks, is_auto_export)
             except (UnsuccessfulAuthentication, InvalidGrant, XeroCredentials.DoesNotExist):
                 xero_connection = None
                 for task in chain_tasks:
@@ -190,7 +186,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
 
 
 def schedule_bank_transaction_creation(
-    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str, interval_hours: int
+    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int
 ) -> list:
     """
     Schedule bank transaction creation
@@ -211,7 +207,6 @@ def schedule_bank_transaction_creation(
         errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
 
         chain_tasks = []
-        in_progress_expenses = []
 
         for index, expense_group in enumerate(expense_groups):
             error = errors.filter(workspace_id=workspace_id, expense_group=expense_group, is_resolved=False).first()
@@ -240,15 +235,11 @@ def schedule_bank_transaction_creation(
                 'task_log_id': task_log.id,
                 'last_export': last_export})
 
-            if not (is_auto_export and expense_group.expenses.first().previous_export_state == 'ERROR'):
-                in_progress_expenses.extend(expense_group.expenses.all())
-
         if len(chain_tasks) > 0:
-            fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
             try:
                 xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
-                __create_chain_and_run(fyle_credentials, xero_connection, chain_tasks, is_auto_export)
+                __create_chain_and_run(workspace_id, xero_connection, chain_tasks, is_auto_export)
             except (UnsuccessfulAuthentication, InvalidGrant, XeroCredentials.DoesNotExist):
                 xero_connection = None
                 for task in chain_tasks:
