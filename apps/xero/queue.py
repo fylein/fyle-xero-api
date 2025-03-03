@@ -5,6 +5,7 @@ from typing import List
 from django.db.models import Q
 from django_q.models import Schedule
 from django_q.tasks import Chain
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
 
 from apps.fyle.models import ExpenseGroup
@@ -115,7 +116,7 @@ def __create_chain_and_run(workspace_id: int, xero_connection, chain_tasks: List
     chain.run()
 
 
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int) -> list:
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum) -> list:
     """
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
@@ -151,6 +152,8 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
                 task_log.type = TaskLogTypeEnum.CREATING_BILL
                 task_log.status = TaskLogStatusEnum.ENQUEUED
+                task_log.triggered_by = triggered_by
+
                 task_log.save()
 
             last_export = False
@@ -186,7 +189,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
 
 
 def schedule_bank_transaction_creation(
-    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int
+    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum
 ) -> list:
     """
     Schedule bank transaction creation
@@ -223,6 +226,8 @@ def schedule_bank_transaction_creation(
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
                 task_log.type = TaskLogTypeEnum.CREATING_BANK_TRANSACTION
                 task_log.status = TaskLogStatusEnum.ENQUEUED
+                task_log.triggered_by = triggered_by
+
                 task_log.save()
 
             last_export = False
