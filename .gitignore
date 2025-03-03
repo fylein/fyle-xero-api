@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+*.csv
+*.json
 
 # IDEs
 .idea
@@ -164,3 +166,4 @@ commits.csv
 fyle_accounting_library/
 common/
 consumer/
+/
