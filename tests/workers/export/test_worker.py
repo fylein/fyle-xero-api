@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from workers.export.worker import ExportWorker
 from fyle_accounting_library.rabbitmq.models import FailedEvent
-
+from common.event import BaseEvent
 
 @pytest.fixture
 def mock_qconnector():
@@ -17,10 +17,11 @@ def export_worker(mock_qconnector):
         rabbitmq_exchange='mock_exchange',
         queue_name='mock_queue',
         binding_keys=['mock.binding.key'],
-        qconnector_cls=Mock(return_value=mock_qconnector)
+        qconnector_cls=Mock(return_value=mock_qconnector),
+        event_cls=BaseEvent
     )
     worker.qconnector = mock_qconnector
-    worker.event_cls = Mock()
+    worker.event_cls = BaseEvent
     return worker
 
 
@@ -34,9 +35,11 @@ def test_process_message_success(export_worker):
             'data': {'some': 'data'},
             'workspace_id': 123
         }
+        event = BaseEvent()
+        event.from_dict({'new': payload_dict})
 
         # The process_message should handle the exception internally
-        export_worker.process_message(routing_key, payload_dict, 1)
+        export_worker.process_message(routing_key, event, 1)
 
         mock_handle_exports.assert_called_once_with({'some': 'data'})
 

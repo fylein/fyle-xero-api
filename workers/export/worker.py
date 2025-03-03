@@ -19,8 +19,8 @@ class ExportWorker(EventConsumer):
         super().__init__(qconnector_cls=qconnector_cls, **kwargs)
 
     def process_message(self, routing_key, event: BaseEvent, delivery_tag):
+        payload_dict = event.new
         try:
-            payload_dict = event.new
             logger.info('Processing message for workspace - %s with routing key - %s and payload - %s with delivery tag - %s', payload_dict['workspace_id'], routing_key, payload_dict, delivery_tag)
 
             # We're gonna retry failed events since this queue is primarily webhook calls from Fyle, if this is a scheduled export, it doesn't necessarily needs to be retried
