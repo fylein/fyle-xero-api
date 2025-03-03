@@ -20,7 +20,7 @@ from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, XeroCredentials
-from apps.xero.exceptions import handle_xero_exceptions
+from apps.xero.exceptions import handle_xero_exceptions, update_last_export_details
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem, Payment
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
@@ -241,7 +241,7 @@ def update_expense_and_post_summary(in_progress_expenses: List[Expense], workspa
     """
     fyle_org_id = Workspace.objects.get(pk=workspace_id).fyle_org_id
     update_expenses_in_progress(in_progress_expenses)
-    post_accounting_export_summary(fyle_org_id, workspace_id, fund_source)
+    post_accounting_export_summary(fyle_org_id, workspace_id, [expense.id for expense in in_progress_expenses], fund_source)
 
 
 @handle_xero_exceptions(payment=False)
@@ -250,6 +250,7 @@ def create_bill(
     task_log_id: int,
     xero_connection: XeroConnector,
     last_export: bool,
+    is_auto_export: bool,
 ):
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
@@ -261,6 +262,12 @@ def create_bill(
         task_log.save()
     else:
         return
+
+    in_progress_expenses = []
+    # Don't include expenses with previous export state as ERROR and it's an auto import/export run
+    if not (is_auto_export and expense_group.expenses.first().previous_export_state == 'ERROR'):
+        in_progress_expenses.extend(expense_group.expenses.all())
+        update_expense_and_post_summary(in_progress_expenses, expense_group.workspace_id, expense_group.fund_source)
 
     general_settings = WorkspaceGeneralSettings.objects.get(
         workspace_id=expense_group.workspace_id
@@ -299,6 +306,9 @@ def create_bill(
         expense_group.response_logs = created_bill
         expense_group.save()
         resolve_errors_for_exported_expense_group(expense_group)
+
+        if last_export:
+            update_last_export_details(expense_group.workspace_id)
 
         logger.info('Updated Expense Group %s successfully', expense_group.id)
 
@@ -414,6 +424,7 @@ def create_bank_transaction(
     task_log_id: int,
     xero_connection: XeroConnector,
     last_export: bool,
+    is_auto_export: bool,
 ):
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
@@ -425,6 +436,12 @@ def create_bank_transaction(
         task_log.save()
     else:
         return
+
+    in_progress_expenses = []
+    # Don't include expenses with previous export state as ERROR and it's an auto import/export run
+    if not (is_auto_export and expense_group.expenses.first().previous_export_state == 'ERROR'):
+        in_progress_expenses.extend(expense_group.expenses.all())
+        update_expense_and_post_summary(in_progress_expenses, expense_group.workspace_id, expense_group.fund_source)
 
     general_settings = WorkspaceGeneralSettings.objects.get(
         workspace_id=expense_group.workspace_id
@@ -477,6 +494,9 @@ def create_bank_transaction(
         expense_group.response_logs = created_bank_transaction
         expense_group.save()
         resolve_errors_for_exported_expense_group(expense_group)
+
+        if last_export:
+            update_last_export_details(expense_group.workspace_id)
 
         logger.info('Updated Expense Group %s successfully', expense_group.id)
 
@@ -992,4 +1012,4 @@ def generate_export_url_and_update_expense(expense_group: ExpenseGroup, export_t
     expense_group.save()
 
     update_complete_expenses(expense_group.expenses.all(), url)
-    post_accounting_export_summary(workspace.fyle_org_id, workspace.id, expense_group.fund_source)
+    post_accounting_export_summary(workspace.fyle_org_id, workspace.id, [expense.id for expense in expense_group.expenses.all()], expense_group.fund_source)

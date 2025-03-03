@@ -1,6 +1,5 @@
-from apps.fyle.models import Expense
 from apps.fyle.queue import async_import_and_export_expenses, async_post_accounting_export_summary
-from apps.workspaces.models import Workspace, FyleCredential, XeroCredentials
+from apps.workspaces.models import FyleCredential, Workspace, XeroCredentials
 from apps.xero.queue import __create_chain_and_run
 from apps.xero.utils import XeroConnector
 
@@ -15,7 +14,6 @@ def test_async_post_accounting_export_summary(db):
 def test_create_chain_and_run(db):
     workspace_id = 1
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    in_progress_expenses = Expense.objects.filter(org_id='or79Cob97KSh')
     xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
     xero_connection = XeroConnector(xero_credentials, workspace_id)
     chain_tasks = [
@@ -27,7 +25,7 @@ def test_create_chain_and_run(db):
         }
     ]
 
-    __create_chain_and_run(fyle_credentials, xero_connection, in_progress_expenses, workspace_id, chain_tasks, 'PERSONAL')
+    __create_chain_and_run(fyle_credentials, xero_connection, chain_tasks, False)
     assert True
 
 
