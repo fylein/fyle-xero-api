@@ -5,6 +5,7 @@ from workers.export.worker import ExportWorker
 from fyle_accounting_library.rabbitmq.models import FailedEvent
 from common.event import BaseEvent
 
+
 @pytest.fixture
 def mock_qconnector():
     return Mock()
