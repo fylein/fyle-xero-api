@@ -26,7 +26,6 @@ http_code=$(echo "$http_response" | tail -n1)
 if [ "$http_code" -eq 200 ]; then
   if echo "$http_body" | grep -q '"state":"running"'; then
     echo "RabbitMQ management API is healthy"
-    exit 0
   else
     echo "RabbitMQ management API returned HTTP 200 but no running connections found: $http_body"
     exit 1
@@ -46,7 +45,6 @@ if [ $PGBOUNCER_STATUS -ne 0 ]; then
     exit 1
 else
     echo "PgBouncer connection is healthy"
-    exit 0
 fi
 
 # Check direct PostgreSQL connection using pg_isready
@@ -58,7 +56,6 @@ if [ $POSTGRES_STATUS -ne 0 ]; then
     exit 1
 else
     echo "PostgreSQL connection is healthy"
-    exit 0
 fi
 
 exit 0
