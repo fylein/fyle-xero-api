@@ -11,7 +11,7 @@ from apps.fyle.models import ExpenseGroup
 from apps.mappings.models import GeneralMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
-from apps.workspaces.models import FyleCredential, XeroCredentials
+from apps.workspaces.models import XeroCredentials
 from apps.xero.utils import XeroConnector
 
 logger = logging.getLogger(__name__)
