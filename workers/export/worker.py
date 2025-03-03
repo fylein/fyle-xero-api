@@ -8,6 +8,7 @@ from fyle_accounting_library.rabbitmq.models import FailedEvent
 from consumer.event_consumer import EventConsumer
 from common import log
 from common.qconnector import RabbitMQConnector
+from common.event import BaseEvent
 
 
 logger = log.get_logger(__name__)
@@ -15,10 +16,11 @@ logger = log.get_logger(__name__)
 
 class ExportWorker(EventConsumer):
     def __init__(self, *, qconnector_cls, **kwargs):
-        super().__init__(qconnector_cls=qconnector_cls, event_cls=None, **kwargs)
+        super().__init__(qconnector_cls=qconnector_cls, **kwargs)
 
-    def process_message(self, routing_key, payload_dict, delivery_tag):
+    def process_message(self, routing_key, event: BaseEvent, delivery_tag):
         try:
+            payload_dict = event.new
             logger.info('Processing message for workspace - %s with routing key - %s and payload - %s with delivery tag - %s', payload_dict['workspace_id'], routing_key, payload_dict, delivery_tag)
 
             # We're gonna retry failed events since this queue is primarily webhook calls from Fyle, if this is a scheduled export, it doesn't necessarily needs to be retried
@@ -63,7 +65,8 @@ def consume():
         rabbitmq_exchange='xero_exchange',
         queue_name='xero_p1_exports_queue',
         binding_keys=RoutingKeyEnum.EXPORT,
-        qconnector_cls=RabbitMQConnector
+        qconnector_cls=RabbitMQConnector,
+        event_cls=BaseEvent
     )
 
     signal.signal(signal.SIGTERM, export_worker.shutdown)
