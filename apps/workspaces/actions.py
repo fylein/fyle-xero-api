@@ -7,6 +7,7 @@ from apps.exceptions import invalidate_xero_credentials
 from apps.workspaces.helpers import patch_integration_settings
 from django_q.tasks import async_task
 from fyle_accounting_mappings.models import ExpenseAttribute
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_rest_auth.helpers import get_fyle_admin
 from fyle_rest_auth.models import AuthToken
 from xerosdk import exceptions as xero_exc
@@ -183,7 +184,7 @@ def get_workspace_admin(workspace_id):
     return admin_email
 
 
-def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[]):
+def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[], triggered_by: ExpenseImportSourceEnum = None):
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
     workspace_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace_id, interval_hours__gt=0, enabled=True).first()
@@ -212,7 +213,8 @@ def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[]):
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
             fund_source='PERSONAL',
-            interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0
+            interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0,
+            triggered_by=triggered_by
         )
 
     if general_settings.corporate_credit_card_expenses_object:
@@ -229,7 +231,8 @@ def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[]):
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
             fund_source='CCC',
-            interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0
+            interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0,
+            triggered_by=triggered_by
         )
 
     if is_expenses_exported:

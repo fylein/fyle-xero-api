@@ -7,6 +7,7 @@ from apps.workspaces.helpers import invalidate_xero_credentials
 from django_q.models import Schedule
 from django_q.tasks import Chain
 from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.fyle.models import Expense, ExpenseGroup
 from apps.mappings.models import GeneralMapping
@@ -123,7 +124,7 @@ def __create_chain_and_run(fyle_credentials: FyleCredential, xero_connection, in
     chain.run()
 
 
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str, interval_hours: int) -> list:
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str, interval_hours: int, triggered_by: ExpenseImportSourceEnum) -> list:
     """
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
@@ -160,6 +161,8 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
                 task_log.type = TaskLogTypeEnum.CREATING_BILL
                 task_log.status = TaskLogStatusEnum.ENQUEUED
+                task_log.triggered_by = triggered_by
+
                 task_log.save()
 
             last_export = False
@@ -200,7 +203,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
 
 
 def schedule_bank_transaction_creation(
-    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str, interval_hours: int
+    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, fund_source: str, interval_hours: int, triggered_by: ExpenseImportSourceEnum
 ) -> list:
     """
     Schedule bank transaction creation
@@ -238,6 +241,8 @@ def schedule_bank_transaction_creation(
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
                 task_log.type = TaskLogTypeEnum.CREATING_BANK_TRANSACTION
                 task_log.status = TaskLogStatusEnum.ENQUEUED
+                task_log.triggered_by = triggered_by
+
                 task_log.save()
 
             last_export = False

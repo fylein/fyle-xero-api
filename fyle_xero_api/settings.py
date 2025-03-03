@@ -55,7 +55,9 @@ INSTALLED_APPS = [
     "apps.mappings",
     "apps.xero",
     "django_q",
-    "apps.internal"
+    "apps.internal",
+    "fyle_accounting_library.fyle_platform",
+    "fyle_accounting_library.rabbitmq"
 ]
 
 MIDDLEWARE = [

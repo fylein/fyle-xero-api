@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth import get_user_model
 from apps.workspaces.tasks import post_to_integration_settings
 from django_q.tasks import async_task
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_rest_auth.utils import AuthUtils
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -200,7 +201,7 @@ class ExportToXeroView(generics.CreateAPIView):
     """
 
     def post(self, request, *args, **kwargs):
-        export_to_xero(workspace_id=kwargs["workspace_id"])
+        export_to_xero(workspace_id=kwargs["workspace_id"], triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC)
 
         return Response(status=status.HTTP_200_OK)
 

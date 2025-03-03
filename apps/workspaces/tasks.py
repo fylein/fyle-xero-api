@@ -4,10 +4,11 @@ from datetime import datetime
 from django.conf import settings
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_rest_auth.helpers import get_fyle_admin
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.fyle.enums import FundSourceEnum
 from apps.fyle.helpers import post_request
-from apps.fyle.tasks import async_create_expense_groups
+from apps.fyle.tasks import create_expense_groups
 from apps.mappings.models import TenantMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
@@ -41,12 +42,12 @@ def run_sync_schedule(workspace_id):
     if general_settings.corporate_credit_card_expenses_object:
         fund_source.append(FundSourceEnum.CCC)
 
-    async_create_expense_groups(
-        workspace_id=workspace_id, fund_source=fund_source, task_log=task_log
+    create_expense_groups(
+        workspace_id=workspace_id, fund_source=fund_source, task_log=task_log, imported_from=ExpenseImportSourceEnum.BACKGROUND_SCHEDULE
     )
 
     if task_log.status == TaskLogStatusEnum.COMPLETE:
-        export_to_xero(workspace_id, "AUTO")
+        export_to_xero(workspace_id, "AUTO", triggered_by=ExpenseImportSourceEnum.BACKGROUND_SCHEDULE)
 
 
 def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
