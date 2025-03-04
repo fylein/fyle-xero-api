@@ -15,7 +15,7 @@ RABBITMQ_PASS=$(echo "$RABBITMQ_URL" | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
 # Use the default management port (15672)
 RABBITMQ_MANAGEMENT_PORT=15672
 
-management_url="http://$RABBITMQ_HOST:$RABBITMQ_MANAGEMENT_PORT/api/connections"
+management_url="http://$RABBITMQ_HOST:$RABBITMQ_MANAGEMENT_PORT/api/overview"
 echo "Using management API at $management_url"
 
 
@@ -24,10 +24,10 @@ http_body=$(echo "$http_response" | sed '$d')
 http_code=$(echo "$http_response" | tail -n1)
 
 if [ "$http_code" -eq 200 ]; then
-  if echo "$http_body" | grep -q '"state":"running"'; then
+  if echo "$http_body" | grep -q '"management_version":'; then
     echo "RabbitMQ management API is healthy"
   else
-    echo "RabbitMQ management API returned HTTP 200 but no running connections found: $http_body"
+    echo "RabbitMQ management API returned HTTP 200 but unexpected data"
     exit 1
   fi
 else
