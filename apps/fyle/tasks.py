@@ -7,6 +7,8 @@ from django.db import transaction
 from fyle.platform.exceptions import InternalServerError
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle.platform.exceptions import RetryException
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
+from fyle_accounting_library.fyle_platform.helpers import filter_expenses_based_on_state, get_expense_import_states
 from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_integrations_platform_connector.apis.expenses import Expenses as FyleExpenses
@@ -15,7 +17,6 @@ from apps.fyle.actions import create_generator_and_post_in_batches
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.fyle.helpers import get_filter_credit_expenses, get_fund_source, get_source_account_type, handle_import_exception
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
-from apps.fyle.queue import async_post_accounting_export_summary
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
 from apps.workspaces.actions import export_to_xero
@@ -183,7 +184,14 @@ def async_create_expense_groups(
         )
 
 
-def sync_dimensions(fyle_credentials, is_export: bool = False):
+def sync_dimensions(workspace_id: int, is_export: bool = False):
+    """
+    Sync dimensions
+    :param workspace_id: workspace id
+    :param is_export: is export
+    :return: None
+    """
+    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     platform = PlatformConnector(fyle_credentials)
     platform.import_fyle_dimensions(is_export=is_export)
     if is_export:
@@ -210,8 +218,6 @@ def group_expenses_and_save(expenses: List[Dict], task_log: TaskLog, workspace: 
     expense_objects = Expense.create_expense_objects(expenses, workspace.id)
     filtered_expenses = expense_objects
     expenses_object_ids = [expense_object.id for expense_object in expense_objects]
-
-    async_post_accounting_export_summary(workspace.fyle_org_id, workspace.id)
 
     filtered_expenses = Expense.objects.filter(
         id__in=expenses_object_ids,
@@ -270,7 +276,7 @@ def import_and_export_expenses(report_id: str, org_id: str) -> None:
         handle_import_exception(task_log)
 
 
-def post_accounting_export_summary(org_id: str, workspace_id: int, fund_source: str = None, is_failed: bool = False) -> None:
+def post_accounting_export_summary(org_id: str, workspace_id: int, expense_ids: List = None, fund_source: str = None, is_failed: bool = False) -> None:
     """
     Post accounting export summary to Fyle
     :param org_id: org id
@@ -285,6 +291,9 @@ def post_accounting_export_summary(org_id: str, workspace_id: int, fund_source: 
         'org_id': org_id,
         'accounting_export_summary__synced': False
     }
+
+    if expense_ids:
+        filters['id__in'] = expense_ids
 
     if fund_source:
         filters['fund_source'] = fund_source
