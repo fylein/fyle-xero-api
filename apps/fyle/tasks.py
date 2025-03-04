@@ -7,8 +7,6 @@ from django.db import transaction
 from fyle.platform.exceptions import InternalServerError
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle.platform.exceptions import RetryException
-from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
-from fyle_accounting_library.fyle_platform.helpers import filter_expenses_based_on_state, get_expense_import_states
 from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_integrations_platform_connector.apis.expenses import Expenses as FyleExpenses
