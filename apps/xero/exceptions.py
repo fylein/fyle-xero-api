@@ -14,6 +14,7 @@ from xerosdk.exceptions import (
 
 from apps.fyle.actions import update_failed_expenses
 from apps.fyle.models import ExpenseGroup
+from apps.fyle.tasks import post_accounting_export_summary
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.models import FyleCredential, LastExportDetail, XeroCredentials
@@ -262,6 +263,9 @@ def handle_xero_exceptions(payment=False):
                     task_log.detail,
                 )
                 update_failed_expenses(expense_group.expenses.all(), False)
+
+            if not payment:
+                post_accounting_export_summary(expense_group.workspace.fyle_org_id, expense_group.workspace_id, [expense.id for expense in expense_group.expenses.all()], expense_group.fund_source, True)
 
             if not payment and args[-1] == True:
                 update_last_export_details(workspace_id=expense_group.workspace_id)

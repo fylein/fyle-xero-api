@@ -287,7 +287,7 @@ def test_support_post_date_integrations(mocker, db):
 
     expense_group.expenses.set(expenses)
 
-    create_bank_transaction(expense_group.id, task_log.id, xero_connection, False)
+    create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
 
     task_log = TaskLog.objects.get(pk=task_log.id)
     bank_transaction = BankTransaction.objects.get(expense_group_id=expense_group.id)

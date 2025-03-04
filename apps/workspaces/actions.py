@@ -6,8 +6,8 @@ from django.core.cache import cache
 from apps.exceptions import invalidate_xero_credentials
 from apps.workspaces.helpers import patch_integration_settings
 from django_q.tasks import async_task
-from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
+from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_rest_auth.helpers import get_fyle_admin
 from fyle_rest_auth.models import AuthToken
 from xerosdk import exceptions as xero_exc
@@ -212,7 +212,6 @@ def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[], tri
             workspace_id=workspace_id,
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
-            fund_source='PERSONAL',
             interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0,
             triggered_by=triggered_by
         )
@@ -230,7 +229,6 @@ def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[], tri
             workspace_id=workspace_id,
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
-            fund_source='CCC',
             interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0,
             triggered_by=triggered_by
         )
