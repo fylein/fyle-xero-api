@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 from django.db.models import Q
+from apps.workspaces.helpers import invalidate_xero_credentials
 from django_q.models import Schedule
 from django_q.tasks import Chain
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
@@ -172,6 +173,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
                 __create_chain_and_run(workspace_id, xero_connection, chain_tasks, is_auto_export)
             except (UnsuccessfulAuthentication, InvalidGrant, XeroCredentials.DoesNotExist):
+                invalidate_xero_credentials(workspace_id)
                 xero_connection = None
                 for task in chain_tasks:
                     task_log = TaskLog.objects.get(id=task['task_log_id'])
@@ -246,6 +248,7 @@ def schedule_bank_transaction_creation(
                 xero_connection = XeroConnector(xero_credentials, workspace_id)
                 __create_chain_and_run(workspace_id, xero_connection, chain_tasks, is_auto_export)
             except (UnsuccessfulAuthentication, InvalidGrant, XeroCredentials.DoesNotExist):
+                invalidate_xero_credentials(workspace_id)
                 xero_connection = None
                 for task in chain_tasks:
                     task_log = TaskLog.objects.get(id=task['task_log_id'])
