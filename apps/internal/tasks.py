@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from django.db.models import Q
 from django_q.models import OrmQ, Schedule
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.fyle.actions import update_failed_expenses
 from apps.fyle.models import ExpenseGroup
@@ -57,4 +58,4 @@ def re_export_stuck_exports():
             if not (schedule and schedule.next_run < datetime.now(tz=schedule.next_run.tzinfo) + timedelta(minutes=60)):
                 export_expense_group_ids = expense_groups.filter(workspace_id=workspace_id).values_list('id', flat=True)
                 logger.info('Re-triggering export for expense group %s since no 1 hour schedule for workspace  %s', export_expense_group_ids, workspace_id)
-                export_to_xero(workspace_id, 'AUTO', export_expense_group_ids)
+                export_to_xero(workspace_id, 'AUTO', export_expense_group_ids, ExpenseImportSourceEnum.RETRY_SCHEDULE)
