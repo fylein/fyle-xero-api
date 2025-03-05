@@ -216,6 +216,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": True
         },
+        "workers": {
+            "handlers": ["debug_logs"],
+            "level": "INFO",
+            "propagate": True
+        },
     },
 }
 

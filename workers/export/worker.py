@@ -1,17 +1,17 @@
 import os
 import signal
+import logging
 
 from .actions import handle_exports
 
 from fyle_accounting_library.fyle_platform.enums import RoutingKeyEnum
 from fyle_accounting_library.rabbitmq.models import FailedEvent
 from consumer.event_consumer import EventConsumer
-from common import log
 from common.qconnector import RabbitMQConnector
 from common.event import BaseEvent
 
 
-logger = log.get_logger(__name__)
+logger = logging.getLogger('workers')
 
 
 class ExportWorker(EventConsumer):
