@@ -11,20 +11,20 @@ def test_handle_view_exceptions(mocker, db):
     mocker.patch('apps.xero.exceptions.invalidate_xero_credentials', side_effect=mocked_invalidate_call)
 
     @handle_xero_exceptions(payment=False)
-    def func(expense_group_id: int, task_log_id: int, xero_connection):
+    def func(expense_group_id: int, task_log_id: int, xero_connection, last_export: bool, is_auto_export: bool):
         raise NoPrivilegeError('Invalid Token')
 
-    func(workspace_id, task_log_id, MagicMock())
+    func(workspace_id, task_log_id, MagicMock(), False, False)
 
     args, _ = mocked_invalidate_call.call_args
 
     assert args[0] == workspace_id
 
     @handle_xero_exceptions(payment=True)
-    def func2(bill, workspace_id: int, task_log):
+    def func2(bill, workspace_id: int, task_log, last_export: bool, is_auto_export: bool):
         raise NoPrivilegeError('Invalid Token')
 
-    func2(MagicMock(), workspace_id, MagicMock())
+    func2(MagicMock(), workspace_id, MagicMock(), False, False)
 
     args, _ = mocked_invalidate_call.call_args
 

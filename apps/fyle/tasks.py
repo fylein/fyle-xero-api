@@ -227,8 +227,8 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
 
     import_states = get_expense_import_states(expense_group_settings)
 
-    # Don't call API if report state is not in import states, for example customer configured to import only PAID reports but webhook is triggered for APPROVED report
-    if report_state and report_state not in import_states:
+    # Don't call API if report state is not in import states, for example customer configured to import only PAID reports but webhook is triggered for APPROVED report (this is only for is_state_change_event webhook calls)
+    if is_state_change_event and report_state and report_state not in import_states:
         return
 
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
@@ -246,7 +246,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
                 source_account_type,
                 filter_credit_expenses=filter_credit_expenses,
                 report_id=report_id,
-                import_states=import_states
+                import_states=import_states if is_state_change_event else None
             )
 
             if is_state_change_event:
@@ -260,7 +260,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
         expense_group_ids = [expense_group['id'] for expense_group in expense_groups]
 
         if len(expense_group_ids) and not is_state_change_event:
-            export_to_xero(workspace.id, None, expense_group_ids, imported_from=imported_from)
+            export_to_xero(workspace.id, None, expense_group_ids, triggered_by=imported_from)
 
     except WorkspaceGeneralSettings.DoesNotExist:
         logger.info('Configuration does not exist for workspace_id: %s', workspace.id)
