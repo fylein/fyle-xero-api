@@ -246,7 +246,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
                 source_account_type,
                 filter_credit_expenses=filter_credit_expenses,
                 report_id=report_id,
-                import_states=import_states
+                import_states=import_states if is_state_change_event else None
             )
 
             if is_state_change_event:
