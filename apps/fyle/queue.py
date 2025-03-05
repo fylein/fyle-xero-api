@@ -42,7 +42,7 @@ def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
         report_id = body['data']['id']
         org_id = body['data']['org_id']
         assert_valid_request(workspace_id=workspace_id, fyle_org_id=org_id)
-        async_task('apps.fyle.tasks.import_and_export_expenses', report_id, org_id, False, ExpenseImportSourceEnum.DIRECT_EXPORT)
+        async_task('apps.fyle.tasks.import_and_export_expenses', report_id, org_id, False, None, ExpenseImportSourceEnum.DIRECT_EXPORT)
 
     elif body.get('action') == 'UPDATED_AFTER_APPROVAL' and body.get('data') and body.get('resource') == 'EXPENSE':
         org_id = body['data']['org_id']
