@@ -260,7 +260,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
         expense_group_ids = [expense_group['id'] for expense_group in expense_groups]
 
         if len(expense_group_ids) and not is_state_change_event:
-            export_to_xero(workspace.id, None, expense_group_ids, imported_from=imported_from)
+            export_to_xero(workspace.id, None, expense_group_ids, triggered_by=imported_from)
 
     except WorkspaceGeneralSettings.DoesNotExist:
         logger.info('Configuration does not exist for workspace_id: %s', workspace.id)
