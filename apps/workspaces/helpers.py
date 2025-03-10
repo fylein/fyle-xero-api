@@ -31,14 +31,10 @@ def patch_integration_settings(workspace_id: int, errors: int = None, is_token_e
 
 
 def invalidate_xero_credentials(workspace_id):
-    try:
-        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id, is_expired=False, refresh_token__isnull=False).first()
-        if xero_credentials:
-            if not xero_credentials.is_expired:
-                patch_integration_settings(workspace_id, is_token_expired=True)
-            xero_credentials.refresh_token = None
-            xero_credentials.is_expired = True
-            xero_credentials.save()
-    except XeroCredentials.DoesNotExist as error:
-        logger.error(f'Xero credentials not found for {workspace_id = }:', )
-        logger.error(error, exc_info=True)
+    xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id, is_expired=False, refresh_token__isnull=False).first()
+    if xero_credentials:
+        if not xero_credentials.is_expired:
+            patch_integration_settings(workspace_id, is_token_expired=True)
+        xero_credentials.refresh_token = None
+        xero_credentials.is_expired = True
+        xero_credentials.save()
