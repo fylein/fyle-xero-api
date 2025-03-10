@@ -32,7 +32,7 @@ def patch_integration_settings(workspace_id: int, errors: int = None, is_token_e
 
 def invalidate_xero_credentials(workspace_id):
     try:
-        xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id, is_expired=False, refresh_token__isnull=False).first()
         if xero_credentials:
             if not xero_credentials.is_expired:
                 patch_integration_settings(workspace_id, is_token_expired=True)
