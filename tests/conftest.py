@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timezone
 from unittest import mock
 
@@ -12,10 +11,6 @@ from apps.fyle.models import ExpenseGroupSettings
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from fyle_xero_api.tests import settings
 from tests.test_fyle.fixtures import data as fyle_data
-
-
-def pytest_configure():
-    os.system("sh ./tests/sql_fixtures/reset_db_fixtures/reset_db.sh")
 
 
 @pytest.fixture
