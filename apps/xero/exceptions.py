@@ -17,8 +17,8 @@ from apps.fyle.models import ExpenseGroup
 from apps.fyle.tasks import post_accounting_export_summary
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
-from apps.workspaces.models import FyleCredential, LastExportDetail, XeroCredentials
 from apps.workspaces.helpers import invalidate_xero_credentials, patch_integration_settings
+from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, XeroCredentials
 from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ logger.level = logging.INFO
 
 def update_last_export_details(workspace_id):
     last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
+    workspace = Workspace.objects.get(id=workspace_id)
 
     failed_exports = TaskLog.objects.filter(
         ~Q(type__in=[TaskLogTypeEnum.CREATING_PAYMENT, TaskLogTypeEnum.FETCHING_EXPENSES]),
@@ -47,6 +48,7 @@ def update_last_export_details(workspace_id):
     last_export_detail.save()
 
     patch_integration_settings(workspace_id, errors=failed_exports)
+    post_accounting_export_summary(workspace.fyle_org_id, workspace_id)
 
     return last_export_detail
 
