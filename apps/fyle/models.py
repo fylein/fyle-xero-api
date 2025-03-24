@@ -2,7 +2,7 @@
 Fyle Models
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from dateutil import parser
@@ -698,6 +698,7 @@ class Reimbursement(models.Model):
                         Reimbursement(
                             id=primary_key_map[reimbursement["id"]]["id"],
                             state=reimbursement["state"],
+                            updated_at=datetime.now(timezone.utc)
                         )
                     )
 
@@ -706,7 +707,7 @@ class Reimbursement(models.Model):
 
         if attributes_to_be_updated:
             Reimbursement.objects.bulk_update(
-                attributes_to_be_updated, fields=["state"], batch_size=50
+                attributes_to_be_updated, fields=["state", "updated_at"], batch_size=50
             )
 
     @staticmethod

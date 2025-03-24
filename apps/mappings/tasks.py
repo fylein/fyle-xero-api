@@ -40,7 +40,7 @@ def resolve_expense_attribute_errors(
 
         if mapped_attribute_ids:
             Error.objects.filter(expense_attribute_id__in=mapped_attribute_ids).update(
-                is_resolved=True
+                is_resolved=True, updated_at=datetime.now(timezone.utc)
             )
 
 
