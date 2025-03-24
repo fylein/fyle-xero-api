@@ -70,7 +70,6 @@ class ImportSettingsTrigger:
 
         ExpenseAttribute.objects.filter(workspace_id=self.__workspace_id, attribute_type__in=changed_source_fields).update(auto_mapped=False)
 
-
     def __reset_import_log_timestamp(
             self,
             current_mapping_settings: List[MappingSetting],
@@ -97,7 +96,6 @@ class ImportSettingsTrigger:
 
         ImportLog.objects.filter(workspace_id=workspace_id, attribute_type__in=reset_source_fields).update(last_successful_run_at=None, updated_at=datetime.now(timezone.utc))
 
-
     def pre_save_mapping_settings(self, pre_save_workspace_general_settings: WorkspaceGeneralSettings = None):
         """
         Post save action for mapping settings
@@ -119,7 +117,6 @@ class ImportSettingsTrigger:
 
             if workspace_settings['import_categories'] and old_coa != new_coa:
                 ImportLog.objects.filter(workspace_id=self.__workspace_id, attribute_type='CATEGORY').update(last_successful_run_at=None, updated_at=datetime.now(timezone.utc))
-
 
     def post_save_mapping_settings(
         self, workspace_general_settings_instance: WorkspaceGeneralSettings
