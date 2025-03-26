@@ -86,7 +86,7 @@ class ImportSettingsTrigger:
             source_field = new_setting['source_field']
             current_setting = current_mapping_settings.filter(source_field=source_field).first()
             if current_setting and current_setting.destination_field != destination_field:
-                changed_source_fields.add(source_field)
+                changed_source_fields.add(current_setting.source_field)
 
         current_source_fields = set(mapping_setting.source_field for mapping_setting in current_mapping_settings)
         new_source_fields = set(mapping_setting['source_field'] for mapping_setting in new_mappings_settings)
