@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from django.db.models import Q
 from django_q.models import OrmQ, Schedule
@@ -45,7 +45,7 @@ def re_export_stuck_exports():
         for expense_group in expense_groups:
             expenses.extend(expense_group.expenses.all())
         workspace_ids_list = list(workspace_ids)
-        task_logs.update(status='FAILED', updated_at=datetime.now())
+        task_logs.update(status='FAILED', updated_at=datetime.now(timezone.utc))
         update_failed_expenses(expenses, True)
         schedules = Schedule.objects.filter(
             args__in=[str(workspace_id) for workspace_id in workspace_ids_list],
