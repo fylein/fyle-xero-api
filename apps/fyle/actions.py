@@ -96,7 +96,10 @@ def __bulk_update_expenses(expense_to_be_updated: List[Expense]) -> None:
     :return: None
     """
     if expense_to_be_updated:
-        Expense.objects.bulk_update(expense_to_be_updated, ['accounting_export_summary'], batch_size=50)
+        current_time = datetime.now(timezone.utc)
+        for expense in expense_to_be_updated:
+            expense.updated_at = current_time
+        Expense.objects.bulk_update(expense_to_be_updated, ['accounting_export_summary', 'updated_at'], batch_size=50)
 
 
 def update_expenses_in_progress(in_progress_expenses: List[Expense]) -> None:
@@ -131,6 +134,7 @@ def mark_accounting_export_summary_as_synced(expenses: List[Expense]) -> None:
     """
     # Mark all expenses as synced
     expense_to_be_updated = []
+    current_time = datetime.now(timezone.utc)
     for expense in expenses:
         expense.accounting_export_summary['synced'] = True
         updated_accounting_export_summary = expense.accounting_export_summary
@@ -138,11 +142,12 @@ def mark_accounting_export_summary_as_synced(expenses: List[Expense]) -> None:
             Expense(
                 id=expense.id,
                 accounting_export_summary=updated_accounting_export_summary,
-                previous_export_state=updated_accounting_export_summary['state']
+                previous_export_state=updated_accounting_export_summary['state'],
+                updated_at=current_time
             )
         )
 
-    Expense.objects.bulk_update(expense_to_be_updated, ['accounting_export_summary', 'previous_export_state'], batch_size=50)
+    Expense.objects.bulk_update(expense_to_be_updated, ['accounting_export_summary', 'previous_export_state', 'updated_at'], batch_size=50)
 
 
 def update_failed_expenses(failed_expenses: List[Expense], is_mapping_error: bool) -> None:
@@ -211,6 +216,7 @@ def __handle_post_accounting_export_summary_exception(exception: Exception, work
         'message' in error_response and error_response['message'] == 'Some of the parameters are wrong'
         and 'response' in error_response and 'data' in error_response['response'] and error_response['response']['data']
     ):
+        current_time = datetime.now(timezone.utc)
         logger.info('Error while syncing workspace %s %s',workspace_id, error_response)
         for expense in error_response['response']['data']:
             if expense['message'] == 'Permission denied to perform this action.':
@@ -223,12 +229,13 @@ def __handle_post_accounting_export_summary_exception(exception: Exception, work
                             'DELETED',
                             None,
                             '{}/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL),
-                            True
-                        )
+                            True,
+                        ),
+                        updated_at=current_time
                     )
                 )
         if expense_to_be_updated:
-            Expense.objects.bulk_update(expense_to_be_updated, ['accounting_export_summary'], batch_size=50)
+            Expense.objects.bulk_update(expense_to_be_updated, ['accounting_export_summary', 'updated_at'], batch_size=50)
     else:
         logger.error('Error while syncing accounting export summary, workspace_id: %s %s', workspace_id, str(error_response))
 
