@@ -266,6 +266,9 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
         logger.info('Configuration does not exist for workspace_id: %s', workspace.id)
 
     except Exception:
+        if not task_log:
+            task_log, _ = TaskLog.objects.update_or_create(workspace_id=workspace.id, type='FETCHING_EXPENSES', defaults={'status': 'IN_PROGRESS'})
+
         handle_import_exception(task_log)
 
 
