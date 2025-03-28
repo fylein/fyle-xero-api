@@ -53,8 +53,8 @@ sql_files = [
     'fyle-integrations-db-migrations/xero/views/product_import_settings_view.sql',
     'fyle-integrations-db-migrations/xero/views/extended_expenses_view.sql',
 
-    # Xero Specific Trigger
-    'fyle-integrations-db-migrations/xero/triggers/update_logs.sql',
+    'fyle-integrations-db-migrations/common/global_shared/helpers/add-replication-identity.sql',
+    'fyle-integrations-db-migrations/xero/helpers/add-tables-to-publication.sql'
 ]
 
 
