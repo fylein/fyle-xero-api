@@ -21,9 +21,20 @@ class TokenHealthView(generics.RetrieveAPIView):
 
     @handle_view_exceptions()
     def get(self, request, *args, **kwargs):
-        get_xero_connector(workspace_id=self.kwargs["workspace_id"])
+        workspace_id = self.kwargs["workspace_id"]
+        xero_details = XeroCredentials.get_xero_credentials(workspace_id)
 
-        return Response(status=status.HTTP_200_OK)
+        if xero_details.is_expired:
+            return Response(
+                {"message": "Xero connection expired"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        else:
+            get_xero_connector(workspace_id=self.kwargs["workspace_id"])
+
+
+        return Response({"message": "Xero connection is active"},status=status.HTTP_200_OK)
 
 
 class TenantView(LookupFieldMixin, generics.ListCreateAPIView):
