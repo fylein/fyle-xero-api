@@ -124,6 +124,7 @@ class XeroCredentials(models.Model):
     def get_xero_credentials(workspace_id):
         return XeroCredentials.objects.filter(workspace_id=workspace_id).first()
 
+
 class FyleCredential(models.Model):
     """
     Table to store Fyle credentials

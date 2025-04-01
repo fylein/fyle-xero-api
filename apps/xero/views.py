@@ -33,7 +33,6 @@ class TokenHealthView(generics.RetrieveAPIView):
         else:
             get_xero_connector(workspace_id=self.kwargs["workspace_id"])
 
-
         return Response({"message": "Xero connection is active"},status=status.HTTP_200_OK)
 
 
