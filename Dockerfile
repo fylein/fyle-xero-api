@@ -16,6 +16,22 @@ RUN mkdir -p /fyle-xero-api
 COPY . /fyle-xero-api/
 WORKDIR /fyle-xero-api
 
+#================================================================
+# Set default GID if not provided during build
+#================================================================
+ARG SERVICE_GID=1001
+
+#================================================================
+# Setup non-root user and permissions
+#================================================================
+RUN groupadd -r -g ${SERVICE_GID} xero_api_service && \
+    useradd -r -g xero_api_service xero_api_user && \
+    chown -R xero_api_user:xero_api_service /fyle-xero-api
+
+# Switch to non-root user
+USER xero_api_user
+
+
 # Do linting checks
 RUN flake8 .
 
