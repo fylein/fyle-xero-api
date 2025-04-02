@@ -111,6 +111,8 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
         general_mappings = validated.pop("general_mappings")
         mapping_settings = validated.pop("mapping_settings")
 
+        pre_save_workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=instance.id).first()
+
         trigger: ImportSettingsTrigger = ImportSettingsTrigger(
             workspace_general_settings=workspace_general_settings,
             mapping_settings=mapping_settings,
@@ -161,7 +163,7 @@ class ImportSettingsSerializer(serializers.ModelSerializer):
             trigger.post_save_workspace_general_settings(
                 workspace_general_settings_instance
             )
-            trigger.pre_save_mapping_settings()
+            trigger.pre_save_mapping_settings(pre_save_workspace_general_settings)
 
             if workspace_general_settings["import_tax_codes"]:
                 mapping_settings.append(
