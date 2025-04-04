@@ -6,7 +6,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import JSONField
 from django_q.models import Schedule
-
 from fyle_accounting_mappings.mixins import AutoAddCreateUpdateInfoMixin
 
 User = get_user_model()
@@ -195,9 +194,6 @@ class WorkspaceGeneralSettings(AutoAddCreateUpdateInfoMixin, models.Model):
     auto_create_merchant_destination_entity = models.BooleanField(
         default=False, help_text="Auto create fyle merchnat as xero contact"
     )
-    skip_cards_mapping = models.BooleanField(
-        default=False, help_text="Skip cards mapping"
-    )
     import_tax_codes = models.BooleanField(
         default=False, help_text="Auto import tax codes to Fyle", null=True
     )
@@ -206,9 +202,6 @@ class WorkspaceGeneralSettings(AutoAddCreateUpdateInfoMixin, models.Model):
     )
     import_suppliers_as_merchants = models.BooleanField(
         default=False, help_text="Auto import suppliers to Fyle"
-    )
-    is_simplify_report_closure_enabled = models.BooleanField(
-        default=True, help_text="Simplify report closure is enabled"
     )
     created_at = models.DateTimeField(auto_now_add=True, help_text="Created at")
     updated_at = models.DateTimeField(auto_now=True, help_text="Updated at")
