@@ -33,7 +33,7 @@ DECLARE
 	_fyle_org_id text;
 	expense_ids text;
 BEGIN
-  RAISE NOTICE 'Deleting failed expenses from workspace % ', _workspace_id; 
+  RAISE NOTICE 'Deleting failed expenses from workspace % ', _workspace_id;
 
 local_expense_group_ids := _expense_group_ids;
 
@@ -49,7 +49,7 @@ SELECT array_agg(expense_id) into temp_expenses from expense_groups_expenses whe
 
 _fyle_org_id := (select fyle_org_id from workspaces where id = _workspace_id);
 expense_ids := (
-    select string_agg(format('%L', expense_id), ', ') 
+    select string_agg(format('%L', expense_id), ', ')
     from expenses
     where workspace_id = _workspace_id
     and id in (SELECT unnest(temp_expenses))
@@ -66,12 +66,12 @@ DELETE
 	GET DIAGNOSTICS rcount = ROW_COUNT;
 	RAISE NOTICE 'Deleted % errors', rcount;
 
-DELETE 
+DELETE
 	FROM expense_groups_expenses WHERE expensegroup_id IN (SELECT unnest(local_expense_group_ids));
 	GET DIAGNOSTICS rcount = ROW_COUNT;
 	RAISE NOTICE 'Deleted % expense_groups_expenses', rcount;
 
-DELETE 
+DELETE
 	FROM expense_groups WHERE id in (SELECT unnest(local_expense_group_ids));
 	GET DIAGNOSTICS rcount = ROW_COUNT;
 	RAISE NOTICE 'Deleted % expense_groups', rcount;
@@ -93,7 +93,7 @@ IF NOT _delete_all THEN
 END IF;
 
 
-DELETE 
+DELETE
 	FROM expenses WHERE id in (SELECT unnest(temp_expenses));
 	GET DIAGNOSTICS rcount = ROW_COUNT;
 	RAISE NOTICE 'Deleted % expenses', rcount;
@@ -119,7 +119,7 @@ CREATE FUNCTION public.delete_test_orgs_schedule() RETURNS void
 DECLARE
     rcount integer;
 BEGIN
-    
+
     DELETE FROM workspace_schedules
     WHERE workspace_id NOT IN (
         SELECT id FROM prod_workspaces_view
@@ -181,7 +181,7 @@ BEGIN
   WHERE bl.bill_id IN (
       SELECT b.id FROM bills b WHERE b.expense_group_id IN (
           SELECT eg.id FROM expense_groups eg WHERE eg.workspace_id = _workspace_id
-      ) 
+      )
   );
   GET DIAGNOSTICS rcount = ROW_COUNT;
   RAISE NOTICE 'Deleted % bill_lineitems', rcount;
@@ -467,7 +467,7 @@ DECLARE
 	temp_expenses integer[];
 	local_expense_group_ids integer[];
 BEGIN
-  RAISE NOTICE 'Starting to delete exported entries from workspace % ', _workspace_id; 
+  RAISE NOTICE 'Starting to delete exported entries from workspace % ', _workspace_id;
 
 local_expense_group_ids := _expense_group_ids;
 
@@ -490,7 +490,7 @@ DELETE
 	WHERE bl.bill_id IN (
 		SELECT b.id FROM bills b WHERE b.expense_group_id IN (
 			SELECT unnest(local_expense_group_ids)
-		) 
+		)
 	);
 	GET DIAGNOSTICS rcount = ROW_COUNT;
 	RAISE NOTICE 'Deleted % bill_lineitems', rcount;
@@ -505,7 +505,7 @@ DELETE
 	WHERE btl.bank_transaction_id IN (
 		SELECT bt.id FROM bank_transactions bt WHERE bt.expense_group_id IN (
 			SELECT unnest(local_expense_group_ids)
-		) 
+		)
 	);
 	GET DIAGNOSTICS rcount = ROW_COUNT;
 	RAISE NOTICE 'Deleted % bank_transaction_lineitems', rcount;
@@ -520,16 +520,16 @@ DELETE
 	GET DIAGNOSTICS rcount = ROW_COUNT;
 	RAISE NOTICE 'Deleted % payments', rcount;
 
-UPDATE 
+UPDATE
 	expense_groups set exported_at = null, response_logs = null
 	WHERE id in (SELECT unnest(local_expense_group_ids));
 	GET DIAGNOSTICS rcount = ROW_COUNT;
 	RAISE NOTICE 'Updating % expense_groups and resetting exported_at, response_logs', rcount;
 
-UPDATE django_q_schedule 
-    SET next_run = now() + INTERVAL '35 sec' 
+UPDATE django_q_schedule
+    SET next_run = now() + INTERVAL '35 sec'
     WHERE args = _workspace_id::text and func = 'apps.workspaces.tasks.run_sync_schedule';
-    
+
     GET DIAGNOSTICS rcount = ROW_COUNT;
 
     IF rcount > 0 THEN
@@ -555,10 +555,10 @@ CREATE FUNCTION public.trigger_auto_import(_workspace_id character varying) RETU
 DECLARE
     rcount integer;
 BEGIN
-    UPDATE django_q_schedule 
-    SET next_run = now() + INTERVAL '35 sec' 
+    UPDATE django_q_schedule
+    SET next_run = now() + INTERVAL '35 sec'
     WHERE args = _workspace_id and func = 'apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle';
-    
+
     GET DIAGNOSTICS rcount = ROW_COUNT;
 
     IF rcount > 0 THEN
@@ -584,10 +584,10 @@ CREATE FUNCTION public.trigger_auto_import_export(_workspace_id character varyin
 DECLARE
     rcount integer;
 BEGIN
-    UPDATE django_q_schedule 
-    SET next_run = now() + INTERVAL '35 sec' 
+    UPDATE django_q_schedule
+    SET next_run = now() + INTERVAL '35 sec'
     WHERE args = _workspace_id and func = 'apps.workspaces.tasks.run_sync_schedule';
-    
+
     GET DIAGNOSTICS rcount = ROW_COUNT;
 
     IF rcount > 0 THEN
@@ -640,7 +640,7 @@ CREATE FUNCTION public.ws_email(_workspace_id integer) RETURNS TABLE(workspace_i
     AS $$
 BEGIN
   RETURN QUERY
-  select w.id as workspace_id, w.name as workspace_name, u.email as email from workspaces w 
+  select w.id as workspace_id, w.name as workspace_name, u.email as email from workspaces w
     left join workspaces_user wu on wu.workspace_id = w.id
     left join users u on wu.user_id = u.id
     where w.id = _workspace_id;
@@ -2145,13 +2145,11 @@ CREATE TABLE public.workspace_general_settings (
     auto_map_employees character varying(50),
     auto_create_destination_entity boolean NOT NULL,
     map_merchant_to_contact boolean NOT NULL,
-    skip_cards_mapping boolean NOT NULL,
     import_tax_codes boolean,
     charts_of_accounts character varying(100)[] NOT NULL,
     import_customers boolean NOT NULL,
     change_accounting_period boolean NOT NULL,
     auto_create_merchant_destination_entity boolean NOT NULL,
-    is_simplify_report_closure_enabled boolean NOT NULL,
     import_suppliers_as_merchants boolean NOT NULL,
     memo_structure character varying(100)[] NOT NULL,
     created_by character varying(255),
@@ -2654,41 +2652,6 @@ CREATE VIEW public.product_advanced_settings_view AS
 
 
 ALTER TABLE public.product_advanced_settings_view OWNER TO postgres;
-
---
--- Name: product_export_settings_view; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public.product_export_settings_view AS
- SELECT w.id AS workspace_id,
-    w.name AS workspace_name,
-    w.fyle_org_id AS workspace_org_id,
-    wgs.reimbursable_expenses_object,
-    wgs.corporate_credit_card_expenses_object,
-    wgs.is_simplify_report_closure_enabled,
-    egs.reimbursable_expense_group_fields,
-        CASE
-            WHEN ((egs.reimbursable_expense_group_fields @> ARRAY['expense_id'::character varying]) OR (egs.reimbursable_expense_group_fields @> ARRAY['expense_number'::character varying])) THEN 'Expense'::text
-            ELSE 'Report'::text
-        END AS readable_reimbursable_expense_group_fields,
-    egs.corporate_credit_card_expense_group_fields,
-        CASE
-            WHEN ((egs.corporate_credit_card_expense_group_fields @> ARRAY['expense_id'::character varying]) OR (egs.corporate_credit_card_expense_group_fields @> ARRAY['expense_number'::character varying])) THEN 'Expense'::text
-            ELSE 'Report'::text
-        END AS readable_corporate_credit_card_expense_group_fields,
-    egs.reimbursable_export_date_type,
-    egs.reimbursable_expense_state,
-    egs.ccc_export_date_type,
-    egs.ccc_expense_state,
-    gm.bank_account_name,
-    gm.bank_account_id
-   FROM (((public.workspaces w
-     JOIN public.workspace_general_settings wgs ON ((w.id = wgs.workspace_id)))
-     JOIN public.expense_group_settings egs ON ((w.id = egs.workspace_id)))
-     JOIN public.general_mappings gm ON ((w.id = gm.workspace_id)));
-
-
-ALTER TABLE public.product_export_settings_view OWNER TO postgres;
 
 --
 -- Name: product_import_settings_view; Type: VIEW; Schema: public; Owner: postgres
@@ -3998,6 +3961,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 174	tasks	0011_tasklog_triggered_by	2025-02-24 09:42:53.065905+00
 175	internal	0005_auto_generated_sql	2025-04-03 17:53:16.785864+00
 176	rabbitmq	0003_alter_failedevent_created_at_and_more	2025-04-03 17:53:16.794872+00
+177	workspaces	0043_remove_workspacegeneralsettings_is_simplify_report_closure_enabled_and_more	2025-04-04 08:23:02.436595+00
 \.
 
 
@@ -6437,8 +6401,8 @@ COPY public.users (password, last_login, id, email, user_id, full_name, active, 
 -- Data for Name: workspace_general_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, skip_cards_mapping, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity, is_simplify_report_closure_enabled, import_suppliers_as_merchants, memo_structure, created_by, updated_by) FROM stdin;
-1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	\N	t	t	f	t	{EXPENSE}	t	t	f	f	f	{employee_email,category,merchant,spent_on,report_number,purpose}	\N	\N
+COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity, import_suppliers_as_merchants, memo_structure, created_by, updated_by) FROM stdin;
+1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	\N	t	t	t	{EXPENSE}	t	t	f	f	{employee_email,category,merchant,spent_on,report_number,purpose}	\N	\N
 \.
 
 
@@ -6502,28 +6466,28 @@ SELECT pg_catalog.setval('public.auth_permission_id_seq', 164, true);
 -- Name: bank_transaction_lineitems_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.bank_transaction_lineitems_id_seq', 18, true);
+SELECT pg_catalog.setval('public.bank_transaction_lineitems_id_seq', 66, true);
 
 
 --
 -- Name: bank_transactions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.bank_transactions_id_seq', 15, true);
+SELECT pg_catalog.setval('public.bank_transactions_id_seq', 51, true);
 
 
 --
 -- Name: bill_lineitems_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.bill_lineitems_id_seq', 15, true);
+SELECT pg_catalog.setval('public.bill_lineitems_id_seq', 59, true);
 
 
 --
 -- Name: bills_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.bills_id_seq', 15, true);
+SELECT pg_catalog.setval('public.bills_id_seq', 59, true);
 
 
 --
@@ -6551,21 +6515,21 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 41, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 176, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 177, true);
 
 
 --
 -- Name: django_q_ormq_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_q_ormq_id_seq', 59, true);
+SELECT pg_catalog.setval('public.django_q_ormq_id_seq', 183, true);
 
 
 --
 -- Name: django_q_schedule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_q_schedule_id_seq', 28, true);
+SELECT pg_catalog.setval('public.django_q_schedule_id_seq', 112, true);
 
 
 --
@@ -6579,14 +6543,14 @@ SELECT pg_catalog.setval('public.employee_mappings_id_seq', 1, false);
 -- Name: errors_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.errors_id_seq', 12, true);
+SELECT pg_catalog.setval('public.errors_id_seq', 60, true);
 
 
 --
 -- Name: expense_attributes_deletion_cache_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.expense_attributes_deletion_cache_id_seq', 1, true);
+SELECT pg_catalog.setval('public.expense_attributes_deletion_cache_id_seq', 5, true);
 
 
 --
@@ -6600,70 +6564,70 @@ SELECT pg_catalog.setval('public.expense_fields_id_seq', 1, false);
 -- Name: expense_groups_expenses_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.expense_groups_expenses_id_seq', 39, true);
+SELECT pg_catalog.setval('public.expense_groups_expenses_id_seq', 155, true);
 
 
 --
 -- Name: expense_groups_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.expense_groups_id_seq', 31, true);
+SELECT pg_catalog.setval('public.expense_groups_id_seq', 115, true);
 
 
 --
 -- Name: expenses_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.expenses_id_seq', 27, true);
+SELECT pg_catalog.setval('public.expenses_id_seq', 95, true);
 
 
 --
 -- Name: failed_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.failed_events_id_seq', 2, true);
+SELECT pg_catalog.setval('public.failed_events_id_seq', 10, true);
 
 
 --
 -- Name: fyle_accounting_mappings_destinationattribute_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.fyle_accounting_mappings_destinationattribute_id_seq', 259, true);
+SELECT pg_catalog.setval('public.fyle_accounting_mappings_destinationattribute_id_seq', 699, true);
 
 
 --
 -- Name: fyle_accounting_mappings_expenseattribute_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.fyle_accounting_mappings_expenseattribute_id_seq', 2089, true);
+SELECT pg_catalog.setval('public.fyle_accounting_mappings_expenseattribute_id_seq', 2113, true);
 
 
 --
 -- Name: fyle_accounting_mappings_mapping_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.fyle_accounting_mappings_mapping_id_seq', 60, true);
+SELECT pg_catalog.setval('public.fyle_accounting_mappings_mapping_id_seq', 76, true);
 
 
 --
 -- Name: fyle_accounting_mappings_mappingsetting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.fyle_accounting_mappings_mappingsetting_id_seq', 15, true);
+SELECT pg_catalog.setval('public.fyle_accounting_mappings_mappingsetting_id_seq', 55, true);
 
 
 --
 -- Name: fyle_credentials_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.fyle_credentials_id_seq', 4, true);
+SELECT pg_catalog.setval('public.fyle_credentials_id_seq', 16, true);
 
 
 --
 -- Name: fyle_expensegroupsettings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.fyle_expensegroupsettings_id_seq', 49, true);
+SELECT pg_catalog.setval('public.fyle_expensegroupsettings_id_seq', 241, true);
 
 
 --
@@ -6684,91 +6648,91 @@ SELECT pg_catalog.setval('public.general_mappings_id_seq', 1, true);
 -- Name: import_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.import_logs_id_seq', 9, true);
+SELECT pg_catalog.setval('public.import_logs_id_seq', 45, true);
 
 
 --
 -- Name: last_export_details_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.last_export_details_id_seq', 7, true);
+SELECT pg_catalog.setval('public.last_export_details_id_seq', 35, true);
 
 
 --
 -- Name: payments_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.payments_id_seq', 8, true);
+SELECT pg_catalog.setval('public.payments_id_seq', 40, true);
 
 
 --
 -- Name: reimbursements_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.reimbursements_id_seq', 14, true);
+SELECT pg_catalog.setval('public.reimbursements_id_seq', 70, true);
 
 
 --
 -- Name: task_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.task_log_id_seq', 30, true);
+SELECT pg_catalog.setval('public.task_log_id_seq', 106, true);
 
 
 --
 -- Name: tenant_mappings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.tenant_mappings_id_seq', 3, true);
+SELECT pg_catalog.setval('public.tenant_mappings_id_seq', 11, true);
 
 
 --
 -- Name: update_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.update_logs_id_seq', 71, true);
+SELECT pg_catalog.setval('public.update_logs_id_seq', 355, true);
 
 
 --
 -- Name: users_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_user_id_seq', 21, true);
+SELECT pg_catalog.setval('public.users_user_id_seq', 101, true);
 
 
 --
 -- Name: workspaces_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.workspaces_id_seq', 51, true);
+SELECT pg_catalog.setval('public.workspaces_id_seq', 251, true);
 
 
 --
 -- Name: workspaces_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.workspaces_user_id_seq', 61, true);
+SELECT pg_catalog.setval('public.workspaces_user_id_seq', 301, true);
 
 
 --
 -- Name: workspaces_workspacegeneralsettings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.workspaces_workspacegeneralsettings_id_seq', 47, true);
+SELECT pg_catalog.setval('public.workspaces_workspacegeneralsettings_id_seq', 231, true);
 
 
 --
 -- Name: workspaces_workspaceschedule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.workspaces_workspaceschedule_id_seq', 6, true);
+SELECT pg_catalog.setval('public.workspaces_workspaceschedule_id_seq', 30, true);
 
 
 --
 -- Name: xero_credentials_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.xero_credentials_id_seq', 7, true);
+SELECT pg_catalog.setval('public.xero_credentials_id_seq', 31, true);
 
 
 --
@@ -8300,4 +8264,3 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
-
