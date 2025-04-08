@@ -66,6 +66,6 @@ def test_user_funcs(db, add_users_to_database):
     user = User.objects.create_user(
         email="sample@fyle.in", full_name="sample", password="samp"
     )
-    assert user.is_staff == False
-    assert user.is_admin == False
-    assert user.is_active == True
+    assert user.is_staff is False
+    assert user.is_admin is False
+    assert user.is_active is True
