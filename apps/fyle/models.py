@@ -11,10 +11,10 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Count, JSONField
 from django.db.models.fields.json import KeyTextTransform
-from fyle_accounting_mappings.mixins import AutoAddCreateUpdateInfoMixin
-from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_accounting_library.fyle_platform.constants import IMPORTED_FROM_CHOICES
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
+from fyle_accounting_mappings.mixins import AutoAddCreateUpdateInfoMixin
+from fyle_accounting_mappings.models import ExpenseAttribute
 
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
@@ -163,6 +163,10 @@ class Expense(models.Model):
 
     class Meta:
         db_table = "expenses"
+        indexes = [
+            models.Index(fields=['accounting_export_summary']),
+            models.Index(fields=['fund_source'])
+        ]
 
     @staticmethod
     def create_expense_objects(expenses: List[Dict], workspace_id: int, skip_update:bool = False, imported_from: ExpenseImportSourceEnum = None):
