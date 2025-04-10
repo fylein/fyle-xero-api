@@ -3962,6 +3962,9 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 175	internal	0005_auto_generated_sql	2025-04-03 17:53:16.785864+00
 176	rabbitmq	0003_alter_failedevent_created_at_and_more	2025-04-03 17:53:16.794872+00
 177	workspaces	0043_remove_workspacegeneralsettings_is_simplify_report_closure_enabled_and_more	2025-04-04 08:23:02.436595+00
+178	fyle	0025_expense_expenses_account_ff34f0_idx_and_more	2025-04-10 10:23:34.342708+00
+179	fyle	0026_alter_expense_imported_from	2025-04-10 16:40:52.838348+00
+180	tasks	0012_alter_tasklog_triggered_by	2025-04-10 16:40:52.854019+00
 \.
 
 
@@ -6515,7 +6518,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 41, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 177, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 180, true);
 
 
 --
@@ -7566,10 +7569,24 @@ CREATE INDEX expense_groups_workspace_id_21fcb4ac ON public.expense_groups USING
 
 
 --
+-- Name: expenses_account_ff34f0_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX expenses_account_ff34f0_idx ON public.expenses USING btree (accounting_export_summary, workspace_id);
+
+
+--
 -- Name: expenses_expense_id_0e3511ea_like; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX expenses_expense_id_0e3511ea_like ON public.expenses USING btree (expense_id varchar_pattern_ops);
+
+
+--
+-- Name: expenses_fund_so_386913_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX expenses_fund_so_386913_idx ON public.expenses USING btree (fund_source, workspace_id);
 
 
 --

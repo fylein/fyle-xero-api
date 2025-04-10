@@ -18,7 +18,7 @@ from apps.fyle.tasks import post_accounting_export_summary
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.helpers import invalidate_xero_credentials, patch_integration_settings
-from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, XeroCredentials
+from apps.workspaces.models import FyleCredential, LastExportDetail, XeroCredentials
 from fyle_xero_api.exceptions import BulkError
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,6 @@ logger.level = logging.INFO
 
 def update_last_export_details(workspace_id):
     last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
-    workspace = Workspace.objects.get(id=workspace_id)
 
     failed_exports = TaskLog.objects.filter(
         ~Q(type__in=[TaskLogTypeEnum.CREATING_PAYMENT, TaskLogTypeEnum.FETCHING_EXPENSES]),
@@ -48,7 +47,10 @@ def update_last_export_details(workspace_id):
     last_export_detail.save()
 
     patch_integration_settings(workspace_id, errors=failed_exports)
-    post_accounting_export_summary(workspace.fyle_org_id, workspace_id)
+    try:
+        post_accounting_export_summary(workspace_id)
+    except Exception as e:
+        logger.error(f"Error posting accounting export summary: {e} for workspace id {workspace_id}")
 
     return last_export_detail
 
@@ -267,7 +269,7 @@ def handle_xero_exceptions(payment=False):
                 update_failed_expenses(expense_group.expenses.all(), False)
 
             if not payment:
-                post_accounting_export_summary(expense_group.workspace.fyle_org_id, expense_group.workspace_id, [expense.id for expense in expense_group.expenses.all()], expense_group.fund_source, True)
+                post_accounting_export_summary(expense_group.workspace_id, [expense.id for expense in expense_group.expenses.all()], expense_group.fund_source, True)
 
             if not payment and args[-2] == True:
                 update_last_export_details(workspace_id=expense_group.workspace_id)
