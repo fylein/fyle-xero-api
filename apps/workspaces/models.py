@@ -119,6 +119,10 @@ class XeroCredentials(models.Model):
             workspace_id=workspace_id, is_expired=False, refresh_token__isnull=False
         )
 
+    @staticmethod
+    def get_xero_credentials(workspace_id):
+        return XeroCredentials.objects.filter(workspace_id=workspace_id).first()
+
 
 class FyleCredential(models.Model):
     """
