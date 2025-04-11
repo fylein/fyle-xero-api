@@ -24,9 +24,21 @@ class TokenHealthView(generics.RetrieveAPIView):
         workspace_id = self.kwargs["workspace_id"]
         xero_details = XeroCredentials.get_xero_credentials(workspace_id)
 
+        if not xero_details:
+            return Response(
+                {"message": "Xero credentials not found"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if xero_details.is_expired:
             return Response(
                 {"message": "Xero connection expired"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        elif not xero_details.refresh_token:
+            return Response(
+                {"message": "Xero disconnected"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
