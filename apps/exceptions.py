@@ -52,7 +52,7 @@ def handle_view_exceptions():
                 )
                 invalidate_xero_credentials(kwargs["workspace_id"])
                 return Response(
-                    data={"message": "Xero token expired"},
+                    data={"message": "Xero token expired workspace_id"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
