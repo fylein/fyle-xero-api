@@ -135,8 +135,8 @@ class ConnectXeroView(generics.CreateAPIView, generics.RetrieveAPIView):
 
         xero_credentials = XeroCredentials.objects.get(
             workspace_id=kwargs["workspace_id"],
-            is_expired=False,
-            refresh_token__isnull=False,
+            # is_expired=False,
+            # refresh_token__isnull=False,
         )
 
         return Response(
