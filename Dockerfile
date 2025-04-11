@@ -9,12 +9,28 @@ RUN apt-get update && apt-get -y install libpq-dev gcc && apt-get install git cu
 
 # Installing requirements
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt && pip install flake8
+RUN pip install --upgrade pip && pip install -U pip wheel setuptools && pip install -r /tmp/requirements.txt && pip install flake8
 
 # Copy Project to the container
 RUN mkdir -p /fyle-xero-api
 COPY . /fyle-xero-api/
 WORKDIR /fyle-xero-api
+
+#================================================================
+# Set default GID if not provided during build
+#================================================================
+ARG SERVICE_GID=1001
+
+#================================================================
+# Setup non-root user and permissions
+#================================================================
+RUN groupadd -r -g ${SERVICE_GID} xero_api_service && \
+    useradd -r -g xero_api_service xero_api_user && \
+    chown -R xero_api_user:xero_api_service /fyle-xero-api
+
+# Switch to non-root user
+USER xero_api_user
+
 
 # Do linting checks
 RUN flake8 .

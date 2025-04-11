@@ -266,22 +266,26 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
         logger.info('Configuration does not exist for workspace_id: %s', workspace.id)
 
     except Exception:
+        if not task_log:
+            task_log, _ = TaskLog.objects.update_or_create(workspace_id=workspace.id, type='FETCHING_EXPENSES', defaults={'status': 'IN_PROGRESS'})
+
         handle_import_exception(task_log)
 
 
-def post_accounting_export_summary(org_id: str, workspace_id: int, expense_ids: List = None, fund_source: str = None, is_failed: bool = False) -> None:
+def post_accounting_export_summary(workspace_id: int, expense_ids: List = None, fund_source: str = None, is_failed: bool = False) -> None:
     """
     Post accounting export summary to Fyle
-    :param org_id: org id
     :param workspace_id: workspace id
+    :param expense_ids: expense ids
     :param fund_source: fund source
+    :param is_failed: is failed
     :return: None
     """
     # Iterate through all expenses which are not synced and post accounting export summary to Fyle in batches
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     platform = PlatformConnector(fyle_credentials)
     filters = {
-        'org_id': org_id,
+        'workspace_id': workspace_id,
         'accounting_export_summary__synced': False
     }
 

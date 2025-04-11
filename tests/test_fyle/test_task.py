@@ -1,13 +1,11 @@
 from unittest import mock
 
 from django.urls import reverse
+from fyle.platform.exceptions import InternalServerError
+from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from fyle.platform.exceptions import (
-    InvalidTokenError as FyleInvalidTokenError,
-    InternalServerError
-)
-from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.fyle.actions import update_expenses_in_progress
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
@@ -15,10 +13,10 @@ from apps.fyle.tasks import (
     create_expense_groups,
     import_and_export_expenses,
     post_accounting_export_summary,
-    update_non_exported_expenses
+    update_non_exported_expenses,
 )
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import Workspace, FyleCredential, WorkspaceGeneralSettings
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 from tests.test_fyle.fixtures import data
 
 
@@ -100,7 +98,7 @@ def test_post_accounting_export_summary(db, mocker):
         'fyle_integrations_platform_connector.apis.Expenses.post_bulk_accounting_export_summary',
         return_value=[]
     )
-    post_accounting_export_summary('orPJvXuoLqvJ', 1)
+    post_accounting_export_summary(1)
 
     assert Expense.objects.filter(id=expense.id).first().accounting_export_summary['synced'] == True
 

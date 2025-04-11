@@ -96,7 +96,7 @@ def test_render_email_template_returns_expected_output():
 def test_get_errors_returns_unresolved_errors_for_given_workspace(db):
     # Arrange
     workspace, _ = Workspace.objects.update_or_create(name="Workspace 1")
-    error1, _ = Error.objects.update_or_create(
+    Error.objects.create(
         type="Type A",
         is_resolved=False,
         error_title="Error 1",
@@ -105,7 +105,7 @@ def test_get_errors_returns_unresolved_errors_for_given_workspace(db):
         updated_at=datetime.now(),
         workspace_id=workspace.id,
     )
-    error2, _ = Error.objects.update_or_create(
+    Error.objects.create(
         type="Type B",
         is_resolved=True,
         error_title="Error 2",
@@ -114,7 +114,7 @@ def test_get_errors_returns_unresolved_errors_for_given_workspace(db):
         updated_at=datetime.now(),
         workspace_id=workspace.id,
     )
-    error3, _ = Error.objects.update_or_create(
+    Error.objects.create(
         type="Type C",
         is_resolved=False,
         error_title="Error 3",

@@ -8,6 +8,7 @@ services:
         CI: ENABLED
     entrypoint: bash run.sh
     restart: unless-stopped
+    user: root
     volumes:
     - ./:/fyle-xero-api
     depends_on:
