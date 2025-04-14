@@ -3,6 +3,7 @@ from fyle_accounting_mappings.models import MappingSetting
 from apps.workspaces.models import Workspace, XeroCredentials
 from xerosdk import exceptions as xero_exc
 
+
 def test_get_token_health(mocker, api_client, test_connection):
     workspace_id = 1
     mocker.patch("apps.xero.utils.XeroConnector.__init__", return_value=None)
