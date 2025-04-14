@@ -42,7 +42,7 @@ class TokenHealthView(generics.RetrieveAPIView):
         else:
             try:
                 xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
-                xero_connector.get_organisations()[0]
+                xero_connector.get_organisations()
             except (xero_exc.WrongParamsError, xero_exc.InvalidTokenError):
                 invalidate_xero_credentials(workspace_id)
                 status_code = status.HTTP_400_BAD_REQUEST
