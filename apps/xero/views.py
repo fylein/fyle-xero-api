@@ -9,12 +9,13 @@ from rest_framework.response import Response
 from rest_framework.views import status
 
 from apps.exceptions import handle_view_exceptions
-from apps.xero.actions import get_xero_connector, sync_tenant
+from apps.xero.actions import sync_tenant
 from apps.xero.serializers import XeroFieldSerializer
 from fyle_xero_api.utils import LookupFieldMixin
 from apps.xero.utils import XeroConnector
 from xerosdk import exceptions as xero_exc
 from apps.exceptions import invalidate_xero_credentials
+
 
 class TokenHealthView(generics.RetrieveAPIView):
     """
