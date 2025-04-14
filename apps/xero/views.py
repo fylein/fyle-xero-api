@@ -16,7 +16,6 @@ from apps.xero.utils import XeroConnector
 from xerosdk import exceptions as xero_exc
 from apps.exceptions import invalidate_xero_credentials
 
-
 class TokenHealthView(generics.RetrieveAPIView):
     """
     Token Health View
@@ -33,7 +32,7 @@ class TokenHealthView(generics.RetrieveAPIView):
         if not xero_credentials:
             status_code = status.HTTP_400_BAD_REQUEST
             message = "Xero credentials not found"
-        if xero_credentials.is_expired:
+        elif xero_credentials.is_expired:
             status_code = status.HTTP_400_BAD_REQUEST
             message = "Xero connection expired"
         elif not xero_credentials.refresh_token:
@@ -42,7 +41,7 @@ class TokenHealthView(generics.RetrieveAPIView):
         else:
             try:
                 xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
-                xero_connector.connection.connections.get_all()
+                xero_connector.get_organisations()
             except (xero_exc.WrongParamsError, xero_exc.InvalidTokenError):
                 invalidate_xero_credentials(workspace_id)
                 status_code = status.HTTP_400_BAD_REQUEST
