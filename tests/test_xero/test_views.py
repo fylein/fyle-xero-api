@@ -1,9 +1,5 @@
 import json
-from unittest import mock
-
 from fyle_accounting_mappings.models import MappingSetting
-from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
-from apps.xero.utils import XeroConnector
 from apps.workspaces.models import Workspace, XeroCredentials
 from xerosdk import exceptions as xero_exc
 
@@ -11,6 +7,7 @@ def test_get_token_health(mocker, api_client, test_connection):
     mocker.patch("apps.xero.utils.XeroConnector.__init__", return_value=None)
     mocker.patch("apps.xero.utils.XeroConnector.get_organisations", return_value=['organization_1', 'organization_2'])
     workspace_id = 1
+
 
     access_token = test_connection.access_token
     url = "/api/workspaces/{}/xero/token_health/".format(workspace_id)
@@ -23,7 +20,7 @@ def test_get_token_health(mocker, api_client, test_connection):
 
     assert response.status_code == 400
     assert response.data['message'] == "Xero credentials not found"
-
+    
     XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
     XeroCredentials.objects.create(workspace_id=workspace_id,refresh_token=None,is_expired=True)
 
