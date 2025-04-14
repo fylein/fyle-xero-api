@@ -13,8 +13,8 @@ from apps.xero.actions import get_xero_connector, sync_tenant
 from apps.xero.serializers import XeroFieldSerializer
 from fyle_xero_api.utils import LookupFieldMixin
 from apps.xero.utils import XeroConnector
-from apps.exceptions import invalidate_xero_credentials
 from xerosdk import exceptions as xero_exc
+from apps.exceptions import invalidate_xero_credentials
 
 class TokenHealthView(generics.RetrieveAPIView):
     """
