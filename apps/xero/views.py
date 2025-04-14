@@ -16,6 +16,7 @@ from apps.xero.utils import XeroConnector
 from xerosdk import exceptions as xero_exc
 from apps.exceptions import invalidate_xero_credentials
 
+
 class TokenHealthView(generics.RetrieveAPIView):
     """
     Token Health View
