@@ -201,4 +201,3 @@ def test_get_destination_attributes_view(api_client, test_connection):
 
     response = json.loads(response.content)
     assert len(response) == 0
-    
