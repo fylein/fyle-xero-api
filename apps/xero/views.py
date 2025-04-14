@@ -12,7 +12,9 @@ from apps.exceptions import handle_view_exceptions
 from apps.xero.actions import get_xero_connector, sync_tenant
 from apps.xero.serializers import XeroFieldSerializer
 from fyle_xero_api.utils import LookupFieldMixin
-
+from apps.xero.utils import XeroConnector
+from apps.exceptions import invalidate_xero_credentials
+from xerosdk import exceptions as xero_exc
 
 class TokenHealthView(generics.RetrieveAPIView):
     """
@@ -21,31 +23,31 @@ class TokenHealthView(generics.RetrieveAPIView):
 
     @handle_view_exceptions()
     def get(self, request, *args, **kwargs):
-        workspace_id = self.kwargs["workspace_id"]
-        xero_details = XeroCredentials.get_xero_credentials(workspace_id)
+        status_code = status.HTTP_200_OK
+        message = "Xero connection is active"
 
-        if not xero_details:
-            return Response(
-                {"message": "Xero credentials not found"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        workspace_id = kwargs.get('workspace_id')
+        xero_credentials = XeroCredentials.objects.filter(workspace_id=workspace_id).first()
 
-        if xero_details.is_expired:
-            return Response(
-                {"message": "Xero connection expired"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        elif not xero_details.refresh_token:
-            return Response(
-                {"message": "Xero disconnected"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+        if not xero_credentials:
+            status_code = status.HTTP_400_BAD_REQUEST
+            message = "Xero credentials not found"
+        if xero_credentials.is_expired:
+            status_code = status.HTTP_400_BAD_REQUEST
+            message = "Xero connection expired"
+        elif not xero_credentials.refresh_token:
+            status_code = status.HTTP_400_BAD_REQUEST
+            message = "Xero disconnected"
         else:
-            get_xero_connector(workspace_id=self.kwargs["workspace_id"])
+            try:
+                xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
+                xero_connector.get_organisations()[0]
+            except (xero_exc.WrongParamsError, xero_exc.InvalidTokenError):
+                invalidate_xero_credentials(workspace_id)
+                status_code = status.HTTP_400_BAD_REQUEST
+                message = "Xero connection expired"
 
-        return Response({"message": "Xero connection is active"},status=status.HTTP_200_OK)
+        return Response({"message": message}, status=status_code)
 
 
 class TenantView(LookupFieldMixin, generics.ListCreateAPIView):
