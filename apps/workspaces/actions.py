@@ -11,10 +11,10 @@ from fyle_rest_auth.models import AuthToken
 from xerosdk import exceptions as xero_exc
 
 from apps.exceptions import invalidate_xero_credentials
+from apps.fyle.actions import post_accounting_export_summary
 from apps.fyle.enums import FundSourceEnum
 from apps.fyle.helpers import get_cluster_domain
 from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
-from apps.fyle.tasks import post_accounting_export_summary
 from apps.mappings.models import TenantMapping
 from apps.workspaces.helpers import patch_integration_settings
 from apps.workspaces.models import (

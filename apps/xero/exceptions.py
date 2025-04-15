@@ -12,9 +12,8 @@ from xerosdk.exceptions import (
     XeroSDKError,
 )
 
-from apps.fyle.actions import update_failed_expenses
+from apps.fyle.actions import post_accounting_export_summary, update_failed_expenses
 from apps.fyle.models import ExpenseGroup
-from apps.fyle.tasks import post_accounting_export_summary
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.helpers import invalidate_xero_credentials, patch_integration_settings
