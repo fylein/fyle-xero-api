@@ -7,12 +7,11 @@ from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 
-from apps.fyle.actions import update_expenses_in_progress
+from apps.fyle.actions import update_expenses_in_progress, post_accounting_export_summary
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.tasks import (
     create_expense_groups,
     import_and_export_expenses,
-    post_accounting_export_summary,
     update_non_exported_expenses,
 )
 from apps.tasks.models import TaskLog
