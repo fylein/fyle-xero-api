@@ -13,7 +13,6 @@ from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_integrations_platform_connector.apis.expenses import Expenses as FyleExpenses
 
-from apps.fyle.actions import create_generator_and_post_in_batches
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
 from apps.fyle.helpers import get_filter_credit_expenses, get_fund_source, get_source_account_type, handle_import_exception
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
