@@ -11,11 +11,10 @@ from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribu
 from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk.exceptions import UnsuccessfulAuthentication, WrongParamsError
 
-from apps.fyle.actions import update_complete_expenses, update_expenses_in_progress
+from apps.fyle.actions import post_accounting_export_summary, update_complete_expenses, update_expenses_in_progress
 from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum
 from apps.fyle.helpers import get_filter_credit_expenses
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
-from apps.fyle.tasks import post_accounting_export_summary
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
@@ -241,7 +240,7 @@ def update_expense_and_post_summary(in_progress_expenses: List[Expense], workspa
     :return: None
     """
     update_expenses_in_progress(in_progress_expenses)
-    post_accounting_export_summary(workspace_id, [expense.id for expense in in_progress_expenses], fund_source)
+    post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[expense.id for expense in in_progress_expenses], fund_source=fund_source)
 
 
 @handle_xero_exceptions(payment=False)
@@ -1021,4 +1020,4 @@ def generate_export_url_and_update_expense(expense_group: ExpenseGroup, export_t
     expense_group.save()
 
     update_complete_expenses(expense_group.expenses.all(), url)
-    post_accounting_export_summary(workspace.id, [expense.id for expense in expense_group.expenses.all()], expense_group.fund_source)
+    post_accounting_export_summary(workspace_id=workspace.id, expense_ids=[expense.id for expense in expense_group.expenses.all()], fund_source=expense_group.fund_source)
