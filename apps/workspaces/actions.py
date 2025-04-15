@@ -160,7 +160,7 @@ def revoke_connections(workspace_id):
 
         xero_credentials.refresh_token = None
         xero_credentials.country = None
-        xero_credentials.is_expired = True
+        xero_credentials.is_expired = False
         xero_credentials.save()
 
         post_delete_xero_connection(workspace_id)

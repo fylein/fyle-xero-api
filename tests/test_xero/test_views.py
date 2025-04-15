@@ -1,32 +1,53 @@
 import json
-from unittest import mock
-
 from fyle_accounting_mappings.models import MappingSetting
-from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
-
 from apps.workspaces.models import Workspace, XeroCredentials
+from xerosdk import exceptions as xero_exc
 
 
-def test_get_token_health(api_client, test_connection):
+def test_get_token_health(mocker, api_client, test_connection):
     workspace_id = 1
+    mocker.patch("apps.xero.utils.XeroConnector.__init__", return_value=None)
+    mocker.patch("apps.xero.utils.XeroConnector.get_organisations", return_value=['organization_1', 'organization_2'])
 
     access_token = test_connection.access_token
     url = "/api/workspaces/{}/xero/token_health/".format(workspace_id)
 
     api_client.credentials(HTTP_AUTHORIZATION="Bearer {}".format(access_token))
 
+    XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+    response = api_client.get(url)
+    assert response.status_code == 400
+    assert response.data['message'] == "Xero credentials not found"
+
+    XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+    XeroCredentials.objects.create(workspace_id=workspace_id,refresh_token=None,is_expired=True)
+    response = api_client.get(url)
+    assert response.status_code == 400
+    assert response.data['message'] == "Xero connection expired"
+
+    XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+    XeroCredentials.objects.create(workspace_id=workspace_id,refresh_token=None,is_expired=False)
+    response = api_client.get(url)
+    assert response.status_code == 400
+    assert response.data['message'] == "Xero disconnected"
+
+    XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+    XeroCredentials.objects.create(workspace_id=workspace_id,refresh_token="dummy_refresh_token",is_expired=False)
     response = api_client.get(url)
     assert response.status_code == 200
+    assert response.data['message'] == "Xero connection is active"
 
-    with mock.patch("apps.xero.utils.XeroConnector.__init__") as mock_call:
-        mock_call.side_effect = InvalidGrant(msg="Invalid grant")
-        response = api_client.get(url)
-        assert response.status_code == 400
+    # for InvalidTokenError
+    mocker.patch("apps.xero.utils.XeroConnector.get_organisations", side_effect=xero_exc.InvalidTokenError("Token expired"))
+    response = api_client.get(url)
+    assert response.status_code == 400
+    assert response.data['message'] == "Xero connection expired"
 
-    with mock.patch("apps.xero.utils.XeroConnector.__init__") as mock_call:
-        mock_call.side_effect = UnsuccessfulAuthentication(msg="Auth error")
-        response = api_client.get(url)
-        assert response.status_code == 400
+    # for WrongParamsError
+    mocker.patch("apps.xero.utils.XeroConnector.get_organisations", side_effect=xero_exc.WrongParamsError("Wrong parameters"))
+    response = api_client.get(url)
+    assert response.status_code == 400
+    assert response.data['message'] == "Xero connection expired"
 
 
 def test_get_tenant_view(api_client, test_connection):
