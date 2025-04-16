@@ -662,7 +662,7 @@ def test_create_payment(mocker, db):
     workspace_id = 1
 
     mocker.patch(
-        "fyle.platform.apis.v1beta.admin.Reimbursements.list_all",
+        "fyle.platform.apis.v1.admin.Reimbursements.list_all",
         return_value=fyle_data["get_all_reimbursements"],
     )
 
@@ -710,7 +710,7 @@ def test_create_payment_exceptions(mocker, db):
     workspace_id = 1
 
     mocker.patch(
-        "fyle.platform.apis.v1beta.admin.Reimbursements.list_all",
+        "fyle.platform.apis.v1.admin.Reimbursements.list_all",
         return_value=fyle_data["get_all_reimbursements"],
     )
 
@@ -1118,7 +1118,7 @@ def test_skipping_payment(mocker, db):
     workspace_id = 1
 
     mocker.patch(
-        "fyle.platform.apis.v1beta.admin.Reimbursements.list_all",
+        "fyle.platform.apis.v1.admin.Reimbursements.list_all",
         return_value=fyle_data["get_all_reimbursements"],
     )
 

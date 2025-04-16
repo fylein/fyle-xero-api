@@ -1,26 +1,16 @@
-from datetime import (
-    datetime,
-    timezone,
-    timedelta
-)
-from fyle_accounting_mappings.models import (
-    DestinationAttribute,
-    ExpenseAttribute,
-    Mapping
-)
+from datetime import datetime, timedelta, timezone
 from unittest import mock
-from apps.workspaces.models import Workspace
-from apps.workspaces.models import XeroCredentials
-from apps.xero.utils import XeroConnector
+
+from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
+
 from apps.tasks.models import Error
-from fyle_integrations_imports.modules.projects import Project
-from fyle_integrations_imports.modules.categories import Category
+from apps.workspaces.models import Workspace, XeroCredentials
+from apps.xero.utils import XeroConnector
 from fyle_integrations_imports.models import ImportLog
-from tests.test_fyle_integrations_imports.helpers import (
-    get_base_class_instance,
-    get_platform_connection
-)
-from tests.test_fyle_integrations_imports.fixtures import projects_data, categories_data
+from fyle_integrations_imports.modules.categories import Category
+from fyle_integrations_imports.modules.projects import Project
+from tests.test_fyle_integrations_imports.fixtures import categories_data, projects_data
+from tests.test_fyle_integrations_imports.helpers import get_base_class_instance, get_platform_connection
 
 
 def test_remove_duplicates(db):
@@ -119,7 +109,7 @@ def test_auto_create_destination_attributes(mocker, db, test_connection, create_
     DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CUSTOMER').delete()
     ExpenseAttribute.objects.filter(workspace_id=workspace_id, attribute_type='PROJECT').delete()
 
-    with mock.patch('fyle.platform.apis.v1beta.admin.Projects.list_all') as mock_call:
+    with mock.patch('fyle.platform.apis.v1.admin.Projects.list_all') as mock_call:
         mocker.patch(
             'fyle_integrations_platform_connector.apis.Projects.post_bulk',
             return_value=[]
@@ -178,7 +168,7 @@ def test_auto_create_destination_attributes(mocker, db, test_connection, create_
     DestinationAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CUSTOMER').delete()
     ExpenseAttribute.objects.filter(workspace_id=workspace_id, attribute_type='PROJECT').delete()
 
-    with mock.patch('fyle.platform.apis.v1beta.admin.Projects.list_all') as mock_call:
+    with mock.patch('fyle.platform.apis.v1.admin.Projects.list_all') as mock_call:
         mocker.patch(
             'fyle_integrations_platform_connector.apis.Projects.post_bulk',
             return_value=[]
@@ -204,7 +194,7 @@ def test_auto_create_destination_attributes(mocker, db, test_connection, create_
     ExpenseAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CATEGORY').delete()
 
     category = Category(3, 'ACCOUNT', None,  xero_connection, ['items'], True, False, ['Expense', 'Fixed Asset'])
-    with mock.patch('fyle.platform.apis.v1beta.admin.Categories.list_all') as mock_call:
+    with mock.patch('fyle.platform.apis.v1.admin.Categories.list_all') as mock_call:
         mocker.patch(
             'fyle_integrations_platform_connector.apis.Categories.post_bulk',
             return_value=[]

@@ -3,21 +3,12 @@ from unittest import mock
 from django_q.models import Schedule
 from fyle.platform.exceptions import InternalServerError
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
-from fyle_accounting_mappings.models import (
-    EmployeeMapping,
-    ExpenseAttribute,
-    Mapping
-)
+from fyle_accounting_mappings.models import EmployeeMapping, ExpenseAttribute, Mapping
 from xerosdk.exceptions import UnsuccessfulAuthentication
 
 from apps.fyle.models import ExpenseGroup
-from apps.mappings.queue import (
-    schedule_auto_map_employees
-)
-from apps.mappings.tasks import (
-    async_auto_map_employees,
-    resolve_expense_attribute_errors
-)
+from apps.mappings.queue import schedule_auto_map_employees
+from apps.mappings.tasks import async_auto_map_employees, resolve_expense_attribute_errors
 from apps.tasks.models import Error
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
 from tests.test_fyle.fixtures import data as fyle_data
@@ -33,7 +24,7 @@ def test_async_auto_map_employees(mocker, db):
     )
 
     mocker.patch(
-        "fyle.platform.apis.v1beta.admin.Employees.list_all",
+        "fyle.platform.apis.v1.admin.Employees.list_all",
         return_value=fyle_data["get_all_employees"],
     )
 
@@ -54,7 +45,7 @@ def test_async_auto_map_employees(mocker, db):
     ).count()
     assert employee_mappings == 0
 
-    with mock.patch("fyle.platform.apis.v1beta.admin.Employees.list_all") as mock_call:
+    with mock.patch("fyle.platform.apis.v1.admin.Employees.list_all") as mock_call:
         mock_call.side_effect = FyleInvalidTokenError(
             msg="Invalid Token for Fyle", response="Invalid Token for Fyle"
         )

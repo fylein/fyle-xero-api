@@ -19,7 +19,7 @@ for workspace in workspaces:
             if fyle_credentials:
                 sleep(1)
                 platform = PlatformConnector(fyle_credentials)
-                my_profile = platform.connection.v1beta.spender.my_profile.get()
+                my_profile = platform.connection.v1.spender.my_profile.get()
                 fyle_currency = my_profile['data']['org']['currency']
                 workspace.fyle_currency = fyle_currency
                 print('Updated', workspace.id)
