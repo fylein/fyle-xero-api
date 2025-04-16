@@ -13,7 +13,7 @@ def test_import_settings(api_client, mocker, test_connection):
     )
 
     mocker.patch(
-        "fyle.platform.apis.v1beta.admin.ExpenseFields.list_all",
+        "fyle.platform.apis.v1.admin.ExpenseFields.list_all",
         return_value=fyle_data["get_all_expense_fields"],
     )
     workspace = Workspace.objects.get(id=1)
