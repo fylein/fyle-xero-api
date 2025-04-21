@@ -26,7 +26,7 @@ def test_get_cluster_domain_and_refresh_token(db, add_users_to_database):
         server_url=server_url,
     )
 
-    user_profile = fyle_connection.v1beta.spender.my_profile.get()["data"]
+    user_profile = fyle_connection.v1.spender.my_profile.get()["data"]
     user = User(
         password="",
         last_login=datetime.now(tz=timezone.utc),
