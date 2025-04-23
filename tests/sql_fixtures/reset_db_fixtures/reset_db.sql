@@ -2156,7 +2156,8 @@ CREATE TABLE public.workspace_general_settings (
     import_suppliers_as_merchants boolean NOT NULL,
     memo_structure character varying(100)[] NOT NULL,
     created_by character varying(255),
-    updated_by character varying(255)
+    updated_by character varying(255),
+    skip_accounting_export_summary_post boolean NOT NULL
 );
 
 
@@ -3969,6 +3970,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 179	fyle	0026_alter_expense_imported_from	2025-04-10 16:40:52.838348+00
 180	tasks	0012_alter_tasklog_triggered_by	2025-04-10 16:40:52.854019+00
 181	fyle_accounting_mappings	0029_expenseattributesdeletioncache_cost_center_ids_and_more	2025-04-22 18:28:19.193432+00
+182	workspaces	0044_workspacegeneralsettings_skip_accounting_export_summary_post	2025-04-23 17:31:15.25255+00
 \.
 
 
@@ -6408,8 +6410,8 @@ COPY public.users (password, last_login, id, email, user_id, full_name, active, 
 -- Data for Name: workspace_general_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity, import_suppliers_as_merchants, memo_structure, created_by, updated_by) FROM stdin;
-1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	\N	t	t	t	{EXPENSE}	t	t	f	f	{employee_email,category,merchant,spent_on,report_number,purpose}	\N	\N
+COPY public.workspace_general_settings (id, reimbursable_expenses_object, corporate_credit_card_expenses_object, created_at, updated_at, workspace_id, sync_fyle_to_xero_payments, sync_xero_to_fyle_payments, import_categories, auto_map_employees, auto_create_destination_entity, map_merchant_to_contact, import_tax_codes, charts_of_accounts, import_customers, change_accounting_period, auto_create_merchant_destination_entity, import_suppliers_as_merchants, memo_structure, created_by, updated_by, skip_accounting_export_summary_post) FROM stdin;
+1	PURCHASE BILL	BANK TRANSACTION	2022-08-02 20:25:24.644164+00	2022-08-02 20:25:24.644209+00	1	f	t	t	\N	t	t	t	{EXPENSE}	t	t	f	f	{employee_email,category,merchant,spent_on,report_number,purpose}	\N	\N	f
 \.
 
 
@@ -6522,7 +6524,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 41, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 181, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 182, true);
 
 
 --
@@ -8285,4 +8287,3 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
-
