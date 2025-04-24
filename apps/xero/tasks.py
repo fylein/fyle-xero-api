@@ -7,15 +7,16 @@ from typing import List
 from dateutil.relativedelta import relativedelta
 from django.db import transaction
 from django.utils import timezone as django_timezone
+from fyle.platform.exceptions import InternalServerError
+from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
 from fyle_integrations_platform_connector import PlatformConnector
 from xerosdk.exceptions import UnsuccessfulAuthentication, WrongParamsError
 
-from apps.fyle.actions import update_complete_expenses, update_expenses_in_progress
+from apps.fyle.actions import post_accounting_export_summary, update_complete_expenses, update_expenses_in_progress
 from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum
 from apps.fyle.helpers import get_filter_credit_expenses
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
-from apps.fyle.tasks import post_accounting_export_summary
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
@@ -241,7 +242,7 @@ def update_expense_and_post_summary(in_progress_expenses: List[Expense], workspa
     :return: None
     """
     update_expenses_in_progress(in_progress_expenses)
-    post_accounting_export_summary(workspace_id, [expense.id for expense in in_progress_expenses], fund_source)
+    post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[expense.id for expense in in_progress_expenses], fund_source=fund_source)
 
 
 @handle_xero_exceptions(payment=False)
@@ -843,28 +844,39 @@ def check_xero_object_status(workspace_id):
 
 def process_reimbursements(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+    try:
+        platform = PlatformConnector(fyle_credentials=fyle_credentials)
 
-    platform = PlatformConnector(fyle_credentials=fyle_credentials)
+        reports_to_be_marked = set()
+        payloads = []
 
-    reports_to_be_marked = set()
-    payloads = []
+        report_ids = Expense.objects.filter(fund_source='PERSONAL', paid_on_fyle=False, workspace_id=workspace_id).values_list('report_id').distinct()
+        for report_id in report_ids:
+            report_id = report_id[0]
+            expenses = Expense.objects.filter(fund_source='PERSONAL', report_id=report_id, workspace_id=workspace_id).all()
+            paid_expenses = expenses.filter(paid_on_xero=True)
 
-    report_ids = Expense.objects.filter(fund_source='PERSONAL', paid_on_fyle=False, workspace_id=workspace_id).values_list('report_id').distinct()
-    for report_id in report_ids:
-        report_id = report_id[0]
-        expenses = Expense.objects.filter(fund_source='PERSONAL', report_id=report_id, workspace_id=workspace_id).all()
-        paid_expenses = expenses.filter(paid_on_xero=True)
+            all_expense_paid = False
+            if len(expenses):
+                all_expense_paid = len(expenses) == len(paid_expenses)
 
-        all_expense_paid = False
-        if len(expenses):
-            all_expense_paid = len(expenses) == len(paid_expenses)
+            if all_expense_paid:
+                payloads.append({'id': report_id, 'paid_notify_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')})
+                reports_to_be_marked.add(report_id)
 
-        if all_expense_paid:
-            payloads.append({'id': report_id, 'paid_notify_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')})
-            reports_to_be_marked.add(report_id)
+        if payloads:
+            mark_paid_on_fyle(platform, payloads, reports_to_be_marked, workspace_id)
+    except FyleCredential.DoesNotExist:
+        logger.info("Fyle credentials not found %s", workspace_id)
 
-    if payloads:
-        mark_paid_on_fyle(platform, payloads, reports_to_be_marked, workspace_id)
+    except FyleInvalidTokenError:
+        logger.info("Invalid Token for Fyle")
+
+    except InternalServerError:
+        logger.info('Fyle Internal Server Error occured in workspace_id: %s', workspace_id)
+
+    except Exception as e:
+        logger.exception("Error processing reimbursements", e)
 
 
 def mark_paid_on_fyle(platform, payloads:dict, reports_to_be_marked, workspace_id, retry_num=10):
@@ -918,7 +930,7 @@ def create_missing_currency(workspace_id: int):
 
         fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
         platform = PlatformConnector(fyle_credentials)
-        my_profile = platform.connection.v1beta.spender.my_profile.get()
+        my_profile = platform.connection.v1.spender.my_profile.get()
         fyle_currency = my_profile["data"]["org"]["currency"]
 
         existing_currency = list(
@@ -1003,4 +1015,4 @@ def generate_export_url_and_update_expense(expense_group: ExpenseGroup, export_t
     expense_group.save()
 
     update_complete_expenses(expense_group.expenses.all(), url)
-    post_accounting_export_summary(workspace.id, [expense.id for expense in expense_group.expenses.all()], expense_group.fund_source)
+    post_accounting_export_summary(workspace_id=workspace.id, expense_ids=[expense.id for expense in expense_group.expenses.all()], fund_source=expense_group.fund_source)

@@ -3,8 +3,8 @@ from time import sleep
 
 from django.db.models import Q
 
+from apps.fyle.actions import post_accounting_export_summary
 from apps.fyle.models import Expense
-from apps.fyle.tasks import post_accounting_export_summary
 from apps.workspaces.models import Workspace
 
 # PLEASE RUN scripts/python/fill-accounting-export-summary.py BEFORE RUNNING THIS SCRIPT

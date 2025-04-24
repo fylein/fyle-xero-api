@@ -151,7 +151,7 @@ def test_run_email_notification_with_invalid_workspace_id(db):
 def test_async_add_admins_to_workspace(db, mocker):
     old_users_count = User.objects.count()
     mocker.patch(
-        "fyle.platform.apis.v1beta.admin.Employees.list_all",
+        "fyle.platform.apis.v1.admin.Employees.list_all",
         return_value=fyle_data["get_all_employees"],
     )
     async_add_admins_to_workspace(1, "usqywo0f3nBY")
@@ -175,7 +175,7 @@ def test_async_update_workspace_name(mocker):
 
 def test_async_create_admin_subcriptions(db, mocker):
     mocker.patch(
-        'fyle.platform.apis.v1beta.admin.Subscriptions.post',
+        'fyle.platform.apis.v1.admin.Subscriptions.post',
         return_value={}
     )
     async_create_admin_subcriptions(1)

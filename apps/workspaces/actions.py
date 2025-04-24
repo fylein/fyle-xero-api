@@ -3,8 +3,6 @@ from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from apps.exceptions import invalidate_xero_credentials
-from apps.workspaces.helpers import patch_integration_settings
 from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute
@@ -12,10 +10,13 @@ from fyle_rest_auth.helpers import get_fyle_admin
 from fyle_rest_auth.models import AuthToken
 from xerosdk import exceptions as xero_exc
 
+from apps.exceptions import invalidate_xero_credentials
+from apps.fyle.actions import post_accounting_export_summary, update_expenses_in_progress
 from apps.fyle.enums import FundSourceEnum
 from apps.fyle.helpers import get_cluster_domain
 from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
 from apps.mappings.models import TenantMapping
+from apps.workspaces.helpers import patch_integration_settings
 from apps.workspaces.models import (
     FyleCredential,
     LastExportDetail,
@@ -26,6 +27,7 @@ from apps.workspaces.models import (
 )
 from apps.workspaces.signals import post_delete_xero_connection
 from apps.workspaces.utils import generate_xero_refresh_token
+from apps.xero.exceptions import update_failed_expenses
 from apps.xero.queue import schedule_bank_transaction_creation, schedule_bills_creation
 from apps.xero.utils import XeroConnector
 
@@ -160,7 +162,7 @@ def revoke_connections(workspace_id):
 
         xero_credentials.refresh_token = None
         xero_credentials.country = None
-        xero_credentials.is_expired = True
+        xero_credentials.is_expired = False
         xero_credentials.save()
 
         post_delete_xero_connection(workspace_id)
@@ -184,7 +186,27 @@ def get_workspace_admin(workspace_id):
     return admin_email
 
 
-def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[], triggered_by: ExpenseImportSourceEnum = None):
+def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[], is_direct_export:bool = False, triggered_by: ExpenseImportSourceEnum = None):
+    active_xero_credentials = XeroCredentials.objects.filter(
+        workspace_id=workspace_id,
+        is_expired=False,
+        refresh_token__isnull=False
+    ).first()
+
+    if not active_xero_credentials:
+        if is_direct_export:
+            failed_expense_ids = []
+            for index, expense_group_id in enumerate(expense_group_ids):
+                expense_group = ExpenseGroup.objects.get(id=expense_group_id)
+                if index == 0:
+                    first_expense = expense_group.expenses.first()
+                    update_expenses_in_progress([first_expense])
+                    post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[first_expense.id])
+                update_failed_expenses(expense_group.expenses.all(), False, True)
+                failed_expense_ids.extend(expense_group.expenses.values_list('id', flat=True))
+            post_accounting_export_summary(workspace_id=workspace_id, expense_ids=failed_expense_ids, is_failed=True)
+        return
+
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
     workspace_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace_id, interval_hours__gt=0, enabled=True).first()

@@ -12,9 +12,8 @@ from xerosdk.exceptions import (
     XeroSDKError,
 )
 
-from apps.fyle.actions import update_failed_expenses
+from apps.fyle.actions import post_accounting_export_summary, update_failed_expenses
 from apps.fyle.models import ExpenseGroup
-from apps.fyle.tasks import post_accounting_export_summary
 from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.helpers import invalidate_xero_credentials, patch_integration_settings
@@ -48,7 +47,7 @@ def update_last_export_details(workspace_id):
 
     patch_integration_settings(workspace_id, errors=failed_exports)
     try:
-        post_accounting_export_summary(workspace_id)
+        post_accounting_export_summary(workspace_id=workspace_id)
     except Exception as e:
         logger.error(f"Error posting accounting export summary: {e} for workspace id {workspace_id}")
 
@@ -269,7 +268,7 @@ def handle_xero_exceptions(payment=False):
                 update_failed_expenses(expense_group.expenses.all(), False)
 
             if not payment:
-                post_accounting_export_summary(expense_group.workspace_id, [expense.id for expense in expense_group.expenses.all()], expense_group.fund_source, True)
+                post_accounting_export_summary(workspace_id=expense_group.workspace_id, expense_ids=[expense.id for expense in expense_group.expenses.all()], fund_source=expense_group.fund_source, is_failed=True)
 
             if not payment and args[-2] == True:
                 update_last_export_details(workspace_id=expense_group.workspace_id)

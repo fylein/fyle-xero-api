@@ -1722,7 +1722,10 @@ CREATE TABLE public.expense_attributes_deletion_cache (
     id integer NOT NULL,
     category_ids character varying(255)[] NOT NULL,
     project_ids character varying(255)[] NOT NULL,
-    workspace_id integer NOT NULL
+    workspace_id integer NOT NULL,
+    cost_center_ids character varying(255)[] NOT NULL,
+    custom_field_list jsonb NOT NULL,
+    merchant_list character varying(255)[] NOT NULL
 );
 
 
@@ -3967,6 +3970,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 179	fyle	0026_alter_expense_imported_from	2025-04-10 16:40:52.838348+00
 180	tasks	0012_alter_tasklog_triggered_by	2025-04-10 16:40:52.854019+00
 181	tasks	0013_error_mapping_error_expense_group_ids	2025-04-11 11:26:27.286859+00
+182	fyle_accounting_mappings	0029_expenseattributesdeletioncache_cost_center_ids_and_more	2025-04-22 18:28:19.193432+00
 \.
 
 
@@ -6146,7 +6150,7 @@ COPY public.expense_attributes (id, attribute_type, display_name, value, source_
 -- Data for Name: expense_attributes_deletion_cache; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.expense_attributes_deletion_cache (id, category_ids, project_ids, workspace_id) FROM stdin;
+COPY public.expense_attributes_deletion_cache (id, category_ids, project_ids, workspace_id, cost_center_ids, custom_field_list, merchant_list) FROM stdin;
 \.
 
 

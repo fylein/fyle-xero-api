@@ -55,7 +55,7 @@ def default_session_fixture(request):
     patched_4.__enter__()
 
     patched_5 = mock.patch(
-        "fyle.platform.apis.v1beta.spender.MyProfile.get",
+        "fyle.platform.apis.v1.spender.MyProfile.get",
         return_value=fyle_data["get_my_profile"],
     )
     patched_5.__enter__()
@@ -82,7 +82,7 @@ def test_connection(db):
 
     access_token = get_access_token(refresh_token)
     fyle_connection.access_token = access_token
-    user_profile = fyle_connection.v1beta.spender.my_profile.get()["data"]
+    user_profile = fyle_connection.v1.spender.my_profile.get()["data"]
     user = User(
         password="",
         last_login=datetime.now(tz=timezone.utc),

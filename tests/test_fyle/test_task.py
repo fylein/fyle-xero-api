@@ -7,14 +7,9 @@ from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 
-from apps.fyle.actions import update_expenses_in_progress
+from apps.fyle.actions import post_accounting_export_summary, update_expenses_in_progress
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
-from apps.fyle.tasks import (
-    create_expense_groups,
-    import_and_export_expenses,
-    post_accounting_export_summary,
-    update_non_exported_expenses,
-)
+from apps.fyle.tasks import create_expense_groups, import_and_export_expenses, update_non_exported_expenses
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 from tests.test_fyle.fixtures import data
@@ -58,7 +53,7 @@ def test_create_expense_groups(mocker, db):
     task_log = TaskLog.objects.get(id=task_log.id)
     assert task_log.status == "FAILED"
 
-    with mock.patch("fyle.platform.apis.v1beta.admin.Expenses.list_all") as mock_call:
+    with mock.patch("fyle.platform.apis.v1.admin.Expenses.list_all") as mock_call:
         mock_call.side_effect = FyleInvalidTokenError(
             msg="Invalid Token for Fyle", response="Invalid Token for Fyle"
         )
