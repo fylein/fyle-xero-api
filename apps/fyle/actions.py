@@ -111,6 +111,10 @@ def post_accounting_export_summary(workspace_id: int, expense_ids: List = None, 
     :param is_failed: is failed
     :return: None
     """
+    workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    if workspace_general_settings.skip_accounting_export_summary_post:
+        return
+
     # Iterate through all expenses which are not synced and post accounting export summary to Fyle in batches
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     platform = PlatformConnector(fyle_credentials)

@@ -207,6 +207,9 @@ class WorkspaceGeneralSettings(AutoAddCreateUpdateInfoMixin, models.Model):
     import_suppliers_as_merchants = models.BooleanField(
         default=False, help_text="Auto import suppliers to Fyle"
     )
+    skip_accounting_export_summary_post = models.BooleanField(
+        default=False, help_text="Skip posting accounting export summary"
+    )
     created_at = models.DateTimeField(auto_now_add=True, help_text="Created at")
     updated_at = models.DateTimeField(auto_now=True, help_text="Updated at")
     charts_of_accounts = ArrayField(
