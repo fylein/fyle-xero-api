@@ -18,7 +18,7 @@ from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum
 from apps.fyle.helpers import get_filter_credit_expenses
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.mappings.models import GeneralMapping, TenantMapping
-from apps.tasks.enums import ErrorTypeEnum, TaskLogStatusEnum, TaskLogTypeEnum
+from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.helpers import invalidate_xero_credentials
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, XeroCredentials
@@ -594,16 +594,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
             )
 
             if employee_attribute:
-                error, created = Error.objects.update_or_create(
-                    workspace_id=expense_group.workspace_id,
-                    expense_attribute=employee_attribute,
-                    defaults={
-                        "type": ErrorTypeEnum.EMPLOYEE_MAPPING,
-                        "error_title": employee_attribute.value,
-                        "error_detail": "Employee mapping is missing",
-                        "is_resolved": False,
-                    },
-                )
+                error, created = Error.get_or_create_error_with_expense_group(expense_group, employee_attribute)
                 error.increase_repetition_count_by_one(created)
 
     if general_settings.import_tax_codes:
@@ -666,16 +657,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
             )
 
             if category_attribute:
-                error, created = Error.objects.update_or_create(
-                    workspace_id=expense_group.workspace_id,
-                    expense_attribute=category_attribute,
-                    defaults={
-                        "type": ErrorTypeEnum.CATEGORY_MAPPING,
-                        "error_title": category_attribute.value,
-                        "error_detail": "Category mapping is missing",
-                        "is_resolved": False,
-                    },
-                )
+                error, created = Error.get_or_create_error_with_expense_group(expense_group, category_attribute)
                 error.increase_repetition_count_by_one(created)
 
         row = row + 1

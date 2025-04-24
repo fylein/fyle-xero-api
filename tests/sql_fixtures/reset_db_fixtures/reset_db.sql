@@ -1663,7 +1663,8 @@ CREATE TABLE public.errors (
     expense_attribute_id integer,
     expense_group_id integer,
     workspace_id integer NOT NULL,
-    repetition_count integer NOT NULL
+    repetition_count integer NOT NULL,
+    mapping_error_expense_group_ids integer[] NOT NULL
 );
 
 
@@ -3968,7 +3969,8 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 178	fyle	0025_expense_expenses_account_ff34f0_idx_and_more	2025-04-10 10:23:34.342708+00
 179	fyle	0026_alter_expense_imported_from	2025-04-10 16:40:52.838348+00
 180	tasks	0012_alter_tasklog_triggered_by	2025-04-10 16:40:52.854019+00
-181	fyle_accounting_mappings	0029_expenseattributesdeletioncache_cost_center_ids_and_more	2025-04-22 18:28:19.193432+00
+181	tasks	0013_error_mapping_error_expense_group_ids	2025-04-11 11:26:27.286859+00
+182	fyle_accounting_mappings	0029_expenseattributesdeletioncache_cost_center_ids_and_more	2025-04-22 18:28:19.193432+00
 \.
 
 
@@ -4049,7 +4051,7 @@ COPY public.employee_mappings (id, created_at, updated_at, destination_card_acco
 -- Data for Name: errors; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.errors (id, type, is_resolved, error_title, error_detail, created_at, updated_at, expense_attribute_id, expense_group_id, workspace_id, repetition_count) FROM stdin;
+COPY public.errors (id, type, is_resolved, error_title, error_detail, created_at, updated_at, expense_attribute_id, expense_group_id, workspace_id, repetition_count, mapping_error_expense_group_ids) FROM stdin;
 \.
 
 
@@ -8285,4 +8287,3 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
-
