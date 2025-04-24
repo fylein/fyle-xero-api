@@ -60,3 +60,5 @@ def re_export_stuck_exports():
                 if len(export_expense_group_ids) < 200:
                     logger.info('Re-triggering export for expense group %s since no 1 hour schedule for workspace  %s', export_expense_group_ids, workspace_id)
                     export_to_xero(workspace_id, 'AUTO', export_expense_group_ids, ExpenseImportSourceEnum.INTERNAL)
+                else:
+                    logger.info('Skipping export for workspace %s since it has more than 200 expense groups', workspace_id)
