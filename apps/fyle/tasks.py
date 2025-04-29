@@ -7,6 +7,7 @@ from django.db import transaction
 from fyle.platform.exceptions import InternalServerError
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle.platform.exceptions import RetryException
+from fyle_accounting_library.fyle_platform.branding import feature_configuration
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_library.fyle_platform.helpers import filter_expenses_based_on_state, get_expense_import_states
 from fyle_accounting_mappings.models import ExpenseAttribute
@@ -14,12 +15,12 @@ from fyle_integrations_platform_connector import PlatformConnector
 from fyle_integrations_platform_connector.apis.expenses import Expenses as FyleExpenses
 
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
-from apps.fyle.helpers import get_filter_credit_expenses, get_fund_source, get_source_account_type, handle_import_exception
+from apps.fyle.helpers import get_filter_credit_expenses, get_fund_source, get_source_account_type, handle_import_exception, update_task_log_post_import
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
 from apps.workspaces.actions import export_to_xero
-from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -50,7 +51,7 @@ def get_task_log_and_fund_source(workspace_id: int):
 
 
 def create_expense_groups(
-    workspace_id: int, fund_source: List[str], task_log: TaskLog, imported_from: ExpenseImportSourceEnum
+    workspace_id: int, fund_source: List[str], task_log: TaskLog | None, imported_from: ExpenseImportSourceEnum
 ):
     try:
         with transaction.atomic():
@@ -58,8 +59,8 @@ def create_expense_groups(
                 workspace_id=workspace_id
             )
             workspace = Workspace.objects.get(pk=workspace_id)
-            last_synced_at = workspace.last_synced_at
-            ccc_last_synced_at = workspace.ccc_last_synced_at
+            last_synced_at = workspace.last_synced_at if imported_from != ExpenseImportSourceEnum.CONFIGURATION_UPDATE else None
+            ccc_last_synced_at = workspace.ccc_last_synced_at if imported_from != ExpenseImportSourceEnum.CONFIGURATION_UPDATE else None
             fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
             platform = PlatformConnector(fyle_credentials)
 
@@ -118,7 +119,8 @@ def create_expense_groups(
             if workspace.ccc_last_synced_at or len(expenses) != reimbursable_expenses_count:
                 workspace.ccc_last_synced_at = datetime.now()
 
-            workspace.save()
+            if imported_from != ExpenseImportSourceEnum.CONFIGURATION_UPDATE:
+                workspace.save()
 
             expense_objects = Expense.create_expense_objects(expenses, workspace_id, imported_from=imported_from)
 
@@ -126,43 +128,42 @@ def create_expense_groups(
                 expense_objects, workspace_id
             )
 
-            task_log.status = TaskLogStatusEnum.COMPLETE
-
-            task_log.save()
+            if task_log:
+                task_log.status = TaskLogStatusEnum.COMPLETE
+                task_log.save()
 
     except FyleCredential.DoesNotExist:
         logger.info("Fyle credentials not found %s", workspace_id)
-        task_log.detail = {"message": "Fyle credentials do not exist in workspace"}
-        task_log.status = TaskLogStatusEnum.FAILED
-        task_log.save()
+        update_task_log_post_import(
+            task_log,
+            TaskLogStatusEnum.FAILED,
+            "Fyle credentials do not exist in workspace"
+        )
 
     except FyleInvalidTokenError:
         logger.info("Invalid Token for Fyle")
+        update_task_log_post_import(
+            task_log,
+            TaskLogStatusEnum.FAILED,
+            "Invalid Fyle credentials"
+        )
 
-    except RetryException:
-        logger.info("Fyle Retry Exception occured in workspace_id: %s", workspace_id)
-        task_log.detail = {"message": "Fyle Retry Exception"}
-        task_log.status = TaskLogStatusEnum.FATAL
-        task_log.save()
-
-    except InternalServerError:
-        logger.info('Fyle Internal Server Error occured in workspace_id: %s', workspace_id)
-        task_log.detail = {
-            'message': 'Fyle Internal Server Error occured'
-        }
-        task_log.status = 'FAILED'
-        task_log.save()
+    except (RetryException, InternalServerError) as e:
+        error_msg = f"Fyle {e.__class__.__name__} occurred"
+        logger.info("%s in workspace_id: %s", error_msg, workspace_id)
+        update_task_log_post_import(
+            task_log,
+            TaskLogStatusEnum.FATAL if isinstance(e, RetryException) else TaskLogStatusEnum.FAILED,
+            error_msg
+        )
 
     except Exception:
         error = traceback.format_exc()
-        task_log.detail = {"error": error}
-        task_log.status = TaskLogStatusEnum.FATAL
-        task_log.save()
         logger.exception(
-            "Something unexpected happened workspace_id: %s %s",
-            task_log.workspace_id,
-            task_log.detail,
+            "Something unexpected happened workspace_id: %s",
+            workspace_id
         )
+        update_task_log_post_import(task_log, TaskLogStatusEnum.FATAL, error=error)
 
 
 def sync_dimensions(workspace_id: int, is_export: bool = False):
@@ -258,8 +259,23 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
         expense_groups = ExpenseGroup.objects.filter(expenses__id__in=[expense_ids], workspace_id=workspace.id).distinct('id').values('id')
         expense_group_ids = [expense_group['id'] for expense_group in expense_groups]
 
-        if len(expense_group_ids) and not is_state_change_event:
-            export_to_xero(workspace_id=workspace.id, export_mode=None, expense_group_ids=expense_group_ids, is_direct_export=True, triggered_by=imported_from)
+        if len(expense_group_ids):
+            if is_state_change_event:
+                # Trigger export immediately if the workspace is scheduled to export expenses every hour
+                workspace_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace.id, enabled=True, interval_hours=1).first()
+
+                # Don't allow real time export if it's not supported for the branded app
+                if not workspace_schedule or not feature_configuration.feature.real_time_export_1hr_orgs:
+                    return
+
+            logger.info(f'Exporting expenses for workspace {workspace.id} with expense group ids {expense_group_ids}, triggered by {imported_from}')
+            export_to_xero(
+                workspace_id=workspace.id,
+                export_mode=None,
+                expense_group_ids=expense_group_ids,
+                is_direct_export=True if not is_state_change_event else False,
+                triggered_by=imported_from
+            )
 
     except WorkspaceGeneralSettings.DoesNotExist:
         logger.info('Configuration does not exist for workspace_id: %s', workspace.id)

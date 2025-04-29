@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import status
 
+from apps.fyle.models import ExpenseGroup
 from apps.exceptions import handle_view_exceptions
 from apps.workspaces.actions import connect_xero, export_to_xero, get_workspace_admin, post_workspace, revoke_connections
 from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings, XeroCredentials
@@ -217,6 +218,38 @@ class LastExportDetailView(generics.RetrieveAPIView):
     queryset = LastExportDetail.objects.filter(
         last_exported_at__isnull=False, total_expense_groups_count__gt=0
     )
+
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        response_data = serializer.data
+
+        start_date = request.query_params.get('start_date')
+
+        if start_date and response_data:
+            expense_groups = ExpenseGroup.objects.filter(
+                workspace_id=kwargs['workspace_id'],
+                updated_at__gte=start_date
+            ).order_by('-updated_at')
+
+            successful_count = expense_groups.filter(
+                exported_at__isnull=False
+            ).count()
+
+            failed_count = expense_groups.filter(
+                exported_at__isnull=True
+            ).count()
+
+            response_data.update({
+                'repurposed_successful_count': successful_count,
+                'repurposed_failed_count': failed_count,
+                'repurposed_last_exported_at': expense_groups.last().updated_at if expense_groups.last() else None
+            })
+
+        return Response(response_data)
 
 
 class WorkspaceAdminsView(generics.ListAPIView):

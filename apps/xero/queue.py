@@ -153,7 +153,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
                 task_log.type = TaskLogTypeEnum.CREATING_BILL
                 task_log.status = TaskLogStatusEnum.ENQUEUED
-                if task_log.triggered_by != triggered_by:
+                if triggered_by and task_log.triggered_by != triggered_by:
                     task_log.triggered_by = triggered_by
 
                 task_log.save()
@@ -229,7 +229,7 @@ def schedule_bank_transaction_creation(
             if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]:
                 task_log.type = TaskLogTypeEnum.CREATING_BANK_TRANSACTION
                 task_log.status = TaskLogStatusEnum.ENQUEUED
-                if task_log.triggered_by != triggered_by:
+                if triggered_by and task_log.triggered_by != triggered_by:
                     task_log.triggered_by = triggered_by
 
                 task_log.save()
