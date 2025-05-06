@@ -330,9 +330,9 @@ def create_generator_and_post_in_batches(accounting_export_summary_batches: List
             __handle_post_accounting_export_summary_exception(exception, workspace_id)
 
 
-def post_accounting_export_summary_for_skipped_exports(expense_group: ExpenseGroup, workspace_id: int):
+def post_accounting_export_summary_for_skipped_exports(expense_group: ExpenseGroup, workspace_id: int, is_mapping_error: bool):
     first_expense = expense_group.expenses.first()
     update_expenses_in_progress([first_expense])
     post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[first_expense.id])
-    update_failed_expenses(expense_group.expenses.all(), False, True)
+    update_failed_expenses(expense_group.expenses.all(), is_mapping_error)
     post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[expense.id for expense in expense_group.expenses.all()], is_failed=True)
