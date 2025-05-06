@@ -8,6 +8,7 @@ from django_q.tasks import Chain
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
 
+from apps.fyle.actions import post_accounting_export_summary_for_skipped_exports
 from apps.fyle.models import ExpenseGroup
 from apps.mappings.models import GeneralMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
@@ -152,6 +153,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             if skip_export:
                 skip_reason = f"{error.repetition_count} repeated attempts" if error else "mapping errors"
                 logger.info(f"Skipping expense group {expense_group.id} due to {skip_reason}")
+                post_accounting_export_summary_for_skipped_exports(expense_group, workspace_id, is_mapping_error=False if error else True)
                 continue
 
             task_log, _ = TaskLog.objects.get_or_create(
@@ -229,6 +231,7 @@ def schedule_bank_transaction_creation(
             if skip_export:
                 skip_reason = f"{error.repetition_count} repeated attempts" if error else "mapping errors"
                 logger.info(f"Skipping expense group {expense_group.id} due to {skip_reason}")
+                post_accounting_export_summary_for_skipped_exports(expense_group, workspace_id, is_mapping_error=False if error else True)
                 continue
 
             task_log, _ = TaskLog.objects.get_or_create(
