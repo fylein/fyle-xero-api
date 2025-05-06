@@ -11,7 +11,7 @@ from fyle_rest_auth.models import AuthToken
 from xerosdk import exceptions as xero_exc
 
 from apps.exceptions import invalidate_xero_credentials
-from apps.fyle.actions import post_accounting_export_summary
+from apps.fyle.actions import post_accounting_export_summary, update_expenses_in_progress
 from apps.fyle.enums import FundSourceEnum
 from apps.fyle.helpers import get_cluster_domain
 from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
@@ -196,8 +196,12 @@ def export_to_xero(workspace_id, expense_group_ids=[], is_direct_export:bool = F
     if not active_xero_credentials:
         if is_direct_export:
             failed_expense_ids = []
-            for expense_group_id in expense_group_ids:
+            for index, expense_group_id in enumerate(expense_group_ids):
                 expense_group = ExpenseGroup.objects.get(id=expense_group_id)
+                if index == 0:
+                    first_expense = expense_group.expenses.first()
+                    update_expenses_in_progress([first_expense])
+                    post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[first_expense.id])
                 update_failed_expenses(expense_group.expenses.all(), False, True)
                 failed_expense_ids.extend(expense_group.expenses.values_list('id', flat=True))
             post_accounting_export_summary(workspace_id=workspace_id, expense_ids=failed_expense_ids, is_failed=True)

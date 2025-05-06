@@ -111,6 +111,10 @@ def post_accounting_export_summary(workspace_id: int, expense_ids: List = None, 
     :param is_failed: is failed
     :return: None
     """
+    workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    if workspace_general_settings.skip_accounting_export_summary_post:
+        return
+
     # Iterate through all expenses which are not synced and post accounting export summary to Fyle in batches
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     platform = PlatformConnector(fyle_credentials)
@@ -131,7 +135,7 @@ def post_accounting_export_summary(workspace_id: int, expense_ids: List = None, 
     expenses_count = Expense.objects.filter(**filters).count()
 
     accounting_export_summary_batches = []
-    page_size = 200
+    page_size = 20
     for offset in range(0, expenses_count, page_size):
         limit = offset + page_size
         paginated_expenses = Expense.objects.filter(**filters).order_by('id')[offset:limit]
@@ -324,3 +328,11 @@ def create_generator_and_post_in_batches(accounting_export_summary_batches: List
             )
         except Exception as exception:
             __handle_post_accounting_export_summary_exception(exception, workspace_id)
+
+
+def post_accounting_export_summary_for_skipped_exports(expense_group: ExpenseGroup, workspace_id: int, is_mapping_error: bool):
+    first_expense = expense_group.expenses.first()
+    update_expenses_in_progress([first_expense])
+    post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[first_expense.id])
+    update_failed_expenses(expense_group.expenses.all(), is_mapping_error)
+    post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[expense.id for expense in expense_group.expenses.all()], is_failed=True)
