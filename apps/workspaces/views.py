@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import status
 
-from apps.fyle.models import ExpenseGroup
+from apps.tasks.models import TaskLog
 from apps.exceptions import handle_view_exceptions
 from apps.workspaces.actions import connect_xero, export_to_xero, get_workspace_admin, post_workspace, revoke_connections
 from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings, XeroCredentials
@@ -230,23 +230,23 @@ class LastExportDetailView(generics.RetrieveAPIView):
         start_date = request.query_params.get('start_date')
 
         if start_date and response_data:
-            expense_groups = ExpenseGroup.objects.filter(
+            task_logs = TaskLog.objects.filter(
                 workspace_id=kwargs['workspace_id'],
                 updated_at__gte=start_date
             ).order_by('-updated_at')
 
-            successful_count = expense_groups.filter(
-                exported_at__isnull=False
+            successful_count = task_logs.filter(
+                status='COMPLETE'
             ).count()
 
-            failed_count = expense_groups.filter(
-                exported_at__isnull=True
+            failed_count = task_logs.filter(
+                status__in=['FAILED', 'FATAL']
             ).count()
 
             response_data.update({
                 'repurposed_successful_count': successful_count,
                 'repurposed_failed_count': failed_count,
-                'repurposed_last_exported_at': expense_groups.last().updated_at if expense_groups.last() else None
+                'repurposed_last_exported_at': task_logs.last().updated_at if task_logs.last() else None
             })
 
         return Response(response_data)

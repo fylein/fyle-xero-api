@@ -262,7 +262,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
         if len(expense_group_ids):
             if is_state_change_event:
                 # Trigger export immediately if the workspace is scheduled to export expenses every hour
-                workspace_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace.id, enabled=True, interval_hours=1).first()
+                workspace_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace.id, enabled=True, interval_hours=1).exists()
 
                 # Don't allow real time export if it's not supported for the branded app
                 if not workspace_schedule or not feature_configuration.feature.real_time_export_1hr_orgs:
@@ -271,7 +271,6 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
             logger.info(f'Exporting expenses for workspace {workspace.id} with expense group ids {expense_group_ids}, triggered by {imported_from}')
             export_to_xero(
                 workspace_id=workspace.id,
-                export_mode=None,
                 expense_group_ids=expense_group_ids,
                 is_direct_export=True if not is_state_change_event else False,
                 triggered_by=imported_from
