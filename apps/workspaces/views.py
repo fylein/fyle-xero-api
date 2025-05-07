@@ -232,15 +232,15 @@ class LastExportDetailView(generics.RetrieveAPIView):
         if start_date and response_data:
             task_logs = TaskLog.objects.filter(
                 workspace_id=kwargs['workspace_id'],
-                updated_at__gte=start_date
+                updated_at__gte=start_date,
+                status='COMPLETE'
             ).order_by('-updated_at')
 
-            successful_count = task_logs.filter(
-                status='COMPLETE'
-            ).count()
+            successful_count = task_logs.count()
 
-            failed_count = task_logs.filter(
-                status__in=['FAILED', 'FATAL']
+            failed_count = TaskLog.objects.filter(
+                status__in=['FAILED', 'FATAL'],
+                workspace_id=kwargs['workspace_id']
             ).count()
 
             response_data.update({
