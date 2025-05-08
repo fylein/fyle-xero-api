@@ -336,6 +336,11 @@ def test_get_admin_of_workspaces(api_client, test_connection):
 def test_last_export_detail_2(mocker, api_client, test_connection):
     workspace_id = 1
 
+    WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).update(
+        reimbursable_expenses_object='BILL',
+        corporate_credit_card_expenses_object='BANK_TRANSACTION'
+    )
+
     url = "/api/workspaces/{}/export_detail/?start_date=2025-05-01".format(workspace_id)
 
     api_client.credentials(
@@ -350,7 +355,7 @@ def test_last_export_detail_2(mocker, api_client, test_connection):
     last_export_detail.total_expense_groups_count = 1
     last_export_detail.save()
 
-    task_log = TaskLog.objects.filter(workspace_id=workspace_id, status='COMPLETE').first()
+    task_log = TaskLog.objects.filter(workspace_id=workspace_id, status='COMPLETE', type__in=['CREATING_BILL', 'CREATING_BANK_TRANSACTION']).first()
     task_log.updated_at = datetime.now()
     task_log.save()
 
