@@ -9,6 +9,7 @@ from xerosdk import exceptions as xero_exc
 
 from apps.mappings.models import TenantMapping
 from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings, XeroCredentials
+from apps.tasks.models import TaskLog
 from fyle_xero_api import settings
 from tests.helper import dict_compare_keys
 from tests.test_fyle.fixtures import data as fyle_data
@@ -330,3 +331,40 @@ def test_get_admin_of_workspaces(api_client, test_connection):
 
     response = api_client.get(url)
     assert response.status_code == 200
+
+
+def test_last_export_detail_2(mocker, api_client, test_connection):
+    workspace_id = 1
+
+    WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).update(
+        reimbursable_expenses_object='BILL',
+        corporate_credit_card_expenses_object='BANK_TRANSACTION'
+    )
+
+    url = "/api/workspaces/{}/export_detail/?start_date=2025-05-01".format(workspace_id)
+
+    api_client.credentials(
+        HTTP_AUTHORIZATION="Bearer {}".format(test_connection.access_token)
+    )
+
+    response = api_client.get(url)
+    assert response.status_code == 404
+
+    last_export_detail = LastExportDetail.objects.create(workspace_id=workspace_id)
+    last_export_detail.last_exported_at = datetime.now()
+    last_export_detail.total_expense_groups_count = 1
+    last_export_detail.save()
+
+    task_log = TaskLog.objects.filter(workspace_id=workspace_id, status='COMPLETE', type__in=['CREATING_BILL', 'CREATING_BANK_TRANSACTION']).first()
+    task_log.updated_at = datetime.now()
+    task_log.save()
+
+    failed_count = TaskLog.objects.filter(workspace_id=workspace_id, status__in=['FAILED', 'FATAL']).count()
+
+    response = api_client.get(url)
+    assert response.status_code == 200
+
+    response = json.loads(response.content)
+    assert response['repurposed_successful_count'] == 1
+    assert response['repurposed_failed_count'] == failed_count
+    assert response['repurposed_last_exported_at'] is not None
