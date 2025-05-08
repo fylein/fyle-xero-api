@@ -240,6 +240,7 @@ class WorkspaceSchedule(models.Model):
     start_datetime = models.DateTimeField(
         help_text="Datetime for start of schedule", null=True
     )
+    is_real_time_export_enabled = models.BooleanField(default=False)
     interval_hours = models.IntegerField(null=True)
     schedule = models.OneToOneField(Schedule, on_delete=models.PROTECT, null=True)
     error_count = models.IntegerField(null=True, help_text="Number of errors in export")

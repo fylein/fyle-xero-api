@@ -32,6 +32,7 @@ class WorkspaceScheduleSerializer(serializers.ModelSerializer):
             "interval_hours",
             "additional_email_options",
             "emails_selected",
+            "is_real_time_export_enabled",
         ]
 
 
@@ -134,6 +135,7 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
             hours=workspace_schedules.get("interval_hours"),
             email_added=workspace_schedules.get("additional_email_options"),
             emails_selected=workspace_schedules.get("emails_selected"),
+            is_real_time_export_enabled=workspace_schedules.get("is_real_time_export_enabled")
         )
 
         AdvancedSettingsTriggers.run_workspace_general_settings_triggers(
