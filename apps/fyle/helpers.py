@@ -261,3 +261,11 @@ class ExpenseGroupSearchFilter(AdvanceSearchFilter):
         model = ExpenseGroup
         fields = ['exported_at__gte', 'exported_at__lte', 'tasklog__status']
         or_fields = ['expenses__expense_number', 'expenses__employee_name', 'expenses__employee_email', 'expenses__claim_number']
+
+
+def update_task_log_post_import(task_log: TaskLog, status: str, message: str = None, error: str = None):
+    """Helper function to update task log status and details"""
+    if task_log:
+        task_log.status = status
+        task_log.detail = {"message": message} if message else {"error": error}
+        task_log.save()
