@@ -1,5 +1,5 @@
 dj-database-url==2.3.0
-Django==4.2.20
+Django==4.2.21
 django-db-geventpool==4.0.1
 django-cors-headers==4.6.0
 django-picklefield==3.2
