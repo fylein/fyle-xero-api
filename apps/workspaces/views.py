@@ -230,17 +230,27 @@ class LastExportDetailView(generics.RetrieveAPIView):
         start_date = request.query_params.get('start_date')
 
         if start_date and response_data:
+            workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=kwargs['workspace_id'])
+
+            task_log_types = []
+            if workspace_general_settings.reimbursable_expenses_object:
+                task_log_types.append('CREATING_BILL')
+            if workspace_general_settings.corporate_credit_card_expenses_object:
+                task_log_types.append('CREATING_BANK_TRANSACTION')
+
             task_logs = TaskLog.objects.filter(
                 workspace_id=kwargs['workspace_id'],
                 updated_at__gte=start_date,
-                status='COMPLETE'
+                status='COMPLETE',
+                type__in=task_log_types
             ).order_by('-updated_at')
 
             successful_count = task_logs.count()
 
             failed_count = TaskLog.objects.filter(
                 status__in=['FAILED', 'FATAL'],
-                workspace_id=kwargs['workspace_id']
+                workspace_id=kwargs['workspace_id'],
+                type__in=task_log_types
             ).count()
 
             response_data.update({
