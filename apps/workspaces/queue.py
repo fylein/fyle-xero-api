@@ -53,7 +53,14 @@ def schedule_sync(
             if email not in ws_schedule.additional_email_options:
                 ws_schedule.additional_email_options.append(email)
 
-        if not is_real_time_export_enabled:
+        if is_real_time_export_enabled:
+            # Delete existing schedule since user changed the setting to real time export
+            schedule = ws_schedule.schedule
+            if schedule:
+                ws_schedule.schedule = None
+                ws_schedule.save()
+                schedule.delete()
+        else:
             schedule, _ = Schedule.objects.update_or_create(
                 func="apps.workspaces.tasks.run_sync_schedule",
                 args="{}".format(workspace_id),
@@ -64,8 +71,7 @@ def schedule_sync(
                 }
             )
             ws_schedule.schedule = schedule
-
-        ws_schedule.save()
+            ws_schedule.save()
 
     elif not schedule_enabled and ws_schedule.schedule:
         schedule = ws_schedule.schedule
