@@ -33,7 +33,7 @@ def test_schedule_sync(db):
     assert ws_schedule.additional_email_options == email_added
 
     # Test without email_added
-    schedule_sync(workspace_id, False, 1, {}, [])
+    schedule_sync(workspace_id, False, 1, {}, [], False)
 
     ws_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace_id).first()
 
