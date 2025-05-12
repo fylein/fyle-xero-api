@@ -25,7 +25,7 @@ def test_schedule_sync(db):
 
     # Test with email_added
     email_added = [{"email": "test@example.com", "name": "Test User"}]
-    schedule_sync(workspace_id, True, 1, email_added, [])
+    schedule_sync(workspace_id, True, 1, email_added, [], False)
 
     ws_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace_id).first()
 
