@@ -2179,7 +2179,8 @@ CREATE TABLE public.workspace_schedules (
     emails_selected character varying(255)[],
     error_count integer,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    is_real_time_export_enabled boolean NOT NULL
 );
 
 
@@ -3973,6 +3974,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 181	fyle_accounting_mappings	0029_expenseattributesdeletioncache_cost_center_ids_and_more	2025-04-22 18:28:19.193432+00
 182	tasks	0013_error_mapping_error_expense_group_ids	2025-04-11 11:26:27.286859+00
 183	workspaces	0044_workspacegeneralsettings_skip_accounting_export_summary_post	2025-04-23 17:31:15.25255+00
+184	workspaces	0045_workspaceschedule_is_real_time_export_enabled	2025-05-12 10:38:02.430836+00
 \.
 
 
@@ -6421,7 +6423,7 @@ COPY public.workspace_general_settings (id, reimbursable_expenses_object, corpor
 -- Data for Name: workspace_schedules; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, schedule_id, workspace_id, additional_email_options, emails_selected, error_count, created_at, updated_at) FROM stdin;
+COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, schedule_id, workspace_id, additional_email_options, emails_selected, error_count, created_at, updated_at, is_real_time_export_enabled) FROM stdin;
 \.
 
 
@@ -6526,7 +6528,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 41, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 182, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 184, true);
 
 
 --
@@ -8289,3 +8291,4 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
+
