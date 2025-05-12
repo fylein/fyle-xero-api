@@ -58,9 +58,9 @@ def schedule_sync(
                 func="apps.workspaces.tasks.run_sync_schedule",
                 args="{}".format(workspace_id),
                 defaults={
-                "schedule_type": Schedule.MINUTES,
-                "minutes": hours * 60,
-                "next_run": datetime.now() + timedelta(hours=hours),
+                    "schedule_type": Schedule.MINUTES,
+                    "minutes": hours * 60,
+                    "next_run": datetime.now() + timedelta(hours=hours),
                 }
             )
             ws_schedule.schedule = schedule
