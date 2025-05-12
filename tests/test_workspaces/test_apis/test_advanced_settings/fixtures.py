@@ -16,6 +16,7 @@ data = {
             "interval_hours": 1,
             "additional_email_options": {},
             "emails_selected": ["anishkumar.s@fyle.in"],
+            "is_real_time_export_enabled": False,
         },
     },
     "advanced_settings_response": {
@@ -35,6 +36,7 @@ data = {
             "interval_hours": 1,
             "additional_email_options": {},
             "emails_selected": ["anish.ks@fyle.in"],
+            "is_real_time_export_enabled": False,
         },
         "workspace_id": 1,
     },

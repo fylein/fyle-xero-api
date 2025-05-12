@@ -261,11 +261,11 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
 
         if len(expense_group_ids):
             if is_state_change_event:
-                # Trigger export immediately if the workspace is scheduled to export expenses every hour
-                workspace_schedule = WorkspaceSchedule.objects.filter(workspace_id=workspace.id, enabled=True, interval_hours=1).exists()
+                # Trigger export immediately for customers who have enabled real time export
+                is_real_time_export_enabled = WorkspaceSchedule.objects.filter(workspace_id=workspace.id, is_real_time_export_enabled=True).exists()
 
-                # Don't allow real time export if it's not supported for the branded app
-                if not workspace_schedule or not feature_configuration.feature.real_time_export_1hr_orgs:
+                # Don't allow real time export if it's not supported for the branded app / setting not enabled
+                if not is_real_time_export_enabled or not feature_configuration.feature.real_time_export_1hr_orgs:
                     return
 
             logger.info(f'Exporting expenses for workspace {workspace.id} with expense group ids {expense_group_ids}, triggered by {imported_from}')
