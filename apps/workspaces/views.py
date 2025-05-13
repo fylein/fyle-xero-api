@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import status
 
+from apps.tasks.models import TaskLog
 from apps.exceptions import handle_view_exceptions
 from apps.workspaces.actions import connect_xero, export_to_xero, get_workspace_admin, post_workspace, revoke_connections
 from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings, XeroCredentials
@@ -217,6 +218,48 @@ class LastExportDetailView(generics.RetrieveAPIView):
     queryset = LastExportDetail.objects.filter(
         last_exported_at__isnull=False, total_expense_groups_count__gt=0
     )
+
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        response_data = serializer.data
+
+        start_date = request.query_params.get('start_date')
+
+        if start_date and response_data:
+            workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=kwargs['workspace_id'])
+
+            task_log_types = []
+            if workspace_general_settings.reimbursable_expenses_object:
+                task_log_types.append('CREATING_BILL')
+            if workspace_general_settings.corporate_credit_card_expenses_object:
+                task_log_types.append('CREATING_BANK_TRANSACTION')
+
+            task_logs = TaskLog.objects.filter(
+                workspace_id=kwargs['workspace_id'],
+                updated_at__gte=start_date,
+                status='COMPLETE',
+                type__in=task_log_types
+            ).order_by('-updated_at')
+
+            successful_count = task_logs.count()
+
+            failed_count = TaskLog.objects.filter(
+                status__in=['FAILED', 'FATAL'],
+                workspace_id=kwargs['workspace_id'],
+                type__in=task_log_types
+            ).count()
+
+            response_data.update({
+                'repurposed_successful_count': successful_count,
+                'repurposed_failed_count': failed_count,
+                'repurposed_last_exported_at': task_logs.last().updated_at if task_logs.last() else None
+            })
+
+        return Response(response_data)
 
 
 class WorkspaceAdminsView(generics.ListAPIView):
