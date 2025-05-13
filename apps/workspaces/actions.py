@@ -186,7 +186,7 @@ def get_workspace_admin(workspace_id):
     return admin_email
 
 
-def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[], is_direct_export:bool = False, triggered_by: ExpenseImportSourceEnum = None):
+def export_to_xero(workspace_id, expense_group_ids=[], is_direct_export:bool = False, triggered_by: ExpenseImportSourceEnum = None):
     active_xero_credentials = XeroCredentials.objects.filter(
         workspace_id=workspace_id,
         is_expired=False,
@@ -213,7 +213,7 @@ def export_to_xero(workspace_id, export_mode="MANUAL", expense_group_ids=[], is_
 
     last_exported_at = datetime.now()
     is_expenses_exported = False
-    export_mode = export_mode or 'MANUAL'
+    export_mode = 'MANUAL' if triggered_by in (ExpenseImportSourceEnum.DASHBOARD_SYNC, ExpenseImportSourceEnum.DIRECT_EXPORT, ExpenseImportSourceEnum.CONFIGURATION_UPDATE) else 'AUTO'
     expense_group_filters = {
         'exported_at__isnull': True,
         'workspace_id': workspace_id
