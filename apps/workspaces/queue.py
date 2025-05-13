@@ -7,7 +7,7 @@ from apps.workspaces.models import WorkspaceSchedule
 
 
 def schedule_email_notification(workspace_id: int, schedule_enabled: bool, hours: int):
-    if schedule_enabled:
+    if schedule_enabled and hours:
         schedule, _ = Schedule.objects.update_or_create(
             func="apps.workspaces.tasks.run_email_notification",
             args="{}".format(workspace_id),
@@ -58,7 +58,6 @@ def schedule_sync(
             schedule = ws_schedule.schedule
             if schedule:
                 ws_schedule.schedule = None
-                ws_schedule.save()
                 schedule.delete()
         else:
             schedule, _ = Schedule.objects.update_or_create(
@@ -71,7 +70,8 @@ def schedule_sync(
                 }
             )
             ws_schedule.schedule = schedule
-            ws_schedule.save()
+
+        ws_schedule.save()
 
     elif not schedule_enabled and ws_schedule.schedule:
         schedule = ws_schedule.schedule
