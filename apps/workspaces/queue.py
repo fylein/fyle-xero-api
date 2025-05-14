@@ -58,6 +58,7 @@ def schedule_sync(
             schedule = ws_schedule.schedule
             if schedule:
                 ws_schedule.schedule = None
+                ws_schedule.save()
                 schedule.delete()
         else:
             schedule, _ = Schedule.objects.update_or_create(
