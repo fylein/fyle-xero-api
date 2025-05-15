@@ -15,7 +15,13 @@ from fyle_integrations_platform_connector import PlatformConnector
 from fyle_integrations_platform_connector.apis.expenses import Expenses as FyleExpenses
 
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
-from apps.fyle.helpers import get_filter_credit_expenses, get_fund_source, get_source_account_type, handle_import_exception, update_task_log_post_import
+from apps.fyle.helpers import (
+    get_filter_credit_expenses,
+    get_fund_source,
+    get_source_account_type,
+    handle_import_exception,
+    update_task_log_post_import,
+)
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
@@ -256,7 +262,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
 
         # Export only selected expense groups
         expense_ids = Expense.objects.filter(report_id=report_id, org_id=org_id).values_list('id', flat=True)
-        expense_groups = ExpenseGroup.objects.filter(expenses__id__in=[expense_ids], workspace_id=workspace.id).distinct('id').values('id')
+        expense_groups = ExpenseGroup.objects.filter(expenses__id__in=[expense_ids], workspace_id=workspace.id, exported_at__isnull=True).distinct('id').values('id')
         expense_group_ids = [expense_group['id'] for expense_group in expense_groups]
 
         if len(expense_group_ids):
