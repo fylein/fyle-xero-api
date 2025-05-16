@@ -26,6 +26,7 @@ from apps.xero.exceptions import handle_xero_exceptions, update_last_export_deta
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem, Payment
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
+from fyle_xero_api.logging_middleware import get_logger
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -253,10 +254,11 @@ def create_bill(
     last_export: bool,
     is_auto_export: bool,
 ):
+    worker_logger = get_logger()
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
-    logger.info('Creating Bill for Expense Group %s, current state is %s', expense_group.id, task_log.status)
+    worker_logger.info('Creating Bill for Expense Group %s, current state is %s', expense_group.id, task_log.status)
 
     if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
         task_log.status = TaskLogStatusEnum.IN_PROGRESS
@@ -271,7 +273,7 @@ def create_bill(
             in_progress_expenses.extend(expense_group.expenses.all())
             update_expense_and_post_summary(in_progress_expenses, expense_group.workspace_id, expense_group.fund_source)
         except Exception as e:
-            logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
+            worker_logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
 
     general_settings = WorkspaceGeneralSettings.objects.get(
         workspace_id=expense_group.workspace_id
@@ -287,7 +289,7 @@ def create_bill(
         )
 
     __validate_expense_group(expense_group)
-    logger.info('Validated Expense Group %s successfully', expense_group.id)
+    worker_logger.info('Validated Expense Group %s successfully', expense_group.id)
 
     with transaction.atomic():
         bill_object = Bill.create_bill(expense_group)
@@ -297,7 +299,7 @@ def create_bill(
         created_bill = xero_connection.post_bill(
             bill_object, bill_lineitems_objects, general_settings
         )
-        logger.info('Created Bill with Expense Group %s successfully', expense_group.id)
+        worker_logger.info('Created Bill with Expense Group %s successfully', expense_group.id)
 
         task_log.detail = created_bill
         task_log.bill = bill_object
@@ -314,7 +316,7 @@ def create_bill(
         if last_export:
             update_last_export_details(expense_group.workspace_id)
 
-        logger.info('Updated Expense Group %s successfully', expense_group.id)
+        worker_logger.info('Updated Expense Group %s successfully', expense_group.id)
 
         # Assign billable expenses to customers
         if general_settings.import_customers:
@@ -336,7 +338,7 @@ def create_bill(
     try:
         generate_export_url_and_update_expense(expense_group, 'BILL')
     except Exception as e:
-        logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
+        worker_logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
 
     load_attachments(
         xero_connection,
@@ -430,10 +432,11 @@ def create_bank_transaction(
     last_export: bool,
     is_auto_export: bool,
 ):
+    worker_logger = get_logger()
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
     task_log = TaskLog.objects.get(id=task_log_id)
-    logger.info('Creating Bank Transaction for Expense Group %s, current state is %s', expense_group.id, task_log.status)
+    worker_logger.info('Creating Bank Transaction for Expense Group %s, current state is %s', expense_group.id, task_log.status)
 
     if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
         task_log.status = TaskLogStatusEnum.IN_PROGRESS
@@ -448,7 +451,7 @@ def create_bank_transaction(
             in_progress_expenses.extend(expense_group.expenses.all())
             update_expense_and_post_summary(in_progress_expenses, expense_group.workspace_id, expense_group.fund_source)
         except Exception as e:
-            logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
+            worker_logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
 
     general_settings = WorkspaceGeneralSettings.objects.get(
         workspace_id=expense_group.workspace_id
@@ -472,7 +475,7 @@ def create_bank_transaction(
         )
 
     __validate_expense_group(expense_group)
-    logger.info('Validated Expense Group %s successfully', expense_group.id)
+    worker_logger.info('Validated Expense Group %s successfully', expense_group.id)
 
     with transaction.atomic():
         bank_transaction_object = BankTransaction.create_bank_transaction(
@@ -488,7 +491,7 @@ def create_bank_transaction(
             bank_transaction_lineitems_objects,
             general_settings,
         )
-        logger.info('Created Bank Transaction with Expense Group %s successfully', expense_group.id)
+        worker_logger.info('Created Bank Transaction with Expense Group %s successfully', expense_group.id)
 
         task_log.detail = created_bank_transaction
         task_log.bank_transaction = bank_transaction_object
@@ -505,7 +508,7 @@ def create_bank_transaction(
         if last_export:
             update_last_export_details(expense_group.workspace_id)
 
-        logger.info('Updated Expense Group %s successfully', expense_group.id)
+        worker_logger.info('Updated Expense Group %s successfully', expense_group.id)
 
         # Assign billable expenses to customers
         if general_settings.import_customers:
@@ -531,7 +534,7 @@ def create_bank_transaction(
     try:
         generate_export_url_and_update_expense(expense_group, 'BANK TRANSACTION')
     except Exception as e:
-        logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
+        worker_logger.error('Error while updating expenses for expense_group_id: %s and posting accounting export summary %s', expense_group.id, e)
 
     load_attachments(
         xero_connection,

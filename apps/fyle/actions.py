@@ -14,6 +14,7 @@ from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum
 from apps.fyle.helpers import get_batched_expenses, get_updated_accounting_export_summary
 from apps.fyle.models import Expense, ExpenseGroup
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
+from fyle_xero_api.logging_middleware import get_caller_info, get_logger
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -115,6 +116,9 @@ def post_accounting_export_summary(workspace_id: int, expense_ids: List = None, 
     if workspace_general_settings.skip_accounting_export_summary_post:
         return
 
+    worker_logger = get_logger()
+    caller_info = get_caller_info()
+
     # Iterate through all expenses which are not synced and post accounting export summary to Fyle in batches
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     platform = PlatformConnector(fyle_credentials)
@@ -149,8 +153,9 @@ def post_accounting_export_summary(workspace_id: int, expense_ids: List = None, 
 
         accounting_export_summary_batches.append(payload)
 
-    logger.info(
-        'Posting accounting export summary to Fyle workspace_id: %s, payload: %s',
+    worker_logger.info(
+        'Called from %s, Posting accounting export summary to Fyle workspace_id: %s, payload: %s',
+        caller_info,
         workspace_id,
         accounting_export_summary_batches
     )

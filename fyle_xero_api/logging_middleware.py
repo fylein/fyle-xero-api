@@ -1,5 +1,9 @@
+import inspect
 import json
 import logging
+import os
+import random
+import string
 import traceback
 
 from django.conf import settings
@@ -27,6 +31,43 @@ class ErrorHandlerMiddleware:
                 logger.error(str(message).replace("\n", ""))
 
             return HttpResponse("Error processing the request.", status=500)
+
+
+def generate_worker_id():
+    return 'worker_' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+
+
+def set_worker_id_in_env():
+    worker_id = generate_worker_id()
+    os.environ['WORKER_ID'] = worker_id
+
+
+def get_logger():
+    if 'WORKER_ID' not in os.environ:
+        set_worker_id_in_env()
+    worker_id = os.environ['WORKER_ID']
+    extra = {'worker_id': worker_id}
+    updated_logger = logging.LoggerAdapter(logger, extra)
+    updated_logger.setLevel(logging.INFO)
+
+    return updated_logger
+
+
+def get_caller_info() -> str:
+    """
+    Get information about the caller of the current function
+    Returns a string containing the caller's module name and function name
+    """
+    frame = inspect.currentframe()
+    if frame:
+        # Get the caller's frame (2 levels up from current frame)
+        caller_frame = frame.f_back.f_back
+        if caller_frame:
+            # Get the caller's module and function name
+            module_name = caller_frame.f_globals.get('__name__', 'unknown')
+            function_name = caller_frame.f_code.co_name
+            return f"{module_name}.{function_name}"
+    return "unknown"
 
 
 class LogPostRequestMiddleware:
