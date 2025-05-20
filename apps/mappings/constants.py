@@ -50,4 +50,5 @@ SYNC_METHODS = {
     'TAX_CODE': 'tax_codes',
     'CONTACT': 'contacts',
     'CUSTOMER': 'customers',
+    'SUPPLIER': 'suppliers'
 }

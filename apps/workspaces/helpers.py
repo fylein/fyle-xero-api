@@ -7,6 +7,30 @@ logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
 
+def get_error_model_path() -> str:
+    """
+    Get error model path: This is for imports submodule
+    :return: str
+    """
+    return 'apps.tasks.models.Error'
+
+
+def get_import_configuration_model_path() -> str:
+    """
+    Get import configuration model path: This is for imports submodule
+    :return: str
+    """
+    return 'apps.workspaces.models.WorkspaceGeneralSettings'
+
+
+def get_app_name() -> str:
+    """
+    Get Integration Name. This is for imports submodule
+    :return: str
+    """
+    return 'XERO'
+
+
 def patch_integration_settings(workspace_id: int, errors: int = None, is_token_expired = None):
     """
     Patch integration settings

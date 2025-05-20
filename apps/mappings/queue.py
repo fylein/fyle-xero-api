@@ -4,7 +4,6 @@ from django_q.models import Schedule
 from fyle_accounting_mappings.models import MappingSetting
 from apps.fyle.enums import FyleAttributeEnum
 from apps.mappings.constants import SYNC_METHODS
-from apps.mappings.helpers import is_auto_sync_allowed
 from fyle_integrations_imports.dataclasses import TaskSetting
 from fyle_integrations_imports.queues import chain_import_fields_to_fyle
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
@@ -48,7 +47,6 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         workspace_id=workspace_id
     )
 
-    # import_vendors_as_merchants is not used in xero, placeholder to avoid KeyError
     task_settings: TaskSetting = {
         'import_tax': None,
         'import_vendors_as_merchants': None,
@@ -84,11 +82,11 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
         }
 
     if workspace_general_settings.import_suppliers_as_merchants:
-        task_settings['custom_properties'] = {
-            'func': 'apps.mappings.tasks.auto_create_suppliers_as_merchants',
-            'args': {
-                'workspace_id': workspace_id
-            }
+        task_settings['import_vendors_as_merchants'] = {
+            'destination_field': 'SUPPLIER',
+            'destination_sync_methods': [SYNC_METHODS['SUPPLIER']],
+            'is_auto_sync_enabled': True,
+            'is_3d_mapping': False,
         }
 
     if mapping_settings:
@@ -100,7 +98,7 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
                         'destination_field': mapping_setting.destination_field,
                         'is_custom': mapping_setting.is_custom,
                         'destination_sync_methods': [SYNC_METHODS.get(mapping_setting.destination_field.upper(), 'tracking_categories')],
-                        'is_auto_sync_enabled': is_auto_sync_allowed(workspace_general_settings, mapping_setting)
+                        'is_auto_sync_enabled': True
                     }
                 )
 
