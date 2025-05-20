@@ -1,6 +1,6 @@
 import logging
 from typing import List
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from fyle_accounting_mappings.models import Mapping
 from fyle_integrations_platform_connector import PlatformConnector
@@ -10,7 +10,6 @@ from apps.mappings.exceptions import handle_import_exceptions
 from apps.tasks.models import Error
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
-from fyle_integrations_imports.models import ImportLog
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
