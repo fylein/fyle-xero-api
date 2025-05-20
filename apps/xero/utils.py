@@ -141,9 +141,11 @@ class XeroConnector:
 
         updated_at = get_last_synced_at(self.workspace_id, "SUPPLIER")
 
+        includeArchived = True if updated_at else False
+
         params = {
             'where': 'IsSupplier=true',
-            'includeArchived': 'true'
+            'includeArchived': includeArchived
         }
 
         supplier_generator = self.connection.contacts.list_all_generator(
