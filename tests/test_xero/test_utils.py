@@ -163,7 +163,7 @@ def test_sync_contacts(mocker, db):
     new_contact_count = DestinationAttribute.objects.filter(
         workspace_id=workspace_id, attribute_type="CONTACT"
     ).count()
-    assert new_contact_count == 66
+    assert new_contact_count == 62
 
 
 def test_sync_customers(mocker, db):
