@@ -173,10 +173,10 @@ class XeroConnector:
                 )
 
             DestinationAttribute.bulk_create_or_update_destination_attributes(
-                supplier_generator, "SUPPLIER", self.workspace_id, True,
+                supplier_attributes, "SUPPLIER", self.workspace_id, True,
                 skip_deletion=self.is_duplicate_deletion_skipped(attribute_type='SUPPLIER'),
                 app_name=get_app_name(),
-                attribute_disable_callback_path=self.get_attribute_disable_callback_path(attribute_type='CONTACT'),
+                attribute_disable_callback_path=self.get_attribute_disable_callback_path(attribute_type='SUPPLIER'),
                 is_import_to_fyle_enabled=self.is_import_enabled(attribute_type='SUPPLIER')
             )
             sleep(1)
