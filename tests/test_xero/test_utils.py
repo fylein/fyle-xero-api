@@ -479,7 +479,7 @@ def test_is_duplicate_deletion_skipped(db):
     workspace_id = 1
     xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
     xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
-    
+
     # Test for attribute types that should not skip deletion
     assert xero_connection.is_duplicate_deletion_skipped('ACCOUNT') == False
     assert xero_connection.is_duplicate_deletion_skipped('SUPPLIER') == False
@@ -487,7 +487,7 @@ def test_is_duplicate_deletion_skipped(db):
     assert xero_connection.is_duplicate_deletion_skipped('CUSTOMER') == False
     assert xero_connection.is_duplicate_deletion_skipped('CONTACT') == False
     assert xero_connection.is_duplicate_deletion_skipped('TRACKING_CATEGORY', is_tracking_category=True) == False
-    
+
     # Test for attribute types that should skip deletion
     assert xero_connection.is_duplicate_deletion_skipped('OTHER') == True
 
