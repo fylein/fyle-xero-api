@@ -121,7 +121,7 @@ class XeroConnector:
         :param attribute_type: Type of the attribute
         :return: attribute disable callback path or none
         """
-        if attribute_type in ['ACCOUNT', 'VENDOR']:
+        if attribute_type in ['ACCOUNT', 'SUPPLIER']:
             return AttributeDisableCallbackPath.get(attribute_type)
 
         mapping_setting = MappingSetting.objects.filter(
