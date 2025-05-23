@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.12 (Debian 15.12-1.pgdg120+1)
--- Dumped by pg_dump version 15.12 (Debian 15.12-0+deb12u2)
+-- Dumped from database version 15.13 (Debian 15.13-1.pgdg120+1)
+-- Dumped by pg_dump version 15.13 (Debian 15.13-0+deb12u1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2244,7 +2244,8 @@ CREATE TABLE public.failed_events (
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     error_traceback text,
-    workspace_id integer
+    workspace_id integer,
+    is_resolved boolean NOT NULL
 );
 
 
@@ -3975,6 +3976,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 182	tasks	0013_error_mapping_error_expense_group_ids	2025-04-11 11:26:27.286859+00
 183	workspaces	0044_workspacegeneralsettings_skip_accounting_export_summary_post	2025-04-23 17:31:15.25255+00
 184	workspaces	0045_workspaceschedule_is_real_time_export_enabled	2025-05-12 10:38:02.430836+00
+185	rabbitmq	0004_failedevent_is_resolved	2025-05-22 15:48:58.644293+00
 \.
 
 
@@ -6233,7 +6235,7 @@ COPY public.expenses (id, employee_email, category, sub_category, project, expen
 -- Data for Name: failed_events; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.failed_events (id, routing_key, payload, created_at, updated_at, error_traceback, workspace_id) FROM stdin;
+COPY public.failed_events (id, routing_key, payload, created_at, updated_at, error_traceback, workspace_id, is_resolved) FROM stdin;
 \.
 
 
@@ -6528,7 +6530,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 41, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 184, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 185, true);
 
 
 --

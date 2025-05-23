@@ -3,10 +3,11 @@ import json
 import logging
 from datetime import datetime, timedelta
 from time import sleep
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from apps.workspaces.helpers import get_app_name
 import unidecode
-from fyle_accounting_mappings.models import DestinationAttribute
+from fyle_accounting_mappings.models import DestinationAttribute, MappingSetting
 from xerosdk import XeroSDK
 from xerosdk.exceptions import WrongParamsError
 
@@ -19,6 +20,14 @@ logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
 CHARTS_OF_ACCOUNTS = ["EXPENSE", "ASSET", "EQUITY", "LIABILITY", "REVENUE"]
+
+
+AttributeDisableCallbackPath = {
+    'ACCOUNT': 'fyle_integrations_imports.modules.categories.disable_categories',
+    'SUPPLIER': 'fyle_integrations_imports.modules.merchants.disable_merchants',
+    'PROJECT': 'fyle_integrations_imports.modules.projects.disable_projects',
+    'COST_CENTER': 'fyle_integrations_imports.modules.cost_centers.disable_cost_centers'
+}
 
 
 def format_updated_at(updated_at):
@@ -65,25 +74,114 @@ class XeroConnector:
         credentials_object.refresh_token = self.connection.refresh_token
         credentials_object.save()
 
-    def get_suppliers(self):
+    def is_duplicate_deletion_skipped(self, attribute_type: str, is_tracking_category: bool = False) -> bool:
+        """
+        Check if duplicate deletion is skipped for the attribute type
+        :param attribute_type: Type of the attribute
+        :return: Whether deletion is skipped
+        """
+        if attribute_type in [
+            'ACCOUNT', 'SUPPLIER', 'ITEM', 'CUSTOMER', 'CONTACT'
+        ] or is_tracking_category:
+            return False
+
+        return True
+
+    def is_import_enabled(self, attribute_type: str, is_tracking_category: bool = False) -> bool:
+        """
+        Check if import is enabled for the attribute type
+        :param attribute_type: Type of the attribute
+        :return: Whether import is enabled
+        """
+        is_import_to_fyle_enabled = False
+
+        configuration = WorkspaceGeneralSettings.objects.filter(workspace_id=self.workspace_id).first()
+        if not configuration:
+            return is_import_to_fyle_enabled
+
+        if attribute_type in ['ACCOUNT'] and configuration.import_categories:
+            is_import_to_fyle_enabled = True
+
+        elif attribute_type == 'SUPPLIER' and configuration.import_suppliers_as_merchants:
+            is_import_to_fyle_enabled = True
+
+        elif attribute_type == 'CUSTOMER' and configuration.import_customers:
+            is_import_to_fyle_enabled = True
+
+        elif attribute_type in ['ITEM'] or is_tracking_category:
+            mapping_setting = MappingSetting.objects.filter(workspace_id=self.workspace_id, destination_field=attribute_type).first()
+            if mapping_setting and mapping_setting.import_to_fyle:
+                is_import_to_fyle_enabled = True
+
+        return is_import_to_fyle_enabled
+
+    def get_attribute_disable_callback_path(self, attribute_type: str) -> Optional[str]:
+        """
+        Get the attribute disable callback path
+        :param attribute_type: Type of the attribute
+        :return: attribute disable callback path or none
+        """
+        if attribute_type in ['ACCOUNT', 'SUPPLIER']:
+            return AttributeDisableCallbackPath.get(attribute_type)
+
+        mapping_setting = MappingSetting.objects.filter(
+            workspace_id=self.workspace_id,
+            destination_field=attribute_type
+        ).first()
+
+        if mapping_setting and not mapping_setting.is_custom:
+            return AttributeDisableCallbackPath.get(mapping_setting.source_field)
+
+    def sync_suppliers(self):
+        """
+        Sync Suppliers
+        """
         tenant_mapping = TenantMapping.objects.get(workspace_id=self.workspace_id)
         self.connection.set_tenant_id(tenant_mapping.tenant_id)
 
+        updated_at = get_last_synced_at(self.workspace_id, "SUPPLIER")
+
+        includeArchived = True if updated_at else False
+
         params = {
             'where': 'IsSupplier=true',
-            'includeArchived': 'false',
+            'includeArchived': includeArchived
         }
 
-        suppliers_generator = self.connection.contacts.list_all_generator(**params)
-        merchant_names: List[str] = []
+        supplier_generator = self.connection.contacts.list_all_generator(
+            modified_after=updated_at, **params
+        )
 
-        for suppliers in suppliers_generator:
+        for suppliers in supplier_generator:
+            supplier_attributes = []
+
             for supplier in suppliers["Contacts"]:
-                merchant_names.append(supplier["Name"])
+                detail = {
+                    "email": supplier["EmailAddress"]
+                    if "EmailAddress" in supplier
+                    else None
+                }
+                supplier_attributes.append(
+                    {
+                        "attribute_type": "SUPPLIER",
+                        "display_name": "Supplier",
+                        "value": supplier["Name"],
+                        "destination_id": supplier["ContactID"],
+                        "detail": detail,
+                        "active": True if supplier["ContactStatus"] == "ACTIVE" else False,
+                    }
+                )
 
+            DestinationAttribute.bulk_create_or_update_destination_attributes(
+                supplier_attributes, "SUPPLIER", self.workspace_id, True,
+                skip_deletion=self.is_duplicate_deletion_skipped(attribute_type='SUPPLIER'),
+                app_name=get_app_name(),
+                attribute_disable_callback_path=self.get_attribute_disable_callback_path(attribute_type='SUPPLIER'),
+                is_import_to_fyle_enabled=self.is_import_enabled(attribute_type='SUPPLIER')
+            )
             sleep(1)
 
-        return merchant_names
+        return []
 
     def get_or_create_contact(
         self, contact_name: str, email: str = None, create: bool = False
@@ -264,7 +362,11 @@ class XeroConnector:
         for attribute_type, account_attribute in account_attributes.items():
             if account_attribute:
                 DestinationAttribute.bulk_create_or_update_destination_attributes(
-                    account_attribute, attribute_type.upper(), self.workspace_id, True
+                    account_attribute, attribute_type.upper(), self.workspace_id, True,
+                    skip_deletion=self.is_duplicate_deletion_skipped(attribute_type='ACCOUNT'),
+                    app_name=get_app_name(),
+                    attribute_disable_callback_path=self.get_attribute_disable_callback_path(attribute_type='ACCOUNT'),
+                    is_import_to_fyle_enabled=self.is_import_enabled(attribute_type='ACCOUNT')
                 )
 
         workspace.xero_accounts_last_synced_at = datetime.now()
@@ -312,7 +414,11 @@ class XeroConnector:
                 )
 
             DestinationAttribute.bulk_create_or_update_destination_attributes(
-                contact_attributes, "CONTACT", self.workspace_id, True
+                contact_attributes, "CONTACT", self.workspace_id, True,
+                skip_deletion=self.is_duplicate_deletion_skipped(attribute_type='CONTACT'),
+                app_name=get_app_name(),
+                attribute_disable_callback_path=self.get_attribute_disable_callback_path(attribute_type='CONTACT'),
+                is_import_to_fyle_enabled=self.is_import_enabled(attribute_type='CONTACT')
             )
             sleep(1)
 
@@ -353,7 +459,11 @@ class XeroConnector:
                 )
 
             DestinationAttribute.bulk_create_or_update_destination_attributes(
-                customer_attributes, "CUSTOMER", self.workspace_id, True
+                customer_attributes, "CUSTOMER", self.workspace_id, True,
+                skip_deletion=self.is_duplicate_deletion_skipped(attribute_type='CUSTOMER'),
+                app_name=get_app_name(),
+                attribute_disable_callback_path=self.get_attribute_disable_callback_path(attribute_type='CUSTOMER'),
+                is_import_to_fyle_enabled=self.is_import_enabled(attribute_type='CUSTOMER')
             )
             sleep(1)
 
@@ -397,6 +507,10 @@ class XeroConnector:
                 tracking_category["Name"].upper().replace(" ", "_"),
                 self.workspace_id,
                 True,
+                skip_deletion=self.is_duplicate_deletion_skipped(attribute_type=tracking_category["Name"].upper().replace(" ", "_"), is_tracking_category=True),
+                app_name=get_app_name(),
+                attribute_disable_callback_path=self.get_attribute_disable_callback_path(attribute_type=tracking_category["Name"].upper().replace(" ", "_")),
+                is_import_to_fyle_enabled=self.is_import_enabled(attribute_type=tracking_category["Name"].upper().replace(" ", "_"), is_tracking_category=True)
             )
 
         return []
@@ -426,8 +540,13 @@ class XeroConnector:
                 }
             )
         DestinationAttribute.bulk_create_or_update_destination_attributes(
-            item_attributes, "ITEM", self.workspace_id, True
+            item_attributes, "ITEM", self.workspace_id, True,
+            skip_deletion=self.is_duplicate_deletion_skipped(attribute_type='ITEM'),
+            app_name=get_app_name(),
+            attribute_disable_callback_path=self.get_attribute_disable_callback_path(attribute_type="ITEM"),
+            is_import_to_fyle_enabled=self.is_import_enabled(attribute_type="ITEM")
         )
+
         return []
 
     def create_contact_destination_attribute(self, contact):

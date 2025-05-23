@@ -27,7 +27,8 @@ def get_expense_field(workspace_id):
         FyleAttributeEnum.PROJECT,
         FyleAttributeEnum.COST_CENTER,
         FyleAttributeEnum.CORPORATE_CARD,
-        FyleAttributeEnum.TAX_GROUP
+        FyleAttributeEnum.TAX_GROUP,
+        FyleAttributeEnum.MERCHANT
     ]
     attributes = (
         ExpenseAttribute.objects.filter(
