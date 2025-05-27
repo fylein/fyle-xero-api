@@ -153,7 +153,8 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             if skip_export:
                 skip_reason = f"{error.repetition_count} repeated attempts" if error else "mapping errors"
                 logger.info(f"Skipping expense group {expense_group.id} due to {skip_reason}")
-                post_accounting_export_summary_for_skipped_exports(expense_group, workspace_id, is_mapping_error=False if error else True)
+                if triggered_by == ExpenseImportSourceEnum.DIRECT_EXPORT:
+                    post_accounting_export_summary_for_skipped_exports(expense_group, workspace_id, is_mapping_error=False if error else True)
                 continue
 
             task_log, _ = TaskLog.objects.get_or_create(
@@ -231,7 +232,8 @@ def schedule_bank_transaction_creation(
             if skip_export:
                 skip_reason = f"{error.repetition_count} repeated attempts" if error else "mapping errors"
                 logger.info(f"Skipping expense group {expense_group.id} due to {skip_reason}")
-                post_accounting_export_summary_for_skipped_exports(expense_group, workspace_id, is_mapping_error=False if error else True)
+                if triggered_by == ExpenseImportSourceEnum.DIRECT_EXPORT:
+                    post_accounting_export_summary_for_skipped_exports(expense_group, workspace_id, is_mapping_error=False if error else True)
                 continue
 
             task_log, _ = TaskLog.objects.get_or_create(
