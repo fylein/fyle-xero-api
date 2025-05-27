@@ -5,7 +5,6 @@ from typing import Dict
 import jwt
 import requests
 from django.conf import settings
-from django_q.models import Schedule
 from future.moves.urllib.parse import urlencode
 from fyle_accounting_mappings.models import MappingSetting
 from xerosdk import InternalServerError, InvalidTokenError, XeroSDK
@@ -296,10 +295,3 @@ def schedule_or_delete_import_supplier_schedule(
     if not workspace_general_settings.corporate_credit_card_expenses_object:
         workspace_general_settings.import_suppliers_as_merchants = False
         workspace_general_settings.save()
-        schedule: Schedule = Schedule.objects.filter(
-            func="apps.mappings.tasks.auto_create_suppliers_as_merchants",
-            args="{}".format(workspace_general_settings.workspace_id),
-        ).first()
-
-        if schedule:
-            schedule.delete()
