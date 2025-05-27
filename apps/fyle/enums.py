@@ -33,6 +33,9 @@ class FyleAttributeEnum:
     EMPLOYEE = 'EMPLOYEE'
     EMPLOYEE_DISPLAY = 'Employee'
 
+    MERCHANT = 'MERCHANT'
+    MERCHANT_DISPLAY = 'Merchant'
+
 
 class ExpenseStateEnum:
     """
