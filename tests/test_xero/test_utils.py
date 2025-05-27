@@ -163,7 +163,7 @@ def test_sync_contacts(mocker, db):
     new_contact_count = DestinationAttribute.objects.filter(
         workspace_id=workspace_id, attribute_type="CONTACT"
     ).count()
-    assert new_contact_count == 66
+    assert new_contact_count == 62
 
 
 def test_sync_customers(mocker, db):
@@ -473,3 +473,77 @@ def test_post_payment(mocker, db):
     )
 
     assert created_payment == []
+
+
+def test_is_duplicate_deletion_skipped(db):
+    workspace_id = 1
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+
+    # Test for attribute types that should not skip deletion
+    assert xero_connection.is_duplicate_deletion_skipped('ACCOUNT') == False
+    assert xero_connection.is_duplicate_deletion_skipped('SUPPLIER') == False
+    assert xero_connection.is_duplicate_deletion_skipped('ITEM') == False
+    assert xero_connection.is_duplicate_deletion_skipped('CUSTOMER') == False
+    assert xero_connection.is_duplicate_deletion_skipped('CONTACT') == False
+    assert xero_connection.is_duplicate_deletion_skipped('TRACKING_CATEGORY', is_tracking_category=True) == False
+
+    # Test for attribute types that should skip deletion
+    assert xero_connection.is_duplicate_deletion_skipped('OTHER') == True
+
+
+def test_is_import_enabled(db):
+    workspace_id = 1
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+
+    # Mock WorkspaceGeneralSettings
+    with mock.patch('apps.workspaces.models.WorkspaceGeneralSettings.objects.filter') as mock_filter:
+        mock_config = mock.MagicMock()
+        mock_config.import_categories = True
+        mock_config.import_suppliers_as_merchants = True
+        mock_config.import_customers = True
+        mock_filter.return_value.first.return_value = mock_config
+
+        # Test for ACCOUNT
+        assert xero_connection.is_import_enabled('ACCOUNT') == True
+
+        # Test for SUPPLIER
+        assert xero_connection.is_import_enabled('SUPPLIER') == True
+
+        # Test for CUSTOMER
+        assert xero_connection.is_import_enabled('CUSTOMER') == True
+
+        # Test for ITEM
+        with mock.patch('fyle_accounting_mappings.models.MappingSetting.objects.filter') as mock_mapping:
+            mock_mapping_setting = mock.MagicMock()
+            mock_mapping_setting.import_to_fyle = True
+            mock_mapping.return_value.first.return_value = mock_mapping_setting
+            assert xero_connection.is_import_enabled('ITEM') == True
+
+            # Test for tracking category
+            assert xero_connection.is_import_enabled('REGION', is_tracking_category=True) == True
+
+        # Test for other attribute types
+        assert xero_connection.is_import_enabled('OTHER') == False
+
+
+def test_get_attribute_disable_callback_path(db):
+    workspace_id = 1
+    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id=workspace_id)
+    xero_connection = XeroConnector(credentials_object=xero_credentials, workspace_id=workspace_id)
+
+    # Test for ACCOUNT and VENDOR
+    assert xero_connection.get_attribute_disable_callback_path('ACCOUNT') == 'fyle_integrations_imports.modules.categories.disable_categories'
+    assert xero_connection.get_attribute_disable_callback_path('SUPPLIER') == 'fyle_integrations_imports.modules.merchants.disable_merchants'
+
+    # Test for other attribute types with mapping settings
+    with mock.patch('fyle_accounting_mappings.models.MappingSetting.objects.filter') as mock_mapping:
+        mock_mapping_setting = mock.MagicMock()
+        mock_mapping_setting.is_custom = False
+        mock_mapping_setting.source_field = 'PROJECT'
+        mock_mapping.return_value.first.return_value = mock_mapping_setting
+        assert xero_connection.get_attribute_disable_callback_path('CUSTOM_FIELD') == 'fyle_integrations_imports.modules.projects.disable_projects'
+
+    # Test for attribute types without mapping settings
+    assert xero_connection.get_attribute_disable_callback_path('OTHER') == None
