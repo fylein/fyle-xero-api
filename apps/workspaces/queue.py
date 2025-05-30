@@ -37,6 +37,8 @@ def schedule_sync(
     is_real_time_export_enabled: bool,
 ):
     ws_schedule, _ = WorkspaceSchedule.objects.get_or_create(workspace_id=workspace_id)
+    ws_schedule.is_real_time_export_enabled = is_real_time_export_enabled
+    ws_schedule.enabled = schedule_enabled
 
     schedule_email_notification(
         workspace_id=workspace_id, schedule_enabled=schedule_enabled, hours=hours
@@ -80,5 +82,8 @@ def schedule_sync(
         ws_schedule.schedule = None
         ws_schedule.save()
         schedule.delete()
+
+    else:
+        ws_schedule.save()
 
     return ws_schedule
