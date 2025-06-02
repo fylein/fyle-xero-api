@@ -1027,7 +1027,7 @@ def test__validate_expense_group(mocker, db):
         logger.info("Mappings are missing")
 
 
-def test_skipping_schedule_bills_creation(db):
+def test_skipping_schedule_bills_creation(db, create_last_export_detail):
     workspace_id = 1
 
     expense_group = ExpenseGroup.objects.get(id=4)
@@ -1070,7 +1070,7 @@ def test_skipping_schedule_bills_creation(db):
     assert task_log.type == 'CREATING_BILL'
 
 
-def test_skipping_schedule_bank_transaction_creation(db):
+def test_skipping_schedule_bank_transaction_creation(db, create_last_export_detail):
     workspace_id = 1
 
     expense_group = ExpenseGroup.objects.get(id=5)
