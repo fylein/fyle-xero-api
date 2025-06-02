@@ -15,6 +15,7 @@ from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.workspaces.helpers import invalidate_xero_credentials
 from apps.workspaces.models import XeroCredentials
+from apps.xero.exceptions import update_last_export_details
 from apps.xero.utils import XeroConnector
 
 logger = logging.getLogger(__name__)
@@ -126,6 +127,26 @@ def __create_chain_and_run(workspace_id: int, xero_connection, chain_tasks: List
     chain.run()
 
 
+def handle_skipped_exports(expense_groups: List[ExpenseGroup], index: int, skip_export_count: int, error: Error = None, expense_group: ExpenseGroup = None, triggered_by: ExpenseImportSourceEnum = None):
+    """
+    Handle common export scheduling logic for skip tracking, logging, posting skipped export summaries, and last export updates.
+    """
+    total_count = expense_groups.count()
+    last_export = (index + 1) == total_count
+
+    skip_reason = f"{error.repetition_count} repeated attempts" if error else "mapping errors"
+    logger.info(f"Skipping expense group {expense_group.id} due to {skip_reason}")
+    skip_export_count += 1
+    if triggered_by == ExpenseImportSourceEnum.DIRECT_EXPORT:
+        post_accounting_export_summary_for_skipped_exports(
+            expense_group, expense_group.workspace_id, is_mapping_error=False if error else True
+        )
+    if last_export and skip_export_count == total_count:
+        update_last_export_details(expense_group.workspace_id)
+
+    return skip_export_count
+
+
 def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum) -> list:
     """
     Schedule bills creation
@@ -146,15 +167,16 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
         errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
 
         chain_tasks = []
+        skip_export_count = 0
 
         for index, expense_group in enumerate(expense_groups):
             error = errors.filter(workspace_id=workspace_id, expense_group=expense_group, is_resolved=False).first()
             skip_export = validate_failing_export(is_auto_export, interval_hours, error, expense_group)
             if skip_export:
-                skip_reason = f"{error.repetition_count} repeated attempts" if error else "mapping errors"
-                logger.info(f"Skipping expense group {expense_group.id} due to {skip_reason}")
-                if triggered_by == ExpenseImportSourceEnum.DIRECT_EXPORT:
-                    post_accounting_export_summary_for_skipped_exports(expense_group, workspace_id, is_mapping_error=False if error else True)
+                skip_export_count = handle_skipped_exports(
+                    expense_groups=expense_groups, index=index, skip_export_count=skip_export_count,
+                    error=error, expense_group=expense_group, triggered_by=triggered_by
+                )
                 continue
 
             task_log, _ = TaskLog.objects.get_or_create(
@@ -170,15 +192,11 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
 
                 task_log.save()
 
-            last_export = False
-            if expense_groups.count() == index + 1:
-                last_export = True
-
             chain_tasks.append({
                 'target': 'apps.xero.tasks.create_bill',
                 'expense_group_id': expense_group.id,
                 'task_log_id': task_log.id,
-                'last_export': last_export})
+                'last_export': (expense_groups.count() == index + 1)})
 
         if len(chain_tasks) > 0:
             try:
@@ -225,15 +243,16 @@ def schedule_bank_transaction_creation(
         errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
 
         chain_tasks = []
+        skip_export_count = 0
 
         for index, expense_group in enumerate(expense_groups):
             error = errors.filter(workspace_id=workspace_id, expense_group=expense_group, is_resolved=False).first()
             skip_export = validate_failing_export(is_auto_export, interval_hours, error, expense_group)
             if skip_export:
-                skip_reason = f"{error.repetition_count} repeated attempts" if error else "mapping errors"
-                logger.info(f"Skipping expense group {expense_group.id} due to {skip_reason}")
-                if triggered_by == ExpenseImportSourceEnum.DIRECT_EXPORT:
-                    post_accounting_export_summary_for_skipped_exports(expense_group, workspace_id, is_mapping_error=False if error else True)
+                skip_export_count = handle_skipped_exports(
+                    expense_groups=expense_groups, index=index, skip_export_count=skip_export_count,
+                    error=error, expense_group=expense_group, triggered_by=triggered_by
+                )
                 continue
 
             task_log, _ = TaskLog.objects.get_or_create(
@@ -249,15 +268,11 @@ def schedule_bank_transaction_creation(
 
                 task_log.save()
 
-            last_export = False
-            if expense_groups.count() == index + 1:
-                last_export = True
-
             chain_tasks.append({
                 'target': 'apps.xero.tasks.create_bank_transaction',
                 'expense_group_id': expense_group.id,
                 'task_log_id': task_log.id,
-                'last_export': last_export})
+                'last_export': (expense_groups.count() == index + 1)})
 
         if len(chain_tasks) > 0:
             try:

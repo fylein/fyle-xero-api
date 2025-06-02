@@ -15,6 +15,7 @@ from apps.workspaces.models import LastExportDetail, WorkspaceGeneralSettings, X
 from apps.xero.exceptions import update_last_export_details
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem
 from apps.xero.queue import (
+    handle_skipped_exports,
     schedule_bank_transaction_creation,
     schedule_bills_creation,
     schedule_payment_creation,
@@ -1027,7 +1028,7 @@ def test__validate_expense_group(mocker, db):
         logger.info("Mappings are missing")
 
 
-def test_skipping_schedule_bills_creation(db):
+def test_skipping_schedule_bills_creation(db, create_last_export_detail):
     workspace_id = 1
 
     expense_group = ExpenseGroup.objects.get(id=4)
@@ -1070,7 +1071,7 @@ def test_skipping_schedule_bills_creation(db):
     assert task_log.type == 'CREATING_BILL'
 
 
-def test_skipping_schedule_bank_transaction_creation(db):
+def test_skipping_schedule_bank_transaction_creation(db, create_last_export_detail):
     workspace_id = 1
 
     expense_group = ExpenseGroup.objects.get(id=5)
@@ -1296,3 +1297,61 @@ def test_get_or_create_error_with_expense_group_duplicate_expense_group(db):
     assert error2.id == error1.id
     assert len(error2.mapping_error_expense_group_ids) == 1
     assert error2.mapping_error_expense_group_ids == [expense_group.id]
+
+
+def test_handle_skipped_exports(mocker, db, create_last_export_detail):
+    mock_post_summary = mocker.patch('apps.xero.queue.post_accounting_export_summary_for_skipped_exports', return_value=None)
+    mock_update_last_export = mocker.patch('apps.xero.queue.update_last_export_details')
+    mock_logger = mocker.patch('apps.xero.queue.logger')
+    mocker.patch('apps.workspaces.helpers.patch_integration_settings', return_value=None)
+    mocker.patch('apps.fyle.actions.post_accounting_export_summary', return_value=None)
+
+    # Create or get two expense groups
+    eg1 = ExpenseGroup.objects.create(workspace_id=1, fund_source='PERSONAL')
+    eg2 = ExpenseGroup.objects.create(workspace_id=1, fund_source='PERSONAL')
+    expense_groups = ExpenseGroup.objects.filter(id__in=[eg1.id, eg2.id])
+
+    # Create a dummy error
+    error = Error.objects.create(
+        workspace_id=1,
+        type='EMPLOYEE_MAPPING',
+        expense_group=eg1,
+        repetition_count=5,
+        is_resolved=False,
+        error_title='Test Error',
+        error_detail='Test error detail',
+    )
+
+    # Case 1: triggered_by is DIRECT_EXPORT, not last export
+    skip_export_count = 0
+    result = handle_skipped_exports(
+        expense_groups=expense_groups,
+        index=0,
+        skip_export_count=skip_export_count,
+        error=error,
+        expense_group=eg1,
+        triggered_by=ExpenseImportSourceEnum.DIRECT_EXPORT
+    )
+    assert result == 1
+    mock_post_summary.assert_called_once_with(eg1, eg1.workspace_id, is_mapping_error=False)
+    mock_update_last_export.assert_not_called()
+    mock_logger.info.assert_called()
+
+    mock_post_summary.reset_mock()
+    mock_update_last_export.reset_mock()
+    mock_logger.reset_mock()
+
+    # Case 2: last export, skip_export_count == total_count-1, should call update_last_export_details
+    skip_export_count = 1
+    result = handle_skipped_exports(
+        expense_groups=expense_groups,
+        index=1,
+        skip_export_count=skip_export_count,
+        error=None,
+        expense_group=eg2,
+        triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
+    )
+    assert result == 2
+    mock_post_summary.assert_not_called()
+    mock_update_last_export.assert_called_once_with(eg2.workspace_id)
+    mock_logger.info.assert_called()
