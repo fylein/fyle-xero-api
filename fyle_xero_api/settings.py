@@ -131,7 +131,6 @@ Q_CLUSTER = {
     "orm": "default",
     "ack_failures": True,
     "poll": 5,
-    "max_attempts": 1,
     "attempt_count": 1,
     # The number of tasks a worker will process before recycling.
     # Useful to release memory resources on a regular basis.
