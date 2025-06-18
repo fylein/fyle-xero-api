@@ -8,17 +8,14 @@ from django_q.tasks import Chain
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_library.rabbitmq.helpers import TaskChainExecutor
 from fyle_accounting_library.rabbitmq.data_class import Task
-from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
 
 from apps.fyle.actions import post_accounting_export_summary_for_skipped_exports, sync_fyle_dimension
 from apps.fyle.models import ExpenseGroup
 from apps.mappings.models import GeneralMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
-from apps.workspaces.helpers import invalidate_xero_credentials
-from apps.workspaces.models import XeroCredentials
 from apps.xero.exceptions import update_last_export_details
-from apps.xero.utils import XeroConnector
+
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
