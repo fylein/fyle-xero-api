@@ -6,9 +6,11 @@ from django.db.models import Q
 from django_q.models import Schedule
 from django_q.tasks import Chain
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
+from fyle_accounting_library.rabbitmq.helpers import TaskChainExecutor
+from fyle_accounting_library.rabbitmq.data_class import Task
 from xerosdk.exceptions import InvalidGrant, UnsuccessfulAuthentication
 
-from apps.fyle.actions import post_accounting_export_summary_for_skipped_exports
+from apps.fyle.actions import post_accounting_export_summary_for_skipped_exports, sync_fyle_dimension
 from apps.fyle.models import ExpenseGroup
 from apps.mappings.models import GeneralMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
@@ -110,21 +112,28 @@ def schedule_reimbursements_sync(sync_xero_to_fyle_payments, workspace_id):
             schedule.delete()
 
 
-def __create_chain_and_run(workspace_id: int, xero_connection, chain_tasks: List[dict], is_auto_export: bool) -> None:
+def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], is_auto_export: bool, run_in_rabbitmq_worker: bool) -> None:
     """
     Create chain and run
     :param workspace_id: workspace id
     :param xero_connection: Xero connection
-    :param chain_tasks: List of chain tasks
+    :param chain_tasks: List of Task objects
     :return: None
     """
-    chain = Chain()
-    chain.append("apps.fyle.tasks.sync_dimensions", workspace_id, True)
+    if run_in_rabbitmq_worker:
+        # This function checks intervals and triggers sync if needed, syncing dimension for all exports is overkill
+        sync_fyle_dimension(workspace_id)
 
-    for task in chain_tasks:
-        chain.append(task['target'], task['expense_group_id'], task['task_log_id'], xero_connection, task['last_export'], is_auto_export)
+        task_executor = TaskChainExecutor()
+        task_executor.run(chain_tasks, workspace_id)
+    else:
+        chain = Chain()
+        chain.append('apps.fyle.actions.sync_fyle_dimension', workspace_id)
 
-    chain.run()
+        for task in chain_tasks:
+            chain.append(task.target, *task.args)
+
+        chain.run()
 
 
 def handle_skipped_exports(expense_groups: List[ExpenseGroup], index: int, skip_export_count: int, error: Error = None, expense_group: ExpenseGroup = None, triggered_by: ExpenseImportSourceEnum = None):
@@ -147,7 +156,7 @@ def handle_skipped_exports(expense_groups: List[ExpenseGroup], index: int, skip_
     return skip_export_count
 
 
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum) -> list:
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum, run_in_rabbitmq_worker: bool) -> list:
     """
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
@@ -192,37 +201,17 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
 
                 task_log.save()
 
-            chain_tasks.append({
-                'target': 'apps.xero.tasks.create_bill',
-                'expense_group_id': expense_group.id,
-                'task_log_id': task_log.id,
-                'last_export': (expense_groups.count() == index + 1)})
+            chain_tasks.append(Task(
+                target='apps.xero.tasks.create_bill',
+                args=[expense_group.id, task_log.id, (expense_groups.count() == index + 1), is_auto_export]
+            ))
 
         if len(chain_tasks) > 0:
-            try:
-                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-                xero_connection = XeroConnector(xero_credentials, workspace_id)
-                __create_chain_and_run(workspace_id, xero_connection, chain_tasks, is_auto_export)
-            except (UnsuccessfulAuthentication, InvalidGrant, XeroCredentials.DoesNotExist):
-                invalidate_xero_credentials(workspace_id)
-                xero_connection = None
-                for task in chain_tasks:
-                    task_log = TaskLog.objects.get(id=task['task_log_id'])
-                    task_log.status = TaskLogStatusEnum.FAILED
-                    task_log.xero_errors = [{
-                        "error": {
-                            "Elements": [{
-                                "ValidationErrors": [{
-                                    "Message": "Xero account got disconnected, please re-connect to Xero again"
-                                }]
-                            }]
-                        }
-                    }]
-                    task_log.save()
+            __create_chain_and_run(workspace_id, chain_tasks, is_auto_export, run_in_rabbitmq_worker)
 
 
 def schedule_bank_transaction_creation(
-    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum
+    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum, run_in_rabbitmq_worker: bool
 ) -> list:
     """
     Schedule bank transaction creation
@@ -268,30 +257,10 @@ def schedule_bank_transaction_creation(
 
                 task_log.save()
 
-            chain_tasks.append({
-                'target': 'apps.xero.tasks.create_bank_transaction',
-                'expense_group_id': expense_group.id,
-                'task_log_id': task_log.id,
-                'last_export': (expense_groups.count() == index + 1)})
+            chain_tasks.append(Task(
+                target='apps.xero.tasks.create_bank_transaction',
+                args=[expense_group.id, task_log.id, (expense_groups.count() == index + 1), is_auto_export]
+            ))
 
         if len(chain_tasks) > 0:
-            try:
-                xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-                xero_connection = XeroConnector(xero_credentials, workspace_id)
-                __create_chain_and_run(workspace_id, xero_connection, chain_tasks, is_auto_export)
-            except (UnsuccessfulAuthentication, InvalidGrant, XeroCredentials.DoesNotExist):
-                invalidate_xero_credentials(workspace_id)
-                xero_connection = None
-                for task in chain_tasks:
-                    task_log = TaskLog.objects.get(id=task['task_log_id'])
-                    task_log.status = TaskLogStatusEnum.FAILED
-                    task_log.xero_errors = [{
-                        "error": {
-                            "Elements": [{
-                                "ValidationErrors": [{
-                                    "Message": "Xero account got disconnected, please re-connect to Xero again"
-                                }]
-                            }]
-                        }
-                    }]
-                    task_log.save()
+            __create_chain_and_run(workspace_id, chain_tasks, is_auto_export, run_in_rabbitmq_worker)
