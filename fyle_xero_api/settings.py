@@ -120,8 +120,8 @@ Q_CLUSTER = {
     "name": "fyle_xero_api",
     # The number of tasks will be stored in django q tasks
     "save_limit": 100000,
-    "retry": 86400,
-    "timeout": None,
+    "retry": 2592000,
+    "timeout": 86400,
     "catch_up": False,
     "workers": 4,
     # How many tasks are kept in memory by a single cluster.
