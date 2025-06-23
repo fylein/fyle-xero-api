@@ -248,7 +248,7 @@ def group_expenses_and_save(
     )
 
     if filter_credit_expenses:
-        negative_expense_ids = [e.id for e in expense_objects if e.amount < 0 and not e.is_skipped]
+        negative_expense_ids = [e.id for e in expense_objects if e.amount < 0]
         if negative_expense_ids:
             expense_objects = [e for e in expense_objects if e.id not in negative_expense_ids]
             skip_expenses_and_post_accounting_export_summary(negative_expense_ids, workspace)

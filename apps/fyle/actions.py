@@ -101,7 +101,7 @@ def __bulk_update_expenses(expense_to_be_updated: List[Expense]) -> None:
         current_time = datetime.now(timezone.utc)
         for expense in expense_to_be_updated:
             expense.updated_at = current_time
-        Expense.objects.bulk_update(expense_to_be_updated, ['is_skipped', 'accounting_export_summary', 'updated_at'], batch_size=50)
+        Expense.objects.bulk_update(expense_to_be_updated, ['accounting_export_summary', 'updated_at'], batch_size=50)
 
 
 def post_accounting_export_summary(workspace_id: int, expense_ids: List = None, fund_source: str = None, is_failed: bool = False) -> None:
@@ -276,7 +276,6 @@ def mark_expenses_as_skipped(final_query: Q, expenses_object_ids: List, workspac
         final_query,
         id__in=expenses_object_ids,
         org_id=workspace.fyle_org_id,
-        is_skipped=False
     )
     skipped_expenses_list = list(expenses_to_be_skipped)
     expense_to_be_updated = []
@@ -284,7 +283,6 @@ def mark_expenses_as_skipped(final_query: Q, expenses_object_ids: List, workspac
         expense_to_be_updated.append(
             Expense(
                 id=expense.id,
-                is_skipped=True,
                 accounting_export_summary=get_updated_accounting_export_summary(
                     expense.expense_id,
                     'SKIPPED',
