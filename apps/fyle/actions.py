@@ -101,7 +101,7 @@ def __bulk_update_expenses(expense_to_be_updated: List[Expense]) -> None:
         current_time = datetime.now(timezone.utc)
         for expense in expense_to_be_updated:
             expense.updated_at = current_time
-        Expense.objects.bulk_update(expense_to_be_updated, ['accounting_export_summary', 'updated_at'], batch_size=50)
+        Expense.objects.bulk_update(expense_to_be_updated, ['is_skipped', 'accounting_export_summary', 'updated_at'], batch_size=50)
 
 
 def post_accounting_export_summary(workspace_id: int, expense_ids: List = None, fund_source: str = None, is_failed: bool = False) -> None:
@@ -262,6 +262,43 @@ def update_complete_expenses(exported_expenses: List[Expense], url: str) -> None
         )
 
     __bulk_update_expenses(expense_to_be_updated)
+
+
+def mark_expenses_as_skipped(final_query: Q, expenses_object_ids: List, workspace: Workspace) -> List[Expense]:
+    """
+    Mark expenses as skipped in bulk
+    :param final_query: final query
+    :param expenses_object_ids: expenses object ids
+    :param workspace: workspace object
+    :return: List of skipped expense objects
+    """
+    expenses_to_be_skipped = Expense.objects.filter(
+        final_query,
+        id__in=expenses_object_ids,
+        org_id=workspace.fyle_org_id,
+        is_skipped=False
+    )
+    skipped_expenses_list = list(expenses_to_be_skipped)
+    expense_to_be_updated = []
+    for expense in expenses_to_be_skipped:
+        expense_to_be_updated.append(
+            Expense(
+                id=expense.id,
+                is_skipped=True,
+                accounting_export_summary=get_updated_accounting_export_summary(
+                    expense.expense_id,
+                    'SKIPPED',
+                    None,
+                    '{}/main/dashboard'.format(settings.XERO_INTEGRATION_APP_URL),
+                    False
+                )
+            )
+        )
+
+    if expense_to_be_updated:
+        __bulk_update_expenses(expense_to_be_updated)
+
+    return skipped_expenses_list
 
 
 def __handle_post_accounting_export_summary_exception(exception: Exception, workspace_id: int) -> None:
