@@ -8,7 +8,7 @@ import requests
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
-from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
+from apps.fyle.models import Expense, ExpenseGroup
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 
@@ -70,19 +70,6 @@ def get_source_account_type(fund_source: List[str]) -> List[str]:
         source_account_type.append(SOURCE_ACCOUNT_MAP[source])
 
     return source_account_type
-
-
-def get_filter_credit_expenses(expense_group_settings: ExpenseGroupSettings) -> bool:
-    """
-    Get filter credit expenses
-    :param expense_group_settings: expense group settings
-    :return: filter credit expenses
-    """
-    filter_credit_expenses = True
-    if expense_group_settings.import_card_credits:
-        filter_credit_expenses = False
-
-    return filter_credit_expenses
 
 
 def get_fund_source(workspace_id: int) -> List[str]:

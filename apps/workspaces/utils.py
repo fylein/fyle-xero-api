@@ -202,7 +202,6 @@ def create_or_update_general_settings(general_settings_payload: Dict, workspace_
             )
             expense_group_settings.ccc_export_date_type = "spent_at"
 
-        expense_group_settings.import_card_credits = True
         expense_group_settings.save()
 
     schedule_payment_creation(general_settings.sync_fyle_to_xero_payments, workspace_id)

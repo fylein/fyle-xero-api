@@ -136,8 +136,6 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
             user=user
         )
 
-        expense_group_settings["import_card_credits"] = False
-
         if (
             workspace_general_settings["corporate_credit_card_expenses_object"]
             == "BANK TRANSACTION"
@@ -152,7 +150,6 @@ class ExportSettingsSerializer(serializers.ModelSerializer):
                 },
                 user=user
             )
-            expense_group_settings["import_card_credits"] = True
 
         ExportSettingsTrigger.run_workspace_general_settings_triggers(
             workspace_general_settings_instance
