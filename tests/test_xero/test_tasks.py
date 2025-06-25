@@ -209,11 +209,6 @@ def test_post_bill_success(mocker, create_task_logs, db):
     mocker.patch("xerosdk.apis.Invoices.post", return_value=data["bill_object"])
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(
-        credentials_object=xero_credentials, workspace_id=workspace_id
-    )
-
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
     task_log.status = "READY"
     task_log.type = "CREATING_BILL"
@@ -234,7 +229,7 @@ def test_post_bill_success(mocker, create_task_logs, db):
 
     expense_group.expenses.set(expenses)
 
-    create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+    create_bill(expense_group.id, task_log.id, False, False)
 
     task_log = TaskLog.objects.get(pk=task_log.id)
     bill = Bill.objects.get(expense_group_id=expense_group.id)
@@ -262,7 +257,7 @@ def test_post_bill_success(mocker, create_task_logs, db):
 
     expense_group.expenses.set(expenses)
 
-    create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+    create_bill(expense_group.id, task_log.id, False, False)
 
     task_log = TaskLog.objects.get(pk=task_log.id)
     bill = Bill.objects.get(expense_group_id=expense_group.id)
@@ -273,11 +268,6 @@ def test_post_bill_success(mocker, create_task_logs, db):
 
 def test_create_bill_exceptions(db):
     workspace_id = 1
-
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(
-        credentials_object=xero_credentials, workspace_id=workspace_id
-    )
 
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
     task_log.status = "READY"
@@ -301,7 +291,7 @@ def test_create_bill_exceptions(db):
 
     with mock.patch("apps.xero.utils.XeroConnector.post_bill") as mock_call:
         mock_call.side_effect = XeroCredentials.DoesNotExist()
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bill(expense_group.id, task_log.id, False, False)
 
         task_log = TaskLog.objects.get(id=task_log.id)
         assert task_log.status == "FAILED"
@@ -309,38 +299,32 @@ def test_create_bill_exceptions(db):
         mock_call.side_effect = BulkError(
             msg="employess not found", response="mapping error"
         )
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bill(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = InvalidGrant(
             msg="invalid grant", response="invalid grant"
         )
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bill(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = RateLimitError(
             msg="rate limit exceeded", response="rate limit exceeded"
         )
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bill(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = NoPrivilegeError(
             msg="no privilage error", response="no privilage error"
         )
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bill(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = XeroSDKError(
             msg="wrong parameter", response="xerosdk error"
         )
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
-
-        mock_call.side_effect = Exception()
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
-
-        task_log = TaskLog.objects.get(id=task_log.id)
-        assert task_log.status == "FATAL"
+        create_bill(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = WrongParamsError(
             msg={"Message": "Invalid parametrs"}, response="Invalid params"
         )
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bill(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = WrongParamsError(
             {
@@ -396,7 +380,7 @@ def test_create_bill_exceptions(db):
                 ],
             }
         )
-        create_bill(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bill(expense_group.id, task_log.id, False, False)
 
         task_log = TaskLog.objects.get(id=task_log.id)
         assert task_log.status == "FAILED"
@@ -418,7 +402,7 @@ def test_schedule_bills_creation(db):
     task_log.save()
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, interval_hours=0, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, interval_hours=0, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
     )
 
 
@@ -437,11 +421,6 @@ def test_post_create_bank_transaction_success(mocker, db):
         "xerosdk.apis.Contacts.post", return_vaue=data["create_contact"]["Contacts"][0]
     )
     workspace_id = 1
-
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(
-        credentials_object=xero_credentials, workspace_id=workspace_id
-    )
 
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
     task_log.status = "READY"
@@ -462,7 +441,7 @@ def test_post_create_bank_transaction_success(mocker, db):
 
     expense_group.expenses.set(expenses)
 
-    create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+    create_bank_transaction(expense_group.id, task_log.id, False, False)
 
     task_log = TaskLog.objects.get(pk=task_log.id)
     bank_transaction = BankTransaction.objects.get(expense_group_id=expense_group.id)
@@ -489,7 +468,7 @@ def test_post_create_bank_transaction_success(mocker, db):
 
     expense_group.expenses.set(expenses)
 
-    create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+    create_bank_transaction(expense_group.id, task_log.id, False, False)
 
     task_log = TaskLog.objects.get(pk=task_log.id)
     bank_transaction = BankTransaction.objects.get(expense_group_id=expense_group.id)
@@ -516,17 +495,12 @@ def test_schedule_bank_transaction_creation(db):
     task_log.save()
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, interval_hours=0, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, interval_hours=0, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
     )
 
 
 def test_create_bank_transactions_exceptions(db):
     workspace_id = 1
-
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(
-        credentials_object=xero_credentials, workspace_id=workspace_id
-    )
 
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
     task_log.status = "READY"
@@ -560,7 +534,7 @@ def test_create_bank_transactions_exceptions(db):
 
     with mock.patch("apps.xero.utils.XeroConnector.post_bank_transaction") as mock_call:
         mock_call.side_effect = XeroCredentials.DoesNotExist()
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         task_log = TaskLog.objects.get(id=task_log.id)
         assert task_log.status == "FAILED"
@@ -568,35 +542,35 @@ def test_create_bank_transactions_exceptions(db):
         mock_call.side_effect = BulkError(
             msg="employess not found", response="mapping error"
         )
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = InvalidGrant(
             msg="invalid grant", response="invalid grant"
         )
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = RateLimitError(
             msg="rate limit exceeded", response="rate limit exceeded"
         )
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = NoPrivilegeError(
             msg="no privilage error", response="no privilage error"
         )
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = XeroSDKError(
             msg="xerosdk error", response="xerosdk error"
         )
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = Exception()
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = WrongParamsError(
             msg={"Message": "Invalid parametrs"}, response="Invalid params"
         )
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         mock_call.side_effect = WrongParamsError(
             {
@@ -652,7 +626,7 @@ def test_create_bank_transactions_exceptions(db):
                 ],
             }
         )
-        create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+        create_bank_transaction(expense_group.id, task_log.id, False, False)
 
         task_log = TaskLog.objects.get(id=task_log.id)
         assert task_log.status == "FAILED"
@@ -791,11 +765,6 @@ def test_check_xero_object_status(mocker, db):
     )
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(
-        credentials_object=xero_credentials, workspace_id=workspace_id
-    )
-
     expense_group = ExpenseGroup.objects.get(id=4)
     expenses = expense_group.expenses.all()
 
@@ -814,7 +783,7 @@ def test_check_xero_object_status(mocker, db):
     task_log.expense_group = expense_group
     task_log.save()
 
-    create_bill(expense_group.id, task_log.id, xero_connection, False)
+    create_bill(expense_group.id, task_log.id, False, False)
     task_log = TaskLog.objects.get(id=task_log.id)
 
     check_xero_object_status(workspace_id)
@@ -1055,7 +1024,7 @@ def test_skipping_schedule_bills_creation(db, create_last_export_detail):
     )
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1064,7 +1033,7 @@ def test_skipping_schedule_bills_creation(db, create_last_export_detail):
     Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1098,7 +1067,7 @@ def test_skipping_schedule_bank_transaction_creation(db, create_last_export_deta
     )
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1107,7 +1076,7 @@ def test_skipping_schedule_bank_transaction_creation(db, create_last_export_deta
     Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
