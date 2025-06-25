@@ -235,7 +235,8 @@ def export_to_xero(workspace_id, expense_group_ids=[], is_direct_export:bool = F
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
             interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0,
-            triggered_by=triggered_by
+            triggered_by=triggered_by,
+            run_in_rabbitmq_worker=True if triggered_by == ExpenseImportSourceEnum.WEBHOOK else False
         )
 
     if general_settings.corporate_credit_card_expenses_object:
@@ -252,7 +253,8 @@ def export_to_xero(workspace_id, expense_group_ids=[], is_direct_export:bool = F
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
             interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0,
-            triggered_by=triggered_by
+            triggered_by=triggered_by,
+            run_in_rabbitmq_worker=True if triggered_by == ExpenseImportSourceEnum.WEBHOOK else False
         )
 
     if is_expenses_exported:
