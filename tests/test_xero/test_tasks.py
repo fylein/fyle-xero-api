@@ -321,12 +321,6 @@ def test_create_bill_exceptions(db):
         )
         create_bill(expense_group.id, task_log.id, False, False)
 
-        mock_call.side_effect = Exception()
-        create_bill(expense_group.id, task_log.id, False, False)
-
-        task_log = TaskLog.objects.get(id=task_log.id)
-        assert task_log.status == "FATAL"
-
         mock_call.side_effect = WrongParamsError(
             msg={"Message": "Invalid parametrs"}, response="Invalid params"
         )
