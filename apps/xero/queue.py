@@ -126,7 +126,6 @@ def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], run_in_ra
     else:
         chain = Chain()
         chain.append('apps.fyle.actions.sync_fyle_dimension', workspace_id)
-        print('chain_taskschain_taskschain_tasks',chain_tasks)
 
         for task in chain_tasks:
             chain.append(task.target, *task.args)
