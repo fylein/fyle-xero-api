@@ -771,11 +771,6 @@ def test_check_xero_object_status(mocker, db):
     )
     workspace_id = 1
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(
-        credentials_object=xero_credentials, workspace_id=workspace_id
-    )
-
     expense_group = ExpenseGroup.objects.get(id=4)
     expenses = expense_group.expenses.all()
 
