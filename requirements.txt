@@ -10,7 +10,7 @@ django-sendgrid-v5==1.2.0
 future==1.0.0
 fyle==1.0.0
 fyle-accounting-mappings==2.4.0
-fyle-integrations-platform-connector==2.2.4
+fyle-integrations-platform-connector==2.3.1
 fyle-rest-auth==1.8.3
 gevent==24.11.1
 gunicorn==23.0.0

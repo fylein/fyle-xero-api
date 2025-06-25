@@ -202,7 +202,7 @@ def export_to_xero(workspace_id, expense_group_ids=[], is_direct_export:bool = F
                     first_expense = expense_group.expenses.first()
                     update_expenses_in_progress([first_expense])
                     post_accounting_export_summary(workspace_id=workspace_id, expense_ids=[first_expense.id])
-                update_failed_expenses(expense_group.expenses.all(), False, True)
+                update_failed_expenses(expense_group.expenses.all(), False)
                 failed_expense_ids.extend(expense_group.expenses.values_list('id', flat=True))
             post_accounting_export_summary(workspace_id=workspace_id, expense_ids=failed_expense_ids, is_failed=True)
         return
