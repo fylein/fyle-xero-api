@@ -789,7 +789,7 @@ def test_check_xero_object_status(mocker, db):
     task_log.expense_group = expense_group
     task_log.save()
 
-    create_bill(expense_group.id, task_log.id, False)
+    create_bill(expense_group.id, task_log.id, False, False)
     task_log = TaskLog.objects.get(id=task_log.id)
 
     check_xero_object_status(workspace_id)
