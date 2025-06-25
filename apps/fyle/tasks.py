@@ -109,7 +109,7 @@ def create_expense_groups(
                 if imported_from == ExpenseImportSourceEnum.DIRECT_EXPORT:
                     source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL], SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]]
                 else:
-                    source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL]]
+                    source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]]
 
                 expenses.extend(
                     platform.expenses.get(
