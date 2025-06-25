@@ -6,7 +6,7 @@ from django.db.models import Q
 from django_q.models import Schedule
 from django_q.tasks import Chain
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
-from fyle_accounting_library.rabbitmq.helpers import TaskChainExecutor
+from fyle_accounting_library.rabbitmq.helpers import TaskChainRunner
 from fyle_accounting_library.rabbitmq.data_class import Task
 
 from apps.fyle.actions import post_accounting_export_summary_for_skipped_exports, sync_fyle_dimension
@@ -121,7 +121,7 @@ def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], is_auto_e
         # This function checks intervals and triggers sync if needed, syncing dimension for all exports is overkill
         sync_fyle_dimension(workspace_id)
 
-        task_executor = TaskChainExecutor()
+        task_executor = TaskChainRunner()
         task_executor.run(chain_tasks, workspace_id)
     else:
         chain = Chain()
