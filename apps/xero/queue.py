@@ -109,7 +109,7 @@ def schedule_reimbursements_sync(sync_xero_to_fyle_payments, workspace_id):
             schedule.delete()
 
 
-def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], is_auto_export: bool, run_in_rabbitmq_worker: bool) -> None:
+def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], run_in_rabbitmq_worker: bool) -> None:
     """
     Create chain and run
     :param workspace_id: workspace id
@@ -126,6 +126,7 @@ def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], is_auto_e
     else:
         chain = Chain()
         chain.append('apps.fyle.actions.sync_fyle_dimension', workspace_id)
+        print('chain_taskschain_taskschain_tasks',chain_tasks)
 
         for task in chain_tasks:
             chain.append(task.target, *task.args)
@@ -204,7 +205,7 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             ))
 
         if len(chain_tasks) > 0:
-            __create_chain_and_run(workspace_id, chain_tasks, is_auto_export, run_in_rabbitmq_worker)
+            __create_chain_and_run(workspace_id, chain_tasks, run_in_rabbitmq_worker)
 
 
 def schedule_bank_transaction_creation(
@@ -260,4 +261,4 @@ def schedule_bank_transaction_creation(
             ))
 
         if len(chain_tasks) > 0:
-            __create_chain_and_run(workspace_id, chain_tasks, is_auto_export, run_in_rabbitmq_worker)
+            __create_chain_and_run(workspace_id, chain_tasks, run_in_rabbitmq_worker)

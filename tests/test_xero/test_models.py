@@ -4,7 +4,7 @@ from fyle_accounting_mappings.models import Mapping, MappingSetting
 
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
+from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.xero.models import (
     BankTransaction,
     BankTransactionLineItem,
@@ -19,7 +19,6 @@ from apps.xero.models import (
     get_transaction_date,
 )
 from apps.xero.tasks import create_bank_transaction
-from apps.xero.utils import XeroConnector
 from tests.test_fyle.fixtures import data
 from tests.test_xero.fixtures import data as xero_data
 
@@ -252,11 +251,6 @@ def test_support_post_date_integrations(mocker, db):
         return_vaue=xero_data["create_contact"]["Contacts"][0],
     )
 
-    xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
-    xero_connection = XeroConnector(
-        credentials_object=xero_credentials, workspace_id=workspace_id
-    )
-
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=1)
 
     general_settings.auto_map_employees = "NAME"
@@ -287,7 +281,7 @@ def test_support_post_date_integrations(mocker, db):
 
     expense_group.expenses.set(expenses)
 
-    create_bank_transaction(expense_group.id, task_log.id, xero_connection, False, False)
+    create_bank_transaction(expense_group.id, task_log.id, False, False)
 
     task_log = TaskLog.objects.get(pk=task_log.id)
     bank_transaction = BankTransaction.objects.get(expense_group_id=expense_group.id)
