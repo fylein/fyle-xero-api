@@ -78,10 +78,7 @@ def create_expense_groups(
                 last_synced_at = last_synced_at - timedelta(minutes=5)
 
             if FundSourceEnum.PERSONAL in fund_source:
-                if imported_from == ExpenseImportSourceEnum.DIRECT_EXPORT:
-                    source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL], SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]]
-                else:
-                    source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL]]
+                source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL]]
 
                 expenses.extend(
                     platform.expenses.get(
@@ -106,10 +103,7 @@ def create_expense_groups(
                 ccc_last_synced_at = ccc_last_synced_at - timedelta(minutes=5)
 
             if FundSourceEnum.CCC in fund_source:
-                if imported_from == ExpenseImportSourceEnum.DIRECT_EXPORT:
-                    source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL], SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]]
-                else:
-                    source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]]
+                source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]]
 
                 expenses.extend(
                     platform.expenses.get(
@@ -300,6 +294,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
             if imported_from == ExpenseImportSourceEnum.DIRECT_EXPORT:
                 source_account_type = [SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL], SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]]
             else:
+                # We would hit this else block for webhook calls.
                 source_account_type = get_source_account_type(fund_source)
 
             platform = PlatformConnector(fyle_credentials)
