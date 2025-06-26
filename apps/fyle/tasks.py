@@ -284,6 +284,7 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
         return
 
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace.id)
+    task_log = None
 
     try:
         with transaction.atomic():
