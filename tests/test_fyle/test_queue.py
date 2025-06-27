@@ -1,25 +1,20 @@
+from fyle_accounting_library.rabbitmq.data_class import Task
 from apps.fyle.queue import async_import_and_export_expenses
-from apps.workspaces.models import FyleCredential, Workspace, XeroCredentials
+from apps.workspaces.models import Workspace
 from apps.xero.queue import __create_chain_and_run
-from apps.xero.utils import XeroConnector
 
 
 # This test is just for cov :D
 def test_create_chain_and_run(db):
     workspace_id = 1
-    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
-    xero_connection = XeroConnector(xero_credentials, workspace_id)
     chain_tasks = [
-        {
-            'target': 'apps.sage_intacct.tasks.create_bill',
-            'expense_group_id': 1,
-            'task_log_id': 1,
-            'last_export': True
-        }
+        Task(
+            target='apps.xero.tasks.create_bill',
+            args=[1, 1, True, False]
+        )
     ]
 
-    __create_chain_and_run(fyle_credentials, xero_connection, chain_tasks, False)
+    __create_chain_and_run(workspace_id, chain_tasks, False)
     assert True
 
 

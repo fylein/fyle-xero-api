@@ -249,13 +249,16 @@ def update_expense_and_post_summary(in_progress_expenses: List[Expense], workspa
 def create_bill(
     expense_group_id: int,
     task_log_id: int,
-    xero_connection: XeroConnector,
     last_export: bool,
     is_auto_export: bool,
 ):
     worker_logger = get_logger()
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
+
+    xero_credentials = XeroCredentials.get_active_xero_credentials(expense_group.workspace_id)
+    xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
+
     task_log = TaskLog.objects.get(id=task_log_id)
     worker_logger.info('Creating Bill for Expense Group %s, current state is %s', expense_group.id, task_log.status)
 
@@ -427,13 +430,16 @@ def attach_customer_to_export(xero_connection: XeroConnector, task_log: TaskLog)
 def create_bank_transaction(
     expense_group_id: int,
     task_log_id: int,
-    xero_connection: XeroConnector,
     last_export: bool,
     is_auto_export: bool,
 ):
     worker_logger = get_logger()
     sleep(2)
     expense_group = ExpenseGroup.objects.get(id=expense_group_id)
+
+    xero_credentials = XeroCredentials.get_active_xero_credentials(expense_group.workspace_id)
+    xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
+
     task_log = TaskLog.objects.get(id=task_log_id)
     worker_logger.info('Creating Bank Transaction for Expense Group %s, current state is %s', expense_group.id, task_log.status)
 
