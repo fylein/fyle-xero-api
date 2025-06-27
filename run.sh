@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$STRICT_MODE" == "false" ]; then
+if [ "$STRICT_MODE" != "false" ]; then
   set -e
 fi
 
