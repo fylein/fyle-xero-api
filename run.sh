@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Run db migrations
 python manage.py migrate
 
