@@ -3,8 +3,8 @@ import logging
 from datetime import datetime, timezone
 from typing import List
 
-from django.conf import settings
 from django.db.models import Q
+from django.conf import settings
 from fyle.platform.exceptions import InternalServerError, RetryException
 from fyle.platform.internals.decorators import retry
 from fyle_accounting_mappings.models import ExpenseAttribute
