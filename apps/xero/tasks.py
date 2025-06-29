@@ -15,8 +15,7 @@ from xerosdk.exceptions import UnsuccessfulAuthentication, WrongParamsError
 
 from apps.fyle.actions import post_accounting_export_summary, update_complete_expenses, update_expenses_in_progress
 from apps.fyle.enums import FundSourceEnum, FyleAttributeEnum
-from apps.fyle.helpers import get_filter_credit_expenses
-from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
+from apps.fyle.models import Expense, ExpenseGroup
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
@@ -675,7 +674,7 @@ def __validate_expense_group(expense_group: ExpenseGroup):
         raise BulkError("Mappings are missing", bulk_errors)
 
 
-def check_expenses_reimbursement_status(expenses, workspace_id, platform, filter_credit_expenses):
+def check_expenses_reimbursement_status(expenses, workspace_id, platform):
 
     if expenses.first().paid_on_fyle:
         return True
@@ -684,7 +683,7 @@ def check_expenses_reimbursement_status(expenses, workspace_id, platform, filter
 
     expenses = platform.expenses.get(
         source_account_type=['PERSONAL_CASH_ACCOUNT'],
-        filter_credit_expenses=filter_credit_expenses,
+        filter_credit_expenses=True,
         report_id=report_id
     )
 
@@ -757,8 +756,6 @@ def create_payment(workspace_id):
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
     platform = PlatformConnector(fyle_credentials)
-    expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
-    filter_credit_expenses = get_filter_credit_expenses(expense_group_settings=expense_group_settings)
 
     bills: List[Bill] = Bill.objects.filter(
         payment_synced=False,
@@ -772,7 +769,7 @@ def create_payment(workspace_id):
 
     for bill in bills:
         expense_group_reimbursement_status = check_expenses_reimbursement_status(
-            bill.expense_group.expenses.all(), workspace_id=workspace_id, platform=platform, filter_credit_expenses=filter_credit_expenses
+            bill.expense_group.expenses.all(), workspace_id=workspace_id, platform=platform
         )
 
         if expense_group_reimbursement_status:

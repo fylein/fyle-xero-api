@@ -336,9 +336,6 @@ class ExpenseGroupSettings(AutoAddCreateUpdateInfoMixin, models.Model):
     ccc_export_date_type = models.CharField(
         max_length=100, default="spent_at", help_text="CCC Export Date"
     )
-    import_card_credits = models.BooleanField(
-        help_text="Import Card Credits", default=False
-    )
     split_expense_grouping = models.CharField(max_length=100, default=get_default_split_expense_grouping, choices=SPLIT_EXPENSE_GROUPING, help_text='specify line items for split expenses grouping')
     workspace = models.OneToOneField(
         Workspace,
@@ -424,10 +421,6 @@ class ExpenseGroupSettings(AutoAddCreateUpdateInfoMixin, models.Model):
             reimbursable_grouped_by.append("report_id")
             corporate_credit_card_expenses_grouped_by.append("report_id")
 
-        import_card_credits = settings.import_card_credits
-        if "import_card_credits" in expense_group_settings.keys():
-            import_card_credits = expense_group_settings["import_card_credits"]
-
         return ExpenseGroupSettings.objects.update_or_create(
             workspace_id=workspace_id,
             defaults={
@@ -446,7 +439,6 @@ class ExpenseGroupSettings(AutoAddCreateUpdateInfoMixin, models.Model):
                     "reimbursable_export_date_type"
                 ],
                 "ccc_export_date_type": expense_group_settings["ccc_export_date_type"],
-                "import_card_credits": import_card_credits,
                 'split_expense_grouping': expense_group_settings['split_expense_grouping'],
             },
             user=user
