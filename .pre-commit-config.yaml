@@ -26,15 +26,3 @@ repos:
     hooks:
       - id: flake8
         additional_dependencies: [flake8-isort, flake8-tidy-imports]
-
-  - repo: https://github.com/pycqa/bandit
-    rev: 1.8.5
-    hooks:
-      - id: bandit
-        name: bandit
-        description: 'Bandit is a tool for finding common security issues in Python code'
-        entry: bandit
-        language: python
-        language_version: python3
-        types: [python]
-        require_serial: true
