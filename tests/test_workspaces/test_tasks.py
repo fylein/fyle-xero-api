@@ -1,8 +1,11 @@
 from datetime import datetime
 
 import pytest
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute
 
+from apps.fyle.models import Expense
+from apps.fyle.tasks import import_and_export_expenses, skip_expenses_and_post_accounting_export_summary
 from apps.tasks.models import TaskLog
 from apps.users.models import User
 from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
@@ -193,3 +196,172 @@ def test_post_to_integration_settings(mocker):
 
     # If exception is raised, this test will fail
     assert no_exception
+
+
+def test_import_and_export_expenses_direct_export_case_1(mocker, db):
+    """
+    Test import and export expenses
+    Case 1: Reimbursable expenses are not configured
+    """
+    workspace_id = 1
+    workspace = Workspace.objects.get(id=workspace_id)
+    workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    workspace_general_settings.reimbursable_expenses_object = None
+    workspace_general_settings.save()
+
+    mock_call = mocker.patch(
+        'fyle_integrations_platform_connector.apis.Expenses.get',
+        return_value=fyle_data['expenses_webhook']
+    )
+
+    mock_skip_expenses_and_post_accounting_export_summary = mocker.patch(
+        'apps.fyle.tasks.skip_expenses_and_post_accounting_export_summary',
+        return_value=None
+    )
+
+    import_and_export_expenses(
+        report_id='rp1s1L3QtMpF',
+        org_id=workspace.fyle_org_id,
+        is_state_change_event=False,
+        imported_from=ExpenseImportSourceEnum.DIRECT_EXPORT
+    )
+
+    assert mock_call.call_count == 1
+    assert mock_skip_expenses_and_post_accounting_export_summary.call_count == 1
+
+
+def test_import_and_export_expenses_direct_export_case_2(mocker, db):
+    """
+    Test import and export expenses
+    Case 2: Corporate credit card expenses are not configured
+    """
+    workspace_id = 1
+    workspace = Workspace.objects.get(id=workspace_id)
+    workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    workspace_general_settings.corporate_credit_card_expenses_object = None
+    workspace_general_settings.save()
+
+    expense_data = fyle_data['expenses_webhook'].copy()
+    expense_data[0]['org_id'] = workspace.fyle_org_id
+    expense_data[0]['source_account_type'] = 'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT'
+
+    mock_call = mocker.patch(
+        'fyle_integrations_platform_connector.apis.Expenses.get',
+        return_value=expense_data
+    )
+
+    mock_skip_expenses_and_post_accounting_export_summary = mocker.patch(
+        'apps.fyle.tasks.skip_expenses_and_post_accounting_export_summary',
+        return_value=None
+    )
+
+    import_and_export_expenses(
+        report_id='rp1s1L3QtMpF',
+        org_id=workspace.fyle_org_id,
+        is_state_change_event=False,
+        imported_from=ExpenseImportSourceEnum.DIRECT_EXPORT
+    )
+
+    assert mock_call.call_count == 1
+    assert mock_skip_expenses_and_post_accounting_export_summary.call_count == 1
+
+
+def test_import_and_export_expenses_direct_export_case_3(mocker, db):
+    """
+    Test import and export expenses
+    Case 3: Negative expesnes with fund_source=PERSONAL
+    """
+    workspace_id = 1
+    workspace = Workspace.objects.get(id=workspace_id)
+    workspace_general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+    workspace_general_settings.corporate_credit_card_expenses_object = None
+    workspace_general_settings.save()
+
+    expense_data = fyle_data['expenses_webhook'].copy()
+    expense_data[0]['org_id'] = workspace.fyle_org_id
+    expense_data[0]['source_account_type'] = 'PERSONAL_CASH_ACCOUNT'
+    expense_data[0]['amount'] = -100
+
+    mock_call = mocker.patch(
+        'fyle_integrations_platform_connector.apis.Expenses.get',
+        return_value=expense_data
+    )
+
+    mock_skip_expenses_and_post_accounting_export_summary = mocker.patch(
+        'apps.fyle.tasks.skip_expenses_and_post_accounting_export_summary',
+        return_value=None
+    )
+
+    import_and_export_expenses(
+        report_id='rp1s1L3QtMpF',
+        org_id=workspace.fyle_org_id,
+        is_state_change_event=False,
+        imported_from=ExpenseImportSourceEnum.DIRECT_EXPORT
+    )
+
+    assert mock_call.call_count == 1
+    assert mock_skip_expenses_and_post_accounting_export_summary.call_count == 1
+
+
+def test_skip_expenses_and_post_accounting_export_summary(mocker, db):
+    """
+    Test skip expenses and post accounting export summary
+    """
+    workspace = Workspace.objects.get(id=1)
+
+    expense = Expense.objects.first()
+    expense.workspace = workspace
+    expense.org_id = workspace.fyle_org_id
+    expense.accounting_export_summary = {}
+    expense.is_skipped = False
+    expense.fund_source = 'PERSONAL'
+    expense.save()
+
+    # Patch mark_expenses_as_skipped to return the expense in a list
+    mock_mark_skipped = mocker.patch(
+        'apps.fyle.tasks.mark_expenses_as_skipped',
+        return_value=[expense]
+    )
+    # Patch post_accounting_export_summary to just record the call
+    mock_post_summary = mocker.patch(
+        'apps.fyle.tasks.post_accounting_export_summary',
+        return_value=None
+    )
+
+    skip_expenses_and_post_accounting_export_summary([expense.id], workspace)
+
+    # Assert mark_expenses_as_skipped was called with Q(), [expense.id], workspace
+    assert mock_mark_skipped.call_count == 1
+    args, _ = mock_mark_skipped.call_args
+    assert args[1] == [expense.id]
+    assert args[2] == workspace
+
+    # Assert post_accounting_export_summary was called with workspace_id and expense_ids
+    assert mock_post_summary.call_count == 1
+    _, post_kwargs = mock_post_summary.call_args
+    assert post_kwargs['workspace_id'] == workspace.id
+    assert post_kwargs['expense_ids'] == [expense.id]
+
+
+def test_skip_expenses_and_post_accounting_export_summary_exception(mocker, db):
+    """
+    Test skip_expenses_and_post_accounting_export_summary when post_accounting_export_summary raises an exception
+    """
+    workspace = Workspace.objects.get(id=1)
+
+    expense = Expense.objects.first()
+
+    mock_mark_skipped = mocker.patch(
+        'apps.fyle.tasks.mark_expenses_as_skipped',
+        return_value=[expense]
+    )
+
+    mock_post_summary = mocker.patch(
+        'apps.fyle.tasks.post_accounting_export_summary',
+        side_effect=Exception('Test exception')
+    )
+
+    skip_expenses_and_post_accounting_export_summary([expense.id], workspace)
+
+    assert mock_mark_skipped.call_count == 1
+    assert mock_post_summary.call_count == 1

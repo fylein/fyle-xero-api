@@ -25,7 +25,6 @@ data = {
                 ],
                 "ccc_export_date_type": "spent_at",
                 "ccc_expense_state": "PAYMENT_PROCESSING",
-                "import_card_credits": True,
                 "split_expense_grouping": "MULTIPLE_LINE_ITEM",
             },
             "general_mappings": {
