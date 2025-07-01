@@ -35,7 +35,7 @@ def update_last_export_details(workspace_id):
 
     filters = {
         'workspace_id': workspace_id,
-        'status': 'COMPLETE'
+        'status': TaskLogStatusEnum.COMPLETE,
     }
 
     if last_export_detail.last_exported_at:
