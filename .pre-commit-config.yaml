@@ -21,8 +21,8 @@ repos:
       - id: isort
         args: ["--profile", "black", --trailing-comma, --line-length=125]
 
-  # - repo: https://github.com/pycqa/flake8
-  #   rev: 3.9.2
-  #   hooks:
-  #     - id: flake8
-  #       additional_dependencies: [flake8-isort, flake8-tidy-imports]
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        additional_dependencies: [flake8-isort, flake8-tidy-imports]
