@@ -596,7 +596,6 @@ data = {
         "reimbursable_expense_state": "PAYMENT_PROCESSING",
         "reimbursable_export_date_type": "current_date",
         "ccc_export_date_type": "current_date",
-        "import_card_credits": "false",
         "created_at": "2021-11-15T08:46:16.069944Z",
         "updated_at": "2021-11-15T08:46:16.069986Z",
         "split_expense_grouping": "MULTIPLE_LINE_ITEM",
