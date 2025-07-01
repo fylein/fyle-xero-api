@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -261,7 +261,4 @@ def export_to_xero(workspace_id, expense_group_ids=[], is_direct_export:bool = F
         last_export_detail.last_exported_at = last_exported_at
         last_export_detail.export_mode = export_mode or 'MANUAL'
 
-        if workspace_schedule:
-            last_export_detail.next_export_at = last_exported_at + timedelta(hours=workspace_schedule.interval_hours)
-
-        last_export_detail.save()
+        last_export_detail.save(update_fields=['last_exported_at', 'export_mode'])
