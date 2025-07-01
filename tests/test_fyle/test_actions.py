@@ -1,6 +1,7 @@
 from unittest import mock
 
 from django.conf import settings
+from django.db.models import Q
 from fyle.platform.exceptions import InternalServerError, RetryException, WrongParamsError
 from fyle_integrations_platform_connector import PlatformConnector
 
@@ -8,6 +9,7 @@ from apps.fyle.actions import (
     bulk_post_accounting_export_summary,
     create_generator_and_post_in_batches,
     mark_accounting_export_summary_as_synced,
+    mark_expenses_as_skipped,
     update_complete_expenses,
     update_expenses_in_progress,
     update_failed_expenses,
@@ -147,3 +149,28 @@ def test_bulk_post_accounting_export_summary(db):
             bulk_post_accounting_export_summary(platform, {})
         except RetryException:
             assert mock_call.call_count == 3
+
+
+def test_mark_expenses_as_skipped(create_temp_workspace, db):
+    """
+    Test the mark_expenses_as_skipped function
+    """
+    from apps.workspaces.models import Workspace
+    workspace = Workspace.objects.get(id=1)
+
+    expense = Expense.objects.filter(org_id='orPJvXuoLqvJ').first()
+    expense.workspace_id = 1
+    expense.save()
+
+    skipped_expenses = mark_expenses_as_skipped(Q(), [expense.id], workspace)
+
+    expense.refresh_from_db()
+
+    assert len(skipped_expenses) == 1
+    assert skipped_expenses[0].id == expense.id
+
+    summary = expense.accounting_export_summary
+    assert summary['state'] == 'SKIPPED'
+    assert summary['error_type'] is None
+    assert summary['synced'] is False
+    assert summary['id'] == expense.expense_id

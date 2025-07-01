@@ -1,11 +1,11 @@
 from datetime import datetime
 
+import pytest
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
+from fyle_accounting_mappings.models import ExpenseAttribute
+
 from apps.fyle.models import Expense
 from apps.fyle.tasks import import_and_export_expenses, skip_expenses_and_post_accounting_export_summary
-import pytest
-from fyle_accounting_mappings.models import ExpenseAttribute
-from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
-
 from apps.tasks.models import TaskLog
 from apps.users.models import User
 from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
@@ -341,3 +341,27 @@ def test_skip_expenses_and_post_accounting_export_summary(mocker, db):
     _, post_kwargs = mock_post_summary.call_args
     assert post_kwargs['workspace_id'] == workspace.id
     assert post_kwargs['expense_ids'] == [expense.id]
+
+
+def test_skip_expenses_and_post_accounting_export_summary_exception(mocker, db):
+    """
+    Test skip_expenses_and_post_accounting_export_summary when post_accounting_export_summary raises an exception
+    """
+    workspace = Workspace.objects.get(id=1)
+
+    expense = Expense.objects.first()
+
+    mock_mark_skipped = mocker.patch(
+        'apps.fyle.tasks.mark_expenses_as_skipped',
+        return_value=[expense]
+    )
+
+    mock_post_summary = mocker.patch(
+        'apps.fyle.tasks.post_accounting_export_summary',
+        side_effect=Exception('Test exception')
+    )
+
+    skip_expenses_and_post_accounting_export_summary([expense.id], workspace)
+
+    assert mock_mark_skipped.call_count == 1
+    assert mock_post_summary.call_count == 1
