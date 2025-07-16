@@ -254,7 +254,7 @@ def create_bill(
 ):
     worker_logger = get_logger()
     sleep(2)
-    
+
     with transaction.atomic():
         task_log = TaskLog.objects.select_for_update().get(id=task_log_id)
         expense_group = ExpenseGroup.objects.get(id=expense_group_id, workspace_id=task_log.workspace_id)
@@ -437,7 +437,7 @@ def create_bank_transaction(
 ):
     worker_logger = get_logger()
     sleep(2)
-    
+
     with transaction.atomic():
         task_log = TaskLog.objects.select_for_update().get(id=task_log_id)
         expense_group = ExpenseGroup.objects.get(id=expense_group_id, workspace_id=task_log.workspace_id)
