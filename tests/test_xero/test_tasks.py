@@ -205,6 +205,40 @@ def test_create_or_update_employee_mapping(mocker, db):
         )
 
 
+def test_create_bill_early_return(mocker, create_task_logs, db):
+    """
+    Test create_bill function returns early when task log is already in progress/complete
+    """
+    workspace_id = 1
+    task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
+    task_log.status = "IN_PROGRESS"
+    task_log.save()
+
+    expense_group = ExpenseGroup.objects.get(id=4)
+    create_bill(expense_group.id, task_log.id, False, False)
+
+    # Verify task log status remains unchanged
+    task_log.refresh_from_db()
+    assert task_log.status == "IN_PROGRESS"
+
+
+def test_create_bank_transaction_early_return(mocker, create_task_logs, db):
+    """
+    Test create_bank_transaction function returns early when task log is already in progress/complete
+    """
+    workspace_id = 1
+    task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
+    task_log.status = "COMPLETE"
+    task_log.save()
+
+    expense_group = ExpenseGroup.objects.get(id=3)
+    create_bank_transaction(expense_group.id, task_log.id, False, False)
+
+    # Verify task log status remains unchanged
+    task_log.refresh_from_db()
+    assert task_log.status == "COMPLETE"
+
+
 def test_post_bill_success(mocker, create_task_logs, db):
     mocker.patch("xerosdk.apis.Invoices.post", return_value=data["bill_object"])
     workspace_id = 1
