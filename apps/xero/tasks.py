@@ -25,7 +25,7 @@ from apps.xero.exceptions import handle_xero_exceptions, update_last_export_deta
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem, Payment
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
-from fyle_xero_api.logging_middleware import get_logger
+from fyle_xero_api.logging_middleware import get_caller_info, get_logger
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -254,11 +254,12 @@ def create_bill(
 ):
     worker_logger = get_logger()
     sleep(2)
+    caller_info = get_caller_info()
 
     with transaction.atomic():
         task_log = TaskLog.objects.select_for_update().get(id=task_log_id)
         expense_group = ExpenseGroup.objects.get(id=expense_group_id, workspace_id=task_log.workspace_id)
-        worker_logger.info('Creating Bill for Expense Group %s, current state is %s, triggered by %s, called from %s', expense_group.id, task_log.status, task_log.triggered_by, 'create_bill')
+        worker_logger.info('Creating Bill for Expense Group %s, current state is %s, triggered by %s, called from %s', expense_group.id, task_log.status, task_log.triggered_by, caller_info)
 
         if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
             task_log.status = TaskLogStatusEnum.IN_PROGRESS
@@ -437,11 +438,12 @@ def create_bank_transaction(
 ):
     worker_logger = get_logger()
     sleep(2)
+    caller_info = get_caller_info()
 
     with transaction.atomic():
         task_log = TaskLog.objects.select_for_update().get(id=task_log_id)
         expense_group = ExpenseGroup.objects.get(id=expense_group_id, workspace_id=task_log.workspace_id)
-        worker_logger.info('Creating Bank Transaction for Expense Group %s, current state is %s, triggered by %s, called from %s', expense_group.id, task_log.status, task_log.triggered_by, 'create_bank_transaction')
+        worker_logger.info('Creating Bank Transaction for Expense Group %s, current state is %s, triggered by %s, called from %s', expense_group.id, task_log.status, task_log.triggered_by, caller_info)
 
         if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
             task_log.status = TaskLogStatusEnum.IN_PROGRESS
