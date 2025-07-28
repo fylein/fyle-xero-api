@@ -63,7 +63,7 @@ class Migration(migrations.Migration):
         ('users', '0002_auto_20201228_0813'),
         ('mappings', '0007_auto_20250108_0817'),
         ('tasks', '0010_alter_tasklog_expense_group'),
-        ('workspaces', '0042_auto_20250108_0817'),
+        ('workspaces', '0045_workspaceschedule_is_real_time_export_enabled'),
         ('xero', '0010_bill_is_retired')
     ]
 
