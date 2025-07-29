@@ -190,6 +190,9 @@ class Expense(models.Model):
                     "expense_updated_at": expense["expense_updated_at"]
                 }
 
+            if expense['tax_group_id'] is not None and expense['tax_amount'] is None:
+                expense['tax_amount'] = 0
+
             defaults = {
                 "employee_email": expense["employee_email"],
                 "employee_name": expense["employee_name"],
