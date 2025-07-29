@@ -33,6 +33,14 @@ def test_create_expense_objects(db):
 
     assert expense.expense_id == "tx4ziVSAyIsv"
 
+    payload = data['expenses'][0]
+    payload['expense_id'] = 'tx4ziVSAyIsv1'
+    payload['tax_amount'] = None
+    payload['tax_group_id'] = 'tgWdIdEwcKlK'
+    Expense.create_expense_objects([payload], workspace_id)
+    expense = Expense.objects.last()
+    assert expense.tax_amount == 0
+
 
 def test_create_eliminated_expense_objects(db):
     workspace_id = 1
