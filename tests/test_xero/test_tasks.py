@@ -440,6 +440,45 @@ def test_schedule_bills_creation(db):
     )
 
 
+def test_schedule_bills_creation_with_rabbitmq_worker(db, mocker):
+    """
+    Test schedule_bills_creation with run_in_rabbitmq_worker=True to cover the import_string call
+    """
+    workspace_id = 1
+
+    expense_group = ExpenseGroup.objects.get(id=4)
+    expense_group.exported_at = None
+    expense_group.save()
+
+    bill = Bill.objects.filter(expense_group_id=expense_group.id).first()
+    bill.expense_group_id = 5
+    bill.save()
+
+    task_log = TaskLog.objects.filter(bill_id=bill.id).first()
+    task_log.status = "READY"
+    task_log.save()
+
+    # Mock the import_string function to track the call
+    mock_check_interval_and_sync_dimension = mocker.MagicMock()
+    mocker.patch('apps.xero.queue.import_string', return_value=mock_check_interval_and_sync_dimension)
+
+    # Mock TaskChainRunner to avoid actually running the chain
+    mock_task_executor = mocker.MagicMock()
+    mocker.patch('apps.xero.queue.TaskChainRunner', return_value=mock_task_executor)
+
+    schedule_bills_creation(
+        workspace_id=workspace_id,
+        expense_group_ids=[4],
+        is_auto_export=False,
+        interval_hours=0,
+        triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC,
+        run_in_rabbitmq_worker=True
+    )
+
+    # Verify that check_interval_and_sync_dimension was called with the correct workspace_id
+    mock_check_interval_and_sync_dimension.assert_called_with(workspace_id)
+
+
 def test_post_create_bank_transaction_success(mocker, db):
     mocker.patch(
         "xerosdk.apis.BankTransactions.post",

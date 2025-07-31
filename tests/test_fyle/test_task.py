@@ -1,15 +1,23 @@
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 from django.urls import reverse
 from fyle.platform.exceptions import InternalServerError
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
+from fyle_accounting_mappings.models import ExpenseAttribute
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 
 from apps.fyle.actions import post_accounting_export_summary, update_expenses_in_progress
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
-from apps.fyle.tasks import create_expense_groups, import_and_export_expenses, update_non_exported_expenses
+from apps.fyle.tasks import (
+    check_interval_and_sync_dimension,
+    create_expense_groups,
+    import_and_export_expenses,
+    sync_dimensions,
+    update_non_exported_expenses,
+)
 from apps.tasks.models import TaskLog
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 from tests.test_fyle.fixtures import data
@@ -171,3 +179,150 @@ def test_update_non_exported_expenses(db, mocker, api_client, test_connection):
     url = reverse('exports', kwargs={'workspace_id': 2})
     response = api_client.post(url, data=payload, format='json')
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_check_interval_and_sync_dimension(db, mocker):
+    """
+    Test check_interval_and_sync_dimension function
+    """
+    workspace_id = 1
+
+    # Mock sync_dimensions function
+    mock_sync_dimensions = mocker.patch('apps.fyle.tasks.sync_dimensions')
+
+    # Test case 1: workspace.source_synced_at is None - should call sync_dimensions
+    workspace = Workspace.objects.get(id=workspace_id)
+    workspace.source_synced_at = None
+    workspace.save()
+
+    check_interval_and_sync_dimension(workspace_id)
+
+    # Verify sync_dimensions was called
+    mock_sync_dimensions.assert_called_once_with(workspace_id)
+    mock_sync_dimensions.reset_mock()
+
+    # Test case 2: workspace.source_synced_at exists and time interval > 0 days - should call sync_dimensions
+    workspace.source_synced_at = datetime.now(timezone.utc) - timedelta(days=2)
+    workspace.save()
+
+    check_interval_and_sync_dimension(workspace_id)
+
+    # Verify sync_dimensions was called
+    mock_sync_dimensions.assert_called_once_with(workspace_id)
+    mock_sync_dimensions.reset_mock()
+
+    # Test case 3: workspace.source_synced_at exists and time interval <= 0 days - should NOT call sync_dimensions
+    workspace.source_synced_at = datetime.now(timezone.utc) - timedelta(hours=12)  # Less than 1 day
+    workspace.save()
+
+    check_interval_and_sync_dimension(workspace_id)
+
+    # Verify sync_dimensions was NOT called
+    mock_sync_dimensions.assert_not_called()
+
+
+def test_sync_dimensions(db, mocker):
+    """
+    Test sync_dimensions function
+    """
+    workspace_id = 1
+    workspace = Workspace.objects.get(id=workspace_id)
+
+    # Create WorkspaceGeneralSettings
+    workspace_general_settings, _ = WorkspaceGeneralSettings.objects.get_or_create(
+        workspace_id=workspace_id,
+        defaults={
+            'corporate_credit_card_expenses_object': 'BANK TRANSACTION'
+        }
+    )
+
+    # Create some test ExpenseAttribute objects for unmapped cards
+    ExpenseAttribute.objects.create(
+        attribute_type="CORPORATE_CARD",
+        workspace_id=workspace_id,
+        active=True,
+        value="Test Card 1",
+        source_id="card1"
+    )
+    ExpenseAttribute.objects.create(
+        attribute_type="CORPORATE_CARD",
+        workspace_id=workspace_id,
+        active=True,
+        value="Test Card 2",
+        source_id="card2"
+    )
+
+    # Mock PlatformConnector and its methods
+    mock_platform = mocker.MagicMock()
+    mock_platform.categories.get_count.return_value = 5
+    mock_platform.categories.sync.return_value = None
+    mock_platform.projects.get_count.return_value = 3
+    mock_platform.projects.sync.return_value = None
+    mocker.patch('apps.fyle.tasks.PlatformConnector', return_value=mock_platform)
+
+    # Mock patch_integration_settings_for_unmapped_cards
+    mock_patch_settings = mocker.MagicMock()
+    mocker.patch('apps.fyle.tasks.import_string', return_value=mock_patch_settings)
+
+    # Create some ExpenseAttribute objects for categories and projects
+    ExpenseAttribute.objects.create(
+        attribute_type="CATEGORY",
+        workspace_id=workspace_id,
+        active=True,
+        value="Test Category",
+        source_id="cat1"
+    )
+    ExpenseAttribute.objects.create(
+        attribute_type="PROJECT",
+        workspace_id=workspace_id,
+        active=True,
+        value="Test Project",
+        source_id="proj1"
+    )
+
+    # Test case 1: sync_dimensions with is_export=False
+    original_source_synced_at = workspace.source_synced_at
+
+    sync_dimensions(workspace_id, is_export=False)
+
+    # Verify workspace.source_synced_at was updated
+    workspace.refresh_from_db()
+    assert workspace.source_synced_at != original_source_synced_at
+    assert workspace.source_synced_at is not None
+
+    # Verify patch_integration_settings_for_unmapped_cards was called with correct count
+    mock_patch_settings.assert_called_once_with(workspace_id=workspace_id, unmapped_card_count=2)
+    mock_patch_settings.reset_mock()
+
+    # Test case 2: sync_dimensions with is_export=True and category count mismatch
+    sync_dimensions(workspace_id, is_export=True)
+
+    # Verify categories.sync was called due to count mismatch (5 vs 1)
+    mock_platform.categories.sync.assert_called_once()
+
+    # Verify projects.sync was called due to count mismatch (3 vs 1)
+    mock_platform.projects.sync.assert_called_once()
+
+    # Verify workspace.source_synced_at was updated again
+    updated_source_synced_at = workspace.source_synced_at
+    workspace.refresh_from_db()
+    assert workspace.source_synced_at != updated_source_synced_at
+
+    # Test case 3: sync_dimensions without corporate_credit_card_expenses_object
+    workspace_general_settings.corporate_credit_card_expenses_object = None
+    workspace_general_settings.save()
+    mock_patch_settings.reset_mock()
+
+    sync_dimensions(workspace_id, is_export=False)
+
+    # Verify patch_integration_settings_for_unmapped_cards was NOT called
+    mock_patch_settings.assert_not_called()
+
+    # Test case 4: sync_dimensions without WorkspaceGeneralSettings
+    workspace_general_settings.delete()
+    mock_patch_settings.reset_mock()
+
+    sync_dimensions(workspace_id, is_export=False)
+
+    # Verify patch_integration_settings_for_unmapped_cards was NOT called
+    mock_patch_settings.assert_not_called()
