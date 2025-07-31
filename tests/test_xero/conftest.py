@@ -1,10 +1,8 @@
-from datetime import datetime
-
 import pytest
 
 from apps.fyle.models import ExpenseGroup
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import LastExportDetail, WorkspaceGeneralSettings
+from apps.workspaces.models import WorkspaceGeneralSettings
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem
 
 
@@ -46,16 +44,4 @@ def create_bank_transaction(db):
 def create_task_logs(db):
     TaskLog.objects.update_or_create(
         workspace_id=1, type="FETCHING_EXPENSES", defaults={"status": "READY"}
-    )
-
-
-@pytest.fixture
-def create_last_export_detail(db):
-    LastExportDetail.objects.create(
-        workspace_id=1,
-        export_mode='MANUAL',
-        total_expense_groups_count=2,
-        successful_expense_groups_count=0,
-        failed_expense_groups_count=0,
-        last_exported_at=datetime.now(),
     )

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from apps.workspaces.models import FyleCredential, Workspace, XeroCredentials
+from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, XeroCredentials
 from fyle_xero_api import settings
 
 
@@ -25,6 +25,7 @@ def add_workspace_to_database():
     )
 
     workspace.save()
+    LastExportDetail.objects.create(workspace=workspace)
 
 
 @pytest.fixture()

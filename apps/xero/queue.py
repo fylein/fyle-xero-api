@@ -3,19 +3,19 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 from django.db.models import Q
+from django.utils.module_loading import import_string
 from django_q.models import Schedule
 from django_q.tasks import Chain
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
-from fyle_accounting_library.rabbitmq.helpers import TaskChainRunner
 from fyle_accounting_library.rabbitmq.data_class import Task
+from fyle_accounting_library.rabbitmq.helpers import TaskChainRunner
 
-from apps.fyle.actions import post_accounting_export_summary_for_skipped_exports, sync_fyle_dimension
+from apps.fyle.actions import post_accounting_export_summary_for_skipped_exports
 from apps.fyle.models import ExpenseGroup
 from apps.mappings.models import GeneralMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
 from apps.xero.exceptions import update_last_export_details
-
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -118,14 +118,13 @@ def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], run_in_ra
     :return: None
     """
     if run_in_rabbitmq_worker:
-        # This function checks intervals and triggers sync if needed, syncing dimension for all exports is overkill
-        sync_fyle_dimension(workspace_id)
+        import_string('apps.fyle.tasks.check_interval_and_sync_dimension')(workspace_id)
 
         task_executor = TaskChainRunner()
         task_executor.run(chain_tasks, workspace_id)
     else:
         chain = Chain()
-        chain.append('apps.fyle.actions.sync_fyle_dimension', workspace_id)
+        chain.append('apps.fyle.tasks.check_interval_and_sync_dimension', workspace_id)
 
         for task in chain_tasks:
             chain.append(task.target, *task.args)

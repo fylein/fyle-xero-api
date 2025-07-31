@@ -3,8 +3,8 @@ import logging
 from datetime import datetime, timezone
 from typing import List
 
-from django.db.models import Q
 from django.conf import settings
+from django.db.models import Q
 from fyle.platform.exceptions import InternalServerError, RetryException
 from fyle.platform.internals.decorators import retry
 from fyle_accounting_mappings.models import ExpenseAttribute
@@ -47,21 +47,6 @@ def get_expense_field(workspace_id):
         expense_fields.append(attribute)
 
     return expense_fields
-
-
-def sync_fyle_dimension(workspace_id):
-    workspace = Workspace.objects.get(id=workspace_id)
-    if workspace.source_synced_at:
-        time_interval = datetime.now(timezone.utc) - workspace.source_synced_at
-
-    if workspace.source_synced_at is None or time_interval.days > 0:
-        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-
-        platform = PlatformConnector(fyle_credentials)
-        platform.import_fyle_dimensions()
-
-        workspace.source_synced_at = datetime.now()
-        workspace.save(update_fields=["source_synced_at"])
 
 
 def refresh_fyle_dimension(workspace_id):

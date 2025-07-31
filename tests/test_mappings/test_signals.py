@@ -4,7 +4,7 @@ from django_q.models import Schedule
 from fyle_accounting_mappings.models import Mapping, MappingSetting
 
 from apps.mappings.models import TenantMapping
-from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
+from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings
 from tests.test_fyle.fixtures import data as fyle_data
 
 
@@ -155,3 +155,4 @@ def test_run_post_tenant_mapping_trigger(db, test_connection):
         tenant_name="sample", tenant_id="wertyui", workspace=workspace
     )
     tenant_mapping.save()
+    LastExportDetail.objects.create(workspace=workspace)
