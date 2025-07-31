@@ -193,7 +193,7 @@ def sync_dimensions(workspace_id: int, is_export: bool = False):
         attribute_type="CORPORATE_CARD", workspace_id=workspace_id, active=True, mapping__isnull=True
     ).count()
     if workspace_general_settings and workspace_general_settings.corporate_credit_card_expenses_object:
-        import_string('apps.workspaces.tasks.patch_integration_settings_for_unmapped_cards')(workspace_id=workspace_id, unmapped_card_count=unmapped_card_count)
+        import_string('apps.workspaces.helpers.patch_integration_settings_for_unmapped_cards')(workspace_id=workspace_id, unmapped_card_count=unmapped_card_count)
 
     if is_export:
         categories_count = platform.categories.get_count()

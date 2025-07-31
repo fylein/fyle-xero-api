@@ -120,7 +120,7 @@ def test_import_and_export_expenses(db, mocker):
     assert mock_call.call_count == 0
 
 
-def test_update_non_exported_expenses(db, create_temp_workspace, mocker, api_client, test_connection):
+def test_update_non_exported_expenses(db, mocker, api_client, test_connection):
     expense = data['raw_expense']
     default_raw_expense = data['default_raw_expense']
     org_id = expense['org_id']

@@ -863,7 +863,7 @@ CREATE VIEW public._direct_export_errored_expenses_view AS
                    FROM public.expense_groups_expenses
                   WHERE (expense_groups_expenses.expensegroup_id IN ( SELECT task_logs.expense_group_id
                            FROM public.task_logs
-                          WHERE (((task_logs.status)::text = ANY ((ARRAY['FAILED'::character varying, 'FATAL'::character varying])::text[])) AND (task_logs.workspace_id IN ( SELECT prod_workspace_ids.id
+                          WHERE (((task_logs.status)::text = ANY (ARRAY[('FAILED'::character varying)::text, ('FATAL'::character varying)::text])) AND (task_logs.workspace_id IN ( SELECT prod_workspace_ids.id
                                    FROM prod_workspace_ids))))))))
         ), errored_expenses_in_inprogress_state AS (
          SELECT count(*) AS in_progress_expenses_error_count
@@ -1352,7 +1352,7 @@ CREATE VIEW public.direct_export_errored_expenses_view AS
                    FROM public.expense_groups_expenses
                   WHERE (expense_groups_expenses.expensegroup_id IN ( SELECT task_logs.expense_group_id
                            FROM public.task_logs
-                          WHERE (((task_logs.status)::text = ANY ((ARRAY['FAILED'::character varying, 'FATAL'::character varying])::text[])) AND (task_logs.workspace_id IN ( SELECT prod_workspace_ids.id
+                          WHERE (((task_logs.status)::text = ANY (ARRAY[('FAILED'::character varying)::text, ('FATAL'::character varying)::text])) AND (task_logs.workspace_id IN ( SELECT prod_workspace_ids.id
                                    FROM prod_workspace_ids)) AND (task_logs.updated_at > (now() - '1 day'::interval)) AND (task_logs.updated_at < (now() - '00:45:00'::interval))))))))
         ), errored_expenses_in_inprogress_state AS (
          SELECT count(*) AS in_progress_expenses_error_count
@@ -1362,7 +1362,7 @@ CREATE VIEW public.direct_export_errored_expenses_view AS
                    FROM public.expense_groups_expenses
                   WHERE (expense_groups_expenses.expensegroup_id IN ( SELECT task_logs.expense_group_id
                            FROM public.task_logs
-                          WHERE (((task_logs.status)::text = ANY ((ARRAY['IN_PROGRESS'::character varying, 'ENQUEUED'::character varying])::text[])) AND (task_logs.workspace_id IN ( SELECT prod_workspace_ids.id
+                          WHERE (((task_logs.status)::text = ANY (ARRAY[('IN_PROGRESS'::character varying)::text, ('ENQUEUED'::character varying)::text])) AND (task_logs.workspace_id IN ( SELECT prod_workspace_ids.id
                                    FROM prod_workspace_ids)) AND (task_logs.updated_at > (now() - '1 day'::interval)) AND (task_logs.updated_at < (now() - '00:45:00'::interval))))))))
         ), not_synced_to_platform AS (
          SELECT count(*) AS not_synced_expenses_count
@@ -2160,7 +2160,8 @@ CREATE TABLE public.last_export_details (
     failed_expense_groups_count integer,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
-    workspace_id integer NOT NULL
+    workspace_id integer NOT NULL,
+    unmapped_card_count integer NOT NULL
 );
 
 
@@ -3982,6 +3983,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 186	fyle_accounting_mappings	0030_expenseattributesdeletioncache_updated_at	2025-06-17 11:41:46.136862+00
 187	fyle	0027_remove_expensegroupsettings_import_card_credits	2025-06-25 16:17:02.53334+00
 188	internal	0006_auto_generated_sql	2025-06-25 16:17:02.655231+00
+189	workspaces	0046_lastexportdetail_unmapped_card_count	2025-07-31 09:06:37.12333+00
 \.
 
 
@@ -6269,15 +6271,6 @@ COPY public.general_mappings (id, bank_account_name, bank_account_id, created_at
 COPY public.import_logs (id, attribute_type, status, error_log, total_batches_count, processed_batches_count, last_successful_run_at, created_at, updated_at, workspace_id) FROM stdin;
 \.
 
-
---
--- Data for Name: last_export_details; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.last_export_details (id, last_exported_at, export_mode, total_expense_groups_count, successful_expense_groups_count, failed_expense_groups_count, created_at, updated_at, workspace_id) FROM stdin;
-\.
-
-
 --
 -- Data for Name: mapping_settings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -6444,6 +6437,15 @@ COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updat
 
 
 --
+-- Data for Name: last_export_details; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.last_export_details (id, last_exported_at, export_mode, total_expense_groups_count, successful_expense_groups_count, failed_expense_groups_count, created_at, updated_at, workspace_id, unmapped_card_count) FROM stdin;
+1	\N	\N	\N	\N	\N	2022-08-02 20:27:22.798354+00	2022-08-02 20:27:22.798354+00	1	0
+\.
+
+
+--
 -- Data for Name: workspaces_user; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -6535,7 +6537,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 41, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 188, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 189, true);
 
 
 --

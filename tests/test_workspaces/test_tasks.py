@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import pytest
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute
@@ -8,7 +6,7 @@ from apps.fyle.models import Expense
 from apps.fyle.tasks import import_and_export_expenses, skip_expenses_and_post_accounting_export_summary
 from apps.tasks.models import TaskLog
 from apps.users.models import User
-from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
+from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
 from apps.workspaces.queue import schedule_sync
 from apps.workspaces.tasks import (
     async_add_admins_to_workspace,
@@ -46,9 +44,6 @@ def test_schedule_sync(db):
 def test_run_sync_schedule(mocker, db):
     workspace_id = 1
 
-    LastExportDetail.objects.create(
-        last_exported_at=datetime.now(), export_mode="MANUAL", workspace_id=1
-    )
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     mocker.patch(
         "fyle_integrations_platform_connector.apis.Expenses.get",

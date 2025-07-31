@@ -950,7 +950,7 @@ def test_update_xero_short_code(db, mocker):
 def test_update_last_export_details(db):
     workspace_id = 1
 
-    last_export_detail = LastExportDetail.objects.create(workspace_id=workspace_id)
+    last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
     last_export_detail.last_exported_at = datetime.now()
     last_export_detail.total_expense_groups_count = 1
     last_export_detail.save()
@@ -1031,7 +1031,7 @@ def test__validate_expense_group(mocker, db):
         logger.info("Mappings are missing")
 
 
-def test_skipping_schedule_bills_creation(db, create_last_export_detail):
+def test_skipping_schedule_bills_creation(db):
     workspace_id = 1
 
     expense_group = ExpenseGroup.objects.get(id=4)
@@ -1074,7 +1074,7 @@ def test_skipping_schedule_bills_creation(db, create_last_export_detail):
     assert task_log.type == 'CREATING_BILL'
 
 
-def test_skipping_schedule_bank_transaction_creation(db, create_last_export_detail):
+def test_skipping_schedule_bank_transaction_creation(db):
     workspace_id = 1
 
     expense_group = ExpenseGroup.objects.get(id=5)
@@ -1302,7 +1302,7 @@ def test_get_or_create_error_with_expense_group_duplicate_expense_group(db):
     assert error2.mapping_error_expense_group_ids == [expense_group.id]
 
 
-def test_handle_skipped_exports(mocker, db, create_last_export_detail):
+def test_handle_skipped_exports(mocker, db):
     mock_post_summary = mocker.patch('apps.xero.queue.post_accounting_export_summary_for_skipped_exports', return_value=None)
     mock_update_last_export = mocker.patch('apps.xero.queue.update_last_export_details')
     mock_logger = mocker.patch('apps.xero.queue.logger')

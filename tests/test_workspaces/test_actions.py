@@ -1,15 +1,21 @@
 
 import json
 from unittest.mock import MagicMock
+
 import pytest
 
 from apps.workspaces.actions import patch_integration_settings
+from apps.workspaces.models import Workspace
 
 
 @pytest.mark.django_db(databases=['default'])
 def test_patch_integration_settings(mocker):
 
     workspace_id = 1
+    workspace = Workspace.objects.get(id=workspace_id)
+    workspace.onboarding_state = 'COMPLETE'
+    workspace.save()
+
     mocked_patch = MagicMock()
     mocker.patch('apps.fyle.helpers.requests.patch', side_effect=mocked_patch)
 
