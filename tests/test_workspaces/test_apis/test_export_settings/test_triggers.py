@@ -1,13 +1,14 @@
 from datetime import datetime, timezone
-from apps.workspaces.apis.export_settings.triggers import ExportSettingsTrigger
-from apps.workspaces.models import WorkspaceGeneralSettings, LastExportDetail
-from apps.tasks.models import TaskLog, Error
+
 from apps.fyle.models import ExpenseGroup
+from apps.tasks.models import Error, TaskLog
+from apps.workspaces.apis.export_settings.triggers import ExportSettingsTrigger
+from apps.workspaces.models import LastExportDetail, WorkspaceGeneralSettings
 
 
 def test_post_save_workspace_general_settings_export_trigger(mocker, db, add_workspace_to_database):
     workspace_id = 1
-    LastExportDetail.objects.create(workspace_id=workspace_id, last_exported_at=datetime.now(timezone.utc))
+    LastExportDetail.objects.update_or_create(workspace_id=workspace_id, defaults={'last_exported_at': datetime.now(timezone.utc)})
     workspace_general_settings_instance, _ = WorkspaceGeneralSettings.objects.update_or_create(
         workspace_id=workspace_id,
         defaults={
@@ -46,7 +47,7 @@ def test_post_save_workspace_general_settings_export_trigger(mocker, db, add_wor
 
 def test_post_save_workspace_general_settings_export_trigger_2(mocker, db, add_workspace_to_database):
     workspace_id = 1
-    LastExportDetail.objects.create(workspace_id=workspace_id, last_exported_at=datetime.now(timezone.utc))
+    LastExportDetail.objects.update_or_create(workspace_id=workspace_id, defaults={'last_exported_at': datetime.now(timezone.utc)})
     workspace_general_settings_instance, _ = WorkspaceGeneralSettings.objects.update_or_create(
         workspace_id=workspace_id,
         defaults={

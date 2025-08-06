@@ -1,11 +1,11 @@
 import logging
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
-from django.db.models import Q
 from django.db import transaction
-from apps.fyle.actions import mark_expenses_as_skipped, post_accounting_export_summary
+from django.db.models import Q
+from django.utils.module_loading import import_string
 from fyle.platform.exceptions import InternalServerError
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle.platform.exceptions import RetryException
@@ -16,13 +16,9 @@ from fyle_accounting_mappings.models import ExpenseAttribute
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_integrations_platform_connector.apis.expenses import Expenses as FyleExpenses
 
+from apps.fyle.actions import mark_expenses_as_skipped, post_accounting_export_summary
 from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEnum
-from apps.fyle.helpers import (
-    get_fund_source,
-    get_source_account_type,
-    handle_import_exception,
-    update_task_log_post_import,
-)
+from apps.fyle.helpers import get_fund_source, get_source_account_type, handle_import_exception, update_task_log_post_import
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
@@ -165,6 +161,21 @@ def create_expense_groups(
         update_task_log_post_import(task_log, TaskLogStatusEnum.FATAL, error=error)
 
 
+def check_interval_and_sync_dimension(workspace_id: int):
+    """
+    Check sync interval and sync dimension
+    :param workspace_id: Workspace ID
+    """
+    workspace = Workspace.objects.get(id=workspace_id)
+
+    time_interval = None
+    if workspace.source_synced_at:
+        time_interval = datetime.now(timezone.utc) - workspace.source_synced_at
+
+    if workspace.source_synced_at is None or time_interval.days > 0:
+        sync_dimensions(workspace_id)
+
+
 def sync_dimensions(workspace_id: int, is_export: bool = False):
     """
     Sync dimensions
@@ -172,9 +183,19 @@ def sync_dimensions(workspace_id: int, is_export: bool = False):
     :param is_export: is export
     :return: None
     """
+    workspace = Workspace.objects.get(id=workspace_id)
+    workspace_general_settings = WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).first()
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+
     platform = PlatformConnector(fyle_credentials)
     platform.import_fyle_dimensions(is_export=is_export)
+
+    unmapped_card_count = ExpenseAttribute.objects.filter(
+        attribute_type="CORPORATE_CARD", workspace_id=workspace_id, active=True, mapping__isnull=True
+    ).count()
+    if workspace_general_settings and workspace_general_settings.corporate_credit_card_expenses_object:
+        import_string('apps.workspaces.helpers.patch_integration_settings_for_unmapped_cards')(workspace_id=workspace_id, unmapped_card_count=unmapped_card_count)
+
     if is_export:
         categories_count = platform.categories.get_count()
 
@@ -193,6 +214,9 @@ def sync_dimensions(workspace_id: int, is_export: bool = False):
 
         if projects_count != projects_expense_attribute_count:
             platform.projects.sync()
+
+    workspace.source_synced_at = datetime.now()
+    workspace.save(update_fields=["source_synced_at"])
 
 
 def skip_expenses_and_post_accounting_export_summary(expense_ids: List[int], workspace: Workspace):

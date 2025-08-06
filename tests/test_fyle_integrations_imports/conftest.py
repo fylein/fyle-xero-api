@@ -1,18 +1,14 @@
 import pytest
+from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, Mapping
 
-from apps.workspaces.models import Workspace, XeroCredentials, FyleCredential
-from fyle_accounting_mappings.models import (
-    ExpenseAttribute,
-    DestinationAttribute,
-    Mapping
-)
 from apps.mappings.models import TenantMapping
+from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, XeroCredentials
 
 
 @pytest.fixture
 def create_temp_workspace(db):
     workspace_id = 3
-    Workspace.objects.create(
+    workspace = Workspace.objects.create(
         id=workspace_id,
         name="Fyle for Hrishabh Testing",
         fyle_org_id="Testing123",
@@ -22,6 +18,7 @@ def create_temp_workspace(db):
         destination_synced_at=None,
         xero_accounts_last_synced_at=None
     )
+    LastExportDetail.objects.create(workspace=workspace)
 
 
 @pytest.fixture

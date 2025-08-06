@@ -1,7 +1,9 @@
+from django_filters.rest_framework import DjangoFilterBackend
+from django_q.tasks import async_task
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import status
-from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.exceptions import handle_view_exceptions
 from apps.fyle.actions import exportable_expense_group, get_expense_field
@@ -12,9 +14,6 @@ from apps.fyle.serializers import ExpenseFieldSerializer, ExpenseGroupSerializer
 from apps.fyle.tasks import create_expense_groups, get_task_log_and_fund_source
 from apps.workspaces.models import FyleCredential, Workspace
 from fyle_xero_api.utils import LookupFieldMixin
-
-from django_filters.rest_framework import DjangoFilterBackend
-from django_q.tasks import async_task
 
 
 class ExpenseGroupView(LookupFieldMixin, generics.ListCreateAPIView):
@@ -80,7 +79,7 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
         Workspace.objects.get(id=kwargs['workspace_id'])
         FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
-        async_task('apps.fyle.actions.sync_fyle_dimension', kwargs['workspace_id'])
+        async_task('apps.fyle.tasks.check_interval_and_sync_dimension', kwargs['workspace_id'])
 
         return Response(status=status.HTTP_200_OK)
 

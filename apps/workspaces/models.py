@@ -283,6 +283,9 @@ class LastExportDetail(models.Model):
     failed_expense_groups_count = models.IntegerField(
         help_text="count of failed expense_groups ", null=True
     )
+    unmapped_card_count = models.IntegerField(
+        help_text="count of unmapped cards", default=0
+    )
     workspace = models.OneToOneField(
         Workspace, on_delete=models.PROTECT, help_text="Reference to Workspace model"
     )

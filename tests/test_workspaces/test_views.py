@@ -8,8 +8,8 @@ from fyle_rest_auth.utils import AuthUtils
 from xerosdk import exceptions as xero_exc
 
 from apps.mappings.models import TenantMapping
-from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings, XeroCredentials
 from apps.tasks.models import TaskLog
+from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings, XeroCredentials
 from fyle_xero_api import settings
 from tests.helper import dict_compare_keys
 from tests.test_fyle.fixtures import data as fyle_data
@@ -293,14 +293,13 @@ def test_export_to_xero(mocker, api_client, test_connection):
         HTTP_AUTHORIZATION="Bearer {}".format(test_connection.access_token)
     )
 
-    LastExportDetail.objects.create(workspace_id=workspace_id)
-
     response = api_client.post(url)
     assert response.status_code == 200
 
 
 def test_last_export_detail(mocker, api_client, test_connection):
     workspace_id = 1
+    LastExportDetail.objects.filter(workspace_id=workspace_id).delete()
 
     url = "/api/workspaces/{}/export_detail/".format(workspace_id)
 
@@ -350,7 +349,7 @@ def test_last_export_detail_2(mocker, api_client, test_connection):
     response = api_client.get(url)
     assert response.status_code == 404
 
-    last_export_detail = LastExportDetail.objects.create(workspace_id=workspace_id)
+    last_export_detail = LastExportDetail.objects.get(workspace_id=workspace_id)
     last_export_detail.last_exported_at = datetime.now()
     last_export_detail.total_expense_groups_count = 1
     last_export_detail.save()

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from apps.fyle.models import ExpenseGroupSettings
-from apps.workspaces.models import Workspace
+from apps.workspaces.models import LastExportDetail, Workspace
 
 
 @pytest.fixture
@@ -32,6 +32,7 @@ def create_temp_workspace(db):
         reimbursable_export_date_type="current_date",
         ccc_export_date_type="spent_at",
     )
+    LastExportDetail.objects.create(workspace=workspace)
 
 
 @pytest.fixture
