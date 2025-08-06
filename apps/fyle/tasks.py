@@ -168,6 +168,7 @@ def check_interval_and_sync_dimension(workspace_id: int):
     """
     workspace = Workspace.objects.get(id=workspace_id)
 
+    time_interval = None
     if workspace.source_synced_at:
         time_interval = datetime.now(timezone.utc) - workspace.source_synced_at
 
