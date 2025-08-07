@@ -59,6 +59,12 @@ jobs:
           cd ${{ vars.STAGING_DEPLOY_REPO }}/${{ vars.C1_STAGING_DEPLOY_DIR }}/staging/integrations
           kustomize edit set image docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fyle_xero-api=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fyle_xero-api:$NEW_TAG
 
+      - name: Update Image Tag - drstrange staging
+        run: |
+          NEW_TAG="v$(git rev-parse --short HEAD)"
+          cd ${{ vars.STAGING_DEPLOY_REPO }}/${{ vars.STAGING_DEPLOY_DIR }}/drstrange/integrations
+          kustomize edit set image docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fyle_xero-api=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/fyle_xero-api:$NEW_TAG
+
       - name: Commit and push changes
         run: |
           cd ${{ vars.STAGING_DEPLOY_REPO }}/
