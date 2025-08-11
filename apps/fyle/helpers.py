@@ -97,6 +97,7 @@ def handle_import_exception(task_log: TaskLog) -> None:
     error = traceback.format_exc()
     task_log.detail = {'error': error}
     task_log.status = 'FATAL'
+    task_log.re_attempt_export = False
     task_log.save()
     logger.error('Something unexpected happened workspace_id: %s %s', task_log.workspace_id, task_log.detail)
 

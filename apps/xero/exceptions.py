@@ -136,6 +136,7 @@ def handle_xero_error(exception, expense_group: ExpenseGroup, task_log: TaskLog)
 
     task_log.detail = None
     task_log.status = TaskLogStatusEnum.FAILED
+    task_log.re_attempt_export = False
     update_failed_expenses(expense_group.expenses.all(), False)
 
     task_log.save()
@@ -164,6 +165,7 @@ def handle_xero_exceptions(payment=False):
                     "message": "Fyle credentials do not exist in workspace"
                 }
                 task_log.status = TaskLogStatusEnum.FAILED
+                task_log.re_attempt_export = False
                 task_log.save()
 
             except WrongParamsError as exception:
@@ -171,6 +173,7 @@ def handle_xero_exceptions(payment=False):
                     logger.info(exception.message)
                     detail = exception.message
                     task_log.status = TaskLogStatusEnum.FAILED
+                    task_log.re_attempt_export = False
                     task_log.detail = detail
 
                     task_log.save()
@@ -186,6 +189,7 @@ def handle_xero_exceptions(payment=False):
                     logger.info(exception.message)
                     detail = exception.message
                     task_log.status = TaskLogStatusEnum.FAILED
+                    task_log.re_attempt_export = False
                     task_log.detail = detail
 
                     task_log.save()
@@ -203,6 +207,7 @@ def handle_xero_exceptions(payment=False):
                 xero_credentials.save()
                 logger.info(exception.message)
                 task_log.status = TaskLogStatusEnum.FAILED
+                task_log.re_attempt_export = False
                 task_log.detail = None
                 task_log.xero_errors = [
                     {
@@ -231,6 +236,7 @@ def handle_xero_exceptions(payment=False):
                 detail = {"message": "Xero Account not connected / token expired"}
 
                 task_log.status = TaskLogStatusEnum.FAILED
+                task_log.re_attempt_export = False
                 task_log.detail = detail
 
                 task_log.save()
@@ -240,6 +246,7 @@ def handle_xero_exceptions(payment=False):
                 logger.info(exception.response)
                 detail = exception.response
                 task_log.status = TaskLogStatusEnum.FAILED
+                task_log.re_attempt_export = False
                 task_log.detail = None
                 task_log.xero_errors = detail
 
@@ -250,6 +257,7 @@ def handle_xero_exceptions(payment=False):
                 logger.info(exception.response)
                 detail = exception.response
                 task_log.status = TaskLogStatusEnum.FAILED
+                task_log.re_attempt_export = False
                 task_log.detail = detail
                 task_log.save()
                 update_failed_expenses(expense_group.expenses.all(), True)

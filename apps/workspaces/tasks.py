@@ -2,6 +2,8 @@ import logging
 from datetime import datetime
 
 from django.conf import settings
+from apps.fyle.models import ExpenseGroup
+from django.db.models import Q
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_rest_auth.helpers import get_fyle_admin
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
@@ -47,7 +49,19 @@ def run_sync_schedule(workspace_id):
     )
 
     if task_log.status == TaskLogStatusEnum.COMPLETE:
-        export_to_xero(workspace_id, triggered_by=ExpenseImportSourceEnum.BACKGROUND_SCHEDULE)
+        eligible_expense_group_ids = ExpenseGroup.objects.filter(
+            workspace_id=workspace_id,
+            exported_at__isnull=True
+        ).filter(
+            Q(tasklog__isnull=True)
+            | Q(tasklog__type__in=[TaskLogTypeEnum.CREATING_BILL, TaskLogTypeEnum.CREATING_BANK_TRANSACTION])
+        ).exclude(
+            tasklog__status='FAILED',
+            tasklog__re_attempt_export=False
+        ).values_list('id', flat=True).distinct()
+
+        if eligible_expense_group_ids:
+            export_to_xero(workspace_id, expense_group_ids=eligible_expense_group_ids, triggered_by=ExpenseImportSourceEnum.BACKGROUND_SCHEDULE)
 
 
 def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
