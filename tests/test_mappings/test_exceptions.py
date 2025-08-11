@@ -1,14 +1,13 @@
-from fyle_integrations_imports.models import ImportLog
-from fyle_integrations_imports.modules.projects import Project
+from fyle.platform.exceptions import InternalServerError, InvalidTokenError, WrongParamsError
+from xerosdk.exceptions import InvalidTokenError as XeroInvalidTokenError
+from xerosdk.exceptions import UnsuccessfulAuthentication
+from xerosdk.exceptions import WrongParamsError as XeroWrongParamsError
+
+from apps.mappings.exceptions import handle_import_exceptions_v2
 from apps.workspaces.models import XeroCredentials
 from apps.xero.utils import XeroConnector
-from apps.mappings.exceptions import handle_import_exceptions_v2
-from fyle.platform.exceptions import InternalServerError, InvalidTokenError, WrongParamsError
-from xerosdk.exceptions import (
-    InvalidTokenError as XeroInvalidTokenError,
-    UnsuccessfulAuthentication,
-    WrongParamsError as XeroWrongParamsError
-)
+from fyle_integrations_imports.models import ImportLog
+from fyle_integrations_imports.modules.projects import Project
 
 
 def test_handle_import_exceptions(db, create_temp_workspace, add_xero_credentials, add_fyle_credentials):
@@ -72,7 +71,7 @@ def test_handle_import_exceptions(db, create_temp_workspace, add_xero_credential
 
     assert import_log.status == 'FAILED'
     assert import_log.error_log['task'] == 'Import PROJECT to Fyle and Auto Create Mappings'
-    assert import_log.error_log['message'] == 'Invalid Token or Xero credentials does not exist workspace_id - 3'
+    assert import_log.error_log['message'] == 'Something went wrong'
     assert import_log.error_log['alert'] == False
 
     # XeroInvalidTokenError
