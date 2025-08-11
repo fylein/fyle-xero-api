@@ -1,5 +1,6 @@
+import logging
+
 from django.db.models import Q
-from apps.workspaces.models import Workspace, XeroCredentials
 from django_filters.rest_framework import DjangoFilterBackend
 from django_q.tasks import async_task
 from fyle_accounting_mappings.models import DestinationAttribute
@@ -7,14 +8,17 @@ from fyle_accounting_mappings.serializers import DestinationAttributeSerializer
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import status
+from xerosdk import exceptions as xero_exc
 
-from apps.exceptions import handle_view_exceptions
+from apps.exceptions import handle_view_exceptions, invalidate_xero_credentials
+from apps.workspaces.models import Workspace, XeroCredentials
 from apps.xero.actions import sync_tenant
 from apps.xero.serializers import XeroFieldSerializer
-from fyle_xero_api.utils import LookupFieldMixin
 from apps.xero.utils import XeroConnector
-from xerosdk import exceptions as xero_exc
-from apps.exceptions import invalidate_xero_credentials
+from fyle_xero_api.utils import LookupFieldMixin
+
+logger = logging.getLogger(__name__)
+logger.level = logging.INFO
 
 
 class TokenHealthView(generics.RetrieveAPIView):
@@ -43,7 +47,12 @@ class TokenHealthView(generics.RetrieveAPIView):
             try:
                 xero_connector = XeroConnector(xero_credentials, workspace_id=workspace_id)
                 xero_connector.get_organisations()
-            except (xero_exc.WrongParamsError, xero_exc.InvalidTokenError):
+            except xero_exc.WrongParamsError:
+                logger.error("Xero wrong params error for workspace_id %s", workspace_id, exc_info=True)
+                status_code = status.HTTP_400_BAD_REQUEST
+                message = "Something went wrong"
+                status_code = status.HTTP_400_BAD_REQUEST
+            except xero_exc.InvalidTokenError:
                 invalidate_xero_credentials(workspace_id)
                 status_code = status.HTTP_400_BAD_REQUEST
                 message = "Xero connection expired"

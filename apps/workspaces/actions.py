@@ -124,7 +124,6 @@ def connect_xero(authorization_code, redirect_uri, workspace_id):
             xero_credentials.country = company_info['CountryCode']
             xero_credentials.save()
         except (
-            xero_exc.WrongParamsError,
             xero_exc.UnsuccessfulAuthentication,
         ) as exception:
             invalidate_xero_credentials(workspace_id)
