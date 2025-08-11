@@ -1,8 +1,8 @@
 import logging
 
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import status
-from rest_framework.exceptions import ValidationError
 from xerosdk.exceptions import (
     InternalServerError,
     InvalidClientError,
@@ -44,7 +44,14 @@ def handle_view_exceptions():
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            except (WrongParamsError, InvalidTokenError) as exception:
+            except WrongParamsError as exception:
+                logger.info(exception)
+                return Response(
+                    data={"message": "Something went wrong"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            except InvalidTokenError as exception:
                 logger.info(
                     "Xero token expired workspace_id - %s %s",
                     kwargs["workspace_id"],

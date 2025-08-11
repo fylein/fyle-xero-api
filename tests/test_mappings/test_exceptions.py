@@ -1,14 +1,13 @@
-from fyle_integrations_imports.models import ImportLog
-from fyle_integrations_imports.modules.projects import Project
+from fyle.platform.exceptions import InternalServerError, InvalidTokenError, WrongParamsError
+from xerosdk.exceptions import InvalidTokenError as XeroInvalidTokenError
+from xerosdk.exceptions import UnsuccessfulAuthentication
+from xerosdk.exceptions import WrongParamsError as XeroWrongParamsError
+
+from apps.mappings.exceptions import handle_import_exceptions, handle_import_exceptions_v2
 from apps.workspaces.models import XeroCredentials
 from apps.xero.utils import XeroConnector
-from apps.mappings.exceptions import handle_import_exceptions_v2
-from fyle.platform.exceptions import InternalServerError, InvalidTokenError, WrongParamsError
-from xerosdk.exceptions import (
-    InvalidTokenError as XeroInvalidTokenError,
-    UnsuccessfulAuthentication,
-    WrongParamsError as XeroWrongParamsError
-)
+from fyle_integrations_imports.models import ImportLog
+from fyle_integrations_imports.modules.projects import Project
 
 
 def test_handle_import_exceptions(db, create_temp_workspace, add_xero_credentials, add_fyle_credentials):
@@ -72,8 +71,8 @@ def test_handle_import_exceptions(db, create_temp_workspace, add_xero_credential
 
     assert import_log.status == 'FAILED'
     assert import_log.error_log['task'] == 'Import PROJECT to Fyle and Auto Create Mappings'
-    assert import_log.error_log['message'] == 'Invalid Token or Xero credentials does not exist workspace_id - 3'
-    assert import_log.error_log['alert'] == False
+    assert import_log.error_log['message'] == 'Something went wrong'
+    assert import_log.error_log['alert'] == True
 
     # XeroInvalidTokenError
     @handle_import_exceptions_v2
@@ -122,3 +121,28 @@ def test_handle_import_exceptions(db, create_temp_workspace, add_xero_credential
     assert import_log.error_log['task'] == 'Import PROJECT to Fyle and Auto Create Mappings'
     assert import_log.error_log['message'] == 'Something went wrong'
     assert import_log.error_log['alert'] == False
+
+
+def test_handle_import_exceptions_v1(mocker, db, create_temp_workspace, add_xero_credentials, add_fyle_credentials):
+    """
+    Test the original handle_import_exceptions decorator to cover XeroWrongParamsError exception handling
+    """
+    workspace_id = 3
+
+    mock_logger = mocker.patch('apps.mappings.exceptions.logger')
+
+    @handle_import_exceptions('Test Task')
+    def to_be_decorated(workspace_id):
+        raise XeroWrongParamsError('Test Xero wrong params error')
+
+    to_be_decorated(workspace_id)
+
+    mock_logger.info.assert_called_once()
+    error_log = mock_logger.info.call_args[0][0]
+
+    assert error_log['task'] == 'Test Task'
+    assert error_log['workspace_id'] == workspace_id
+    assert error_log['message'] == 'Something went wrong'
+    # Fix the response structure based on actual XeroWrongParamsError structure
+    assert error_log['response']['message'] == 'Test Xero wrong params error'
+    assert error_log['alert'] == False

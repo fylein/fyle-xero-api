@@ -1,20 +1,11 @@
 import logging
 import traceback
 
-from fyle.platform.exceptions import (
-    InternalServerError,
-    InvalidTokenError,
-    PlatformError,
-    WrongParamsError,
-    RetryException
-)
-
-from xerosdk.exceptions import (
-    InvalidGrant,
-    InvalidTokenError as XeroInvalidTokenError,
-    UnsuccessfulAuthentication,
-    WrongParamsError as XeroWrongParamsError
-)
+from fyle.platform.exceptions import InternalServerError, InvalidTokenError, PlatformError, RetryException, WrongParamsError
+from xerosdk.exceptions import InvalidGrant
+from xerosdk.exceptions import InvalidTokenError as XeroInvalidTokenError
+from xerosdk.exceptions import UnsuccessfulAuthentication
+from xerosdk.exceptions import WrongParamsError as XeroWrongParamsError
 
 from apps.workspaces.helpers import invalidate_xero_credentials
 from apps.workspaces.models import XeroCredentials
@@ -56,7 +47,11 @@ def handle_import_exceptions(task_name):
                 error["message"] = "Internal server error while importing to Fyle"
                 error["response"] = exception.__dict__
 
-            except (XeroWrongParamsError, XeroInvalidTokenError) as exception:
+            except XeroWrongParamsError as exception:
+                error["message"] = "Something went wrong"
+                error["response"] = exception.__dict__
+
+            except XeroInvalidTokenError as exception:
                 error["message"] = "Xero token expired"
                 error["response"] = exception.__dict__
                 invalidate_xero_credentials(workspace_id)
@@ -115,7 +110,12 @@ def handle_import_exceptions_v2(func):
             error['alert'] = True
             import_log.status = 'FAILED'
 
-        except (XeroWrongParamsError, XeroInvalidTokenError, XeroCredentials.DoesNotExist) as exception:
+        except XeroWrongParamsError:
+            error['message'] = 'Something went wrong'
+            error['alert'] = True
+            import_log.status = 'FAILED'
+
+        except (XeroInvalidTokenError, XeroCredentials.DoesNotExist) as exception:
             error['message'] = 'Invalid Token or Xero credentials does not exist workspace_id - {0}'.format(workspace_id)
             error['alert'] = False
             error['response'] = exception.__dict__
