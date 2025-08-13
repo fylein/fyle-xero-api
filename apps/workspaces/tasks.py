@@ -56,7 +56,7 @@ def run_sync_schedule(workspace_id):
             Q(tasklog__isnull=True)
             | Q(tasklog__type__in=[TaskLogTypeEnum.CREATING_BILL, TaskLogTypeEnum.CREATING_BANK_TRANSACTION])
         ).exclude(
-            tasklog__status='FAILED',
+            tasklog__status=TaskLogStatusEnum.FAILED,
             tasklog__re_attempt_export=False
         ).values_list('id', flat=True).distinct()
 
