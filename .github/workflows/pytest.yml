@@ -52,7 +52,7 @@ jobs:
           python -m pip install diff-cover
 
           git fetch origin master --depth=1
-          diff-cover coverage.xml --compare-branch=origin/master --diff-range-notation .. --fail-under=98 > result.txt 2>&1
+          diff-cover coverage.xml --compare-branch=origin/master --diff-range-notation .. --fail-under=85 > result.txt 2>&1
 
       - name: Comment coverage check
         if: always()

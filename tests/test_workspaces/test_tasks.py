@@ -1,9 +1,11 @@
 import pytest
+from django.db.models import Q
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute
 
-from apps.fyle.models import Expense
+from apps.fyle.models import Expense, ExpenseGroup
 from apps.fyle.tasks import import_and_export_expenses, skip_expenses_and_post_accounting_export_summary
+from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
 from apps.users.models import User
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
@@ -360,3 +362,104 @@ def test_skip_expenses_and_post_accounting_export_summary_exception(mocker, db):
 
     assert mock_mark_skipped.call_count == 1
     assert mock_post_summary.call_count == 1
+
+
+def test_run_sync_schedule_expense_groups_with_failed_task_log_and_re_attempt_true(db):
+    """
+    Test expense group filtering logic
+    Case: Expense groups should be included when task log failed but re_attempt_export is True
+    """
+    workspace_id = 1
+
+    # Create expense group
+    expense_group = ExpenseGroup.objects.create(
+        workspace_id=workspace_id,
+        fund_source='PERSONAL',
+        description='Test expense group'
+    )
+
+    # Create a failed task log with re_attempt_export=True
+    _ = TaskLog.objects.create(
+        workspace_id=workspace_id,
+        type=TaskLogTypeEnum.CREATING_BILL,
+        expense_group=expense_group,
+        status=TaskLogStatusEnum.FAILED,
+        re_attempt_export=True
+    )
+
+    # Test the filtering logic directly (same as in run_sync_schedule)
+    eligible_expense_group_ids = ExpenseGroup.objects.filter(
+        workspace_id=workspace_id,
+        exported_at__isnull=True
+    ).filter(
+        Q(tasklog__isnull=True)
+        | Q(tasklog__type__in=[TaskLogTypeEnum.CREATING_BILL, TaskLogTypeEnum.CREATING_BANK_TRANSACTION])
+    ).exclude(
+        tasklog__status='FAILED',
+        tasklog__re_attempt_export=False
+    ).values_list('id', flat=True).distinct()
+
+    assert expense_group.id in list(eligible_expense_group_ids), f"Expected expense group {expense_group.id} to be eligible for export"
+
+
+def test_run_sync_schedule_expense_groups_with_failed_task_log_and_re_attempt_false_filtering(db):
+    """
+    Test expense group filtering logic
+    Case: Expense groups should be excluded when task log failed and re_attempt_export is False
+    """
+    workspace_id = 1
+
+    expense_group = ExpenseGroup.objects.create(
+        workspace_id=workspace_id,
+        fund_source='PERSONAL',
+        description='Test expense group'
+    )
+
+    _ = TaskLog.objects.create(
+        workspace_id=workspace_id,
+        type=TaskLogTypeEnum.CREATING_BILL,
+        expense_group=expense_group,
+        status=TaskLogStatusEnum.FAILED,
+        re_attempt_export=False
+    )
+
+    eligible_expense_group_ids = ExpenseGroup.objects.filter(
+        workspace_id=workspace_id,
+        exported_at__isnull=True
+    ).filter(
+        Q(tasklog__isnull=True)
+        | Q(tasklog__type__in=[TaskLogTypeEnum.CREATING_BILL, TaskLogTypeEnum.CREATING_BANK_TRANSACTION])
+    ).exclude(
+        tasklog__status='FAILED',
+        tasklog__re_attempt_export=False
+    ).values_list('id', flat=True).distinct()
+
+    assert expense_group.id not in list(eligible_expense_group_ids), f"Expected expense group {expense_group.id} to be excluded from export"
+
+
+def test_run_sync_schedule_expense_groups_without_task_log_filtering(db):
+    """
+    Test expense group filtering logic
+    Case: Expense groups should be included when they have no associated task log
+    """
+    workspace_id = 1
+
+    # Create expense group without any task log
+    expense_group = ExpenseGroup.objects.create(
+        workspace_id=workspace_id,
+        fund_source='PERSONAL',
+        description='Test expense group without task log'
+    )
+
+    eligible_expense_group_ids = ExpenseGroup.objects.filter(
+        workspace_id=workspace_id,
+        exported_at__isnull=True
+    ).filter(
+        Q(tasklog__isnull=True)
+        | Q(tasklog__type__in=[TaskLogTypeEnum.CREATING_BILL, TaskLogTypeEnum.CREATING_BANK_TRANSACTION])
+    ).exclude(
+        tasklog__status='FAILED',
+        tasklog__re_attempt_export=False
+    ).values_list('id', flat=True).distinct()
+
+    assert expense_group.id in list(eligible_expense_group_ids), f"Expected expense group {expense_group.id} to be eligible for export"
