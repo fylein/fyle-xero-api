@@ -1,7 +1,9 @@
 import json
+
 from fyle_accounting_mappings.models import MappingSetting
-from apps.workspaces.models import Workspace, XeroCredentials
 from xerosdk import exceptions as xero_exc
+
+from apps.workspaces.models import Workspace, XeroCredentials
 
 
 def test_get_token_health(mocker, api_client, test_connection):
@@ -43,11 +45,53 @@ def test_get_token_health(mocker, api_client, test_connection):
     assert response.status_code == 400
     assert response.data['message'] == "Xero connection expired"
 
-    # for WrongParamsError
     mocker.patch("apps.xero.utils.XeroConnector.get_organisations", side_effect=xero_exc.WrongParamsError("Wrong parameters"))
     response = api_client.get(url)
     assert response.status_code == 400
     assert response.data['message'] == "Xero connection expired"
+
+
+def test_token_health_wrong_params_error_coverage(mocker, api_client, test_connection):
+    """
+    test to cover TokenHealthView for WrongParamsError
+    """
+    workspace_id = 1
+    access_token = test_connection.access_token
+    url = "/api/workspaces/{}/xero/token_health/".format(workspace_id)
+    api_client.credentials(HTTP_AUTHORIZATION="Bearer {}".format(access_token))
+
+    XeroCredentials.objects.filter(workspace_id=workspace_id).delete()
+    XeroCredentials.objects.create(workspace_id=workspace_id, refresh_token="dummy_refresh_token", is_expired=False)
+
+    mock_logger = mocker.patch("apps.xero.views.logger")
+
+    mocker.patch("apps.xero.utils.XeroConnector.__init__", return_value=None)
+    mocker.patch("apps.xero.utils.XeroConnector.get_organisations", side_effect=xero_exc.WrongParamsError("Wrong params"))
+
+    def passthrough_decorator():
+        def decorator(func):
+            def new_fn(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except xero_exc.WrongParamsError:
+                    raise
+                except Exception as e:
+                    from rest_framework.response import Response
+                    from rest_framework.views import status
+                    return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return new_fn
+        return decorator
+
+    mocker.patch("apps.xero.views.handle_view_exceptions", side_effect=passthrough_decorator)
+    response = api_client.get(url)
+    mock_logger.error.assert_called_once_with(
+        "Xero wrong params error for workspace_id %s",
+        workspace_id,
+        exc_info=True
+    )
+
+    assert response.status_code == 400
+    assert response.data['message'] == "Something went wrong"
 
 
 def test_get_tenant_view(api_client, test_connection):
