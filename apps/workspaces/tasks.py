@@ -60,8 +60,8 @@ def run_sync_schedule(workspace_id):
             tasklog__re_attempt_export=False
         ).values_list('id', flat=True).distinct()
 
-        if eligible_expense_group_ids:
-            export_to_xero(workspace_id, expense_group_ids=eligible_expense_group_ids, triggered_by=ExpenseImportSourceEnum.BACKGROUND_SCHEDULE)
+        if eligible_expense_group_ids.exists():
+            export_to_xero(workspace_id, expense_group_ids=list(eligible_expense_group_ids), triggered_by=ExpenseImportSourceEnum.BACKGROUND_SCHEDULE)
 
 
 def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
