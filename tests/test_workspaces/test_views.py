@@ -145,7 +145,15 @@ def test_connect_xero_view_post(mocker, api_client, test_connection):
         response = api_client.post(
             url, data={"code": code, "redirect_uri": "ffff.fff.fff"}
         )
-        assert response.status_code == 200
+        assert response.status_code == 400
+
+        mock_call.side_effect = xero_exc.InvalidTokenError(
+            msg="Invalid token", response="Invalid token"
+        )
+        response = api_client.post(
+            url, data={"code": code, "redirect_uri": "ffff.fff.fff"}
+        )
+        assert response.status_code == 400
 
 
 def test_connect_xero_view_exceptions(api_client, test_connection):
