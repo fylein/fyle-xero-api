@@ -1,21 +1,21 @@
 import base64
 import json
 from typing import Dict
+from urllib.parse import urlencode
 
 import jwt
 import requests
 from django.conf import settings
-from future.moves.urllib.parse import urlencode
 from fyle_accounting_mappings.models import MappingSetting
 from xerosdk import InternalServerError, InvalidTokenError, XeroSDK
 
 from apps.fyle.enums import FyleAttributeEnum
 from apps.fyle.models import ExpenseGroupSettings
 from apps.mappings.queue import schedule_auto_map_employees
+from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings
 from apps.xero.queue import schedule_payment_creation, schedule_reimbursements_sync, schedule_xero_objects_status_sync
 from fyle_xero_api.utils import assert_valid
-from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
 
 
 def generate_token(authorization_code: str, redirect_uri: str = None) -> str:
