@@ -99,7 +99,7 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         Workspace.objects.get(id=kwargs['workspace_id'])
         FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
-        async_task('apps.fyle.actions.refresh_fyle_dimension', kwargs['workspace_id'])
+        async_task('apps.fyle.tasks.sync_dimensions', kwargs['workspace_id'])
 
         return Response(status=status.HTTP_200_OK)
 
