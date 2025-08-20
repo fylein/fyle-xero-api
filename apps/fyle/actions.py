@@ -49,17 +49,6 @@ def get_expense_field(workspace_id):
     return expense_fields
 
 
-def refresh_fyle_dimension(workspace_id):
-    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-
-    platform = PlatformConnector(fyle_credentials)
-    platform.import_fyle_dimensions()
-
-    workspace = Workspace.objects.get(id=workspace_id)
-    workspace.source_synced_at = datetime.now()
-    workspace.save(update_fields=["source_synced_at"])
-
-
 def exportable_expense_group(workspace_id):
     configuration = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     fund_source = []
