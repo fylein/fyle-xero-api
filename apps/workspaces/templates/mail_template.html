@@ -1,304 +1,617 @@
 {% load custom_filters %}
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Fyle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Roboto", sans-serif !important;
+        font-weight: 300;
+      }
 
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <title>Fyle</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif !important;
-      font-weight: 300;
-    }
+      #task-logs {
+        border-collapse: collapse;
+        table-layout: fixed;
+        width: 100%;
+        margin-bottom: 24px;
+      }
 
-    #task-logs {
-      border-collapse: collapse;
-      table-layout: fixed;
-      width: 100%;
-      margin-bottom: 24px;
-    }
+      #task-logs #header {
+        background-color: #f5f5f5;
+        border: 1px solid #dfdfe2;
+        border-radius: 8px;
+      }
 
-    #task-logs #header {
-      background-color: #F5F5F5;
-      border: 1px solid #DFDFE2;
-      border-radius: 8px;
-    }
+      #task-logs th {
+        padding: 13px 0px 12px 23px;
+        text-align: left;
+        border: 1px solid #dfdfe2;
+        width: 25%;
+        font-weight: 500;
+        font-size: 12px;
+        color: #1a1a1a;
+      }
 
-    #task-logs th {
-      padding: 13px 0px 12px 23px;
-      text-align: left;
-      border: 1px solid #DFDFE2;
-      width: 25%;
-      font-weight: 500;
-      font-size: 12px;
-      color: #2C304E;
-    }
+      #task-logs td {
+        padding: 24px 0px 26px 23px;
+        text-align: left;
+        border-bottom: 1px solid #dfdfe2;
+        border-radius: 4px;
+        width: 25%;
+        font-weight: 300;
+        font-size: 14px;
+        color: #1a1a1a;
+        border: 1px solid #dfdfe2;
+      }
+    </style>
+  </head>
 
-    #task-logs td {
-      padding: 24px 0px 26px 23px;
-      text-align: left;
-      border-bottom: 1px solid #DFDFE2;
-      border-radius: 4px;
-      width: 25%;
-      font-weight: 300;
-      font-size: 14px;
-      color: #414562;
-      border: 1px solid #DFDFE2;
-    }
-  </style>
-</head>
-
-<body style="margin: 0; padding: 0;">
-  <div itemscope itemtype="http://schema.org/EmailMessage">
-    <div itemprop="potentialAction" itemscope itemtype="http://schema.org/ViewAction">
-      <link itemprop="target" href="{{ global_cta.url }}" />
-      <meta itemprop="name" content="{{ global_cta.text }}" />
+  <body style="margin: 0; padding: 0">
+    <div itemscope itemtype="http://schema.org/EmailMessage">
+      <div
+        itemprop="potentialAction"
+        itemscope
+        itemtype="http://schema.org/ViewAction"
+      >
+        <link itemprop="target" href="{{ global_cta.url }}" />
+        <meta itemprop="name" content="{{ global_cta.text }}" />
+      </div>
+      <meta itemprop="description" content="{{ global_cta.text }}" />
     </div>
-    <meta itemprop="description" content="{{ global_cta.text }}" />
-  </div>
 
-  <table border="0" cellpadding="10" cellspacing="10" align="center" width="100%" style="background-color: #f6f7f9;">
-    <tr>
-      <td>
-        <table align="center" border="0" cellpadding="0" cellspacing="0" width="600"
-          style=" border-collapse: collapse; background-color: #ffffff; border-radius: 4px; border: solid 1px #d8d8d8;">
-          <tr>
-            <td bgcolor="#f3f5f6"
-              background="images/background.png"
-              style="padding: 10px 25px 10px 25px;" width="600" height="50">
-
-              <table width="35%">
-                <tr>
-                  <td>
-                    <img src="{{integrations_app_url}}/assets/logos/email/fyle_logo_black_full.png" alt="Fyle" title="Fyle"
-                      style="display:block" height="30" width="90" />
-                  </td>
-                  <td align="right">
-                    <span style="padding-left:8px;padding-right:6px">+</span>
-                  </td>
-                  <td align="right">
-                    <img
-                      src="{{integrations_app_url}}/assets/logos/email/xero-logo.png"
-                      alt="{{org_logo.title}}" title="{{org_logo.title}}" height="60" width="60px"
-                      style="padding-top:6px" />
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 35px 25px 0px 15px;">
-              <table width="100%" cellspacing="10">
-                <tr align="center">
-                  <td>
-                    <img style="height: 150px;"
-                      src="{{integrations_app_url}}/assets/logos/email/icon.png">
-                  </td>
-                </tr>
-                <tr align="center">
-                  <td
-                    style="font-size: 20px; padding-bottom: 30px; color: #161528; font-weight:900; padding-top: 40px;">
-                    {{ errors_count }} Transactions Failed To Export
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <table style=" padding: 10px; background:#F5F5F5; border-radius: 8px;"
-                      width="100%" cellspacing="10">
-                      <tr style="font-style: normal;
-                          font-weight: 500;
-                          font-size: 14px;
-                          line-height: 15px;
-                          letter-spacing: 0.02em;
-                          color: #5A5D72;">
-                        <td style="width: 50%;">Fyle Organization</td>
-                        <td style="width: 50%;">Xero Tenant Name</td>
-                      </tr>
-                      <tr style="
-                          font-style: normal;
-                          font-weight: 500;
-                          font-size: 14px;
-                          line-height: 20px;
-                          color: #161528;">
-                        <td style="width: 50%;">{{ fyle_company }}</td>
-                        <td style="width: 50%;">{{ xero_tenant }}</td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <table style="padding: 24px 0px 24px 0px;">
-                      <tr align="left">
-                        <td style="font-size: 15px; line-height: 18px; color: #2C304E;">
-                          Dear {{ name }},
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="font-size: 15px; line-height: 18px; padding-top: 15px; color: #2C304E;">
-                          {{ errors_count }} transactions failed to export automatically
-                          from your Fyle org to Xero due to the following errors.
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="font-size: 14px; padding-top: 15px;line-height: 18px; color: #414562;">
-                          <b>Error Type</b> - {{error_type}}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="font-size: 14px; padding-top: 15px;line-height: 18px; color: #414562;">
-                          <b>Export time</b> - {{ export_time }}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="font-size: 14px;line-height: 18px;padding-top: 15px;color: #2C304E;">
-                          <a href="{{app_url}}" style="color: #2C304E;">Here</a> is the list of all expenses that are part of the failed transaction for your reference.
-                        </td>
-                      </tr>
-                      <tr>
-                        <td
-                          style="font-style: normal;font-size: 14px;line-height: 18px;padding-top: 15px; color: #414562;">
-                          A detailed breakup of the error can be found in the table below
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-left: 8px;padding-right:8px;border-radius: 15px !important;">
-              <table id="task-logs">
-                <tr id="header" style="border-radius: 10px;">
-                  <th>Error Type</th>
-                  <th>Error</th>
-                  <th>Error value / Message</th>
-                </tr>
-                {% for error in errors %}
-                  {% if error.type == 'EMPLOYEE_MAPPING' or error.type == 'CATEGORY_MAPPING' %}
-                      <tr>
-                          <td>Mapping Error </td>
-                          <td>{{ error.type | snake_case_to_space_case }}</td>
-                          <td style="padding-right: 8px">{{ error.error_title }}</td>
-                      </tr>
-                  {% elif error.type == 'TAX_MAPPING' %}
-                      <tr>
-                          <td>Tax Mapping Error </td>
-                          <td>{{ error.type | snake_case_to_space_case }}</td>
-                          <td style="padding-right: 8px">{{ error.error_title }}</td>
-                      </tr>
-                  {% elif error.type == 'XERO_ERROR' %}
-                      <tr>
-                          <td>Xero Error </td>
-                          <td>{{ error.type | snake_case_to_space_case }}</td>
-                          <td style="padding-right: 8px">{{ error.error_detail }}</td>
-                      </tr>
-                  {% endif %}
-                {% endfor %}
-              </table>
-            </td>
-          </tr>
-          <tr align="center">
-            <td style="padding-top: 20px;">
-              <table border="0" cellspacing="0" cellpadding="0">
-                <tr align="center">
-                  <td align="center" style="background: #007E45;
-                  border-radius: 32px;">
-                    <a href="{{app_url}}" target="_blank" style="font-weight: 400; font-size: 14px;line-height: 18px; color: #ffffff; text-decoration: none; display: flex;flex-direction: row;
-                      justify-content: center;align-items: center;padding: 12px 24px;gap: 8px;border-radius: 4px;">
-                      <span style="margin-right: 10px;">Visit Integrations to Resolve</span>
+    <table
+      border="0"
+      cellpadding="0"
+      cellspacing="0"
+      align="center"
+      width="100%"
+      style="background-color: #f6f7f9"
+    >
+      <tr>
+        <td>
+          <table
+            align="center"
+            border="0"
+            cellpadding="0"
+            cellspacing="0"
+            width="600"
+            style="
+              border-collapse: collapse;
+              background-color: #ffffff;
+              border-radius: 4px;
+              border: solid 1px #d8d8d8;
+            "
+          >
+            <tr>
+              <td
+                align="center"
+                bgcolor="#000"
+                style="padding: 30px"
+                width="600"
+                height="50"
+              >
+                <table width="35%">
+                  <tr>
+                    <td>
                       <img
-                        src="{{integrations_app_url}}/assets/logos/email/redirect-icon.png" width="16" height="16">
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size: 14px;line-height: 18px;padding: 35px 24px 0px;color: #2C304E;">
-              You can, easily fix these errors from your integration dashboard.
-            </td>
-          </tr>
-          <tr>
-            <td style="font-size: 12px; line-height: 18px; padding: 35px 24px 15px; color: #5A5D72;text-align: left;">
-              You are receiving this email because your email address has been selected in the integration under
-              Automated Import/Export.
-            </td>
-          </tr>
-          <tr align="center">
-            <td>
-              <table style="padding: 0;" cellspacing="10">
-                <tr>
-                  <td
-                    style="font-size: 12px; font-weight: normal; font-stretch: normal; font-style: normal; line-height: normal; letter-spacing: normal; text-align: center; color: #a5a5a5; padding: 20px 0px 0px 0px"
-                    colspan=5>
-                    Experience One Click Easy Fyling
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 0px 5px;">
-                    <a href="https://itunes.apple.com/in/app/fyle-track-report-expenses/id1137906166">
-                      <img alt="Appstore" title="Appstore"
-                        src="{{integrations_app_url}}/assets/logos/email/Apple_logo_grey.png"
-                        height="18" width="16">
-                    </a>
-                  <td style="padding: 0px 5px;">
-                    <a href="https://play.google.com/store/apps/details?id=com.ionicframework.fyle595781">
-                      <img alt="Playstore" title="Playstore"
-                        src="{{integrations_app_url}}/assets/logos/email/playstore.png"
-                        height="16" width="16">
-                    </a>
+                        src="{{integrations_app_url}}/assets/logos/email/fyle_logo_white_full.png"
+                        alt="Fyle"
+                        title="Fyle"
+                        style="display: block"
+                        height="30"
+                        width="90"
+                      />
+                    </td>
+                    <td align="right">
+                      <span
+                        style="
+                          padding-left: 8px;
+                          padding-right: 6px;
+                          color: #fff;
+                        "
+                        >+</span
+                      >
+                    </td>
+                    <td align="right">
+                      <img
+                        src="{{integrations_app_url}}/assets/logos/email/xero-logo.png"
+                        alt="{{org_logo.title}}"
+                        title="{{org_logo.title}}"
+                        height="60px"
+                        width="60px"
+                        style="padding: 8px 0"
+                      />
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr style="color: #1a1a1a; font-size: 14px">
+              <td style="padding: 40px 40px 0px 40px">
+                <table width="100%">
+                  <tr>
+                    <td
+                      style="
+                        font-size: 14px;
+                        padding-bottom: 40px;
+                        font-weight: 700;
+                      "
+                    >
+                      {{ errors_count }} Transactions Failed To Export
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <table
+                        style="
+                          padding: 12px;
+                          background: #f2f5f6;
+                          border-radius: 2px;
+                        "
+                        width="100%"
+                        cellspacing="10"
+                      >
+                        <tr
+                          style="
+                            font-style: normal;
+                            font-size: 14px;
+                            line-height: 20px;
+                            letter-spacing: 0.02em;
+                          "
+                        >
+                          <td style="width: 50%">Fyle organization</td>
+                          <td style="width: 50%">Xero tenant name</td>
+                        </tr>
+                        <tr
+                          style="
+                            font-style: normal;
+                            font-weight: 600;
+                            font-size: 14px;
+                            line-height: 20px;
+                          "
+                        >
+                          <td style="width: 50%">{{ fyle_company }}</td>
+                          <td style="width: 50%">{{ xero_tenant }}</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <table style="padding: 40px 0px 40px 0px">
+                        <tr align="left">
+                          <td style="line-height: 18px">Dear {{ name }},</td>
+                        </tr>
+                        <tr>
+                          <td style="line-height: 18px; padding-top: 15px">
+                            {{ errors_count }} transactions failed to export
+                            automatically from your Fyle org to Xero due to the
+                            following errors.
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              padding-top: 15px;
+                              line-height: 18px;
+                              color: #595959;
+                            "
+                          >
+                            <b>Error type</b> -
+                            <span style="color: #1a1a1a; font-weight: 500"
+                              >{{ error_type }}</span
+                            >
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              padding-top: 15px;
+                              line-height: 18px;
+                              color: #595959;
+                            "
+                          >
+                            <b>Export time</b> -
+                            <span style="color: #1a1a1a; font-weight: 500"
+                              >{{ export_time }}</span
+                            >
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="line-height: 22px; padding-top: 15px">
+                            <a href="{{app_url}}" style="color: #0c713f"
+                              >Here</a
+                            >
+                            is the list of all expenses that are part of the
+                            failed transaction for your reference.
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="
+                              font-style: normal;
+                              line-height: 18px;
+                              padding-top: 15px;
+                            "
+                          >
+                            A detailed breakup of the error can be found in the
+                            table below
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  padding-left: 40px;
+                  padding-right: 40px;
+                  border-radius: 2px !important;
+                "
+              >
+                <table
+                  id="task-logs"
+                  width="100%"
+                  style="
+                    border-collapse: collapse;
+                    table-layout: fixed;
+                    width: 100%;
+                    margin-bottom: 24px;
+                  "
+                >
+                  <tr
+                    id="header"
+                    style="
+                      background-color: #f2f5f6;
+                      border: 1px solid #dfdfe2;
+                      border-radius: 8px;
+                    "
+                  >
+                    <th
+                      style="
+                        padding: 13px 0px 12px 23px;
+                        text-align: left;
+                        border: 1px solid #dfdfe2;
+                        width: 25%;
+                        font-weight: 500;
+                        font-size: 14px;
+                        color: #1a1a1a;
+                      "
+                    >
+                      Error type
+                    </th>
+                    <th
+                      style="
+                        padding: 13px 0px 12px 23px;
+                        text-align: left;
+                        border: 1px solid #dfdfe2;
+                        width: 25%;
+                        font-weight: 500;
+                        font-size: 14px;
+                        color: #1a1a1a;
+                      "
+                    >
+                      Error
+                    </th>
+                    <th
+                      style="
+                        padding: 13px 0px 12px 23px;
+                        text-align: left;
+                        border: 1px solid #dfdfe2;
+                        width: 25%;
+                        font-weight: 500;
+                        font-size: 14px;
+                        color: #1a1a1a;
+                      "
+                    >
+                      Error value / Message
+                    </th>
+                  </tr>
+                  {% for error in errors %}
+                  {% if error.type == 'EMPLOYEE_MAPPING' or error.type == 'CATEGORY_MAPPING' %}
+                  <tr>
+                    <td>Mapping Error</td>
+                    <td>{{ error.type | snake_case_to_space_case }}</td>
+                    <td style="padding-right: 8px">{{ error.error_title }}</td>
+                  </tr>
+                  {% elif error.type == 'TAX_MAPPING' %}
+                  <tr>
+                    <td>Tax Mapping Error</td>
+                    <td>{{ error.type | snake_case_to_space_case }}</td>
+                    <td style="padding-right: 8px">{{ error.error_title }}</td>
+                  </tr>
+                  {% elif error.type == 'XERO_ERROR' %}
+                  <tr>
+                    <td>Xero Error</td>
+                    <td>{{ error.type | snake_case_to_space_case }}</td>
+                    <td style="padding-right: 8px">{{ error.error_detail }}</td>
+                  </tr>
+                  {% endif %}
+                  {% endfor %}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 40px 40px 0 40px">
+                <table border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td
+                      align="center"
+                      style="background: #007e45; border-radius: 32px"
+                    >
+                      <a
+                        href="{{app_url}}"
+                        target="_blank"
+                        style="
+                          font-weight: 400;
+                          font-size: 14px;
+                          line-height: 18px;
+                          color: #ffffff;
+                          text-decoration: none;
+                          border-radius: 32px;
+                        "
+                      >
+                        <span style="padding: 12px 24px; display: block"
+                          >Visit integrations to resolve</span
+                        >
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  font-size: 14px;
+                  line-height: 22px;
+                  padding: 40px 40px 0 40px;
+                  color: #1a1a1a;
+                "
+              >
+                You can, easily fix these errors from your integration
+                dashboard. Here's a quick
+                <a
+                  target="_blank"
+                  href="https://www.fylehq.com/help/en/articles/6240421-how-to-export-expenses-from-fyle-to-qbo-via-the-integration#h_52f186fcbc"
+                  style="color: #0c713f; text-decoration: underline"
+                  >guide</a
+                >
+                on how to resolve errors in the integration.
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  font-size: 14px;
+                  line-height: 22px;
+                  padding: 40px;
+                  color: #1a1a1a;
+                "
+              >
+                You are receiving this email because your email address has been
+                selected in the integration under Automated Import/Export.
+              </td>
+            </tr>
+            <!-- Footer -->
 
-                  </td>
-                  <td style="height: 20px; border-left: 1px solid #d8d8d8; padding: 0px 5px;">
-                  </td>
-                  <td style="padding: 0px 5px;">
-                    <a
-                      href="https://chrome.google.com/webstore/detail/fyle-expense-tracking-rep/abggpefphmldapcoknbcaadbpdjjmjgk">
-                      <img alt="Gmail" title="Gmail"
-                        src="{{integrations_app_url}}/assets/logos/email/gmail.png"
-                        height="18" width="20">
-                    </a>
+            <tr align="left" style="background: #000">
+              <td style="padding: 40px">
+                <table>
+                  <tr>
+                    <td
+                      colspan="5"
+                      style="
+                        font-size: 12px;
+                        line-height: normal;
+                        color: rgba(255, 255, 255, 0.9);
+                        padding: 0;
+                      "
+                    >
+                      Track expenses with our mobile app:
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://itunes.apple.com/in/app/fyle-track-report-expenses/id1137906166"
+                        style="
+                          padding: 0 4px;
+                          color: inherit;
+                          text-decoration: none;
+                          display: inline-block;
+                          vertical-align: middle;
+                          font-size: 12px;
+                        "
+                      >
+                        <img
+                          alt="Appstore"
+                          title="Appstore"
+                          src="{{integrations_app_url}}/assets/logos/email/apple_logo_white.png"
+                          height="16"
+                          width="16"
+                          style="
+                            vertical-align: middle;
+                            padding-right: 2px;
+                            padding-bottom: 4px;
+                          "
+                        />
+                        <span style="text-decoration: underline">iOS</span>
+                      </a>
+                      <span
+                        style="
+                          display: inline-block;
+                          height: 16px;
+                          border-left: 1px solid rgba(255, 255, 255, 0.9);
+                          vertical-align: middle;
+                        "
+                      ></span>
 
-                  </td>
-                  <td style="padding: 0px 5px;">
-                    <a href="https://appsource.microsoft.com/en-us/product/office/WA104380673">
-                      <img alt="Outlook" title="Outlook"
-                        src="{{integrations_app_url}}/assets/logos/email/outlook.png"
-                        height="18" width="16">
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td
-              background="{{integrations_app_url}}/assets/logos/email/background.png"
-              style="padding: 10px 10px 8px 5px; background-color: #f3f5f6;">
-              <table align="center">
-                <tr>
-                  <td
-                    style="color: #4A4A4A; font-size: 12px; text-align: center; line-height: 15px;padding-bottom: 17px;">
-                    Made with ❤️ in Bangalore
-                  </td>
-                </tr>
-                <tr style="color: #4A4A4A; font-size: 12px; text-align: center; line-height: 15px;">
-                  <td>
-                    {{ year }} Fyle. All Rights Reserved.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://play.google.com/store/apps/details?id=com.ionicframework.fyle595781"
+                        style="
+                          padding: 0 4px;
+                          color: inherit;
+                          text-decoration: none;
+                          display: inline-block;
+                          vertical-align: middle;
+                        "
+                      >
+                        <img
+                          alt="Playstore"
+                          title="Playstore"
+                          src="{{integrations_app_url}}/assets/logos/email/playstore_colours.png"
+                          height="14"
+                          width="14"
+                          style="
+                            vertical-align: middle;
+                            padding-right: 2px;
+                            padding-bottom: 3px;
+                          "
+                        />
+                        <span style="text-decoration: underline">Android</span>
+                      </a>
+                    </td>
+                  </tr>
+                  <tr style="color: rgba(255, 255, 255, 0.9)">
+                    <td style="font-size: 12px">
+                      Also available on:
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="color: rgba(255, 255, 255, 0.9)"
+                        href="https://chrome.google.com/webstore/detail/fyle-expense-tracking-rep/abggpefphmldapcoknbcaadbpdjjmjgk"
+                      >
+                        Gmail
+                      </a>
+                      <span
+                        style="
+                          margin: 0 4px;
+                          height: 20px;
+                          border-left: 1px solid rgba(255, 255, 255, 0.9);
+                        "
+                      ></span>
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="color: rgba(255, 255, 255, 0.9)"
+                        href="https://appsource.microsoft.com/en-us/product/office/WA104380673"
+                      >
+                        Outlook
+                      </a>
+                      <span
+                        style="
+                          margin: 0 4px;
+                          height: 20px;
+                          border-left: 1px solid rgba(255, 255, 255, 0.9);
+                        "
+                      ></span>
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="color: rgba(255, 255, 255, 0.9)"
+                        href="https://slack.com/apps/AN82A0P1B-fyle"
+                      >
+                        Slack
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="5" style="padding: 0 40px; background: #000">
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  role="presentation"
+                >
+                  <tr>
+                    <td
+                      height="2"
+                      style="
+                        background: #00d639;
+                        line-height: 2px;
+                        font-size: 2px;
+                      "
+                    >
+                      &nbsp;
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr align="left" style="background: #000">
+              <td style="padding: 40px">
+                <table>
+                  <tr style="color: rgba(255, 255, 255, 0.9)">
+                    <td style="font-size: 12px">
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="color: rgba(255, 255, 255, 0.9)"
+                        href="https://www.fylehq.com/privacy/privacy-policy"
+                      >
+                        Privacy policy
+                      </a>
+                      <span
+                        style="
+                          margin: 0 8px;
+                          height: 20px;
+                          border-left: 1px solid rgba(255, 255, 255, 0.9);
+                        "
+                      ></span>
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="color: rgba(255, 255, 255, 0.9)"
+                        href="https://www.fylehq.com/help/en"
+                      >
+                        Help center
+                      </a>
+                      <span
+                        style="
+                          margin: 0 8px;
+                          height: 20px;
+                          border-left: 1px solid rgba(255, 255, 255, 0.9);
+                        "
+                      ></span>
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="color: rgba(255, 255, 255, 0.9)"
+                        href="https://app.fylehq.com/app/settings/#/profile/notifications"
+                      >
+                        Email notification preferences
+                      </a>
+                    </td>
+                  </tr>
+                  <tr
+                    style="
+                      color: rgba(255, 255, 255, 0.9);
+                      font-size: 12px;
+                      line-height: 15px;
+                    "
+                  >
+                    <td>{{ year }} Fyle. All Rights Reserved.</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>
