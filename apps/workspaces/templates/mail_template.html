@@ -317,8 +317,8 @@
                       Error value / Message
                     </th>
                   </tr>
-                  {% for error in errors %} {% if error.type ==
-                  'EMPLOYEE_MAPPING' or error.type == 'CATEGORY_MAPPING' %}
+                  {% for error in errors %}
+                  {% if error.type == 'EMPLOYEE_MAPPING' or error.type == 'CATEGORY_MAPPING' %}
                   <tr>
                     <td>Mapping Error</td>
                     <td>{{ error.type | snake_case_to_space_case }}</td>
@@ -336,7 +336,8 @@
                     <td>{{ error.type | snake_case_to_space_case }}</td>
                     <td style="padding-right: 8px">{{ error.error_detail }}</td>
                   </tr>
-                  {% endif %} {% endfor %}
+                  {% endif %}
+                  {% endfor %}
                 </table>
               </td>
             </tr>
