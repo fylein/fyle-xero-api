@@ -66,7 +66,7 @@ def test_clear_workspace_errors_with_mapping_errors(
             'is_resolved': False
         },
         {
-            'type': 'INTACCT_ERROR',
+            'type': 'XERO_ERROR',
             'expense_group_id': 201,
             'error_title': 'Export failed',
             'error_detail': 'Some export error'
