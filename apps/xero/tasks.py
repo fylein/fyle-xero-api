@@ -256,17 +256,21 @@ def create_bill(
     sleep(2)
     caller_info = get_caller_info()
 
-    with transaction.atomic():
-        task_log = TaskLog.objects.select_for_update().get(id=task_log_id)
-        expense_group = ExpenseGroup.objects.get(id=expense_group_id, workspace_id=task_log.workspace_id)
-        worker_logger.info('Creating Bill for Expense Group %s, current state is %s, triggered by %s, called from %s', expense_group.id, task_log.status, task_log.triggered_by, caller_info)
+    try:
+        with transaction.atomic():
+            task_log = TaskLog.objects.select_for_update().get(id=task_log_id)
+            expense_group = ExpenseGroup.objects.get(id=expense_group_id, workspace_id=task_log.workspace_id)
+            worker_logger.info('Creating Bill for Expense Group %s, current state is %s, triggered by %s, called from %s', expense_group.id, task_log.status, task_log.triggered_by, caller_info)
 
-        if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
-            task_log.status = TaskLogStatusEnum.IN_PROGRESS
-            task_log.save()
-        else:
-            worker_logger.info('Task log %s is already in %s state, workspace id %s, so skipping the task', task_log_id, task_log.status, task_log.workspace_id)
-            return
+            if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
+                task_log.status = TaskLogStatusEnum.IN_PROGRESS
+                task_log.save()
+            else:
+                worker_logger.info('Task log %s is already in %s state, workspace id %s, so skipping the task', task_log_id, task_log.status, task_log.workspace_id)
+                return
+    except TaskLog.DoesNotExist:
+        worker_logger.info('Task log %s was deleted (likely due to export settings change), skipping bill creation', task_log_id)
+        return
 
     xero_credentials = XeroCredentials.get_active_xero_credentials(expense_group.workspace_id)
     xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
@@ -440,17 +444,21 @@ def create_bank_transaction(
     sleep(2)
     caller_info = get_caller_info()
 
-    with transaction.atomic():
-        task_log = TaskLog.objects.select_for_update().get(id=task_log_id)
-        expense_group = ExpenseGroup.objects.get(id=expense_group_id, workspace_id=task_log.workspace_id)
-        worker_logger.info('Creating Bank Transaction for Expense Group %s, current state is %s, triggered by %s, called from %s', expense_group.id, task_log.status, task_log.triggered_by, caller_info)
+    try:
+        with transaction.atomic():
+            task_log = TaskLog.objects.select_for_update().get(id=task_log_id)
+            expense_group = ExpenseGroup.objects.get(id=expense_group_id, workspace_id=task_log.workspace_id)
+            worker_logger.info('Creating Bank Transaction for Expense Group %s, current state is %s, triggered by %s, called from %s', expense_group.id, task_log.status, task_log.triggered_by, caller_info)
 
-        if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
-            task_log.status = TaskLogStatusEnum.IN_PROGRESS
-            task_log.save()
-        else:
-            worker_logger.info('Task log %s is already in %s state, workspace id %s, so skipping the task', task_log_id, task_log.status, task_log.workspace_id)
-            return
+            if task_log.status not in [TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.COMPLETE]:
+                task_log.status = TaskLogStatusEnum.IN_PROGRESS
+                task_log.save()
+            else:
+                worker_logger.info('Task log %s is already in %s state, workspace id %s, so skipping the task', task_log_id, task_log.status, task_log.workspace_id)
+                return
+    except TaskLog.DoesNotExist:
+        worker_logger.info('Task log %s was deleted (likely due to export settings change), skipping bank transaction creation', task_log_id)
+        return
 
     xero_credentials = XeroCredentials.get_active_xero_credentials(expense_group.workspace_id)
     xero_connection = XeroConnector(xero_credentials, expense_group.workspace_id)
