@@ -12,7 +12,7 @@ from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSe
 from apps.workspaces.queue import schedule_sync
 from apps.workspaces.tasks import (
     async_add_admins_to_workspace,
-    async_create_admin_subcriptions,
+    async_create_admin_subscriptions,
     async_update_fyle_credentials,
     async_update_workspace_name,
     post_to_integration_settings,
@@ -173,12 +173,12 @@ def test_async_update_workspace_name(mocker):
     assert workspace.name == 'Test Org'
 
 
-def test_async_create_admin_subcriptions(db, mocker):
+def test_async_create_admin_subscriptions(db, mocker):
     mocker.patch(
         'fyle.platform.apis.v1.admin.Subscriptions.post',
         return_value={}
     )
-    async_create_admin_subcriptions(1)
+    async_create_admin_subscriptions(1)
 
 
 @pytest.mark.django_db(databases=['default'])
