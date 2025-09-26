@@ -34,6 +34,12 @@ SOURCE_ACCOUNT_MAP = {
     FundSourceEnum.CCC: PlatformExpensesEnum.PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT
 }
 
+# Reverse mapping for fund source change detection
+REVERSE_SOURCE_ACCOUNT_MAP = {
+    PlatformExpensesEnum.PERSONAL_CASH_ACCOUNT: FundSourceEnum.PERSONAL,
+    PlatformExpensesEnum.PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT: FundSourceEnum.CCC
+}
+
 
 def get_task_log_and_fund_source(workspace_id: int):
     task_log, _ = TaskLog.objects.update_or_create(
@@ -333,6 +339,11 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
             if is_state_change_event:
                 expenses = filter_expenses_based_on_state(expenses, expense_group_settings)
 
+            # Check for fund source changes if expenses exist for this report and report state is approved
+            existing_expenses = Expense.objects.filter(workspace_id=workspace.id, report_id=report_id).exists()
+            if existing_expenses and expenses and expenses[0].get('state') in ['APPROVED', 'ADMIN_APPROVED']:
+                handle_expense_fund_source_change(workspace.id, report_id, platform)
+
             group_expenses_and_save(expenses, task_log, workspace, imported_from=imported_from)
 
         # Export only selected expense groups
@@ -387,6 +398,390 @@ def update_non_exported_expenses(data: Dict) -> None:
             expense_obj = []
             expense_obj.append(data)
             expense_objects = FyleExpenses().construct_expense_object(expense_obj, expense.workspace_id)
+            old_fund_source = expense.fund_source
+            new_fund_source = REVERSE_SOURCE_ACCOUNT_MAP[expense_objects[0]['source_account_type']]
+
             Expense.create_expense_objects(
                 expense_objects, expense.workspace_id, skip_update=True
             )
+
+            if old_fund_source != new_fund_source:
+                logger.info("Fund source changed for expense %s from %s to %s in workspace %s", expense.id, old_fund_source, new_fund_source, expense.workspace_id)
+                handle_fund_source_changes_for_expense_ids(
+                    workspace_id=expense.workspace_id,
+                    changed_expense_ids=[expense.id],
+                    report_id=expense.report_id,
+                    affected_fund_source_expense_ids={old_fund_source: [expense.id]}
+                )
+
+
+def handle_expense_fund_source_change(workspace_id: int, report_id: str, platform: PlatformConnector) -> None:
+    """
+    Handle expense fund source change
+    :param workspace_id: Workspace id
+    :param report_id: Report id
+    :param platform: Platform connector
+    :return: None
+    """
+    expenses = platform.expenses.get(
+        source_account_type=[SOURCE_ACCOUNT_MAP[FundSourceEnum.PERSONAL], SOURCE_ACCOUNT_MAP[FundSourceEnum.CCC]],
+        report_id=report_id,
+        filter_credit_expenses=False
+    )
+
+    expenses_to_update: List[Dict] = []
+    expense_ids_changed: List[int] = []
+    expenses_in_db = Expense.objects.filter(workspace_id=workspace_id, report_id=report_id).values_list('expense_id', 'fund_source', 'id')
+    expense_id_fund_source_map = {
+        expense[0]: {
+            'fund_source': expense[1],
+            'id': expense[2]
+        }
+        for expense in expenses_in_db
+    }
+
+    affected_fund_source_expense_ids: dict[str, List[int]] = {
+        FundSourceEnum.PERSONAL: [],
+        FundSourceEnum.CCC: []
+    }
+
+    for expense in expenses:
+        if expense['id'] in expense_id_fund_source_map:
+            new_expense_fund_source = REVERSE_SOURCE_ACCOUNT_MAP[expense['source_account_type']]
+            old_expense_fund_source = expense_id_fund_source_map[expense['id']]['fund_source']
+            if new_expense_fund_source != old_expense_fund_source:
+                logger.info("Expense Fund Source changed for expense %s from %s to %s", expense['id'], old_expense_fund_source, new_expense_fund_source)
+                expenses_to_update.append(expense)
+                expense_ids_changed.append(expense_id_fund_source_map[expense['id']]['id'])
+                affected_fund_source_expense_ids[old_expense_fund_source].append(expense_id_fund_source_map[expense['id']]['id'])
+
+    if expenses_to_update:
+        logger.info("Updating Fund Source Change for expenses with report_id %s in workspace %s | COUNT %s", report_id, workspace_id, len(expenses_to_update))
+        Expense.create_expense_objects(expenses=expenses_to_update, workspace_id=workspace_id, skip_update=False)
+        handle_fund_source_changes_for_expense_ids(workspace_id=workspace_id, changed_expense_ids=expense_ids_changed, report_id=report_id, affected_fund_source_expense_ids=affected_fund_source_expense_ids)
+
+
+def handle_fund_source_changes_for_expense_ids(workspace_id: int, changed_expense_ids: List[int], report_id: str, affected_fund_source_expense_ids: dict[str, List[int]], task_name: str = None) -> None:
+    """
+    Main entry point for handling fund_source changes for expense ids
+    :param workspace_id: workspace id
+    :param changed_expense_ids: List of expense IDs whose fund_source changed
+    :param report_id: Report id
+    :param affected_fund_source_expense_ids: Dict of affected fund sources and their expense ids
+    :param task_name: Name of the task to clean up
+    :return: None
+    """
+    from django.db.models import Count
+
+    filter_for_affected_expense_groups = construct_filter_for_affected_expense_groups(workspace_id=workspace_id, report_id=report_id, changed_expense_ids=changed_expense_ids, affected_fund_source_expense_ids=affected_fund_source_expense_ids)
+
+    with transaction.atomic():
+        affected_groups = ExpenseGroup.objects.filter(
+            filter_for_affected_expense_groups,
+            workspace_id=workspace_id,
+            exported_at__isnull=True
+        ).annotate(
+            expense_count=Count('expenses')
+        ).distinct()
+
+        if not affected_groups:
+            logger.info("No expense groups found for changed expenses: %s in workspace %s", changed_expense_ids, workspace_id)
+            return
+
+        affected_expense_ids = list(affected_groups.values_list('expenses__id', flat=True))
+
+        are_all_expense_groups_exported = True
+
+        for group in affected_groups:
+            logger.info("Processing fund source change for expense group %s with %s expenses in workspace %s", group.id, group.expense_count, workspace_id)
+            is_expense_group_processed = process_expense_group_for_fund_source_update(
+                expense_group=group,
+                changed_expense_ids=changed_expense_ids,
+                workspace_id=workspace_id,
+                report_id=report_id,
+                affected_fund_source_expense_ids=affected_fund_source_expense_ids
+            )
+
+            if not is_expense_group_processed:
+                are_all_expense_groups_exported = False
+
+        if are_all_expense_groups_exported:
+            logger.info("All expense groups are exported or are not initiated, proceeding with recreation of expense groups for changed expense ids %s in workspace %s", changed_expense_ids, workspace_id)
+            recreate_expense_groups(workspace_id=workspace_id, expense_ids=affected_expense_ids)
+            cleanup_scheduled_task(task_name=task_name, workspace_id=workspace_id)
+        else:
+            logger.info("Not all expense groups are exported, skipping recreation of expense groups for changed expense ids %s in workspace %s", changed_expense_ids, workspace_id)
+            return
+
+
+def process_expense_group_for_fund_source_update(expense_group: ExpenseGroup, changed_expense_ids: List[int], workspace_id: int, report_id: str, affected_fund_source_expense_ids: dict[str, List[int]]) -> bool:
+    """
+    Process individual expense group based on task log state
+    :param expense_group: Expense group
+    :param changed_expense_ids: List of expense IDs whose fund_source changed
+    :param workspace_id: Workspace id
+    :param report_id: Report id
+    :param affected_fund_source_expense_ids: Dict of affected fund sources and their expense ids
+    :return: bool indicating if group can be processed now
+    """
+    # this is to prevent update the task logs from different transactions
+    task_log = TaskLog.objects.select_for_update().filter(
+        ~Q(type__in=['CREATING_REIMBURSEMENT', 'CREATING_AP_PAYMENT']),
+        expense_group_id=expense_group.id,
+        workspace_id=expense_group.workspace_id
+    ).order_by('-created_at').first()
+
+    if task_log:
+        logger.info("Task log for expense group %s in %s state for workspace %s", expense_group.id, task_log.status, expense_group.workspace_id)
+        if task_log.status in ['ENQUEUED', 'IN_PROGRESS']:
+            schedule_task_for_expense_group_fund_source_change(changed_expense_ids=changed_expense_ids, workspace_id=workspace_id, report_id=report_id, affected_fund_source_expense_ids=affected_fund_source_expense_ids)
+            return False
+
+        elif task_log.status == 'COMPLETE':
+            logger.info("Skipping expense group %s - already exported successfully", expense_group.id)
+            return False
+
+    logger.info("Proceeding with processing for expense group %s in workspace %s", expense_group.id, expense_group.workspace_id)
+    delete_expense_group_and_related_data(expense_group=expense_group, workspace_id=workspace_id)
+    return True
+
+
+def delete_expense_group_and_related_data(expense_group: ExpenseGroup, workspace_id: int) -> None:
+    """
+    Delete expense group and all related data safely
+    :param expense_group: Expense group
+    :param workspace_id: Workspace id
+    :return: None
+    """
+    from apps.tasks.models import Error
+
+    group_id = expense_group.id
+
+    # Delete task logs
+    task_logs_deleted = TaskLog.objects.filter(
+        ~Q(type__in=['CREATING_REIMBURSEMENT', 'CREATING_AP_PAYMENT']),
+        expense_group_id=group_id,
+        workspace_id=workspace_id
+    ).delete()
+    logger.info("Deleted %s task logs for group %s in workspace %s", task_logs_deleted[0], group_id, workspace_id)
+
+    # Delete errors
+    errors_deleted = Error.objects.filter(
+        expense_group_id=group_id,
+        workspace_id=workspace_id
+    ).delete()
+    logger.info("Deleted %s error logs for group %s in workspace %s", errors_deleted[0], group_id, workspace_id)
+
+    # mapping_error_expense_group_ids in Error model
+    error_objects = Error.objects.filter(
+        mapping_error_expense_group_ids__contains=[group_id],
+        workspace_id=workspace_id
+    )
+    for error in error_objects:
+        logger.info("Removing expensegroup %s from mapping_error_expense_group_ids for error %s in workspace %s", group_id, error.id, workspace_id)
+        error.mapping_error_expense_group_ids.remove(group_id)
+        if error.mapping_error_expense_group_ids:
+            error.save(update_fields=['mapping_error_expense_group_ids'])
+        else:
+            error.delete()
+
+    # Delete the expense group (this will also delete expense_group_expenses relationships)
+    expense_group.delete()
+    logger.info("Deleted expense group %s in workspace %s", group_id, workspace_id)
+
+
+def recreate_expense_groups(workspace_id: int, expense_ids: List[int]) -> None:
+    """
+    Recreate expense groups using standard grouping logic
+    :param workspace_id: Workspace id
+    :param expense_ids: List of expense IDs
+    :return: None
+    """
+    logger.info("Recreating expense groups for %s expenses in workspace %s", len(expense_ids), workspace_id)
+
+    expenses = Expense.objects.filter(
+        id__in=expense_ids,
+        expensegroup__exported_at__isnull=True,
+        workspace_id=workspace_id
+    )
+
+    if not expenses:
+        logger.warning("No expenses found for recreation: %s in workspace %s", expense_ids, workspace_id)
+        return
+
+    configuration = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
+
+    # Delete reimbursable expenses if reimbursable expense settings is not configured
+    if not configuration.reimbursable_expenses_object:
+        reimbursable_expense_ids = [e.id for e in expenses if e.fund_source == FundSourceEnum.PERSONAL]
+
+        if reimbursable_expense_ids:
+            expenses = [e for e in expenses if e.id not in reimbursable_expense_ids]
+            delete_expenses_in_db(expense_ids=reimbursable_expense_ids, workspace_id=workspace_id)
+
+    # Delete corporate credit card expenses if corporate credit card expense settings is not configured
+    if not configuration.corporate_credit_card_expenses_object:
+        ccc_expense_ids = [e.id for e in expenses if e.fund_source == FundSourceEnum.CCC]
+
+        if ccc_expense_ids:
+            expenses = [e for e in expenses if e.id not in ccc_expense_ids]
+            delete_expenses_in_db(expense_ids=ccc_expense_ids, workspace_id=workspace_id)
+
+    expense_objects = expenses
+
+    ExpenseGroup.create_expense_groups_by_report_id_fund_source(
+        expense_objects, workspace_id
+    )
+
+    logger.info("Successfully recreated expense groups for %s expenses in workspace %s", len(expense_ids), workspace_id)
+
+
+def schedule_task_for_expense_group_fund_source_change(changed_expense_ids: List[int], workspace_id: int, report_id: str, affected_fund_source_expense_ids: dict[str, List[int]]) -> None:
+    """
+    Schedule expense group for later processing when task logs are no longer active
+    :param changed_expense_ids: List of expense IDs whose fund_source changed
+    :param workspace_id: Workspace id
+    :param report_id: Report id
+    :param affected_fund_source_expense_ids: Dict of affected fund sources and their expense ids
+    :return: None
+    """
+    import hashlib
+    from datetime import timedelta
+
+    try:
+        from django_q.models import Schedule
+        from django_q.tasks import schedule
+    except ImportError:
+        logger.warning("Django Q not available, cannot schedule task for workspace %s", workspace_id)
+        return
+
+    logger.info("Scheduling for later processing for changed expense ids %s in workspace %s", changed_expense_ids, workspace_id)
+
+    # generate some random string to avoid duplicate tasks
+    hashed_name = hashlib.md5(str(changed_expense_ids).encode('utf-8')).hexdigest()[0:6]
+
+    # Check if there's already a scheduled task for this expense group to avoid duplicates
+    task_name = f'fund_source_change_retry_{hashed_name}_{workspace_id}'
+    existing_schedule = Schedule.objects.filter(
+        func='apps.fyle.tasks.handle_fund_source_changes_for_expense_ids',
+        name=task_name
+    ).first()
+
+    if existing_schedule:
+        logger.info("Task already scheduled for changed expense ids %s in workspace %s", changed_expense_ids, workspace_id)
+        return
+
+    schedule_time = datetime.now() + timedelta(minutes=5)
+
+    schedule(
+        'apps.fyle.tasks.handle_fund_source_changes_for_expense_ids',
+        workspace_id,
+        changed_expense_ids,
+        report_id,
+        affected_fund_source_expense_ids,
+        task_name,
+        repeats=10,  # 10 retries
+        schedule_type='M',  # Minute
+        minutes=5,  # 5 minutes delay
+        timeout=300,  # 5 minutes timeout
+        next_run=schedule_time,
+        name=task_name
+    )
+
+    logger.info("Scheduled delayed processing for changed expense ids %s in workspace %s with name %s", changed_expense_ids, workspace_id, task_name)
+
+
+def cleanup_scheduled_task(task_name: str, workspace_id: int) -> None:
+    """
+    Clean up scheduled task
+    :param task_name: Name of the task to clean up
+    :param workspace_id: Workspace id
+    :return: None
+    """
+    try:
+        from django_q.models import Schedule
+    except ImportError:
+        logger.warning("Django Q not available, cannot cleanup task for workspace %s", workspace_id)
+        return
+
+    logger.info("Cleaning up scheduled task %s in workspace %s", task_name, workspace_id)
+
+    schedule_obj = Schedule.objects.filter(name=task_name, func='apps.fyle.tasks.handle_fund_source_changes_for_expense_ids').first()
+    if schedule_obj:
+        schedule_obj.delete()
+        logger.info("Cleaned up scheduled task: %s", task_name)
+    else:
+        logger.info("No scheduled task found to clean up: %s", task_name)
+
+
+def delete_expenses_in_db(expense_ids: List[int], workspace_id: int) -> None:
+    """
+    Delete expenses in database
+    :param expense_ids: List of expense IDs
+    :param workspace_id: Workspace id
+    :return: None
+    """
+    deleted_count = Expense.objects.filter(id__in=expense_ids, workspace_id=workspace_id).delete()[0]
+    logger.info("Deleted %s expenses in workspace %s", deleted_count, workspace_id)
+
+
+def get_grouping_types(workspace_id: int) -> dict[str, str]:
+    """
+    Get grouping types for a workspace
+    :param workspace_id: Workspace id
+    :return: Dict of grouping types
+    """
+    grouping_types = {}
+
+    expense_group_settings = ExpenseGroupSettings.objects.filter(workspace_id=workspace_id).first()
+
+    if expense_group_settings:
+        reimbursable_grouping_type = 'report' if 'report_id' in expense_group_settings.reimbursable_expense_group_fields else 'expense'
+        ccc_grouping_type = 'report' if 'report_id' in expense_group_settings.corporate_credit_card_expense_group_fields else 'expense'
+
+        grouping_types = {
+            FundSourceEnum.PERSONAL: reimbursable_grouping_type,
+            FundSourceEnum.CCC: ccc_grouping_type
+        }
+
+    return grouping_types
+
+
+def construct_filter_for_affected_expense_groups(workspace_id: int, report_id: str, changed_expense_ids: List[int], affected_fund_source_expense_ids: dict[str, List[int]]) -> Q:
+    """
+    Construct filter for affected expense groups
+    :param workspace_id: Workspace id
+    :param report_id: Report id
+    :param changed_expense_ids: List of changed expense ids
+    :param affected_fund_source_expense_ids: Dict of affected fund source and their expense ids
+    :return: Filter for affected expense groups
+    """
+    grouping_types = get_grouping_types(workspace_id=workspace_id)
+    filter_for_affected_expense_groups = Q()
+
+    if grouping_types.get(FundSourceEnum.PERSONAL) == 'report' and grouping_types.get(FundSourceEnum.CCC) == 'report':
+        filter_for_affected_expense_groups = Q(
+            expenses__report_id=report_id
+        )
+    elif grouping_types.get(FundSourceEnum.PERSONAL) == 'expense' and grouping_types.get(FundSourceEnum.CCC) == 'expense':
+        filter_for_affected_expense_groups = Q(
+            expenses__id__in=changed_expense_ids
+        )
+
+    for fund_source, expense_ids in affected_fund_source_expense_ids.items():
+        if fund_source == FundSourceEnum.PERSONAL:
+            if grouping_types.get(FundSourceEnum.PERSONAL) == 'report' and grouping_types.get(FundSourceEnum.CCC) == 'expense':
+                filter_for_affected_expense_groups |= Q(expenses__report_id=report_id, fund_source=FundSourceEnum.PERSONAL)
+                filter_for_affected_expense_groups |= Q(expenses__id__in=expense_ids)
+            elif grouping_types.get(FundSourceEnum.PERSONAL) == 'expense' and grouping_types.get(FundSourceEnum.CCC) == 'report':
+                filter_for_affected_expense_groups |= Q(expenses__report_id=report_id, fund_source=FundSourceEnum.CCC)
+                filter_for_affected_expense_groups |= Q(expenses__id__in=expense_ids)
+        else:
+            if grouping_types.get(FundSourceEnum.PERSONAL) == 'report' and grouping_types.get(FundSourceEnum.CCC) == 'expense':
+                filter_for_affected_expense_groups |= Q(expenses__report_id=report_id, fund_source=FundSourceEnum.CCC)
+                filter_for_affected_expense_groups |= Q(expenses__id__in=expense_ids)
+            elif grouping_types.get(FundSourceEnum.PERSONAL) == 'expense' and grouping_types.get(FundSourceEnum.CCC) == 'report':
+                filter_for_affected_expense_groups |= Q(expenses__report_id=report_id, fund_source=FundSourceEnum.PERSONAL)
+                filter_for_affected_expense_groups |= Q(expenses__id__in=expense_ids)
+
+    return filter_for_affected_expense_groups
