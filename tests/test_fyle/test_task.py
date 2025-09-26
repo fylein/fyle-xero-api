@@ -14,10 +14,18 @@ from apps.fyle.enums import FundSourceEnum
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.fyle.tasks import (
     check_interval_and_sync_dimension,
+    cleanup_scheduled_task,
+    construct_filter_for_affected_expense_groups,
     create_expense_groups,
+    delete_expense_group_and_related_data,
+    delete_expenses_in_db,
     get_grouping_types,
     handle_expense_fund_source_change,
+    handle_fund_source_changes_for_expense_ids,
     import_and_export_expenses,
+    process_expense_group_for_fund_source_update,
+    recreate_expense_groups,
+    schedule_task_for_expense_group_fund_source_change,
     sync_dimensions,
     update_non_exported_expenses,
 )
@@ -468,9 +476,6 @@ def test_construct_filter_for_affected_expense_groups(db):
     """
     Test construct_filter_for_affected_expense_groups function
     """
-    from apps.fyle.tasks import construct_filter_for_affected_expense_groups
-    from apps.fyle.enums import FundSourceEnum
-
     workspace_id = 1
     report_id = 'rp1s1L3QtMpF'
     changed_expense_ids = [1, 2, 3]
@@ -519,9 +524,6 @@ def test_handle_fund_source_changes_for_expense_ids_no_affected_groups(db, mocke
     """
     Test handle_fund_source_changes_for_expense_ids when no affected groups are found
     """
-    from apps.fyle.tasks import handle_fund_source_changes_for_expense_ids
-    from apps.fyle.enums import FundSourceEnum
-
     workspace_id = 1
     changed_expense_ids = [1, 2]
     report_id = 'rp1s1L3QtMpF'
@@ -550,9 +552,6 @@ def test_handle_fund_source_changes_for_expense_ids_with_groups(db, mocker):
     """
     Test handle_fund_source_changes_for_expense_ids with affected groups
     """
-    from apps.fyle.tasks import handle_fund_source_changes_for_expense_ids
-    from apps.fyle.enums import FundSourceEnum
-
     workspace_id = 1
     changed_expense_ids = [1, 2]
     report_id = 'rp1s1L3QtMpF'
@@ -611,8 +610,6 @@ def test_handle_fund_source_changes_for_expense_ids_mixed_processing(db, mocker)
     """
     Test handle_fund_source_changes_for_expense_ids with mixed processing results
     """
-    from apps.fyle.tasks import handle_fund_source_changes_for_expense_ids
-    from apps.fyle.enums import FundSourceEnum
 
     workspace_id = 1
     changed_expense_ids = [1, 2]
@@ -672,8 +669,6 @@ def test_process_expense_group_for_fund_source_update_no_task_log(db, mocker):
     """
     Test process_expense_group_for_fund_source_update when no task log exists
     """
-    from apps.fyle.tasks import process_expense_group_for_fund_source_update
-    from apps.fyle.enums import FundSourceEnum
 
     # Create mock expense group
     mock_expense_group = mocker.MagicMock()
@@ -703,8 +698,6 @@ def test_process_expense_group_for_fund_source_update_enqueued_task(db, mocker):
     """
     Test process_expense_group_for_fund_source_update when task is enqueued
     """
-    from apps.fyle.tasks import process_expense_group_for_fund_source_update
-    from apps.fyle.enums import FundSourceEnum
 
     # Create mock expense group
     mock_expense_group = mocker.MagicMock()
@@ -738,8 +731,6 @@ def test_process_expense_group_for_fund_source_update_in_progress_task(db, mocke
     """
     Test process_expense_group_for_fund_source_update when task is in progress
     """
-    from apps.fyle.tasks import process_expense_group_for_fund_source_update
-    from apps.fyle.enums import FundSourceEnum
 
     # Create mock expense group
     mock_expense_group = mocker.MagicMock()
@@ -773,8 +764,6 @@ def test_process_expense_group_for_fund_source_update_complete_task(db, mocker):
     """
     Test process_expense_group_for_fund_source_update when task is complete
     """
-    from apps.fyle.tasks import process_expense_group_for_fund_source_update
-    from apps.fyle.enums import FundSourceEnum
 
     # Create mock expense group
     mock_expense_group = mocker.MagicMock()
@@ -804,7 +793,6 @@ def test_delete_expense_group_and_related_data(db, mocker):
     """
     Test delete_expense_group_and_related_data function
     """
-    from apps.fyle.tasks import delete_expense_group_and_related_data
 
     # Create mock expense group
     mock_expense_group = mocker.MagicMock()
@@ -860,7 +848,6 @@ def test_recreate_expense_groups_no_expenses(db, mocker):
     """
     Test recreate_expense_groups when no expenses are found
     """
-    from apps.fyle.tasks import recreate_expense_groups
 
     # Mock Expense.objects.filter to return empty queryset
     mock_expenses = mocker.patch('apps.fyle.models.Expense.objects.filter')
@@ -875,8 +862,6 @@ def test_recreate_expense_groups_with_expenses(db, mocker):
     """
     Test recreate_expense_groups with expenses
     """
-    from apps.fyle.tasks import recreate_expense_groups
-    from apps.fyle.enums import FundSourceEnum
 
     # Create mock expenses
     mock_expense1 = mocker.MagicMock()
@@ -911,8 +896,6 @@ def test_recreate_expense_groups_filter_reimbursable(db, mocker):
     """
     Test recreate_expense_groups filtering out reimbursable expenses when not configured
     """
-    from apps.fyle.tasks import recreate_expense_groups
-    from apps.fyle.enums import FundSourceEnum
 
     # Create mock expenses
     mock_expense1 = mocker.MagicMock()
@@ -952,8 +935,6 @@ def test_recreate_expense_groups_filter_ccc(db, mocker):
     """
     Test recreate_expense_groups filtering out CCC expenses when not configured
     """
-    from apps.fyle.tasks import recreate_expense_groups
-    from apps.fyle.enums import FundSourceEnum
 
     # Create mock expenses
     mock_expense1 = mocker.MagicMock()
@@ -993,7 +974,6 @@ def test_delete_expenses_in_db(db, mocker):
     """
     Test delete_expenses_in_db function
     """
-    from apps.fyle.tasks import delete_expenses_in_db
 
     # Mock Expense.objects.filter().delete()
     mock_delete = mocker.MagicMock()
@@ -1011,8 +991,6 @@ def test_schedule_task_for_expense_group_fund_source_change_no_django_q(db, mock
     """
     Test schedule_task_for_expense_group_fund_source_change when Django Q is not available
     """
-    from apps.fyle.tasks import schedule_task_for_expense_group_fund_source_change
-    from apps.fyle.enums import FundSourceEnum
 
     # Mock the import to raise ImportError
     with mocker.patch('django_q.models.Schedule', side_effect=ImportError):
@@ -1030,7 +1008,6 @@ def test_cleanup_scheduled_task_no_django_q(db, mocker):
     """
     Test cleanup_scheduled_task when Django Q is not available
     """
-    from apps.fyle.tasks import cleanup_scheduled_task
 
     # Mock the import to raise ImportError
     with mocker.patch('django_q.models.Schedule', side_effect=ImportError):
@@ -1042,7 +1019,6 @@ def test_cleanup_scheduled_task_with_task(db, mocker):
     """
     Test cleanup_scheduled_task when task exists
     """
-    from apps.fyle.tasks import cleanup_scheduled_task
 
     # Mock Schedule model
     mock_schedule_obj = mocker.MagicMock()
@@ -1066,7 +1042,6 @@ def test_cleanup_scheduled_task_no_task(db, mocker):
     """
     Test cleanup_scheduled_task when no task exists
     """
-    from apps.fyle.tasks import cleanup_scheduled_task
 
     # Mock Schedule model
     mock_schedule = mocker.MagicMock()
@@ -1086,8 +1061,6 @@ def test_construct_filter_for_affected_expense_groups_mixed_grouping(db):
     """
     Test construct_filter_for_affected_expense_groups with mixed grouping scenarios
     """
-    from apps.fyle.tasks import construct_filter_for_affected_expense_groups
-    from apps.fyle.enums import FundSourceEnum
 
     workspace_id = 1
     report_id = 'rp1s1L3QtMpF'

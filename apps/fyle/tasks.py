@@ -1,10 +1,11 @@
+import hashlib
 import logging
 import traceback
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils.module_loading import import_string
 from fyle.platform.exceptions import InternalServerError
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
@@ -21,7 +22,7 @@ from apps.fyle.enums import ExpenseStateEnum, FundSourceEnum, PlatformExpensesEn
 from apps.fyle.helpers import get_fund_source, get_source_account_type, handle_import_exception, update_task_log_post_import
 from apps.fyle.models import Expense, ExpenseGroup, ExpenseGroupSettings
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
-from apps.tasks.models import TaskLog
+from apps.tasks.models import Error, TaskLog
 from apps.workspaces.actions import export_to_xero
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
 
@@ -471,8 +472,6 @@ def handle_fund_source_changes_for_expense_ids(workspace_id: int, changed_expens
     :param task_name: Name of the task to clean up
     :return: None
     """
-    from django.db.models import Count
-
     filter_for_affected_expense_groups = construct_filter_for_affected_expense_groups(workspace_id=workspace_id, report_id=report_id, changed_expense_ids=changed_expense_ids, affected_fund_source_expense_ids=affected_fund_source_expense_ids)
 
     with transaction.atomic():
@@ -553,8 +552,6 @@ def delete_expense_group_and_related_data(expense_group: ExpenseGroup, workspace
     :param workspace_id: Workspace id
     :return: None
     """
-    from apps.tasks.models import Error
-
     group_id = expense_group.id
 
     # Delete task logs
@@ -645,9 +642,6 @@ def schedule_task_for_expense_group_fund_source_change(changed_expense_ids: List
     :param affected_fund_source_expense_ids: Dict of affected fund sources and their expense ids
     :return: None
     """
-    import hashlib
-    from datetime import timedelta
-
     try:
         from django_q.models import Schedule
         from django_q.tasks import schedule
