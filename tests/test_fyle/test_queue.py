@@ -2,6 +2,7 @@ from fyle_accounting_library.rabbitmq.data_class import Task
 from apps.fyle.queue import async_import_and_export_expenses
 from apps.workspaces.models import Workspace
 from apps.xero.queue import __create_chain_and_run
+from tests.test_fyle.fixtures import data
 
 
 # This test is just for cov :D
@@ -51,3 +52,43 @@ def test_async_import_and_export_expenses_2(db):
     )
 
     async_import_and_export_expenses(body, worksapce.id)
+
+
+# Test for UPDATED_AFTER_APPROVAL with EXPENSE resource
+def test_async_import_and_export_expenses_updated_after_approval_expense(db):
+    """
+    Test UPDATED_AFTER_APPROVAL webhook with EXPENSE resource
+    """
+    test_data = data['fund_source_change']
+
+    body = {
+        'action': 'UPDATED_AFTER_APPROVAL',
+        'resource': 'EXPENSE',
+        'data': test_data['expense_payload']
+    }
+
+    workspace, _ = Workspace.objects.update_or_create(
+        **test_data['workspace_defaults']
+    )
+
+    async_import_and_export_expenses(body, workspace.id)
+
+
+# Test for UPDATED_AFTER_APPROVAL with REPORT resource
+def test_async_import_and_export_expenses_updated_after_approval_report(db):
+    """
+    Test UPDATED_AFTER_APPROVAL webhook with REPORT resource for fund source changes
+    """
+    test_data = data['fund_source_change']
+
+    body = {
+        'action': 'UPDATED_AFTER_APPROVAL',
+        'resource': 'REPORT',
+        'data': test_data['report_payload']
+    }
+
+    workspace, _ = Workspace.objects.update_or_create(
+        **test_data['workspace_defaults']
+    )
+
+    async_import_and_export_expenses(body, workspace.id)

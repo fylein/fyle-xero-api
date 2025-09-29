@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 data = {
     "raw_expense": {
         'accounting_export_summary': {
@@ -50287,4 +50289,138 @@ data = {
             ]
         }
     ],
+
+    # Fund Source Change Test Fixtures
+    "fund_source_change": {
+        "expense_payload": {
+            'id': 'tx1',
+            'org_id': 'or79Cob97KSh'
+        },
+
+        "report_payload": {
+            'id': 'rp1s1L3QtMpF',
+            'org_id': 'or79Cob97KSh'
+        },
+
+        "mock_platform_expense_personal": {
+            'id': 'tx1',
+            'source_account_type': 'PERSONAL_CASH_ACCOUNT',
+            'expense_created_at': '2023-01-01T00:00:00.000Z',
+            'expense_updated_at': '2023-01-01T00:00:00.000Z',
+            'approved_at': '2023-01-01T00:00:00.000Z',
+            'spent_at': '2023-01-01T00:00:00.000Z',
+            'amount': 100.0,
+            'currency': 'USD',
+            'employee_email': 'test@example.com',
+            'employee_name': 'Test Employee',
+            'expense_number': 'E/001',
+            'claim_number': 'C/001',
+            'state': 'APPROVED',
+            'org_id': 'or79Cob97KSh',
+            'report_id': 'rp1s1L3QtMpF',
+            'purpose': 'Test expense',
+            'category': 'Travel',
+            'sub_category': 'Flight',
+            'project': None,
+            'cost_center': None,
+            'billable': False,
+            'file_ids': [],
+            'posted_at': None,
+            'verified_at': None,
+            'settlement_id': None,
+            'reimbursable': True,
+            'foreign_amount': None,
+            'foreign_currency': None,
+            'tax_amount': None,
+            'tax_group_id': None,
+            'vendor': None,
+            'custom_fields': [],
+            'payment_number': None,
+            'corporate_card_id': None,
+            'custom_properties': [],
+            'is_posted_at_null': False,
+            'bank_transaction_id': None
+        },
+
+        "mock_platform_expense_ccc": {
+            'id': 'tx1',
+            'source_account_type': 'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT',
+            'expense_created_at': '2023-01-01T00:00:00.000Z',
+            'expense_updated_at': '2023-01-01T00:00:00.000Z',
+            'approved_at': '2023-01-01T00:00:00.000Z',
+            'spent_at': '2023-01-01T00:00:00.000Z',
+            'amount': 100.0,
+            'currency': 'USD',
+            'employee_email': 'test@example.com',
+            'employee_name': 'Test Employee',
+            'expense_number': 'E/001',
+            'claim_number': 'C/001',
+            'state': 'APPROVED',
+            'org_id': 'or79Cob97KSh',
+            'report_id': 'rp1s1L3QtMpF',
+            'purpose': 'Test expense',
+            'category': 'Travel',
+            'sub_category': 'Flight',
+            'project': None,
+            'cost_center': None,
+            'billable': False,
+            'file_ids': [],
+            'posted_at': None,
+            'verified_at': None,
+            'settlement_id': None,
+            'reimbursable': True,
+            'foreign_amount': None,
+            'foreign_currency': None,
+            'tax_amount': None,
+            'tax_group_id': None,
+            'vendor': None,
+            'custom_fields': [],
+            'payment_number': None,
+            'corporate_card_id': None,
+            'custom_properties': [],
+            'is_posted_at_null': False,
+            'bank_transaction_id': None
+        },
+
+        "expense_defaults": {
+            'report_id': 'rp1s1L3QtMpF',
+            'fund_source': 'PERSONAL',
+            'amount': 100.0,
+            'currency': 'USD',
+            'employee_email': 'test@example.com',
+            'employee_name': 'Test Employee',
+            'expense_number': 'E/001',
+            'claim_number': 'C/001',
+            'state': 'APPROVED',
+            'expense_created_at': datetime(2023, 1, 1, tzinfo=timezone.utc),
+            'expense_updated_at': datetime(2023, 1, 1, tzinfo=timezone.utc),
+            'org_id': 'or79Cob97KSh'
+        },
+
+        "workspace_defaults": {
+            'fyle_org_id': 'or79Cob97KSh',
+            'name': 'Test Workspace'
+        },
+
+        "expense_group_settings_defaults": {
+            'reimbursable_expense_group_fields': ['employee_email', 'report_id'],
+            'corporate_credit_card_expense_group_fields': ['employee_email', 'expense_id']
+        },
+
+        "workspace_general_settings_defaults": {
+            'reimbursable_expenses_object': 'BILL',
+            'corporate_credit_card_expenses_object': 'BANK_TRANSACTION'
+        },
+
+        "test_constants": {
+            'workspace_id': 1,
+            'report_id': 'rp1s1L3QtMpF',
+            'expense_id': 'tx1',
+            'changed_expense_ids': [1, 2],
+            'affected_fund_source_expense_ids': {
+                'PERSONAL': [1, 2],
+                'CCC': [3]
+            }
+        }
+    }
 }
