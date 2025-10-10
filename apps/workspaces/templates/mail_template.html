@@ -49,6 +49,9 @@
         font-size: 14px;
         color: #1a1a1a;
         border: 1px solid #dfdfe2;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
       }
     </style>
   </head>
@@ -105,8 +108,7 @@
                         alt="{{ brand_name }}"
                         title="{{ brand_name }}"
                         style="display: block"
-                        height="30"
-                        width="90"
+                        height="35"
                       />
                     </td>
                     <td align="right">
@@ -166,8 +168,8 @@
                             letter-spacing: 0.02em;
                           "
                         >
-                          <td style="width: 50%">{{ brand_name }} organization</td>
-                          <td style="width: 50%">Xero tenant name</td>
+                          <td style="width: 50%; vertical-align: top">{{ brand_name }} organization</td>
+                          <td style="width: 50%; vertical-align: top">Xero tenant name</td>
                         </tr>
                         <tr
                           style="
@@ -177,8 +179,8 @@
                             line-height: 20px;
                           "
                         >
-                          <td style="width: 50%">{{ fyle_company }}</td>
-                          <td style="width: 50%">{{ xero_tenant }}</td>
+                          <td style="width: 50%; vertical-align: top">{{ fyle_company }}</td>
+                          <td style="width: 50%; vertical-align: top">{{ xero_tenant }}</td>
                         </tr>
                       </table>
                     </td>
