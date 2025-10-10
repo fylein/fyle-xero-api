@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Fyle</title>
+    <title>{{ brand_name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -49,6 +49,9 @@
         font-size: 14px;
         color: #1a1a1a;
         border: 1px solid #dfdfe2;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
       }
     </style>
   </head>
@@ -101,12 +104,11 @@
                   <tr>
                     <td>
                       <img
-                        src="{{integrations_app_url}}/assets/logos/email/fyle_logo_white_full.png"
-                        alt="Fyle"
-                        title="Fyle"
+                        src="{{integrations_app_url}}/assets/logos/email/{% if is_rebranded %}sage_logo_white_full.png{% else %}fyle_logo_white_full.png{% endif %}"
+                        alt="{{ brand_name }}"
+                        title="{{ brand_name }}"
                         style="display: block"
-                        height="30"
-                        width="90"
+                        height="35"
                       />
                     </td>
                     <td align="right">
@@ -166,8 +168,8 @@
                             letter-spacing: 0.02em;
                           "
                         >
-                          <td style="width: 50%">Fyle organization</td>
-                          <td style="width: 50%">Xero tenant name</td>
+                          <td style="width: 50%; vertical-align: top">{{ brand_name }} organization</td>
+                          <td style="width: 50%; vertical-align: top">Xero tenant name</td>
                         </tr>
                         <tr
                           style="
@@ -177,8 +179,8 @@
                             line-height: 20px;
                           "
                         >
-                          <td style="width: 50%">{{ fyle_company }}</td>
-                          <td style="width: 50%">{{ xero_tenant }}</td>
+                          <td style="width: 50%; vertical-align: top">{{ fyle_company }}</td>
+                          <td style="width: 50%; vertical-align: top">{{ xero_tenant }}</td>
                         </tr>
                       </table>
                     </td>
@@ -192,7 +194,7 @@
                         <tr>
                           <td style="line-height: 18px; padding-top: 15px">
                             {{ errors_count }} transactions failed to export
-                            automatically from your Fyle org to Xero due to the
+                            automatically from your {{ brand_name }} org to Xero due to the
                             following errors.
                           </td>
                         </tr>
@@ -604,7 +606,7 @@
                       line-height: 15px;
                     "
                   >
-                    <td>{{ year }} Fyle. All Rights Reserved.</td>
+                    <td>{{ year }} {{ brand_name }}. All Rights Reserved.</td>
                   </tr>
                 </table>
               </td>
