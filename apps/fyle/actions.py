@@ -194,10 +194,7 @@ def update_failed_expenses(failed_expenses: List[Expense], is_mapping_error: boo
     expense_to_be_updated = []
     for expense in failed_expenses:
         error_type = 'MAPPING' if is_mapping_error else 'ACCOUNTING_INTEGRATION_ERROR'
-
-        # Skip dummy updates (if it is already in error state with the same error type)
-        if (expense.accounting_export_summary.get('state') not in ['ERROR', 'DELETED'] and \
-            expense.accounting_export_summary.get('error_type') != error_type):
+        if expense.accounting_export_summary.get('state') != 'DELETED':
             expense_to_be_updated.append(
                 Expense(
                     id=expense.id,
