@@ -159,7 +159,7 @@ def get_expense_purpose(workspace_id, lineitem, category, workspace_general_sett
         'purpose': '{0}'.format(lineitem.purpose) if lineitem.purpose else '',
         'report_number': '{0}'.format(lineitem.claim_number),
         'spent_on': '{0}'.format(lineitem.spent_at.date()) if lineitem.spent_at else '',
-        'expense_link': '{0}/app/admin/#/enterprise/view_expense/{1}?org_id={2}'.format(fyle_url, lineitem.expense_id, org_id)
+        'expense_link': '{0}/app/admin/#/enterprise/company_expenses?txnId={1}&org_id={2}'.format(fyle_url, lineitem.expense_id, org_id)
     }
 
     memo = ''
