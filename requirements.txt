@@ -10,7 +10,7 @@ django-sendgrid-v5==1.2.0
 
 fyle==1.1.1
 fyle-accounting-mappings==2.5.5
-fyle-integrations-platform-connector==2.6.1
+fyle-integrations-platform-connector==2.6.2
 fyle-rest-auth==1.8.3
 gevent==24.11.1
 gunicorn==23.0.0
@@ -31,4 +31,5 @@ pytest-django==4.9.0
 pytest-mock==3.14.0
 django-filter==24.3
 sendgrid==6.11.0
+text-unidecode==1.3 # Using under Artistic License (MIT-compatible)
 git+https://github.com/fylein/pgevents.git@main#egg=pgevents
