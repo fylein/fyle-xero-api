@@ -6,7 +6,7 @@ from time import sleep
 from typing import Dict, List, Optional
 
 from apps.workspaces.helpers import get_app_name
-import unidecode
+import text_unidecode
 from fyle_accounting_mappings.models import DestinationAttribute, MappingSetting
 from xerosdk import XeroSDK
 from xerosdk.exceptions import WrongParamsError
@@ -336,7 +336,7 @@ class XeroConnector:
                     {
                         "attribute_type": "BANK_ACCOUNT",
                         "display_name": "Bank Account",
-                        "value": unidecode.unidecode(
+                        "value": text_unidecode.unidecode(
                             "{0}".format(account["Name"])
                         ).replace("/", "-"),
                         "destination_id": account["AccountID"],
@@ -350,7 +350,7 @@ class XeroConnector:
                     {
                         "attribute_type": "ACCOUNT",
                         "display_name": "Account",
-                        "value": unidecode.unidecode(
+                        "value": text_unidecode.unidecode(
                             "{0}".format(account["Name"])
                         ).replace("/", "-"),
                         "destination_id": account["Code"],
