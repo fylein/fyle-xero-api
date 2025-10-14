@@ -118,8 +118,8 @@ def send_failure_notification_email(
     error_types = {error.type.title().replace("_", " ") for error in errors}
     context = {
         "name": admin_name,
-        "brand_name": 'Sage Expense Management' if settings.IS_REBRANDED == True else 'Fyle',
-        "is_rebranded": settings.IS_REBRANDED == True,
+        "brand_name": 'Sage Expense Management' if settings.IS_REBRANDED == 'True' else 'Fyle',
+        "is_rebranded": settings.IS_REBRANDED == 'True',
         "errors_count": task_logs_count,
         "fyle_company": workspace.name,
         "xero_tenant": tenant_detail.tenant_name,
