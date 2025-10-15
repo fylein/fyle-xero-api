@@ -1,10 +1,9 @@
 import logging
+
+from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db.models.signals import pre_save
-
 from django_q.tasks import async_task
-
-from fyle_accounting_library.fyle_platform.enums import FundSourceEnum, ExpenseImportSourceEnum
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum, FundSourceEnum
 
 from apps.fyle.enums import ExpenseStateEnum
 from apps.fyle.models import ExpenseGroupSettings
@@ -14,10 +13,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-@receiver(pre_save, sender=ExpenseGroupSettings)
-def run_pre_save_expense_group_setting_triggers(sender, instance: ExpenseGroupSettings, **kwargs):
+@receiver(post_save, sender=ExpenseGroupSettings)
+def run_post_save_expense_group_setting_triggers(sender, instance: ExpenseGroupSettings, **kwargs):
     """
-    Run pre save expense group setting triggers
+    Run post save expense group setting triggers
     """
     existing_expense_group_setting = ExpenseGroupSettings.objects.filter(
         workspace_id=instance.workspace_id
