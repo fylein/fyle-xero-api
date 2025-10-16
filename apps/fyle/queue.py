@@ -49,3 +49,11 @@ def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
         logger.info("| Updating non-exported expenses through webhook | Content: {{WORKSPACE_ID: {} Payload: {}}}".format(workspace_id, body.get('data')))
         assert_valid_request(workspace_id=workspace_id, fyle_org_id=org_id)
         async_task('apps.fyle.tasks.update_non_exported_expenses', body['data'])
+
+    elif body.get('action') in ('EJECTED_FROM_REPORT', 'ADDED_TO_REPORT') and body.get('data') and body.get('resource') == 'EXPENSE':
+        org_id = body['data']['org_id']
+        expense_id = body['data']['id']
+        action = body.get('action')
+        logger.info("| Handling expense report change | Content: {{WORKSPACE_ID: {} EXPENSE_ID: {} ACTION: {} Payload: {}}}".format(workspace_id, expense_id, action, body.get('data')))
+        assert_valid_request(workspace_id=workspace_id, fyle_org_id=org_id)
+        async_task('apps.fyle.tasks.handle_expense_report_change', body['data'], action)
