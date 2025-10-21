@@ -2,8 +2,9 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.13 (Debian 15.13-1.pgdg120+1)
--- Dumped by pg_dump version 15.13 (Debian 15.13-0+deb12u1)
+
+-- Dumped from database version 15.14 (Debian 15.14-1.pgdg13+1)
+-- Dumped by pg_dump version 17.6 (Debian 17.6-0+deb13u1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -779,7 +780,7 @@ SELECT
     NULL::character varying[] AS user_emails;
 
 
-ALTER TABLE public.prod_workspaces_view OWNER TO postgres;
+ALTER VIEW public.prod_workspaces_view OWNER TO postgres;
 
 --
 -- Name: task_logs; Type: TABLE; Schema: public; Owner: postgres
@@ -893,7 +894,7 @@ CREATE VIEW public._direct_export_errored_expenses_view AS
     not_synced_to_platform;
 
 
-ALTER TABLE public._direct_export_errored_expenses_view OWNER TO postgres;
+ALTER VIEW public._direct_export_errored_expenses_view OWNER TO postgres;
 
 --
 -- Name: _django_queue_fatal_tasks_view; Type: VIEW; Schema: public; Owner: postgres
@@ -907,7 +908,7 @@ CREATE VIEW public._django_queue_fatal_tasks_view AS
            FROM public.prod_workspaces_view)) AND ((task_logs.status)::text = 'FATAL'::text));
 
 
-ALTER TABLE public._django_queue_fatal_tasks_view OWNER TO postgres;
+ALTER VIEW public._django_queue_fatal_tasks_view OWNER TO postgres;
 
 --
 -- Name: _django_queue_in_progress_tasks_view; Type: VIEW; Schema: public; Owner: postgres
@@ -921,7 +922,7 @@ CREATE VIEW public._django_queue_in_progress_tasks_view AS
            FROM public.prod_workspaces_view)) AND ((task_logs.status)::text = ANY (ARRAY[('IN_PROGRESS'::character varying)::text, ('ENQUEUED'::character varying)::text])));
 
 
-ALTER TABLE public._django_queue_in_progress_tasks_view OWNER TO postgres;
+ALTER VIEW public._django_queue_in_progress_tasks_view OWNER TO postgres;
 
 --
 -- Name: import_logs; Type: TABLE; Schema: public; Owner: postgres
@@ -957,7 +958,7 @@ CREATE VIEW public._import_logs_fatal_failed_in_progress_tasks_view AS
   GROUP BY import_logs.status;
 
 
-ALTER TABLE public._import_logs_fatal_failed_in_progress_tasks_view OWNER TO postgres;
+ALTER VIEW public._import_logs_fatal_failed_in_progress_tasks_view OWNER TO postgres;
 
 --
 -- Name: auth_cache; Type: TABLE; Schema: public; Owner: postgres
@@ -997,7 +998,7 @@ CREATE SEQUENCE public.auth_group_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_group_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.auth_group_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_group_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1032,7 +1033,7 @@ CREATE SEQUENCE public.auth_group_permissions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_group_permissions_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.auth_group_permissions_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_group_permissions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1068,7 +1069,7 @@ CREATE SEQUENCE public.auth_permission_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.auth_permission_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.auth_permission_id_seq OWNER TO postgres;
 
 --
 -- Name: auth_permission_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1127,7 +1128,7 @@ CREATE SEQUENCE public.bank_transaction_lineitems_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.bank_transaction_lineitems_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.bank_transaction_lineitems_id_seq OWNER TO postgres;
 
 --
 -- Name: bank_transaction_lineitems_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1169,7 +1170,7 @@ CREATE SEQUENCE public.bank_transactions_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.bank_transactions_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.bank_transactions_id_seq OWNER TO postgres;
 
 --
 -- Name: bank_transactions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1213,7 +1214,7 @@ CREATE SEQUENCE public.bill_lineitems_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.bill_lineitems_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.bill_lineitems_id_seq OWNER TO postgres;
 
 --
 -- Name: bill_lineitems_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1257,7 +1258,7 @@ CREATE SEQUENCE public.bills_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.bills_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.bills_id_seq OWNER TO postgres;
 
 --
 -- Name: bills_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1296,7 +1297,7 @@ CREATE SEQUENCE public.category_mappings_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.category_mappings_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.category_mappings_id_seq OWNER TO postgres;
 
 --
 -- Name: category_mappings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1382,7 +1383,7 @@ CREATE VIEW public.direct_export_errored_expenses_view AS
     not_synced_to_platform;
 
 
-ALTER TABLE public.direct_export_errored_expenses_view OWNER TO postgres;
+ALTER VIEW public.direct_export_errored_expenses_view OWNER TO postgres;
 
 --
 -- Name: django_admin_log; Type: TABLE; Schema: public; Owner: postgres
@@ -1416,7 +1417,7 @@ CREATE SEQUENCE public.django_admin_log_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.django_admin_log_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.django_admin_log_id_seq OWNER TO postgres;
 
 --
 -- Name: django_admin_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1451,7 +1452,7 @@ CREATE SEQUENCE public.django_content_type_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.django_content_type_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.django_content_type_id_seq OWNER TO postgres;
 
 --
 -- Name: django_content_type_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1487,7 +1488,7 @@ CREATE SEQUENCE public.django_migrations_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.django_migrations_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.django_migrations_id_seq OWNER TO postgres;
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1523,7 +1524,7 @@ CREATE SEQUENCE public.django_q_ormq_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.django_q_ormq_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.django_q_ormq_id_seq OWNER TO postgres;
 
 --
 -- Name: django_q_ormq_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1570,7 +1571,7 @@ CREATE SEQUENCE public.django_q_schedule_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.django_q_schedule_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.django_q_schedule_id_seq OWNER TO postgres;
 
 --
 -- Name: django_q_schedule_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1614,7 +1615,7 @@ CREATE VIEW public.django_queue_fatal_tasks_view AS
            FROM public.prod_workspaces_view)) AND ((task_logs.status)::text = 'FATAL'::text) AND ((task_logs.updated_at >= (now() - '24:00:00'::interval)) AND (task_logs.updated_at <= (now() - '00:30:00'::interval))));
 
 
-ALTER TABLE public.django_queue_fatal_tasks_view OWNER TO postgres;
+ALTER VIEW public.django_queue_fatal_tasks_view OWNER TO postgres;
 
 --
 -- Name: django_queue_in_progress_tasks_view; Type: VIEW; Schema: public; Owner: postgres
@@ -1628,7 +1629,7 @@ CREATE VIEW public.django_queue_in_progress_tasks_view AS
            FROM public.prod_workspaces_view)) AND ((task_logs.status)::text = ANY (ARRAY[('IN_PROGRESS'::character varying)::text, ('ENQUEUED'::character varying)::text])) AND ((task_logs.updated_at >= (now() - '24:00:00'::interval)) AND (task_logs.updated_at <= (now() - '00:30:00'::interval))));
 
 
-ALTER TABLE public.django_queue_in_progress_tasks_view OWNER TO postgres;
+ALTER VIEW public.django_queue_in_progress_tasks_view OWNER TO postgres;
 
 --
 -- Name: django_session; Type: TABLE; Schema: public; Owner: postgres
@@ -1674,7 +1675,7 @@ CREATE SEQUENCE public.employee_mappings_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.employee_mappings_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.employee_mappings_id_seq OWNER TO postgres;
 
 --
 -- Name: employee_mappings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1718,7 +1719,7 @@ CREATE SEQUENCE public.errors_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.errors_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.errors_id_seq OWNER TO postgres;
 
 --
 -- Name: errors_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1780,7 +1781,7 @@ CREATE SEQUENCE public.expense_attributes_deletion_cache_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.expense_attributes_deletion_cache_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.expense_attributes_deletion_cache_id_seq OWNER TO postgres;
 
 --
 -- Name: expense_attributes_deletion_cache_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1819,7 +1820,7 @@ CREATE SEQUENCE public.expense_fields_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.expense_fields_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.expense_fields_id_seq OWNER TO postgres;
 
 --
 -- Name: expense_fields_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1885,7 +1886,7 @@ CREATE SEQUENCE public.expense_groups_expenses_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.expense_groups_expenses_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.expense_groups_expenses_id_seq OWNER TO postgres;
 
 --
 -- Name: expense_groups_expenses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1907,7 +1908,7 @@ CREATE SEQUENCE public.expense_groups_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.expense_groups_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.expense_groups_id_seq OWNER TO postgres;
 
 --
 -- Name: expense_groups_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1929,7 +1930,7 @@ CREATE SEQUENCE public.expenses_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.expenses_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.expenses_id_seq OWNER TO postgres;
 
 --
 -- Name: expenses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -1971,7 +1972,7 @@ CREATE VIEW public.extended_category_mappings_view AS
      JOIN public.destination_attributes da2 ON ((da2.id = cm.destination_expense_head_id)));
 
 
-ALTER TABLE public.extended_category_mappings_view OWNER TO postgres;
+ALTER VIEW public.extended_category_mappings_view OWNER TO postgres;
 
 --
 -- Name: extended_employee_mappings_view; Type: VIEW; Schema: public; Owner: postgres
@@ -2007,7 +2008,7 @@ CREATE VIEW public.extended_employee_mappings_view AS
      JOIN public.destination_attributes da3 ON ((da3.id = em.destination_card_account_id)));
 
 
-ALTER TABLE public.extended_employee_mappings_view OWNER TO postgres;
+ALTER VIEW public.extended_employee_mappings_view OWNER TO postgres;
 
 --
 -- Name: extended_expenses_view; Type: VIEW; Schema: public; Owner: postgres
@@ -2072,7 +2073,7 @@ CREATE VIEW public.extended_expenses_view AS
      JOIN public.expense_groups eg ON ((eg.id = ege.expensegroup_id)));
 
 
-ALTER TABLE public.extended_expenses_view OWNER TO postgres;
+ALTER VIEW public.extended_expenses_view OWNER TO postgres;
 
 --
 -- Name: mappings; Type: TABLE; Schema: public; Owner: postgres
@@ -2124,7 +2125,7 @@ CREATE VIEW public.extended_mappings_view AS
      JOIN public.destination_attributes da ON ((da.id = m.destination_id)));
 
 
-ALTER TABLE public.extended_mappings_view OWNER TO postgres;
+ALTER VIEW public.extended_mappings_view OWNER TO postgres;
 
 --
 -- Name: general_mappings; Type: TABLE; Schema: public; Owner: postgres
@@ -2235,7 +2236,7 @@ CREATE VIEW public.extended_settings_view AS
      LEFT JOIN public.last_export_details led ON ((led.workspace_id = w.id)));
 
 
-ALTER TABLE public.extended_settings_view OWNER TO postgres;
+ALTER VIEW public.extended_settings_view OWNER TO postgres;
 
 --
 -- Name: failed_events; Type: TABLE; Schema: public; Owner: postgres
@@ -2270,6 +2271,36 @@ ALTER TABLE public.failed_events ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDE
 
 
 --
+-- Name: feature_configs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.feature_configs (
+    id integer NOT NULL,
+    export_via_rabbitmq boolean NOT NULL,
+    fyle_webhook_sync_enabled boolean NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    workspace_id integer NOT NULL
+);
+
+
+ALTER TABLE public.feature_configs OWNER TO postgres;
+
+--
+-- Name: feature_configs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.feature_configs ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.feature_configs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: fyle_accounting_mappings_destinationattribute_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -2282,7 +2313,7 @@ CREATE SEQUENCE public.fyle_accounting_mappings_destinationattribute_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.fyle_accounting_mappings_destinationattribute_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.fyle_accounting_mappings_destinationattribute_id_seq OWNER TO postgres;
 
 --
 -- Name: fyle_accounting_mappings_destinationattribute_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2304,7 +2335,7 @@ CREATE SEQUENCE public.fyle_accounting_mappings_expenseattribute_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.fyle_accounting_mappings_expenseattribute_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.fyle_accounting_mappings_expenseattribute_id_seq OWNER TO postgres;
 
 --
 -- Name: fyle_accounting_mappings_expenseattribute_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2326,7 +2357,7 @@ CREATE SEQUENCE public.fyle_accounting_mappings_mapping_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.fyle_accounting_mappings_mapping_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.fyle_accounting_mappings_mapping_id_seq OWNER TO postgres;
 
 --
 -- Name: fyle_accounting_mappings_mapping_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2370,7 +2401,7 @@ CREATE SEQUENCE public.fyle_accounting_mappings_mappingsetting_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.fyle_accounting_mappings_mappingsetting_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.fyle_accounting_mappings_mappingsetting_id_seq OWNER TO postgres;
 
 --
 -- Name: fyle_accounting_mappings_mappingsetting_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2408,7 +2439,7 @@ CREATE SEQUENCE public.fyle_credentials_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.fyle_credentials_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.fyle_credentials_id_seq OWNER TO postgres;
 
 --
 -- Name: fyle_credentials_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2430,7 +2461,7 @@ CREATE SEQUENCE public.fyle_expensegroupsettings_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.fyle_expensegroupsettings_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.fyle_expensegroupsettings_id_seq OWNER TO postgres;
 
 --
 -- Name: fyle_expensegroupsettings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2452,13 +2483,49 @@ CREATE SEQUENCE public.fyle_rest_auth_authtokens_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.fyle_rest_auth_authtokens_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.fyle_rest_auth_authtokens_id_seq OWNER TO postgres;
 
 --
 -- Name: fyle_rest_auth_authtokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.fyle_rest_auth_authtokens_id_seq OWNED BY public.auth_tokens.id;
+
+
+--
+-- Name: fyle_sync_timestamps; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.fyle_sync_timestamps (
+    id integer NOT NULL,
+    category_synced_at timestamp with time zone,
+    project_synced_at timestamp with time zone,
+    cost_center_synced_at timestamp with time zone,
+    employee_synced_at timestamp with time zone,
+    expense_field_synced_at timestamp with time zone,
+    corporate_card_synced_at timestamp with time zone,
+    dependent_field_synced_at timestamp with time zone,
+    tax_group_synced_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    workspace_id integer NOT NULL
+);
+
+
+ALTER TABLE public.fyle_sync_timestamps OWNER TO postgres;
+
+--
+-- Name: fyle_sync_timestamps_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.fyle_sync_timestamps ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.fyle_sync_timestamps_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
 
 
 --
@@ -2474,7 +2541,7 @@ CREATE SEQUENCE public.general_mappings_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.general_mappings_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.general_mappings_id_seq OWNER TO postgres;
 
 --
 -- Name: general_mappings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2497,7 +2564,7 @@ CREATE VIEW public.import_logs_fatal_failed_in_progress_tasks_view AS
   GROUP BY import_logs.status;
 
 
-ALTER TABLE public.import_logs_fatal_failed_in_progress_tasks_view OWNER TO postgres;
+ALTER VIEW public.import_logs_fatal_failed_in_progress_tasks_view OWNER TO postgres;
 
 --
 -- Name: import_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2512,7 +2579,7 @@ CREATE SEQUENCE public.import_logs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.import_logs_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.import_logs_id_seq OWNER TO postgres;
 
 --
 -- Name: import_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2535,7 +2602,7 @@ CREATE VIEW public.inactive_workspaces_view AS
            FROM public.prod_workspaces_view)));
 
 
-ALTER TABLE public.inactive_workspaces_view OWNER TO postgres;
+ALTER VIEW public.inactive_workspaces_view OWNER TO postgres;
 
 --
 -- Name: last_export_details_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2550,7 +2617,7 @@ CREATE SEQUENCE public.last_export_details_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.last_export_details_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.last_export_details_id_seq OWNER TO postgres;
 
 --
 -- Name: last_export_details_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2569,7 +2636,7 @@ CREATE VIEW public.ormq_count_view AS
    FROM public.django_q_ormq;
 
 
-ALTER TABLE public.ormq_count_view OWNER TO postgres;
+ALTER VIEW public.ormq_count_view OWNER TO postgres;
 
 --
 -- Name: payments; Type: TABLE; Schema: public; Owner: postgres
@@ -2602,7 +2669,7 @@ CREATE SEQUENCE public.payments_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.payments_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.payments_id_seq OWNER TO postgres;
 
 --
 -- Name: payments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2635,7 +2702,7 @@ SELECT
     NULL::character varying[] AS user_emails;
 
 
-ALTER TABLE public.prod_active_workspaces_view OWNER TO postgres;
+ALTER VIEW public.prod_active_workspaces_view OWNER TO postgres;
 
 --
 -- Name: product_advanced_settings_view; Type: VIEW; Schema: public; Owner: postgres
@@ -2662,7 +2729,7 @@ CREATE VIEW public.product_advanced_settings_view AS
      LEFT JOIN public.workspace_schedules ws ON ((w.id = ws.workspace_id)));
 
 
-ALTER TABLE public.product_advanced_settings_view OWNER TO postgres;
+ALTER VIEW public.product_advanced_settings_view OWNER TO postgres;
 
 --
 -- Name: product_import_settings_view; Type: VIEW; Schema: public; Owner: postgres
@@ -2687,7 +2754,7 @@ CREATE VIEW public.product_import_settings_view AS
   GROUP BY w.id, w.name, w.fyle_org_id, c.import_categories, c.charts_of_accounts, c.import_tax_codes, c.import_customers, c.import_suppliers_as_merchants, gm.default_tax_code_name, gm.default_tax_code_id;
 
 
-ALTER TABLE public.product_import_settings_view OWNER TO postgres;
+ALTER VIEW public.product_import_settings_view OWNER TO postgres;
 
 --
 -- Name: reimbursements; Type: TABLE; Schema: public; Owner: postgres
@@ -2719,7 +2786,7 @@ CREATE SEQUENCE public.reimbursements_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.reimbursements_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.reimbursements_id_seq OWNER TO postgres;
 
 --
 -- Name: reimbursements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2740,7 +2807,7 @@ CREATE VIEW public.repetition_error_count_view AS
            FROM public.prod_workspaces_view)) AND (errors.is_resolved = false) AND (errors.created_at < (now() - '2 mons'::interval)));
 
 
-ALTER TABLE public.repetition_error_count_view OWNER TO postgres;
+ALTER VIEW public.repetition_error_count_view OWNER TO postgres;
 
 --
 -- Name: task_log_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2755,7 +2822,7 @@ CREATE SEQUENCE public.task_log_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.task_log_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.task_log_id_seq OWNER TO postgres;
 
 --
 -- Name: task_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2794,7 +2861,7 @@ CREATE SEQUENCE public.tenant_mappings_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.tenant_mappings_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.tenant_mappings_id_seq OWNER TO postgres;
 
 --
 -- Name: tenant_mappings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2834,7 +2901,7 @@ CREATE SEQUENCE public.update_logs_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.update_logs_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.update_logs_id_seq OWNER TO postgres;
 
 --
 -- Name: update_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2875,7 +2942,7 @@ CREATE SEQUENCE public.users_user_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.users_user_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.users_user_id_seq OWNER TO postgres;
 
 --
 -- Name: users_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2897,7 +2964,7 @@ CREATE SEQUENCE public.workspaces_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.workspaces_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.workspaces_id_seq OWNER TO postgres;
 
 --
 -- Name: workspaces_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2933,7 +3000,7 @@ CREATE SEQUENCE public.workspaces_user_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.workspaces_user_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.workspaces_user_id_seq OWNER TO postgres;
 
 --
 -- Name: workspaces_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2955,7 +3022,7 @@ CREATE SEQUENCE public.workspaces_workspacegeneralsettings_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.workspaces_workspacegeneralsettings_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.workspaces_workspacegeneralsettings_id_seq OWNER TO postgres;
 
 --
 -- Name: workspaces_workspacegeneralsettings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -2977,7 +3044,7 @@ CREATE SEQUENCE public.workspaces_workspaceschedule_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.workspaces_workspaceschedule_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.workspaces_workspaceschedule_id_seq OWNER TO postgres;
 
 --
 -- Name: workspaces_workspaceschedule_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -3016,7 +3083,7 @@ CREATE SEQUENCE public.xero_credentials_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.xero_credentials_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.xero_credentials_id_seq OWNER TO postgres;
 
 --
 -- Name: xero_credentials_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -3505,6 +3572,14 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 162	Can change failed event	41	change_failedevent
 163	Can delete failed event	41	delete_failedevent
 164	Can view failed event	41	view_failedevent
+165	Can add fyle sync timestamp	42	add_fylesynctimestamp
+166	Can change fyle sync timestamp	42	change_fylesynctimestamp
+167	Can delete fyle sync timestamp	42	delete_fylesynctimestamp
+168	Can view fyle sync timestamp	42	view_fylesynctimestamp
+169	Can add feature config	43	add_featureconfig
+170	Can change feature config	43	change_featureconfig
+171	Can delete feature config	43	delete_featureconfig
+172	Can view feature config	43	view_featureconfig
 \.
 
 
@@ -3788,6 +3863,8 @@ COPY public.django_content_type (id, app_label, model) FROM stdin;
 39	fyle_accounting_mappings	expenseattributesdeletioncache
 40	fyle_integrations_imports	importlog
 41	rabbitmq	failedevent
+42	fyle_accounting_mappings	fylesynctimestamp
+43	workspaces	featureconfig
 \.
 
 
@@ -3986,6 +4063,8 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 188	internal	0006_auto_generated_sql	2025-06-25 16:17:02.655231+00
 189	workspaces	0046_lastexportdetail_unmapped_card_count	2025-07-31 09:06:37.12333+00
 190	tasks	0014_tasklog_re_attempt_export	2025-08-11 13:53:13.518678+00
+191	fyle_accounting_mappings	0031_fylesynctimestamp	2025-10-21 10:14:43.779015+00
+192	workspaces	0047_featureconfig	2025-10-21 10:14:43.801868+00
 \.
 
 
@@ -6249,11 +6328,27 @@ COPY public.failed_events (id, routing_key, payload, created_at, updated_at, err
 
 
 --
+-- Data for Name: feature_configs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.feature_configs (id, export_via_rabbitmq, fyle_webhook_sync_enabled, created_at, updated_at, workspace_id) FROM stdin;
+\.
+
+
+--
 -- Data for Name: fyle_credentials; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.fyle_credentials (id, refresh_token, created_at, updated_at, workspace_id, cluster_domain) FROM stdin;
 1	eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE2NTk0NzE4NzgsImlzcyI6IkZ5bGVBcHAiLCJvcmdfdXNlcl9pZCI6Ilwib3VXRk5QNDlUWHlQXCIiLCJ0cGFfaWQiOiJcInRwYW9Ua2VFYWlGZWdcIiIsInRwYV9uYW1lIjoiXCJGeWxlIFhlcm8gSW50ZWcuLlwiIiwiY2x1c3Rlcl9kb21haW4iOiJcImh0dHBzOi8vc3RhZ2luZy5meWxlLnRlY2hcIiIsImV4cCI6MTk3NDgzMTg3OH0.mOHEigQMVW9MO1SQaKMjIzZ1kD79lYrhGXo_-zSmD04	2022-08-02 20:24:42.685568+00	2022-08-02 20:24:42.68561+00	1	https://staging.fyle.tech
+\.
+
+
+--
+-- Data for Name: fyle_sync_timestamps; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.fyle_sync_timestamps (id, category_synced_at, project_synced_at, cost_center_synced_at, employee_synced_at, expense_field_synced_at, corporate_card_synced_at, dependent_field_synced_at, tax_group_synced_at, created_at, updated_at, workspace_id) FROM stdin;
 \.
 
 
@@ -6484,7 +6579,7 @@ SELECT pg_catalog.setval('public.auth_group_permissions_id_seq', 1, false);
 -- Name: auth_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.auth_permission_id_seq', 164, true);
+SELECT pg_catalog.setval('public.auth_permission_id_seq', 172, true);
 
 
 --
@@ -6533,14 +6628,14 @@ SELECT pg_catalog.setval('public.django_admin_log_id_seq', 1, false);
 -- Name: django_content_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_content_type_id_seq', 41, true);
+SELECT pg_catalog.setval('public.django_content_type_id_seq', 43, true);
 
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 190, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 192, true);
 
 
 --
@@ -6614,6 +6709,13 @@ SELECT pg_catalog.setval('public.failed_events_id_seq', 16, true);
 
 
 --
+-- Name: feature_configs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.feature_configs_id_seq', 1, false);
+
+
+--
 -- Name: fyle_accounting_mappings_destinationattribute_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -6660,6 +6762,13 @@ SELECT pg_catalog.setval('public.fyle_expensegroupsettings_id_seq', 388, true);
 --
 
 SELECT pg_catalog.setval('public.fyle_rest_auth_authtokens_id_seq', 1, true);
+
+
+--
+-- Name: fyle_sync_timestamps_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.fyle_sync_timestamps_id_seq', 1, false);
 
 
 --
@@ -7081,6 +7190,22 @@ ALTER TABLE ONLY public.failed_events
 
 
 --
+-- Name: feature_configs feature_configs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.feature_configs
+    ADD CONSTRAINT feature_configs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: feature_configs feature_configs_workspace_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.feature_configs
+    ADD CONSTRAINT feature_configs_workspace_id_key UNIQUE (workspace_id);
+
+
+--
 -- Name: destination_attributes fyle_accounting_mappings_destinationattribute_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7166,6 +7291,14 @@ ALTER TABLE ONLY public.auth_tokens
 
 ALTER TABLE ONLY public.auth_tokens
     ADD CONSTRAINT fyle_rest_auth_authtokens_user_id_3b4bd82e_uniq UNIQUE (user_id);
+
+
+--
+-- Name: fyle_sync_timestamps fyle_sync_timestamps_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.fyle_sync_timestamps
+    ADD CONSTRAINT fyle_sync_timestamps_pkey PRIMARY KEY (id);
 
 
 --
@@ -7661,6 +7794,13 @@ CREATE INDEX fyle_accounting_mappings_mappingsetting_workspace_id_c123c088 ON pu
 
 
 --
+-- Name: fyle_sync_timestamps_workspace_id_1afd9a31; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX fyle_sync_timestamps_workspace_id_1afd9a31 ON public.fyle_sync_timestamps USING btree (workspace_id);
+
+
+--
 -- Name: import_logs_workspace_id_e5acf2ff; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -7745,34 +7885,6 @@ CREATE INDEX workspaces_user_workspace_id_be6c5867 ON public.workspaces_user USI
 
 
 --
--- Name: prod_workspaces_view _RETURN; Type: RULE; Schema: public; Owner: postgres
---
-
-CREATE OR REPLACE VIEW public.prod_workspaces_view AS
- SELECT w.id,
-    w.name,
-    w.fyle_org_id,
-    w.last_synced_at,
-    w.created_at,
-    w.updated_at,
-    w.destination_synced_at,
-    w.source_synced_at,
-    w.xero_short_code,
-    w.xero_accounts_last_synced_at,
-    w.onboarding_state,
-    w.app_version,
-    w.fyle_currency,
-    w.xero_currency,
-    w.ccc_last_synced_at,
-    array_agg(u.email) AS user_emails
-   FROM ((public.workspaces w
-     JOIN public.workspaces_user wu ON ((wu.workspace_id = w.id)))
-     JOIN public.users u ON ((u.id = wu.user_id)))
-  WHERE ((u.email)::text !~~* '%fyle%'::text)
-  GROUP BY w.id;
-
-
---
 -- Name: prod_active_workspaces_view _RETURN; Type: RULE; Schema: public; Owner: postgres
 --
 
@@ -7799,6 +7911,34 @@ CREATE OR REPLACE VIEW public.prod_active_workspaces_view AS
   WHERE (((u.email)::text !~~* '%fyle%'::text) AND (w.id IN ( SELECT DISTINCT task_logs.workspace_id
            FROM public.task_logs
           WHERE (((task_logs.status)::text = 'COMPLETE'::text) AND ((task_logs.type)::text <> 'FETCHING_EXPENSES'::text) AND (task_logs.updated_at > (now() - '3 mons'::interval))))))
+  GROUP BY w.id;
+
+
+--
+-- Name: prod_workspaces_view _RETURN; Type: RULE; Schema: public; Owner: postgres
+--
+
+CREATE OR REPLACE VIEW public.prod_workspaces_view AS
+ SELECT w.id,
+    w.name,
+    w.fyle_org_id,
+    w.last_synced_at,
+    w.created_at,
+    w.updated_at,
+    w.destination_synced_at,
+    w.source_synced_at,
+    w.xero_short_code,
+    w.xero_accounts_last_synced_at,
+    w.onboarding_state,
+    w.app_version,
+    w.fyle_currency,
+    w.xero_currency,
+    w.ccc_last_synced_at,
+    array_agg(u.email) AS user_emails
+   FROM ((public.workspaces w
+     JOIN public.workspaces_user wu ON ((wu.workspace_id = w.id)))
+     JOIN public.users u ON ((u.id = wu.user_id)))
+  WHERE ((u.email)::text !~~* '%fyle%'::text)
   GROUP BY w.id;
 
 
@@ -8085,6 +8225,14 @@ ALTER TABLE ONLY public.expenses
 
 
 --
+-- Name: feature_configs feature_configs_workspace_id_2161bfdc_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.feature_configs
+    ADD CONSTRAINT feature_configs_workspace_id_2161bfdc_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: mappings fyle_accounting_mapp_destination_id_79497f6e_fk_fyle_acco; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -8130,6 +8278,14 @@ ALTER TABLE ONLY public.fyle_credentials
 
 ALTER TABLE ONLY public.auth_tokens
     ADD CONSTRAINT fyle_rest_auth_authtokens_user_id_3b4bd82e_fk_users_user_id FOREIGN KEY (user_id) REFERENCES public.users(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: fyle_sync_timestamps fyle_sync_timestamps_workspace_id_1afd9a31_fk_workspaces_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.fyle_sync_timestamps
+    ADD CONSTRAINT fyle_sync_timestamps_workspace_id_1afd9a31_fk_workspaces_id FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -8303,4 +8459,3 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
-
