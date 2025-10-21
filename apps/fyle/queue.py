@@ -19,7 +19,7 @@ def async_import_and_export_expenses(body: dict, workspace_id: int) -> None:
     """
     if body.get('data') and body.get('data').get('org_id'):
         assert_valid_request(workspace_id=workspace_id, fyle_org_id=body['data']['org_id'])
-    
+
     rabbitmq = RabbitMQConnection.get_instance('xero_exchange')
     if body.get('action') in ('ADMIN_APPROVED', 'APPROVED', 'STATE_CHANGE_PAYMENT_PROCESSING', 'PAID') and body.get('data'):
         report_id = body['data']['id']
