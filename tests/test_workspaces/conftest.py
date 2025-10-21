@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, XeroCredentials
+from apps.workspaces.models import FeatureConfig, FyleCredential, LastExportDetail, Workspace, XeroCredentials
 from fyle_xero_api import settings
 
 
@@ -44,3 +44,14 @@ def add_fyle_credentials(db):
         workspace_id=workspace_id,
         cluster_domain="https://staging.fyle.tech",
     )
+
+
+@pytest.fixture()
+def add_feature_config(db):
+    """
+    Add FeatureConfig to database fixture
+    """
+    feature_config, _ = FeatureConfig.objects.get_or_create(
+        workspace_id=1,
+        defaults={'export_via_rabbitmq': True, 'fyle_webhook_sync_enabled': False})
+    return feature_config
