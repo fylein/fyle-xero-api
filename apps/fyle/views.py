@@ -76,6 +76,11 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
 
     @handle_view_exceptions()
     def post(self, request, *args, **kwargs):
+        """
+        Sync Data From Fyle
+        """
+
+        # Check for a valid workspace and fyle creds and respond with 400 if not found
         workspace = Workspace.objects.get(id=kwargs['workspace_id'])
         FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
@@ -96,6 +101,11 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
 
     @handle_view_exceptions()
     def post(self, request, *args, **kwargs):
+        """
+        Sync data from Fyle
+        """
+
+        # Check for a valid workspace and fyle creds and respond with 400 if not found
         Workspace.objects.get(id=kwargs['workspace_id'])
         FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
