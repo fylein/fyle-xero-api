@@ -51,7 +51,7 @@ def add_feature_config(db):
     """
     Add FeatureConfig to database fixture
     """
-    feature_config, _ = FeatureConfig.objects.get_or_create(
+    feature_config, _ = FeatureConfig.objects.update_or_create(
         workspace_id=1,
         defaults={'export_via_rabbitmq': True, 'fyle_webhook_sync_enabled': False})
     return feature_config

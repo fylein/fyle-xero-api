@@ -15,6 +15,7 @@ from apps.fyle.models import ExpenseGroup
 from apps.mappings.models import GeneralMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import Error, TaskLog
+from apps.workspaces.models import FeatureConfig
 from apps.xero.exceptions import update_last_export_details
 
 logger = logging.getLogger(__name__)
@@ -117,14 +118,18 @@ def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], run_in_ra
     :param chain_tasks: List of Task objects
     :return: None
     """
+    fyle_webhook_sync_enabled = FeatureConfig.get_feature_config(workspace_id=workspace_id, key='fyle_webhook_sync_enabled')
+
     if run_in_rabbitmq_worker:
-        import_string('apps.fyle.tasks.check_interval_and_sync_dimension')(workspace_id)
+        if not fyle_webhook_sync_enabled:
+            import_string('apps.fyle.tasks.check_interval_and_sync_dimension')(workspace_id)
 
         task_executor = TaskChainRunner()
         task_executor.run(chain_tasks, workspace_id)
     else:
         chain = Chain()
-        chain.append('apps.fyle.tasks.check_interval_and_sync_dimension', workspace_id)
+        if not fyle_webhook_sync_enabled:
+            chain.append('apps.fyle.tasks.check_interval_and_sync_dimension', workspace_id)
 
         for task in chain_tasks:
             chain.append(task.target, *task.args)

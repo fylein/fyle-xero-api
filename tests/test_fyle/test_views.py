@@ -1,9 +1,10 @@
 import json
+from datetime import datetime, timezone
 
 import pytest
 
 from apps.tasks.models import TaskLog
-from apps.workspaces.models import FyleCredential, Workspace
+from apps.workspaces.models import FeatureConfig, FyleCredential, Workspace
 from tests.helper import dict_compare_keys
 from tests.test_fyle.fixtures import data
 
@@ -211,3 +212,51 @@ def test_exportable_expense_group(api_client, test_connection, mocker):
 
     response = api_client.get(url)
     assert response.status_code == 200
+
+
+def test_fyle_sync_dimension_with_webhook_sync_enabled(api_client, test_connection, mocker):
+    access_token = test_connection.access_token
+
+    workspace = Workspace.objects.get(id=1)
+    workspace.source_synced_at = datetime.now(tz=timezone.utc)
+    workspace.save()
+
+    FeatureConfig.objects.update_or_create(
+        workspace_id=1,
+        defaults={'fyle_webhook_sync_enabled': True}
+    )
+
+    url = "/api/workspaces/1/fyle/sync_dimensions/"
+
+    api_client.credentials(HTTP_AUTHORIZATION="Bearer {}".format(access_token))
+
+    mock_async_task = mocker.patch('apps.fyle.views.async_task')
+
+    response = api_client.post(url)
+    assert response.status_code == 200
+
+    mock_async_task.assert_not_called()
+
+
+def test_fyle_sync_dimension_with_webhook_sync_disabled(api_client, test_connection, mocker):
+    access_token = test_connection.access_token
+
+    workspace = Workspace.objects.get(id=1)
+    workspace.source_synced_at = datetime.now(tz=timezone.utc)
+    workspace.save()
+
+    FeatureConfig.objects.update_or_create(
+        workspace_id=1,
+        defaults={'fyle_webhook_sync_enabled': False}
+    )
+
+    url = "/api/workspaces/1/fyle/sync_dimensions/"
+
+    api_client.credentials(HTTP_AUTHORIZATION="Bearer {}".format(access_token))
+
+    mock_async_task = mocker.patch('apps.fyle.views.async_task')
+
+    response = api_client.post(url)
+    assert response.status_code == 200
+
+    mock_async_task.assert_called_once_with('apps.fyle.tasks.check_interval_and_sync_dimension', 1)

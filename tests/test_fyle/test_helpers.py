@@ -1,12 +1,21 @@
 from asyncio.log import logger
 
+import pytest
 from django.conf import settings
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import status
 
 from apps.fyle.actions import __bulk_update_expenses
-from apps.fyle.helpers import get_fyle_orgs, get_request, get_updated_accounting_export_summary, post_request
+from apps.fyle.helpers import (
+    assert_valid_request,
+    get_fyle_orgs,
+    get_request,
+    get_updated_accounting_export_summary,
+    post_request,
+)
 from apps.fyle.models import Expense
+from apps.workspaces.models import Workspace
 
 
 def test_post_request(mocker):
@@ -88,3 +97,33 @@ def test_bulk_update_expenses(db):
             settings.XERO_INTEGRATION_APP_URL
         )
         assert expense.accounting_export_summary['id'] == expense.expense_id
+
+
+def test_assert_valid_request_with_cache(db, mocker):
+    workspace = Workspace.objects.get(id=1)
+
+    mock_cache_get = mocker.patch('apps.fyle.helpers.cache.get', return_value=None)
+    mock_cache_set = mocker.patch('apps.fyle.helpers.cache.set')
+
+    assert_valid_request(workspace_id=workspace.id, fyle_org_id=workspace.fyle_org_id)
+
+    mock_cache_get.assert_called_once()
+    mock_cache_set.assert_called_once()
+
+    mock_cache_get.return_value = True
+    assert_valid_request(workspace_id=workspace.id, fyle_org_id=workspace.fyle_org_id)
+
+    assert mock_cache_get.call_count == 2
+    assert mock_cache_set.call_count == 1
+
+
+def test_assert_valid_request_invalid(db):
+    with pytest.raises(ValidationError, match='Workspace not found'):
+        assert_valid_request(workspace_id=99999, fyle_org_id='invalid_org')
+
+
+def test_assert_valid_request_mismatch(db):
+    workspace = Workspace.objects.get(id=1)
+
+    with pytest.raises(ValidationError, match='Workspace mismatch'):
+        assert_valid_request(workspace_id=999, fyle_org_id=workspace.fyle_org_id)

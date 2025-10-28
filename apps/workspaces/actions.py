@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
-from fyle_accounting_mappings.models import ExpenseAttribute
+from fyle_accounting_mappings.models import ExpenseAttribute, FyleSyncTimestamp
 from fyle_rest_auth.helpers import get_fyle_admin
 from fyle_rest_auth.models import AuthToken
 from xerosdk import exceptions as xero_exc
@@ -18,6 +18,7 @@ from apps.fyle.models import ExpenseGroup, ExpenseGroupSettings
 from apps.mappings.models import TenantMapping
 from apps.workspaces.helpers import patch_integration_settings
 from apps.workspaces.models import (
+    FeatureConfig,
     FyleCredential,
     LastExportDetail,
     Workspace,
@@ -57,6 +58,10 @@ def post_workspace(access_token, request):
         ExpenseGroupSettings.objects.create(workspace_id=workspace.id)
 
         LastExportDetail.objects.create(workspace_id=workspace.id)
+
+        FeatureConfig.objects.create(workspace_id=workspace.id)
+
+        FyleSyncTimestamp.objects.create(workspace_id=workspace.id)
 
         workspace.user.add(User.objects.get(user_id=request.user))
 

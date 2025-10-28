@@ -6,6 +6,8 @@ from typing import List, Union
 import django_filters
 import requests
 from django.conf import settings
+from django.core.cache import cache
+from fyle_accounting_library.fyle_platform.enums import CacheKeyEnum
 from rest_framework.exceptions import ValidationError
 
 from apps.fyle.models import Expense, ExpenseGroup
@@ -197,14 +199,26 @@ def get_batched_expenses(batched_payload: List[dict], workspace_id: int) -> List
     return Expense.objects.filter(expense_id__in=expense_ids, workspace_id=workspace_id)
 
 
-def assert_valid_request(workspace_id:int, fyle_org_id:str):
+def assert_valid_request(workspace_id: int, fyle_org_id: str):
     """
     Assert if the request is valid by checking
     the url_workspace_id and fyle_org_id workspace
     """
-    workspace = Workspace.objects.get(fyle_org_id=fyle_org_id)
-    if workspace.id != workspace_id:
-        raise ValidationError('Workspace mismatch')
+    cache_key = CacheKeyEnum.WORKSPACE_VALIDATION.value.format(workspace_id=workspace_id, fyle_org_id=fyle_org_id)
+
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return
+
+    try:
+        workspace = Workspace.objects.get(fyle_org_id=fyle_org_id)
+        if workspace.id == workspace_id:
+            cache.set(cache_key, True, 2592000)
+            return
+        else:
+            raise ValidationError('Workspace mismatch')
+    except Workspace.DoesNotExist:
+        raise ValidationError('Workspace not found')
 
 
 class AdvanceSearchFilter(django_filters.FilterSet):
