@@ -50494,5 +50494,212 @@ data = {
                 "is_posted_at_null": True
             }
         }
+    },
+
+    "webhook_callback_payloads": {
+        'accounting_export_initiated': {
+            'action': 'ACCOUNTING_EXPORT_INITIATED',
+            'data': {
+                'id': 'rp1s1L3QtMpF',
+                'org_id': 'or79Cob97KSh'
+            }
+        },
+        'state_change_payment_processing': {
+            'action': 'STATE_CHANGE_PAYMENT_PROCESSING',
+            'data': {
+                'id': 'rp1s1L3QtMpF',
+                'org_id': 'or79Cob97KSh',
+                'state': 'APPROVED'
+            }
+        },
+        'ejected_from_report': {
+            'action': 'EJECTED_FROM_REPORT',
+            'resource': 'EXPENSE',
+            'data': {
+                'id': 'txExpense123',
+                'org_id': 'orPJvXuoLqvJ'
+            }
+        },
+        'added_to_report': {
+            'action': 'ADDED_TO_REPORT',
+            'resource': 'EXPENSE',
+            'data': {
+                'id': 'txExpense456',
+                'org_id': 'orPJvXuoLqvJ',
+                'report_id': 'rpReport123'
+            }
+        },
+        'category_webhook_enabled': {
+            'action': 'CREATED',
+            'resource': 'CATEGORY',
+            'data': {
+                'id': 'cat_webhook_123',
+                'name': 'Test Category',
+                'sub_category': 'Test Subcategory',
+                'is_enabled': True
+            }
+        },
+        'category_webhook_disabled': {
+            'action': 'CREATED',
+            'resource': 'CATEGORY',
+            'data': {
+                'id': 'cat_disabled_123',
+                'name': 'Test Category Disabled',
+                'is_enabled': True
+            }
+        },
+        'category_webhook_exception': {
+            'action': 'CREATED',
+            'resource': 'CATEGORY',
+            'data': {
+                'id': 'cat_exception_123',
+                'name': 'Test Category Exception',
+                'is_enabled': True
+            }
+        }
+    },
+
+    "webhook_attribute_payloads": {
+        'category_created': {
+            'action': 'CREATED',
+            'resource': 'CATEGORY',
+            'data': {
+                'id': 'cat_123',
+                'name': 'Travel',
+                'sub_category': 'Flight',
+                'is_enabled': True
+            }
+        },
+        'category_updated': {
+            'action': 'UPDATED',
+            'resource': 'CATEGORY',
+            'data': {
+                'id': 'cat_456',
+                'name': 'New Travel',
+                'sub_category': 'Train',
+                'is_enabled': True
+            }
+        },
+        'category_deleted': {
+            'action': 'DELETED',
+            'resource': 'CATEGORY',
+            'data': {
+                'id': 'cat_789',
+                'name': 'Old Category'
+            }
+        },
+        'category_skip': {
+            'action': 'CREATED',
+            'resource': 'CATEGORY',
+            'data': {
+                'id': 'cat_skip',
+                'name': 'Should Be Skipped',
+                'is_enabled': True
+            }
+        },
+        'project_created': {
+            'action': 'CREATED',
+            'resource': 'PROJECT',
+            'data': {
+                'id': 'proj_123',
+                'name': 'Main Project',
+                'sub_project': 'Sub Project 1',
+                'is_enabled': True
+            }
+        },
+        'employee_created': {
+            'action': 'CREATED',
+            'resource': 'EMPLOYEE',
+            'data': {
+                'id': 'emp_123',
+                'user': {
+                    'email': 'employee@example.com',
+                    'full_name': 'John Doe'
+                },
+                'user_id': 'user_123',
+                'code': 'EMP001',
+                'location': 'New York',
+                'department': {
+                    'name': 'Engineering',
+                    'code': 'ENG'
+                },
+                'department_id': 'dept_123',
+                'is_enabled': True
+            }
+        },
+        'corporate_card_created': {
+            'action': 'CREATED',
+            'resource': 'CORPORATE_CARD',
+            'data': {
+                'id': 'card_123',
+                'bank_name': 'Chase',
+                'card_number': '1234-5678-9012-3456',
+                'cardholder_name': 'Jane Smith'
+            }
+        },
+        'tax_group_created': {
+            'action': 'CREATED',
+            'resource': 'TAX_GROUP',
+            'data': {
+                'id': 'tax_123',
+                'name': 'GST 18%',
+                'percentage': 18.0,
+                'is_enabled': True
+            }
+        },
+        'expense_field_select_created': {
+            'action': 'CREATED',
+            'resource': 'EXPENSE_FIELD',
+            'data': {
+                'id': 'field_123',
+                'field_name': 'Department',
+                'type': 'SELECT',
+                'options': ['Sales', 'Marketing', 'Engineering'],
+                'placeholder': 'Select Department',
+                'is_mandatory': True,
+                'is_enabled': True
+            }
+        },
+        'expense_field_region_updated': {
+            'action': 'UPDATED',
+            'resource': 'EXPENSE_FIELD',
+            'data': {
+                'id': 'field_456',
+                'field_name': 'Region',
+                'type': 'SELECT',
+                'options': ['North', 'South'],
+                'placeholder': 'Select Region',
+                'is_mandatory': False,
+                'is_enabled': True
+            }
+        },
+        'expense_field_text_created': {
+            'action': 'CREATED',
+            'resource': 'EXPENSE_FIELD',
+            'data': {
+                'id': 'field_789',
+                'field_name': 'Notes',
+                'type': 'TEXT',
+                'placeholder': 'Enter notes',
+                'is_mandatory': False,
+                'is_enabled': True
+            }
+        },
+        'cost_center_deleted': {
+            'action': 'DELETED',
+            'resource': 'COST_CENTER',
+            'data': {
+                'id': 'cc_delete',
+                'name': 'To Be Deleted'
+            }
+        },
+        'unsupported_resource': {
+            'action': 'CREATED',
+            'resource': 'ORG_SETTING',
+            'data': {
+                'id': 'org_123',
+                'name': 'Some Setting'
+            }
+        }
     }
 }

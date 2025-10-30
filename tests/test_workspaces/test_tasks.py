@@ -174,11 +174,22 @@ def test_async_update_workspace_name(mocker):
 
 
 def test_async_create_admin_subscriptions(db, mocker):
-    mocker.patch(
-        'fyle.platform.apis.v1.admin.Subscriptions.post',
-        return_value={}
-    )
+    mock_platform = mocker.MagicMock()
+    mocker.patch('apps.workspaces.tasks.PlatformConnector', return_value=mock_platform)
+
     async_create_admin_subscriptions(1)
+
+    mock_platform.subscriptions.post.assert_called_once()
+    call_args = mock_platform.subscriptions.post.call_args
+    payload = call_args[0][0]
+
+    assert 'CATEGORY' in payload['subscribed_resources']
+    assert 'PROJECT' in payload['subscribed_resources']
+    assert 'COST_CENTER' in payload['subscribed_resources']
+    assert 'EXPENSE_FIELD' in payload['subscribed_resources']
+    assert 'CORPORATE_CARD' in payload['subscribed_resources']
+    assert 'EMPLOYEE' in payload['subscribed_resources']
+    assert 'TAX_GROUP' in payload['subscribed_resources']
 
 
 @pytest.mark.django_db(databases=['default'])
