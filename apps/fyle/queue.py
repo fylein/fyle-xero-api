@@ -1,7 +1,7 @@
 import logging
 
 from django_q.tasks import async_task
-from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum, RoutingKeyEnum, WebhookAttributeActionEnum
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum, RoutingKeyEnum, WebhookCallbackActionEnum
 from fyle_accounting_library.rabbitmq.connector import RabbitMQConnection
 from fyle_accounting_library.rabbitmq.data_class import RabbitMQData
 
@@ -63,7 +63,7 @@ def handle_webhook_callback(body: dict, workspace_id: int) -> None:
         logger.info("| Handling expense report change | Content: {{WORKSPACE_ID: {} EXPENSE_ID: {} ACTION: {} Payload: {}}}".format(workspace_id, expense_id, action, data))
         async_task('apps.fyle.tasks.handle_expense_report_change', data, action)
 
-    elif action in (WebhookAttributeActionEnum.CREATED, WebhookAttributeActionEnum.UPDATED, WebhookAttributeActionEnum.DELETED):
+    elif action in (WebhookCallbackActionEnum.CREATED, WebhookCallbackActionEnum.UPDATED, WebhookCallbackActionEnum.DELETED):
         try:
             fyle_webhook_sync_enabled = FeatureConfig.get_feature_config(workspace_id=workspace_id, key='fyle_webhook_sync_enabled')
             if fyle_webhook_sync_enabled:
