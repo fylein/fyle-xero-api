@@ -10,6 +10,6 @@ sql_files = [
 
 class Migration(migrations.Migration):
 
-    dependencies = [('internal', '0009_auto_generated_sql')]
+    dependencies = [('internal', '0009_auto_generate_sql')]
 
     operations = safe_run_sql(sql_files)
