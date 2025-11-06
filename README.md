@@ -118,5 +118,3 @@ Django Rest Framework API for Fyle Xero Integration
     ```
     docker-compose exec api /bin/bash
     ```
-
-# Django 4.2.26 security update
