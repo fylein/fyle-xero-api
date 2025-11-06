@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pytest
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import Mapping, MappingSetting
 
@@ -156,3 +157,29 @@ def test_run_post_tenant_mapping_trigger(db, test_connection):
     )
     tenant_mapping.save()
     LastExportDetail.objects.create(workspace=workspace)
+
+
+@pytest.mark.django_db()
+def test_patch_integration_settings_on_card_mapping(test_connection, mocker, add_corporate_card_attributes):
+    """
+    Test patch_corporate_card_integration_settings is called when corporate card mapping is created
+    """
+    workspace_id = 1
+
+    # Get attributes from fixture
+    corporate_card = add_corporate_card_attributes['corporate_card']
+    category = add_corporate_card_attributes['category']
+    bank_account = add_corporate_card_attributes['bank_account']
+    account = add_corporate_card_attributes['account']
+
+    mock_patch = mocker.patch('apps.mappings.signals.patch_corporate_card_integration_settings')
+    mapping = Mapping(source_type='CORPORATE_CARD', destination_type='BANK_ACCOUNT',
+                     source_id=corporate_card.id, destination_id=bank_account.id, workspace_id=workspace_id)
+    mapping.save()
+    mock_patch.assert_called_once_with(workspace_id=workspace_id)
+
+    mock_patch.reset_mock()
+    mapping = Mapping(source_type='CATEGORY', destination_type='ACCOUNT',
+                     source_id=category.id, destination_id=account.id, workspace_id=workspace_id)
+    mapping.save()
+    mock_patch.assert_not_called()

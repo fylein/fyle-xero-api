@@ -1,5 +1,5 @@
 import pytest
-from fyle_accounting_mappings.models import DestinationAttribute, MappingSetting
+from fyle_accounting_mappings.models import DestinationAttribute, ExpenseAttribute, MappingSetting
 
 from apps.workspaces.models import FyleCredential, LastExportDetail, Workspace, XeroCredentials
 
@@ -65,3 +65,57 @@ def add_fyle_credentials(db):
         workspace_id=workspace_id,
         cluster_domain="https://staging.fyle.tech",
     )
+
+
+@pytest.fixture
+def add_corporate_card_attributes(db):
+    """
+    Create corporate card and category expense attributes along with their destination attributes
+    for testing card mapping signals
+    """
+    workspace_id = 1
+
+    # Create expense attributes
+    corporate_card = ExpenseAttribute.objects.create(
+        workspace_id=workspace_id,
+        attribute_type='CORPORATE_CARD',
+        display_name='Corporate Card',
+        value='Test Card',
+        source_id='card_test_123',
+        active=True
+    )
+
+    category = ExpenseAttribute.objects.create(
+        workspace_id=workspace_id,
+        attribute_type='CATEGORY',
+        display_name='Category',
+        value='Test Category',
+        source_id='cat_test_456',
+        active=True
+    )
+
+    # Create destination attributes
+    bank_account = DestinationAttribute.objects.create(
+        workspace_id=workspace_id,
+        attribute_type='BANK_ACCOUNT',
+        display_name='Bank Account',
+        value='Test Bank',
+        destination_id='bank_123',
+        active=True
+    )
+
+    account = DestinationAttribute.objects.create(
+        workspace_id=workspace_id,
+        attribute_type='ACCOUNT',
+        display_name='Account',
+        value='Test Account',
+        destination_id='acc_456',
+        active=True
+    )
+
+    return {
+        'corporate_card': corporate_card,
+        'category': category,
+        'bank_account': bank_account,
+        'account': account
+    }

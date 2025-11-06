@@ -4,24 +4,25 @@ Mappings Signal
 
 import logging
 from datetime import datetime, timedelta, timezone
+
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django_q.tasks import async_task
+from fyle.platform.exceptions import WrongParamsError
 from fyle_accounting_mappings.models import Mapping, MappingSetting
+from fyle_integrations_platform_connector import PlatformConnector
+from rest_framework.exceptions import ValidationError
 
 from apps.fyle.enums import FyleAttributeEnum
-from apps.mappings.models import TenantMapping
-from apps.tasks.models import Error
-from apps.workspaces.models import WorkspaceGeneralSettings
-from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
-from apps.workspaces.models import XeroCredentials, FyleCredential
 from apps.mappings.constants import SYNC_METHODS
-from fyle_integrations_imports.models import ImportLog
+from apps.mappings.helpers import patch_corporate_card_integration_settings
+from apps.mappings.models import TenantMapping
+from apps.mappings.schedules import new_schedule_or_delete_fyle_import_tasks
+from apps.tasks.models import Error
+from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
+from fyle_integrations_imports.models import ImportLog
 from fyle_integrations_imports.modules.expense_custom_fields import ExpenseCustomField
-from fyle_integrations_platform_connector import PlatformConnector
-from fyle.platform.exceptions import WrongParamsError
-from rest_framework.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -37,6 +38,15 @@ def resolve_post_mapping_errors(sender, instance: Mapping, **kwargs):
         if error:
             error.is_resolved = True
             error.save()
+
+
+@receiver(post_save, sender=Mapping)
+def patch_integration_settings_on_card_mapping(sender, instance: Mapping, created: bool, **kwargs):
+    """
+    Patch integration settings when corporate card mapping is created
+    """
+    if instance.source_type == 'CORPORATE_CARD' and created:
+        patch_corporate_card_integration_settings(workspace_id=instance.workspace_id)
 
 
 @receiver(post_save, sender=MappingSetting)

@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 from django.core.cache import cache
 from fyle_accounting_mappings.models import ExpenseAttribute
@@ -297,3 +299,20 @@ def test_process_webhook_unsupported_resource_type(db):
     processor.process_webhook(webhook_body)
     final_count = ExpenseAttribute.objects.filter(workspace_id=workspace_id).count()
     assert final_count == initial_count
+
+
+@pytest.mark.django_db
+def test_process_webhook_corporate_card_created_triggers_patch(db, mocker):
+    """Test CORPORATE_CARD CREATED webhook triggers patch and handles exceptions"""
+    workspace_id = 1
+    processor = WebhookAttributeProcessor(workspace_id)
+
+    with mock.patch('apps.mappings.helpers.patch_corporate_card_integration_settings') as mock_patch:
+        processor.process_webhook(data['webhook_attribute_payloads']['corporate_card_created'])
+        mock_patch.assert_called_once_with(workspace_id=workspace_id)
+
+    with mock.patch('apps.mappings.helpers.patch_corporate_card_integration_settings') as mock_patch:
+        mock_patch.side_effect = Exception("Test error")
+        processor.process_webhook(data['webhook_attribute_payloads']['corporate_card_created'])
+        assert ExpenseAttribute.objects.filter(workspace_id=workspace_id, attribute_type='CORPORATE_CARD',
+                                              source_id='card_123').exists()
