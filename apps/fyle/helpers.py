@@ -147,6 +147,7 @@ def get_access_token(refresh_token: str) -> str:
 
     return post_request(settings.FYLE_TOKEN_URI, body=api_data)['access_token']
 
+
 def get_cluster_domain(refresh_token: str) -> str:
     """
     Get cluster domain name from fyle
