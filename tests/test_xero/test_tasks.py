@@ -11,7 +11,7 @@ from xerosdk.exceptions import InvalidGrant, NoPrivilegeError, RateLimitError, W
 from apps.fyle.models import Expense, ExpenseGroup, Reimbursement
 from apps.mappings.models import GeneralMapping, TenantMapping
 from apps.tasks.models import Error, TaskLog
-from apps.workspaces.models import LastExportDetail, WorkspaceGeneralSettings, XeroCredentials
+from apps.workspaces.models import FeatureConfig, LastExportDetail, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.exceptions import update_last_export_details
 from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, BillLineItem
 from apps.xero.queue import (
@@ -117,11 +117,21 @@ def test_load_attachments(mocker, db):
         expense.file_ids = ["asdfghj"]
         expense.save()
 
-    load_attachments(xero_connection, "dfgh", "werty", expense_group)
+    task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
+    task_log.is_attachment_upload_failed = False
+    task_log.save()
+
+    load_attachments(xero_connection, "dfgh", "werty", expense_group, task_log)
+
+    task_log.refresh_from_db()
+    assert task_log.is_attachment_upload_failed is False
 
     with mock.patch("apps.xero.utils.XeroConnector.post_attachments") as mock_call:
         mock_call.side_effect = Exception()
-        load_attachments(xero_connection, "dfgh", "werty", expense_group)
+        load_attachments(xero_connection, "dfgh", "werty", expense_group, task_log)
+
+    task_log.refresh_from_db()
+    assert task_log.is_attachment_upload_failed is True
 
 
 def test_attach_customer_to_export(mocker, db):
@@ -411,6 +421,11 @@ def test_schedule_bills_creation_with_rabbitmq_worker(db, mocker):
     Test schedule_bills_creation with run_in_rabbitmq_worker=True to cover the import_string call
     """
     workspace_id = 1
+
+    FeatureConfig.objects.update_or_create(
+        workspace_id=workspace_id,
+        defaults={'fyle_webhook_sync_enabled': False}
+    )
 
     expense_group = ExpenseGroup.objects.get(id=4)
     expense_group.exported_at = None
