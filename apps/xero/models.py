@@ -162,12 +162,12 @@ def get_expense_purpose(workspace_id, lineitem, category, workspace_general_sett
         'expense_link': '{0}/app/admin/#/company_expenses?txnId={1}&org_id={2}'.format(fyle_url, lineitem.expense_id, org_id)
     }
 
-    memo = ''
-    for id, field in enumerate(memo_structure):
-        if field in details:
-            memo += details[field]
-            if id + 1 != len(memo_structure):
-                memo = '{0} - '.format(memo)
+    memo_parts = []
+    for field in memo_structure:
+        if field in details and details[field]:
+            memo_parts.append(details[field])
+
+    memo = ' - '.join(memo_parts)
 
     return memo
 
