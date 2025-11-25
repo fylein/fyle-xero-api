@@ -85,6 +85,7 @@ def load_attachments(
     ref_id: str,
     ref_type: str,
     expense_group: ExpenseGroup,
+    task_log: TaskLog
 ):
     """
     Get attachments from fyle
@@ -92,6 +93,7 @@ def load_attachments(
     :param ref_id: object id
     :param ref_type: type of object
     :param expense_group: Expense group
+    :param task_log: Task log object
     """
     try:
         fyle_credentials = FyleCredential.objects.get(
@@ -121,6 +123,8 @@ def load_attachments(
             expense_group.workspace_id,
             {"error": error},
         )
+        task_log.is_attachment_upload_failed = True
+        task_log.save()
 
 
 def get_employee_expense_attribute(value: str, workspace_id: int) -> ExpenseAttribute:
@@ -354,6 +358,7 @@ def create_bill(
         created_bill["Invoices"][0]["InvoiceID"],
         "invoices",
         expense_group,
+        task_log
     )
 
 
@@ -560,6 +565,7 @@ def create_bank_transaction(
         created_bank_transaction["BankTransactions"][0]["BankTransactionID"],
         "banktransactions",
         expense_group,
+        task_log
     )
 
 
