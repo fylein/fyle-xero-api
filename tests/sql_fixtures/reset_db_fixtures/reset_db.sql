@@ -6388,7 +6388,7 @@ COPY public.failed_events (id, routing_key, payload, created_at, updated_at, err
 --
 
 COPY public.feature_configs (id, export_via_rabbitmq, fyle_webhook_sync_enabled, created_at, updated_at, workspace_id) FROM stdin;
-1	f	t	2025-10-28 16:40:01.864684+00	2025-10-28 16:40:01.864684+00	1
+1	f	f	2025-10-28 16:40:01.864684+00	2025-10-28 16:40:01.864684+00	1
 \.
 
 
