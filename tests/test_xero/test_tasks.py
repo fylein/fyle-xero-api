@@ -117,11 +117,21 @@ def test_load_attachments(mocker, db):
         expense.file_ids = ["asdfghj"]
         expense.save()
 
-    load_attachments(xero_connection, "dfgh", "werty", expense_group)
+    task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
+    task_log.is_attachment_upload_failed = False
+    task_log.save()
+
+    load_attachments(xero_connection, "dfgh", "werty", expense_group, task_log)
+
+    task_log.refresh_from_db()
+    assert task_log.is_attachment_upload_failed is False
 
     with mock.patch("apps.xero.utils.XeroConnector.post_attachments") as mock_call:
         mock_call.side_effect = Exception()
-        load_attachments(xero_connection, "dfgh", "werty", expense_group)
+        load_attachments(xero_connection, "dfgh", "werty", expense_group, task_log)
+
+    task_log.refresh_from_db()
+    assert task_log.is_attachment_upload_failed is True
 
 
 def test_attach_customer_to_export(mocker, db):
