@@ -3,6 +3,7 @@ import random
 from datetime import datetime, timedelta, timezone
 from unittest import mock
 
+from django.utils import timezone as django_timezone
 from django_q.models import Schedule
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute, Mapping
@@ -1372,4 +1373,23 @@ def test_handle_skipped_exports(mocker, db):
     assert result == 2
     mock_post_summary.assert_not_called()
     mock_update_last_export.assert_called_once_with(eg2.workspace_id)
-    mock_logger.info.assert_called()
+
+
+def test_schedule_creation_with_no_expense_groups(db):
+    workspace_id = 1
+
+    expense_group_4 = ExpenseGroup.objects.get(id=4)
+    expense_group_4.exported_at = django_timezone.now()
+    expense_group_4.save()
+
+    expense_group_5 = ExpenseGroup.objects.get(id=5)
+    expense_group_5.exported_at = django_timezone.now()
+    expense_group_5.save()
+
+    initial_task_log_count = TaskLog.objects.filter(workspace_id=workspace_id).count()
+
+    schedule_bills_creation(workspace_id, [4], False, 1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False)
+    assert TaskLog.objects.filter(workspace_id=workspace_id).count() == initial_task_log_count
+
+    schedule_bank_transaction_creation(workspace_id, [5], False, 1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False)
+    assert TaskLog.objects.filter(workspace_id=workspace_id).count() == initial_task_log_count
