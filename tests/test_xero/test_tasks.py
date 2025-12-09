@@ -1373,6 +1373,7 @@ def test_handle_skipped_exports(mocker, db):
     assert result == 2
     mock_post_summary.assert_not_called()
     mock_update_last_export.assert_called_once_with(eg2.workspace_id)
+    mock_logger.info.assert_called()
 
 
 def test_schedule_creation_with_no_expense_groups(db):
