@@ -174,6 +174,9 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             exported_at__isnull=True,
         ).all()
 
+        if not expense_groups:
+            return
+
         errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
 
         chain_tasks = []
@@ -229,6 +232,9 @@ def schedule_bank_transaction_creation(
             banktransaction__id__isnull=True,
             exported_at__isnull=True,
         ).all()
+
+        if not expense_groups:
+            return
 
         errors = Error.objects.filter(workspace_id=workspace_id, is_resolved=False, expense_group_id__in=expense_group_ids).all()
 
