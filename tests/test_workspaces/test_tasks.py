@@ -1,5 +1,6 @@
 import pytest
 from django.db.models import Q
+from fyle.platform.exceptions import InvalidTokenError
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute
 
@@ -160,6 +161,20 @@ def test_async_add_admins_to_workspace(db, mocker):
     assert new_users_count > old_users_count
 
 
+def test_async_add_admins_to_workspace_invalid_token(db, mocker):
+    mocker.patch(
+        'fyle_integrations_platform_connector.PlatformConnector.__init__',
+        side_effect=InvalidTokenError('Invalid Token')
+    )
+    async_add_admins_to_workspace(1, 'usqywo0f3nBY')
+
+    mocker.patch(
+        'fyle_integrations_platform_connector.PlatformConnector.__init__',
+        side_effect=Exception('General error')
+    )
+    async_add_admins_to_workspace(1, 'usqywo0f3nBY')
+
+
 @pytest.mark.django_db()
 def test_async_update_workspace_name(mocker):
     mocker.patch(
@@ -171,6 +186,21 @@ def test_async_update_workspace_name(mocker):
 
     workspace = Workspace.objects.get(id=1)
     assert workspace.name == 'Test Org'
+
+
+def test_async_update_workspace_name_invalid_token(db, mocker):
+    mocker.patch(
+        'apps.workspaces.tasks.get_fyle_admin',
+        side_effect=InvalidTokenError('Invalid Token')
+    )
+    workspace = Workspace.objects.get(id=1)
+    async_update_workspace_name(workspace, 'Bearer access_token')
+
+    mocker.patch(
+        'apps.workspaces.tasks.get_fyle_admin',
+        side_effect=Exception('General error')
+    )
+    async_update_workspace_name(workspace, 'Bearer access_token')
 
 
 def test_async_create_admin_subscriptions(db, mocker):
@@ -190,6 +220,20 @@ def test_async_create_admin_subscriptions(db, mocker):
     assert 'CORPORATE_CARD' in payload['subscribed_resources']
     assert 'EMPLOYEE' in payload['subscribed_resources']
     assert 'TAX_GROUP' in payload['subscribed_resources']
+
+
+def test_async_create_admin_subscriptions_invalid_token(db, mocker):
+    mocker.patch(
+        'fyle_integrations_platform_connector.PlatformConnector.__init__',
+        side_effect=InvalidTokenError('Invalid Token')
+    )
+    async_create_admin_subscriptions(1)
+
+    mocker.patch(
+        'fyle_integrations_platform_connector.PlatformConnector.__init__',
+        side_effect=Exception('General error')
+    )
+    async_create_admin_subscriptions(1)
 
 
 @pytest.mark.django_db(databases=['default'])
