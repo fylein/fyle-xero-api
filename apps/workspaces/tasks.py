@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.db.models import Q
+from fyle.platform.exceptions import InvalidTokenError
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_integrations_platform_connector import PlatformConnector
 from fyle_rest_auth.helpers import get_fyle_admin
@@ -102,37 +103,49 @@ def run_email_notification(workspace_id):
 
 
 def async_add_admins_to_workspace(workspace_id: int, current_user_id: str):
-    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    platform = PlatformConnector(fyle_credentials)
+    try:
+        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+        platform = PlatformConnector(fyle_credentials)
 
-    users = []
-    admins = platform.employees.get_admins()
+        users = []
+        admins = platform.employees.get_admins()
 
-    for admin in admins:
-        # Skip current user since it is already added
-        if current_user_id != admin["user_id"]:
-            users.append(
-                User(
-                    email=admin["email"],
-                    user_id=admin["user_id"],
-                    full_name=admin["full_name"],
+        for admin in admins:
+            # Skip current user since it is already added
+            if current_user_id != admin["user_id"]:
+                users.append(
+                    User(
+                        email=admin["email"],
+                        user_id=admin["user_id"],
+                        full_name=admin["full_name"],
+                    )
                 )
-            )
 
-    if len(users):
-        created_users = User.objects.bulk_create(users, batch_size=50)
-        workspace = Workspace.objects.get(id=workspace_id)
+        if len(users):
+            created_users = User.objects.bulk_create(users, batch_size=50)
+            workspace = Workspace.objects.get(id=workspace_id)
 
-        for user in created_users:
-            workspace.user.add(user)
+            for user in created_users:
+                workspace.user.add(user)
+    except InvalidTokenError:
+        logger.info("Invalid Token for Fyle in workspace_id: %s", workspace_id)
+
+    except Exception as e:
+        logger.exception("Error adding admins to workspace_id: %s | Error: %s", workspace_id, str(e))
 
 
 def async_update_workspace_name(workspace: Workspace, access_token: str):
-    fyle_user = get_fyle_admin(access_token.split(' ')[1], None)
-    org_name = fyle_user['data']['org']['name']
+    try:
+        fyle_user = get_fyle_admin(access_token.split(' ')[1], None)
+        org_name = fyle_user['data']['org']['name']
 
-    workspace.name = org_name
-    workspace.save()
+        workspace.name = org_name
+        workspace.save()
+    except InvalidTokenError:
+        logger.info("Invalid Token for Fyle in workspace_id: %s", workspace.id)
+
+    except Exception as e:
+        logger.exception("Error updating workspace name for workspace_id: %s | Error: %s", workspace.id, str(e))
 
 
 def async_create_admin_subscriptions(workspace_id: int) -> None:
@@ -141,25 +154,31 @@ def async_create_admin_subscriptions(workspace_id: int) -> None:
     :param workspace_id: workspace id
     :return: None
     """
-    fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
-    platform = PlatformConnector(fyle_credentials)
-    payload = {
-        'is_enabled': True,
-        'webhook_url': '{}/workspaces/{}/fyle/exports/'.format(settings.API_URL, workspace_id),
-        'subscribed_resources': [
-            'EXPENSE',
-            'REPORT',
-            'CATEGORY',
-            'PROJECT',
-            'COST_CENTER',
-            'EXPENSE_FIELD',
-            'CORPORATE_CARD',
-            'EMPLOYEE',
-            'TAX_GROUP',
-            'ORG_SETTING'
-        ]
-    }
-    platform.subscriptions.post(payload)
+    try:
+        fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
+        platform = PlatformConnector(fyle_credentials)
+        payload = {
+            'is_enabled': True,
+            'webhook_url': '{}/workspaces/{}/fyle/exports/'.format(settings.API_URL, workspace_id),
+            'subscribed_resources': [
+                'EXPENSE',
+                'REPORT',
+                'CATEGORY',
+                'PROJECT',
+                'COST_CENTER',
+                'EXPENSE_FIELD',
+                'CORPORATE_CARD',
+                'EMPLOYEE',
+                'TAX_GROUP',
+                'ORG_SETTING'
+            ]
+        }
+        platform.subscriptions.post(payload)
+    except InvalidTokenError:
+        logger.info("Invalid Token for Fyle in workspace_id: %s", workspace_id)
+
+    except Exception as e:
+        logger.exception("Error creating admin subscriptions for workspace_id: %s | Error: %s", workspace_id, str(e))
 
 
 def post_to_integration_settings(workspace_id: int, active: bool):
