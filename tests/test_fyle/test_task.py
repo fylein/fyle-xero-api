@@ -22,6 +22,7 @@ from apps.fyle.tasks import (
     delete_expense_group_and_related_data,
     delete_expenses_in_db,
     get_grouping_types,
+    handle_category_changes_for_expense,
     handle_expense_fund_source_change,
     handle_expense_report_change,
     handle_fund_source_changes_for_expense_ids,
@@ -32,7 +33,7 @@ from apps.fyle.tasks import (
     sync_dimensions,
     update_non_exported_expenses,
 )
-from apps.tasks.models import TaskLog
+from apps.tasks.models import Error, TaskLog
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings
 from tests.test_fyle.fixtures import data
 
@@ -411,18 +412,12 @@ def test_handle_expense_fund_source_change_no_changes(db, mocker):
 
 
 def test_update_non_exported_expenses_with_fund_source_change(db, mocker):
-    """
-    Test update_non_exported_expenses function with fund source change
-    """
-    # Use fixtures for test data
     test_data = data['fund_source_change']
 
-    # Create test workspace using fixture data
     workspace, _ = Workspace.objects.update_or_create(
         **test_data['workspace_defaults']
     )
 
-    # Create test expense using fixture data
     expense_defaults = test_data['expense_defaults'].copy()
     expense_defaults['accounting_export_summary'] = {'state': 'NOT_EXPORTED'}
 
@@ -432,21 +427,21 @@ def test_update_non_exported_expenses_with_fund_source_change(db, mocker):
         defaults=expense_defaults
     )
 
-    # Mock FyleExpenses
     mock_fyle_expenses = mocker.MagicMock()
     mock_fyle_expenses.construct_expense_object.return_value = [
-        {'source_account_type': 'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT'}
+        {
+            'source_account_type': 'PERSONAL_CORPORATE_CREDIT_CARD_ACCOUNT',
+            'category': expense.category,
+            'sub_category': expense.sub_category
+        }
     ]
     mocker.patch('apps.fyle.tasks.FyleExpenses', return_value=mock_fyle_expenses)
 
-    # Mock dependencies
     mock_handle_fund_source_changes = mocker.patch('apps.fyle.tasks.handle_fund_source_changes_for_expense_ids')
     mocker.patch('apps.fyle.models.Expense.create_expense_objects')
 
-    # Use fixture data for function call
     update_non_exported_expenses(test_data['expense_payload'])
 
-    # Verify that handle_fund_source_changes_for_expense_ids was called due to fund source change
     mock_handle_fund_source_changes.assert_called_once()
 
 
@@ -1353,3 +1348,172 @@ def test_handle_expense_report_change_ejected_from_exported_group(db, add_expens
 
     expense_group.refresh_from_db()
     assert expense in expense_group.expenses.all()
+
+
+def test_handle_category_changes_for_expense(db, add_category_test_expense, add_category_test_expense_group, add_category_mapping_error, add_category_expense_attribute):
+    workspace = Workspace.objects.get(id=1)
+    expense = add_category_test_expense
+    expense_group = add_category_test_expense_group
+    error = add_category_mapping_error
+
+    error.mapping_error_expense_group_ids = [expense_group.id, 999]
+    error.save()
+
+    handle_category_changes_for_expense(expense=expense, new_category='New Category')
+
+    error.refresh_from_db()
+    assert expense_group.id not in error.mapping_error_expense_group_ids
+    assert 999 in error.mapping_error_expense_group_ids
+
+    error.mapping_error_expense_group_ids = [expense_group.id]
+    error.save()
+
+    handle_category_changes_for_expense(expense=expense, new_category='Another Category')
+
+    assert not Error.objects.filter(id=error.id, workspace_id=workspace.id, type='CATEGORY_MAPPING').exists()
+
+    expense_group.delete()
+
+    expense_group_2 = ExpenseGroup.objects.create(
+        workspace_id=workspace.id,
+        fund_source='PERSONAL',
+        description={'employee_email': expense.employee_email},
+        employee_name=expense.employee_name
+    )
+    expense_group_2.expenses.add(expense)
+
+    category_attribute = add_category_expense_attribute
+    category_attribute.pk = None
+    category_attribute.id = None
+    category_attribute.value = 'Test Category With Error'
+    category_attribute.source_id = 'catErr123'
+    category_attribute.save()
+
+    existing_error = Error.objects.create(
+        workspace_id=workspace.id,
+        type='CATEGORY_MAPPING',
+        is_resolved=False,
+        expense_attribute=category_attribute,
+        mapping_error_expense_group_ids=[888]
+    )
+
+    handle_category_changes_for_expense(expense=expense, new_category='Test Category With Error')
+
+    existing_error.refresh_from_db()
+    assert expense_group_2.id in existing_error.mapping_error_expense_group_ids
+    assert 888 in existing_error.mapping_error_expense_group_ids
+
+    expense_group_2.delete()
+
+    expense_group_3 = ExpenseGroup.objects.create(
+        workspace_id=workspace.id,
+        fund_source='PERSONAL',
+        description={'employee_email': expense.employee_email},
+        employee_name=expense.employee_name
+    )
+    expense_group_3.expenses.add(expense)
+
+    category_attribute_2 = add_category_expense_attribute
+    category_attribute_2.pk = None
+    category_attribute_2.id = None
+    category_attribute_2.value = 'Unmapped Category'
+    category_attribute_2.source_id = 'catUnmapped456'
+    category_attribute_2.save()
+
+    handle_category_changes_for_expense(expense=expense, new_category='Unmapped Category')
+
+    new_error = Error.objects.filter(
+        workspace_id=workspace.id,
+        type='CATEGORY_MAPPING',
+        expense_attribute=category_attribute_2
+    ).first()
+
+    assert new_error is not None
+    assert expense_group_3.id in new_error.mapping_error_expense_group_ids
+    assert new_error.error_title == 'Unmapped Category'
+    assert new_error.error_detail == 'Category mapping is missing'
+
+
+def test_update_non_exported_expenses_category_change(mocker, db):
+    expense_data = data['raw_expense'].copy()
+    expense_data['category']['name'] = 'New Category'
+    expense_data['category']['sub_category'] = 'New Sub Category'
+    org_id = expense_data['org_id']
+
+    default_raw_expense = data['default_raw_expense'].copy()
+    default_raw_expense['category'] = 'Old Category'
+    default_raw_expense['sub_category'] = 'Old Sub Category'
+
+    expense_created, _ = Expense.objects.update_or_create(
+        org_id=org_id,
+        expense_id='txhJLOSKs1iN',
+        workspace_id=1,
+        defaults=default_raw_expense
+    )
+    expense_created.accounting_export_summary = {}
+    expense_created.save()
+
+    workspace = Workspace.objects.filter(id=1).first()
+    workspace.fyle_org_id = org_id
+    workspace.save()
+
+    mock_fyle_expenses = mocker.patch('apps.fyle.tasks.FyleExpenses')
+    constructed_expense = expense_data.copy()
+    constructed_expense['category'] = expense_data['category']['name']
+    constructed_expense['sub_category'] = expense_data['category']['sub_category']
+    constructed_expense['source_account_type'] = 'PERSONAL_CASH_ACCOUNT'
+    mock_fyle_expenses.return_value.construct_expense_object.return_value = [constructed_expense]
+
+    mocker.patch('apps.fyle.tasks.Expense.create_expense_objects', return_value=None)
+
+    mock_handle_category_changes = mocker.patch(
+        'apps.fyle.tasks.handle_category_changes_for_expense',
+        return_value=None
+    )
+
+    update_non_exported_expenses(expense_data)
+
+    assert mock_handle_category_changes.call_count == 1
+    _, kwargs = mock_handle_category_changes.call_args
+    assert kwargs['expense'] == expense_created
+    assert kwargs['new_category'] == 'New Category / New Sub Category'
+
+    expense_created.category = 'Same Category'
+    expense_created.sub_category = 'Same Category'
+    expense_created.save()
+
+    expense_data_2 = data['raw_expense'].copy()
+    expense_data_2['category']['name'] = 'Changed'
+    expense_data_2['category']['sub_category'] = 'Changed'
+
+    constructed_expense_2 = expense_data_2.copy()
+    constructed_expense_2['category'] = 'Changed'
+    constructed_expense_2['sub_category'] = 'Changed'
+    constructed_expense_2['source_account_type'] = 'PERSONAL_CASH_ACCOUNT'
+    mock_fyle_expenses.return_value.construct_expense_object.return_value = [constructed_expense_2]
+
+    update_non_exported_expenses(expense_data_2)
+
+    assert mock_handle_category_changes.call_count == 2
+    _, kwargs = mock_handle_category_changes.call_args
+    assert kwargs['new_category'] == 'Changed'
+
+    expense_created.category = 'Old Cat'
+    expense_created.sub_category = None
+    expense_created.save()
+
+    expense_data_3 = data['raw_expense'].copy()
+    expense_data_3['category']['name'] = 'New Cat'
+    expense_data_3['category']['sub_category'] = None
+
+    constructed_expense_3 = expense_data_3.copy()
+    constructed_expense_3['category'] = 'New Cat'
+    constructed_expense_3['sub_category'] = None
+    constructed_expense_3['source_account_type'] = 'PERSONAL_CASH_ACCOUNT'
+    mock_fyle_expenses.return_value.construct_expense_object.return_value = [constructed_expense_3]
+
+    update_non_exported_expenses(expense_data_3)
+
+    assert mock_handle_category_changes.call_count == 3
+    _, kwargs = mock_handle_category_changes.call_args
+    assert kwargs['new_category'] == 'New Cat'
