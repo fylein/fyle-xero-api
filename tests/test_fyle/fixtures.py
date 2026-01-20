@@ -50701,5 +50701,46 @@ data = {
                 'name': 'Some Setting'
             }
         }
+    },
+    'org_settings': {
+        'org_settings_payload': {
+            'regional_settings': {
+                'locale': {
+                    'date_format': 'DD/MM/YYYY',
+                    'timezone': 'Asia/Kolkata'
+                }
+            },
+            'other_setting': 'should_be_ignored'
+        },
+        'org_settings_payload_without_regional': {
+            'some_other_setting': 'value'
+        },
+        'org_settings_payload_updated': {
+            'regional_settings': {
+                'locale': {
+                    'date_format': 'YYYY-MM-DD',
+                    'timezone': 'Europe/London'
+                }
+            }
+        },
+        'expected_org_settings': {
+            'regional_settings': {
+                'locale': {
+                    'date_format': 'DD/MM/YYYY',
+                    'timezone': 'Asia/Kolkata'
+                }
+            }
+        },
+        'expected_org_settings_empty': {
+            'regional_settings': {}
+        },
+        'expected_org_settings_updated': {
+            'regional_settings': {
+                'locale': {
+                    'date_format': 'YYYY-MM-DD',
+                    'timezone': 'Europe/London'
+                }
+            }
+        }
     }
 }

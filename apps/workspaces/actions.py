@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.utils.module_loading import import_string
 from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute, FyleSyncTimestamp
@@ -80,6 +81,8 @@ def post_workspace(access_token, request):
             workspace.id,
             request.user.user_id
         )
+
+        import_string('apps.workspaces.tasks.sync_org_settings')(workspace_id=workspace.id)
 
     return workspace
 

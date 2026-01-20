@@ -36,6 +36,7 @@ data = {
         "source_synced_at": "None",
         "destination_synced_at": "None",
         "xero_accounts_last_synced_at": "None",
+        "org_settings": {},
         "created_at": "2022-08-16T10:38:22.395750Z",
         "updated_at": "2022-08-16T10:38:22.395806Z",
         "user": [1],

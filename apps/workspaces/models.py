@@ -86,6 +86,7 @@ class Workspace(models.Model):
     xero_accounts_last_synced_at = models.DateTimeField(
         null=True, help_text="Xero Accounts last synced at time"
     )
+    org_settings = JSONField(help_text='Org Settings', default=dict)
     created_at = models.DateTimeField(
         auto_now_add=True, help_text="Created at datetime"
     )

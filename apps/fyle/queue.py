@@ -63,6 +63,12 @@ def handle_webhook_callback(body: dict, workspace_id: int) -> None:
         logger.info("| Handling expense report change | Content: {{WORKSPACE_ID: {} EXPENSE_ID: {} ACTION: {} Payload: {}}}".format(workspace_id, expense_id, action, data))
         async_task('apps.fyle.tasks.handle_expense_report_change', data, action)
 
+    elif (
+        action == WebhookCallbackActionEnum.UPDATED.value
+        and resource == 'ORG_SETTING'
+    ):
+        async_task('apps.fyle.tasks.handle_org_setting_updated', workspace_id, data)
+
     elif action in (WebhookCallbackActionEnum.CREATED, WebhookCallbackActionEnum.UPDATED, WebhookCallbackActionEnum.DELETED):
         try:
             fyle_webhook_sync_enabled = FeatureConfig.get_feature_config(workspace_id=workspace_id, key='fyle_webhook_sync_enabled')
