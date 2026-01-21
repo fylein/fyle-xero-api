@@ -170,6 +170,8 @@ def test_fyle_refresh_dimension(api_client, test_connection, mocker):
         return_value=data["get_all_corporate_cards"],
     )
 
+    mocker.patch("apps.fyle.views.publish_to_rabbitmq")
+
     access_token = test_connection.access_token
 
     url = "/api/workspaces/1/fyle/refresh_dimensions/"

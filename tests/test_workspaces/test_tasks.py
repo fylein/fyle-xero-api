@@ -15,10 +15,10 @@ from apps.workspaces.tasks import (
     async_add_admins_to_workspace,
     async_create_admin_subscriptions,
     async_update_fyle_credentials,
-    async_update_workspace_name,
     post_to_integration_settings,
     run_email_notification,
     run_sync_schedule,
+    update_workspace_name,
 )
 from tests.test_fyle.fixtures import data as fyle_data
 from tests.test_workspaces.fixtures import data
@@ -52,6 +52,7 @@ def test_run_sync_schedule(mocker, db):
         "fyle_integrations_platform_connector.apis.Expenses.get",
         return_value=data["expenses"],
     )
+    mocker.patch("apps.workspaces.tasks.publish_to_rabbitmq")
 
     run_sync_schedule(workspace_id)
 
@@ -176,31 +177,29 @@ def test_async_add_admins_to_workspace_invalid_token(db, mocker):
 
 
 @pytest.mark.django_db()
-def test_async_update_workspace_name(mocker):
+def test_update_workspace_name(mocker):
     mocker.patch(
         'apps.workspaces.tasks.get_fyle_admin',
         return_value={'data': {'org': {'name': 'Test Org'}}}
     )
-    workspace = Workspace.objects.get(id=1)
-    async_update_workspace_name(workspace, 'Bearer access_token')
+    update_workspace_name(1, 'Bearer access_token')
 
     workspace = Workspace.objects.get(id=1)
     assert workspace.name == 'Test Org'
 
 
-def test_async_update_workspace_name_invalid_token(db, mocker):
+def test_update_workspace_name_invalid_token(db, mocker):
     mocker.patch(
         'apps.workspaces.tasks.get_fyle_admin',
         side_effect=InvalidTokenError('Invalid Token')
     )
-    workspace = Workspace.objects.get(id=1)
-    async_update_workspace_name(workspace, 'Bearer access_token')
+    update_workspace_name(1, 'Bearer access_token')
 
     mocker.patch(
         'apps.workspaces.tasks.get_fyle_admin',
         side_effect=Exception('General error')
     )
-    async_update_workspace_name(workspace, 'Bearer access_token')
+    update_workspace_name(1, 'Bearer access_token')
 
 
 def test_async_create_admin_subscriptions(db, mocker):

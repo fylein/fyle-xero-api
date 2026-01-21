@@ -1,3 +1,4 @@
+import pytest
 from fyle_accounting_library.rabbitmq.data_class import Task
 from fyle_accounting_mappings.models import ExpenseAttribute
 
@@ -5,6 +6,12 @@ from apps.fyle.queue import handle_webhook_callback
 from apps.workspaces.models import FeatureConfig, Workspace
 from apps.xero.queue import __create_chain_and_run
 from tests.test_fyle.fixtures import data
+
+
+@pytest.fixture(autouse=True)
+def mock_publish_to_rabbitmq(mocker):
+    """Auto-mock publish_to_rabbitmq for all tests in this module"""
+    return mocker.patch('apps.fyle.queue.publish_to_rabbitmq')
 
 
 # This test is just for cov :D

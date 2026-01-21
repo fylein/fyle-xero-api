@@ -1,8 +1,6 @@
 import logging
 
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum, WebhookCallbackActionEnum
-from fyle_accounting_library.rabbitmq.connector import RabbitMQConnection
-from fyle_accounting_library.rabbitmq.data_class import RabbitMQData
 
 from apps.fyle.helpers import assert_valid_request
 from apps.workspaces.models import FeatureConfig
@@ -27,25 +25,22 @@ def handle_webhook_callback(body: dict, workspace_id: int) -> None:
     if data and data.get('org_id'):
         assert_valid_request(workspace_id=workspace_id, fyle_org_id=data['org_id'])
 
-    rabbitmq = RabbitMQConnection.get_instance('xero_exchange')
     if action in ('ADMIN_APPROVED', 'APPROVED', 'STATE_CHANGE_PAYMENT_PROCESSING', 'PAID') and data:
         report_id = data['id']
         org_id = data['org_id']
         state = data['state']
         payload = {
+            'workspace_id': workspace_id,
+            'action': WorkerActionEnum.EXPENSE_STATE_CHANGE.value,
             'data': {
                 'report_id': report_id,
                 'org_id': org_id,
                 'is_state_change_event': True,
                 'report_state': state,
                 'imported_from': ExpenseImportSourceEnum.WEBHOOK
-            },
-            'workspace_id': workspace_id
+            }
         }
-        rabbitmq_data = RabbitMQData(
-            new=payload
-        )
-        rabbitmq.publish(RoutingKeyEnum.EXPORT_P1.value, rabbitmq_data)
+        publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.EXPORT_P1.value)
 
     if action == 'ACCOUNTING_EXPORT_INITIATED' and data:
         report_id = data['id']
