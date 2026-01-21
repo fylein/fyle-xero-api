@@ -15,7 +15,7 @@ def mock_publish_to_rabbitmq(mocker):
 
 
 # This test is just for cov :D
-def test_create_chain_and_run(db):
+def test_create_chain_and_run(db, mocker):
     workspace_id = 1
     chain_tasks = [
         Task(
@@ -24,7 +24,10 @@ def test_create_chain_and_run(db):
         )
     ]
 
-    __create_chain_and_run(workspace_id, chain_tasks, False)
+    mocker.patch('apps.xero.queue.TaskChainRunner')
+    mocker.patch('apps.fyle.tasks.check_interval_and_sync_dimension')
+
+    __create_chain_and_run(workspace_id, chain_tasks)
     assert True
 
 
@@ -44,15 +47,14 @@ def test_create_chain_and_run_with_webhook_sync_enabled(db, mocker):
     ]
 
     mock_sync_dimension = mocker.patch('apps.fyle.tasks.check_interval_and_sync_dimension')
-    mock_chain_class = mocker.patch('apps.xero.queue.Chain')
-    mock_chain_instance = mock_chain_class.return_value
+    mock_task_chain_runner = mocker.patch('apps.xero.queue.TaskChainRunner')
+    mock_runner_instance = mock_task_chain_runner.return_value
 
-    __create_chain_and_run(workspace_id, chain_tasks, False)
+    __create_chain_and_run(workspace_id, chain_tasks)
 
-    mock_chain_class.assert_called_once()
+    mock_task_chain_runner.assert_called_once()
     mock_sync_dimension.assert_not_called()
-    mock_chain_instance.append.assert_called()
-    mock_chain_instance.run.assert_called_once()
+    mock_runner_instance.run.assert_called_once_with(chain_tasks, workspace_id)
 
 
 def test_create_chain_and_run_with_webhook_sync_disabled(db, mocker):
@@ -70,15 +72,15 @@ def test_create_chain_and_run_with_webhook_sync_disabled(db, mocker):
         )
     ]
 
-    mocker.patch('apps.fyle.tasks.check_interval_and_sync_dimension')
-    mock_chain_class = mocker.patch('apps.xero.queue.Chain')
-    mock_chain_instance = mock_chain_class.return_value
+    mock_sync_dimension = mocker.patch('apps.fyle.tasks.check_interval_and_sync_dimension')
+    mock_task_chain_runner = mocker.patch('apps.xero.queue.TaskChainRunner')
+    mock_runner_instance = mock_task_chain_runner.return_value
 
-    __create_chain_and_run(workspace_id, chain_tasks, False)
+    __create_chain_and_run(workspace_id, chain_tasks)
 
-    mock_chain_class.assert_called_once()
-    mock_chain_instance.append.assert_any_call('apps.fyle.tasks.check_interval_and_sync_dimension', workspace_id)
-    mock_chain_instance.run.assert_called_once()
+    mock_task_chain_runner.assert_called_once()
+    mock_sync_dimension.assert_called_once_with(workspace_id)
+    mock_runner_instance.run.assert_called_once_with(chain_tasks, workspace_id)
 
 
 # This test is just for cov :D

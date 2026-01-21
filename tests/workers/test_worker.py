@@ -168,5 +168,6 @@ def test_main(mock_parse_args, mock_consume):
 
 
 def test_get_routing_key_invalid_queue():
-    result = get_routing_key('invalid_queue_name')
-    assert result is None
+    with pytest.raises(ValueError) as exc_info:
+        get_routing_key('invalid_queue_name')
+    assert 'Unknown queue name: invalid_queue_name' in str(exc_info.value)
