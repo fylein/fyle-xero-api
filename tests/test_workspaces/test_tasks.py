@@ -71,6 +71,41 @@ def test_run_sync_schedule(mocker, db):
     assert task_log.status == "COMPLETE"
 
 
+def test_run_sync_schedule_with_enqueued_task_log(mocker, db):
+    """
+    Test run_sync_schedule when there are already enqueued or in-progress task logs
+    This should return early without creating new expense groups
+    """
+    workspace_id = 1
+
+    # Create an IN_PROGRESS task log (not FETCHING_EXPENSES type to trigger early return)
+    TaskLog.objects.create(
+        workspace_id=workspace_id,
+        type=TaskLogTypeEnum.CREATING_BILL,
+        status=TaskLogStatusEnum.IN_PROGRESS
+    )
+
+    mock_create_expense_groups = mocker.patch("apps.workspaces.tasks.create_expense_groups")
+
+    run_sync_schedule(workspace_id)
+
+    # create_expense_groups should NOT be called because we returned early
+    mock_create_expense_groups.assert_not_called()
+
+    # Clean up and test with ENQUEUED status
+    TaskLog.objects.filter(workspace_id=workspace_id, type=TaskLogTypeEnum.CREATING_BILL).delete()
+    TaskLog.objects.create(
+        workspace_id=workspace_id,
+        type=TaskLogTypeEnum.CREATING_BANK_TRANSACTION,
+        status=TaskLogStatusEnum.ENQUEUED
+    )
+
+    run_sync_schedule(workspace_id)
+
+    # create_expense_groups should still NOT be called
+    mock_create_expense_groups.assert_not_called()
+
+
 def test_async_update_fyle_credentials(db):
     workspace_id = 1
     refresh_token = "hehehuhu"

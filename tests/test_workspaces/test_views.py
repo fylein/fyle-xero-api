@@ -48,6 +48,31 @@ def test_get_workspace(api_client, test_connection):
     assert response == []
 
 
+def test_get_workspace_with_existing_workspace(api_client, test_connection, mocker):
+    """
+    Test WorkspaceView.get() when workspaces exist - triggers publish_to_rabbitmq
+    """
+    workspace = Workspace.objects.get(id=1)
+
+    url = "/api/workspaces/?org_id={}".format(workspace.fyle_org_id)
+
+    api_client.credentials(
+        HTTP_AUTHORIZATION="Bearer {}".format(test_connection.access_token)
+    )
+
+    mock_publish = mocker.patch("apps.workspaces.views.publish_to_rabbitmq")
+
+    response = api_client.get(url)
+    assert response.status_code == 200
+
+    # Verify publish_to_rabbitmq was called for UPDATE_WORKSPACE_NAME
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args
+    payload = call_args[1]['payload']
+    assert payload['action'] == 'UTILITY.UPDATE_WORKSPACE_NAME'
+    assert payload['workspace_id'] == workspace.id
+
+
 def test_post_of_workspace(api_client, test_connection, mocker):
     workspace_id = 1
 
