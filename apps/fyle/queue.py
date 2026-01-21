@@ -1,13 +1,13 @@
 import logging
 
-from django_q.tasks import async_task
-from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum, RoutingKeyEnum, WebhookCallbackActionEnum
+from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum, WebhookCallbackActionEnum
 from fyle_accounting_library.rabbitmq.connector import RabbitMQConnection
 from fyle_accounting_library.rabbitmq.data_class import RabbitMQData
 
 from apps.fyle.helpers import assert_valid_request
 from apps.workspaces.models import FeatureConfig
 from fyle_integrations_imports.modules.webhook_attributes import WebhookAttributeProcessor
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -45,23 +45,49 @@ def handle_webhook_callback(body: dict, workspace_id: int) -> None:
         rabbitmq_data = RabbitMQData(
             new=payload
         )
-        rabbitmq.publish(RoutingKeyEnum.EXPORT, rabbitmq_data)
+        rabbitmq.publish(RoutingKeyEnum.EXPORT_P1.value, rabbitmq_data)
 
     if action == 'ACCOUNTING_EXPORT_INITIATED' and data:
         report_id = data['id']
         org_id = data['org_id']
-        async_task('apps.fyle.tasks.import_and_export_expenses', report_id, org_id, False, None, ExpenseImportSourceEnum.DIRECT_EXPORT)
+        payload = {
+            'workspace_id': workspace_id,
+            'action': WorkerActionEnum.DIRECT_EXPORT.value,
+            'data': {
+                'report_id': report_id,
+                'org_id': org_id,
+                'is_state_change_event': False,
+                'report_state': None,
+                'imported_from': ExpenseImportSourceEnum.DIRECT_EXPORT
+            }
+        }
+        publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.EXPORT_P0.value)
 
     elif action == 'UPDATED_AFTER_APPROVAL' and data and resource == 'EXPENSE':
         org_id = data['org_id']
         logger.info("| Updating non-exported expenses through webhook | Content: {{WORKSPACE_ID: {} Payload: {}}}".format(workspace_id, data))
-        async_task('apps.fyle.tasks.update_non_exported_expenses', data)
+        payload = {
+            'workspace_id': workspace_id,
+            'action': WorkerActionEnum.EXPENSE_UPDATED_AFTER_APPROVAL.value,
+            'data': {
+                'data': data
+            }
+        }
+        publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
 
     elif action in ('EJECTED_FROM_REPORT', 'ADDED_TO_REPORT') and data and resource == 'EXPENSE':
         org_id = data['org_id']
         expense_id = data['id']
         logger.info("| Handling expense report change | Content: {{WORKSPACE_ID: {} EXPENSE_ID: {} ACTION: {} Payload: {}}}".format(workspace_id, expense_id, action, data))
-        async_task('apps.fyle.tasks.handle_expense_report_change', data, action)
+        payload = {
+            'workspace_id': workspace_id,
+            'action': WorkerActionEnum.EXPENSE_ADDED_EJECTED_FROM_REPORT.value,
+            'data': {
+                'expense_data': data,
+                'action_type': action
+            }
+        }
+        publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
 
     elif action in (WebhookCallbackActionEnum.CREATED, WebhookCallbackActionEnum.UPDATED, WebhookCallbackActionEnum.DELETED):
         try:

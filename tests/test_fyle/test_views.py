@@ -230,12 +230,12 @@ def test_fyle_sync_dimension_with_webhook_sync_enabled(api_client, test_connecti
 
     api_client.credentials(HTTP_AUTHORIZATION="Bearer {}".format(access_token))
 
-    mock_async_task = mocker.patch('apps.fyle.views.async_task')
+    mock_publish = mocker.patch('apps.fyle.views.publish_to_rabbitmq')
 
     response = api_client.post(url)
     assert response.status_code == 200
 
-    mock_async_task.assert_not_called()
+    mock_publish.assert_not_called()
 
 
 def test_fyle_sync_dimension_with_webhook_sync_disabled(api_client, test_connection, mocker):
@@ -254,9 +254,9 @@ def test_fyle_sync_dimension_with_webhook_sync_disabled(api_client, test_connect
 
     api_client.credentials(HTTP_AUTHORIZATION="Bearer {}".format(access_token))
 
-    mock_async_task = mocker.patch('apps.fyle.views.async_task')
+    mock_publish = mocker.patch('apps.fyle.views.publish_to_rabbitmq')
 
     response = api_client.post(url)
     assert response.status_code == 200
 
-    mock_async_task.assert_called_once_with('apps.fyle.tasks.check_interval_and_sync_dimension', 1)
+    mock_publish.assert_called_once()

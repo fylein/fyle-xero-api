@@ -1,6 +1,5 @@
 import logging
 
-from django_q.tasks import Chain
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import status
@@ -11,6 +10,7 @@ from apps.mappings.models import TenantMapping
 from apps.mappings.serializers import TenantMappingSerializer
 from apps.workspaces.models import WorkspaceGeneralSettings
 from fyle_xero_api.utils import assert_valid
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +60,6 @@ class AutoMapEmployeeView(generics.CreateAPIView):
             workspace_id=workspace_id
         )
 
-        chain = Chain()
-
         if not general_settings.auto_map_employees:
             return Response(
                 data={
@@ -70,10 +68,13 @@ class AutoMapEmployeeView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        chain.append("apps.mappings.tasks.async_auto_map_employees", workspace_id, q_options={
-            'cluster': 'import'
-        })
-
-        chain.run()
+        payload = {
+            'workspace_id': workspace_id,
+            'action': WorkerActionEnum.AUTO_MAP_EMPLOYEES.value,
+            'data': {
+                'workspace_id': workspace_id
+            }
+        }
+        publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)
 
         return Response(data={}, status=status.HTTP_200_OK)

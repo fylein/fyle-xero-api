@@ -66,6 +66,9 @@ def test_post_of_workspace(api_client, test_connection, mocker):
         "apps.workspaces.actions.get_cluster_domain",
         return_value={"cluster_domain": "https://staging.fyle.tech/"},
     )
+
+    mocker.patch("apps.workspaces.actions.publish_to_rabbitmq")
+
     response = api_client.post(url)
     assert response.status_code == 200
 
@@ -300,6 +303,8 @@ def test_export_to_xero(mocker, api_client, test_connection):
     api_client.credentials(
         HTTP_AUTHORIZATION="Bearer {}".format(test_connection.access_token)
     )
+
+    mocker.patch("apps.workspaces.views.publish_to_rabbitmq")
 
     response = api_client.post(url)
     assert response.status_code == 200

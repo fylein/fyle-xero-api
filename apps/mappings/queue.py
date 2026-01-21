@@ -2,11 +2,12 @@ from datetime import datetime
 
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import MappingSetting
+
 from apps.fyle.enums import FyleAttributeEnum
 from apps.mappings.constants import SYNC_METHODS
+from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
 from fyle_integrations_imports.dataclasses import TaskSetting
 from fyle_integrations_imports.queues import chain_import_fields_to_fyle
-from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
 
 
 def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
@@ -102,4 +103,4 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
                     }
                 )
 
-    chain_import_fields_to_fyle(workspace_id, task_settings)
+    chain_import_fields_to_fyle(workspace_id, task_settings, run_in_rabbitmq_worker=True)

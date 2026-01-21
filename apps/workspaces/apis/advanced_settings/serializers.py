@@ -1,10 +1,10 @@
-from django_q.tasks import async_task
 from rest_framework import serializers
 
 from apps.mappings.models import GeneralMapping
 from apps.workspaces.apis.advanced_settings.triggers import AdvancedSettingsTriggers
 from apps.workspaces.models import Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
 from apps.workspaces.queue import schedule_sync
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 
 class ReadWriteSerializerMethodField(serializers.SerializerMethodField):
@@ -147,7 +147,14 @@ class AdvancedSettingsSerializer(serializers.ModelSerializer):
             instance.save()
 
             AdvancedSettingsTriggers.post_to_integration_settings(instance.id, True)
-            async_task('apps.workspaces.tasks.async_create_admin_subscriptions', instance.id)
+            payload = {
+                'workspace_id': instance.id,
+                'action': WorkerActionEnum.CREATE_ADMIN_SUBSCRIPTION.value,
+                'data': {
+                    'workspace_id': instance.id
+                }
+            }
+            publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
 
         return instance
 

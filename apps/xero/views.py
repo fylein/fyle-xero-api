@@ -1,8 +1,8 @@
 import logging
 
+from django.core.cache import cache
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
-from django_q.tasks import async_task
 from fyle_accounting_mappings.models import DestinationAttribute
 from fyle_accounting_mappings.serializers import DestinationAttributeSerializer
 from rest_framework import generics
@@ -16,6 +16,7 @@ from apps.xero.actions import sync_tenant
 from apps.xero.serializers import XeroFieldSerializer
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.utils import LookupFieldMixin
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -123,7 +124,19 @@ class SyncXeroDimensionView(generics.ListCreateAPIView):
         Workspace.objects.get(id=kwargs['workspace_id'])
         XeroCredentials.get_active_xero_credentials(kwargs['workspace_id'])
 
-        async_task('apps.xero.actions.sync_dimensions', kwargs['workspace_id'])
+        cache_key = f"sync_xero_dimensions_{kwargs['workspace_id']}"
+        is_cached = cache.get(cache_key)
+
+        if not is_cached:
+            cache.set(cache_key, True, 300)
+            payload = {
+                'workspace_id': kwargs['workspace_id'],
+                'action': WorkerActionEnum.SYNC_XERO_DIMENSION.value,
+                'data': {
+                    'workspace_id': kwargs['workspace_id']
+                }
+            }
+            publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)
 
         return Response(status=status.HTTP_200_OK)
 
@@ -143,7 +156,19 @@ class RefreshXeroDimensionView(generics.ListCreateAPIView):
         Workspace.objects.get(id=kwargs['workspace_id'])
         XeroCredentials.get_active_xero_credentials(kwargs['workspace_id'])
 
-        async_task('apps.xero.actions.refersh_xero_dimension', kwargs['workspace_id'])
+        cache_key = f"sync_xero_dimensions_{kwargs['workspace_id']}"
+        is_cached = cache.get(cache_key)
+
+        if not is_cached:
+            cache.set(cache_key, True, 300)
+            payload = {
+                'workspace_id': kwargs['workspace_id'],
+                'action': WorkerActionEnum.HANDLE_XERO_REFRESH_DIMENSION.value,
+                'data': {
+                    'workspace_id': kwargs['workspace_id']
+                }
+            }
+            publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)
 
         return Response(status=status.HTTP_200_OK)
 
