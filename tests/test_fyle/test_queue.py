@@ -251,3 +251,33 @@ def test_handle_webhook_callback_attribute_webhook_exception(db, mocker):
     assert 'Error processing attribute webhook for workspace' in error_message
     assert str(workspace.id) in error_message
     assert 'Test exception' in error_message
+
+
+def test_handle_webhook_callback_org_setting_updated(db, mocker):
+    """
+    Test handle_webhook_callback for ORG_SETTING UPDATED action
+    """
+    workspace = Workspace.objects.get(id=1)
+
+    mock_async_task = mocker.patch('apps.fyle.queue.async_task')
+
+    webhook_body = {
+        'action': 'UPDATED',
+        'resource': 'ORG_SETTING',
+        'data': {
+            'regional_settings': {
+                'locale': {
+                    'date_format': 'DD/MM/YYYY',
+                    'timezone': 'Asia/Kolkata'
+                }
+            }
+        }
+    }
+
+    handle_webhook_callback(webhook_body, workspace.id)
+
+    mock_async_task.assert_called_once_with(
+        'apps.fyle.tasks.handle_org_setting_updated',
+        workspace.id,
+        webhook_body['data']
+    )

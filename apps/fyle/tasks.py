@@ -929,6 +929,23 @@ def get_grouping_types(workspace_id: int) -> dict[str, str]:
     return grouping_types
 
 
+def handle_org_setting_updated(workspace_id: int, org_settings: dict) -> None:
+    """
+    Update regional date setting on org setting updated
+    :param workspace_id: Workspace id
+    :param org_settings: Org settings
+    :return: None
+    """
+    logger.info("Handling org settings update for workspace %s", workspace_id)
+
+    workspace = Workspace.objects.get(id=workspace_id)
+    workspace.org_settings = {
+        'regional_settings': org_settings.get('regional_settings', {})
+    }
+    workspace.save(update_fields=['org_settings', 'updated_at'])
+    logger.info("Updated org settings for workspace %s", workspace.id)
+
+
 def construct_filter_for_affected_expense_groups(workspace_id: int, report_id: str, changed_expense_ids: List[int], affected_fund_source_expense_ids: dict[str, List[int]]) -> Q:
     """
     Construct filter for affected expense groups

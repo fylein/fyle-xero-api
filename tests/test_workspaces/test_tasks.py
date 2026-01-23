@@ -19,6 +19,7 @@ from apps.workspaces.tasks import (
     post_to_integration_settings,
     run_email_notification,
     run_sync_schedule,
+    sync_org_settings,
 )
 from tests.test_fyle.fixtures import data as fyle_data
 from tests.test_workspaces.fixtures import data
@@ -518,3 +519,35 @@ def test_run_sync_schedule_expense_groups_without_task_log_filtering(db):
     ).values_list('id', flat=True).distinct()
 
     assert expense_group.id in list(eligible_expense_group_ids), f"Expected expense group {expense_group.id} to be eligible for export"
+
+
+def test_sync_org_settings(db, mocker):
+    """
+    Test sync org settings
+    """
+    workspace_id = 1
+    workspace = Workspace.objects.get(id=workspace_id)
+    workspace.org_settings = {}
+    workspace.save()
+
+    mock_platform = mocker.patch('apps.workspaces.tasks.PlatformConnector')
+    mock_platform.return_value.org_settings.get.return_value = {
+        'regional_settings': {
+            'locale': {
+                'date_format': 'DD/MM/YYYY',
+                'timezone': 'Asia/Kolkata'
+            }
+        }
+    }
+
+    sync_org_settings(workspace_id=workspace_id)
+
+    workspace.refresh_from_db()
+    assert workspace.org_settings == {
+        'regional_settings': {
+            'locale': {
+                'date_format': 'DD/MM/YYYY',
+                'timezone': 'Asia/Kolkata'
+            }
+        }
+    }

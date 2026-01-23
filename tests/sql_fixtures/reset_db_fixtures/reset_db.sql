@@ -4,7 +4,7 @@
 
 
 -- Dumped from database version 15.15 (Debian 15.15-1.pgdg13+1)
--- Dumped by pg_dump version 17.6 (Debian 17.6-0+deb13u1)
+-- Dumped by pg_dump version 17.7 (Debian 17.7-0+deb13u1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -16,6 +16,65 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: add_tables_to_publication(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.add_tables_to_publication() RETURNS event_trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    obj record;
+    schema_name text;
+    table_name text;
+BEGIN
+    FOR obj IN 
+        SELECT * FROM pg_event_trigger_ddl_commands()
+        WHERE command_tag = 'CREATE TABLE'
+    LOOP
+        RAISE NOTICE 'Processing new table: %', obj.object_identity;
+        --- The format of the object_identity is schema.table
+        schema_name := split_part(obj.object_identity, '.', 1);
+        table_name := split_part(obj.object_identity, '.', 2);
+
+        -- Skip if not in public schema
+        IF schema_name <> 'public' THEN
+            CONTINUE;
+        END IF;
+
+        -- Skip excluded system tables
+        IF table_name IN (
+            'django_admin_log', 
+            'django_content_type', 
+            'django_migrations',
+            'django_q_ormq', 
+            'django_q_schedule', 
+            'django_q_task', 
+            'django_session',
+            'expense_attributes_deletion_cache'
+        ) THEN
+            RAISE NOTICE 'Skipping excluded table: %.%', schema_name, table_name;
+            CONTINUE;
+        END IF;
+
+        RAISE NOTICE 'Processing new table: %.%', schema_name, table_name;
+
+        -- Set REPLICA IDENTITY FULL
+        EXECUTE format('ALTER TABLE %I.%I REPLICA IDENTITY FULL', schema_name, table_name);
+
+        -- Add to publication (ignore duplicates)
+        BEGIN
+            EXECUTE format('ALTER PUBLICATION events ADD TABLE %I.%I', schema_name, table_name);
+        EXCEPTION WHEN duplicate_object THEN
+            RAISE NOTICE 'Table %.% already in publication.', schema_name, table_name;
+        END;
+    END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION public.add_tables_to_publication() OWNER TO postgres;
 
 --
 -- Name: delete_failed_expenses(integer, boolean, integer[]); Type: FUNCTION; Schema: public; Owner: postgres
@@ -2258,7 +2317,8 @@ CREATE TABLE public.workspaces (
     app_version character varying(2) NOT NULL,
     fyle_currency character varying(5),
     xero_currency character varying(5),
-    ccc_last_synced_at timestamp with time zone
+    ccc_last_synced_at timestamp with time zone,
+    org_settings jsonb NOT NULL
 );
 
 
@@ -4121,6 +4181,8 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 198	internal	0010_auto_generated_sql	2025-11-25 07:17:26.091889+00
 199	internal	0011_auto_generated_sql	2025-11-25 07:17:26.094017+00
 200	tasks	0015_tasklog_is_attachment_upload_failed	2025-11-25 07:17:26.109591+00
+201	internal	0012_auto_generated_sql	2026-01-20 10:29:40.351911+00
+202	workspaces	0049_workspace_org_settings	2026-01-20 10:29:40.371289+00
 \.
 
 
@@ -6596,8 +6658,8 @@ COPY public.workspace_schedules (id, enabled, start_datetime, interval_hours, sc
 -- Data for Name: workspaces; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state, app_version, fyle_currency, xero_currency, ccc_last_synced_at) FROM stdin;
-1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION	v1	\N	\N	\N
+COPY public.workspaces (id, name, fyle_org_id, last_synced_at, created_at, updated_at, destination_synced_at, source_synced_at, xero_short_code, xero_accounts_last_synced_at, onboarding_state, app_version, fyle_currency, xero_currency, ccc_last_synced_at, org_settings) FROM stdin;
+1	FAE	orPJvXuoLqvJ	2022-08-02 20:26:22.798354+00	2022-08-02 20:24:42.324252+00	2022-08-02 20:26:22.798769+00	2022-08-02 20:25:10.973908+00	2022-08-02 20:25:11.322694+00	!Xg2Z4	2022-08-02 20:25:32.848125+00	CONNECTION	v1	\N	\N	\N	{}
 \.
 
 
@@ -6693,7 +6755,7 @@ SELECT pg_catalog.setval('public.django_content_type_id_seq', 43, true);
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 200, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 202, true);
 
 
 --
@@ -8524,3 +8586,5 @@ ALTER TABLE ONLY public.xero_credentials
 --
 -- PostgreSQL database dump complete
 --
+
+
