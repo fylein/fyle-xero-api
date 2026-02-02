@@ -5,7 +5,6 @@ from typing import List
 from django.db.models import Q
 from django.utils.module_loading import import_string
 from django_q.models import Schedule
-from django_q.tasks import Chain
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_library.rabbitmq.data_class import Task
 from fyle_accounting_library.rabbitmq.helpers import TaskChainRunner
@@ -110,7 +109,7 @@ def schedule_reimbursements_sync(sync_xero_to_fyle_payments, workspace_id):
             schedule.delete()
 
 
-def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], run_in_rabbitmq_worker: bool) -> None:
+def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task]) -> None:
     """
     Create chain and run
     :param workspace_id: workspace id
@@ -120,21 +119,11 @@ def __create_chain_and_run(workspace_id: int, chain_tasks: List[Task], run_in_ra
     """
     fyle_webhook_sync_enabled = FeatureConfig.get_feature_config(workspace_id=workspace_id, key='fyle_webhook_sync_enabled')
 
-    if run_in_rabbitmq_worker:
-        if not fyle_webhook_sync_enabled:
-            import_string('apps.fyle.tasks.check_interval_and_sync_dimension')(workspace_id)
+    if not fyle_webhook_sync_enabled:
+        import_string('apps.fyle.tasks.check_interval_and_sync_dimension')(workspace_id)
 
-        task_executor = TaskChainRunner()
-        task_executor.run(chain_tasks, workspace_id)
-    else:
-        chain = Chain()
-        if not fyle_webhook_sync_enabled:
-            chain.append('apps.fyle.tasks.check_interval_and_sync_dimension', workspace_id)
-
-        for task in chain_tasks:
-            chain.append(task.target, *task.args)
-
-        chain.run()
+    task_executor = TaskChainRunner()
+    task_executor.run(chain_tasks, workspace_id)
 
 
 def handle_skipped_exports(expense_groups: List[ExpenseGroup], index: int, skip_export_count: int, error: Error = None, expense_group: ExpenseGroup = None, triggered_by: ExpenseImportSourceEnum = None):
@@ -157,7 +146,7 @@ def handle_skipped_exports(expense_groups: List[ExpenseGroup], index: int, skip_
     return skip_export_count
 
 
-def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum, run_in_rabbitmq_worker: bool) -> list:
+def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum) -> list:
     """
     Schedule bills creation
     :param expense_group_ids: List of expense group ids
@@ -211,11 +200,11 @@ def schedule_bills_creation(workspace_id: int, expense_group_ids: List[str], is_
             ))
 
         if len(chain_tasks) > 0:
-            __create_chain_and_run(workspace_id, chain_tasks, run_in_rabbitmq_worker)
+            __create_chain_and_run(workspace_id, chain_tasks)
 
 
 def schedule_bank_transaction_creation(
-    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum, run_in_rabbitmq_worker: bool
+    workspace_id: int, expense_group_ids: List[str], is_auto_export: bool, interval_hours: int, triggered_by: ExpenseImportSourceEnum
 ) -> list:
     """
     Schedule bank transaction creation
@@ -270,4 +259,4 @@ def schedule_bank_transaction_creation(
             ))
 
         if len(chain_tasks) > 0:
-            __create_chain_and_run(workspace_id, chain_tasks, run_in_rabbitmq_worker)
+            __create_chain_and_run(workspace_id, chain_tasks)

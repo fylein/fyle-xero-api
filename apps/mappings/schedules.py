@@ -1,8 +1,10 @@
 from datetime import datetime
-from typing import List, Dict
-from apps.workspaces.models import WorkspaceGeneralSettings
+from typing import Dict, List
+
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import MappingSetting
+
+from apps.workspaces.models import WorkspaceGeneralSettings
 
 
 def new_schedule_or_delete_fyle_import_tasks(
@@ -32,8 +34,7 @@ def new_schedule_or_delete_fyle_import_tasks(
             defaults={
                 'schedule_type':Schedule.MINUTES,
                 'minutes': 24 * 60,
-                'next_run': datetime.now(),
-                'cluster': 'import'
+                'next_run': datetime.now()
             }
         )
     else:

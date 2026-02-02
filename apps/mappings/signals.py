@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from django_q.tasks import async_task
 from fyle.platform.exceptions import WrongParamsError
 from fyle_accounting_mappings.models import Mapping, MappingSetting
 from fyle_integrations_platform_connector import PlatformConnector
@@ -23,6 +22,7 @@ from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, Xer
 from apps.xero.utils import XeroConnector
 from fyle_integrations_imports.models import ImportLog
 from fyle_integrations_imports.modules.expense_custom_fields import ExpenseCustomField
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -167,5 +167,20 @@ def run_post_tenant_mapping_trigger(sender, instance: TenantMapping, **kwargs):
     :param instance: Row Instance of Sender Class
     :return: None
     """
-    async_task("apps.xero.tasks.create_missing_currency", int(instance.workspace_id), q_options={'cluster': 'import'})
-    async_task("apps.xero.tasks.update_xero_short_code", int(instance.workspace_id), q_options={'cluster': 'import'})
+    payload = {
+        'workspace_id': int(instance.workspace_id),
+        'action': WorkerActionEnum.CREATE_MISSING_CURRENCY.value,
+        'data': {
+            'workspace_id': int(instance.workspace_id)
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)
+
+    payload = {
+        'workspace_id': int(instance.workspace_id),
+        'action': WorkerActionEnum.UPDATE_XERO_SHORT_CODE.value,
+        'data': {
+            'workspace_id': int(instance.workspace_id)
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)

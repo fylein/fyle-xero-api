@@ -4,7 +4,6 @@ from datetime import datetime
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.utils.module_loading import import_string
-from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute, FyleSyncTimestamp
 from fyle_rest_auth.helpers import get_fyle_admin
@@ -32,6 +31,7 @@ from apps.workspaces.utils import generate_xero_refresh_token
 from apps.xero.exceptions import update_failed_expenses
 from apps.xero.queue import schedule_bank_transaction_creation, schedule_bills_creation
 from apps.xero.utils import XeroConnector
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -76,11 +76,15 @@ def post_workspace(access_token, request):
             cluster_domain=cluster_domain,
         )
 
-        async_task(
-            "apps.workspaces.tasks.async_add_admins_to_workspace",
-            workspace.id,
-            request.user.user_id
-        )
+        payload = {
+            'workspace_id': workspace.id,
+            'action': WorkerActionEnum.ADD_ADMINS_TO_WORKSPACE.value,
+            'data': {
+                'workspace_id': workspace.id,
+                'current_user_id': request.user.user_id
+            }
+        }
+        publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
 
         import_string('apps.workspaces.tasks.sync_org_settings')(workspace_id=workspace.id)
 
@@ -242,8 +246,7 @@ def export_to_xero(workspace_id, expense_group_ids=[], is_direct_export:bool = F
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
             interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0,
-            triggered_by=triggered_by,
-            run_in_rabbitmq_worker=True if triggered_by == ExpenseImportSourceEnum.WEBHOOK else False
+            triggered_by=triggered_by
         )
 
     if general_settings.corporate_credit_card_expenses_object:
@@ -260,8 +263,7 @@ def export_to_xero(workspace_id, expense_group_ids=[], is_direct_export:bool = F
             expense_group_ids=expense_group_ids,
             is_auto_export=export_mode == 'AUTO',
             interval_hours=workspace_schedule.interval_hours if workspace_schedule else 0,
-            triggered_by=triggered_by,
-            run_in_rabbitmq_worker=True if triggered_by == ExpenseImportSourceEnum.WEBHOOK else False
+            triggered_by=triggered_by
         )
 
     if is_expenses_exported:

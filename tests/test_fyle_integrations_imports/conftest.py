@@ -43,7 +43,8 @@ def add_fyle_credentials(db):
 
 
 @pytest.fixture()
-def add_tenant_mapping(db, create_temp_workspace):
+def add_tenant_mapping(db, create_temp_workspace, mocker):
+    mocker.patch("apps.mappings.signals.publish_to_rabbitmq")
     workspace = Workspace.objects.filter(id = 3).first()
 
     tenant_mapping = TenantMapping(

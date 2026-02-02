@@ -144,7 +144,9 @@ def test_run_pre_mapping_settings_triggers(db, mocker, test_connection):
     mapping.save()
 
 
-def test_run_post_tenant_mapping_trigger(db, test_connection):
+def test_run_post_tenant_mapping_trigger(db, test_connection, mocker):
+    mocker.patch("apps.mappings.signals.publish_to_rabbitmq")
+
     workspace = Workspace.objects.create(
         id=97,
         name="Fyle for sample",

@@ -1,8 +1,6 @@
 import logging
 
 from django.contrib.auth import get_user_model
-from apps.workspaces.tasks import post_to_integration_settings
-from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_rest_auth.utils import AuthUtils
 from rest_framework import generics
@@ -10,9 +8,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import status
 
-from apps.tasks.models import TaskLog
 from apps.exceptions import handle_view_exceptions
-from apps.workspaces.actions import connect_xero, export_to_xero, get_workspace_admin, post_workspace, revoke_connections
+from apps.tasks.models import TaskLog
+from apps.workspaces.actions import connect_xero, get_workspace_admin, post_workspace, revoke_connections
 from apps.workspaces.models import LastExportDetail, Workspace, WorkspaceGeneralSettings, XeroCredentials
 from apps.workspaces.serializers import (
     LastExportDetailSerializer,
@@ -20,7 +18,9 @@ from apps.workspaces.serializers import (
     WorkspaceSerializer,
     XeroCredentialSerializer,
 )
+from apps.workspaces.tasks import post_to_integration_settings
 from apps.workspaces.utils import generate_xero_identity
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 
@@ -74,14 +74,15 @@ class WorkspaceView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
         workspaces = Workspace.objects.filter(user__in=[user], fyle_org_id=org_id).all()
 
         if workspaces:
-            async_task(
-                "apps.workspaces.tasks.async_update_workspace_name",
-                workspaces[0],
-                request.META.get("HTTP_AUTHORIZATION"),
-                q_options={
-                    'cluster': 'import'
+            payload = {
+                'workspace_id': workspaces[0].id,
+                'action': WorkerActionEnum.UPDATE_WORKSPACE_NAME.value,
+                'data': {
+                    'workspace_id': workspaces[0].id,
+                    'access_token': request.META.get("HTTP_AUTHORIZATION")
                 }
-            )
+            }
+            publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
 
         return Response(
             data=WorkspaceSerializer(workspaces, many=True).data,
@@ -202,7 +203,15 @@ class ExportToXeroView(generics.CreateAPIView):
     """
 
     def post(self, request, *args, **kwargs):
-        export_to_xero(workspace_id=kwargs["workspace_id"], triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC)
+        payload = {
+            'workspace_id': kwargs["workspace_id"],
+            'action': WorkerActionEnum.DASHBOARD_SYNC.value,
+            'data': {
+                'workspace_id': kwargs["workspace_id"],
+                'triggered_by': ExpenseImportSourceEnum.DASHBOARD_SYNC
+            }
+        }
+        publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.EXPORT_P0.value)
 
         return Response(status=status.HTTP_200_OK)
 

@@ -413,13 +413,13 @@ def test_schedule_bills_creation(db):
     task_log.save()
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, interval_hours=0, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=False, interval_hours=0, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
     )
 
 
 def test_schedule_bills_creation_with_rabbitmq_worker(db, mocker):
     """
-    Test schedule_bills_creation with run_in_rabbitmq_worker=True to cover the import_string call
+    Test schedule_bills_creation to cover the import_string call
     """
     workspace_id = 1
 
@@ -449,7 +449,6 @@ def test_schedule_bills_creation_with_rabbitmq_worker(db, mocker):
         is_auto_export=False,
         interval_hours=0,
         triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC,
-        run_in_rabbitmq_worker=True
     )
 
     # Verify that check_interval_and_sync_dimension was called with the correct workspace_id
@@ -545,7 +544,7 @@ def test_schedule_bank_transaction_creation(db):
     task_log.save()
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, interval_hours=0, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=False, interval_hours=0, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
     )
 
 
@@ -1074,7 +1073,7 @@ def test_skipping_schedule_bills_creation(db):
     )
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1083,7 +1082,7 @@ def test_skipping_schedule_bills_creation(db):
     Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
 
     schedule_bills_creation(
-        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
+        workspace_id=workspace_id, expense_group_ids=[4], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1117,7 +1116,7 @@ def test_skipping_schedule_bank_transaction_creation(db):
     )
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1126,7 +1125,7 @@ def test_skipping_schedule_bank_transaction_creation(db):
     Error.objects.filter(id=error.id).update(updated_at=datetime(2024, 8, 20))
 
     schedule_bank_transaction_creation(
-        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False
+        workspace_id=workspace_id, expense_group_ids=[5], is_auto_export=True, interval_hours=1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC
     )
 
     task_log = TaskLog.objects.filter(expense_group_id=expense_group.id).first()
@@ -1389,8 +1388,8 @@ def test_schedule_creation_with_no_expense_groups(db):
 
     initial_task_log_count = TaskLog.objects.filter(workspace_id=workspace_id).count()
 
-    schedule_bills_creation(workspace_id, [4], False, 1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False)
+    schedule_bills_creation(workspace_id, [4], False, 1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC)
     assert TaskLog.objects.filter(workspace_id=workspace_id).count() == initial_task_log_count
 
-    schedule_bank_transaction_creation(workspace_id, [5], False, 1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC, run_in_rabbitmq_worker=False)
+    schedule_bank_transaction_creation(workspace_id, [5], False, 1, triggered_by=ExpenseImportSourceEnum.DASHBOARD_SYNC)
     assert TaskLog.objects.filter(workspace_id=workspace_id).count() == initial_task_log_count
