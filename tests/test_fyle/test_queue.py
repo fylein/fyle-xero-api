@@ -1,3 +1,4 @@
+import pytest
 from fyle_accounting_library.rabbitmq.data_class import Task
 from fyle_accounting_mappings.models import ExpenseAttribute
 
@@ -5,10 +6,17 @@ from apps.fyle.queue import handle_webhook_callback
 from apps.workspaces.models import FeatureConfig, Workspace
 from apps.xero.queue import __create_chain_and_run
 from tests.test_fyle.fixtures import data
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum
+
+
+@pytest.fixture(autouse=True)
+def mock_publish_to_rabbitmq(mocker):
+    """Auto-mock publish_to_rabbitmq for all tests in this module"""
+    return mocker.patch('apps.fyle.queue.publish_to_rabbitmq')
 
 
 # This test is just for cov :D
-def test_create_chain_and_run(db):
+def test_create_chain_and_run(db, mocker):
     workspace_id = 1
     chain_tasks = [
         Task(
@@ -17,7 +25,10 @@ def test_create_chain_and_run(db):
         )
     ]
 
-    __create_chain_and_run(workspace_id, chain_tasks, False)
+    mocker.patch('apps.xero.queue.TaskChainRunner')
+    mocker.patch('apps.fyle.tasks.check_interval_and_sync_dimension')
+
+    __create_chain_and_run(workspace_id, chain_tasks)
     assert True
 
 
@@ -37,15 +48,14 @@ def test_create_chain_and_run_with_webhook_sync_enabled(db, mocker):
     ]
 
     mock_sync_dimension = mocker.patch('apps.fyle.tasks.check_interval_and_sync_dimension')
-    mock_chain_class = mocker.patch('apps.xero.queue.Chain')
-    mock_chain_instance = mock_chain_class.return_value
+    mock_task_chain_runner = mocker.patch('apps.xero.queue.TaskChainRunner')
+    mock_runner_instance = mock_task_chain_runner.return_value
 
-    __create_chain_and_run(workspace_id, chain_tasks, False)
+    __create_chain_and_run(workspace_id, chain_tasks)
 
-    mock_chain_class.assert_called_once()
+    mock_task_chain_runner.assert_called_once()
     mock_sync_dimension.assert_not_called()
-    mock_chain_instance.append.assert_called()
-    mock_chain_instance.run.assert_called_once()
+    mock_runner_instance.run.assert_called_once_with(chain_tasks, workspace_id)
 
 
 def test_create_chain_and_run_with_webhook_sync_disabled(db, mocker):
@@ -63,15 +73,15 @@ def test_create_chain_and_run_with_webhook_sync_disabled(db, mocker):
         )
     ]
 
-    mocker.patch('apps.fyle.tasks.check_interval_and_sync_dimension')
-    mock_chain_class = mocker.patch('apps.xero.queue.Chain')
-    mock_chain_instance = mock_chain_class.return_value
+    mock_sync_dimension = mocker.patch('apps.fyle.tasks.check_interval_and_sync_dimension')
+    mock_task_chain_runner = mocker.patch('apps.xero.queue.TaskChainRunner')
+    mock_runner_instance = mock_task_chain_runner.return_value
 
-    __create_chain_and_run(workspace_id, chain_tasks, False)
+    __create_chain_and_run(workspace_id, chain_tasks)
 
-    mock_chain_class.assert_called_once()
-    mock_chain_instance.append.assert_any_call('apps.fyle.tasks.check_interval_and_sync_dimension', workspace_id)
-    mock_chain_instance.run.assert_called_once()
+    mock_task_chain_runner.assert_called_once()
+    mock_sync_dimension.assert_called_once_with(workspace_id)
+    mock_runner_instance.run.assert_called_once_with(chain_tasks, workspace_id)
 
 
 # This test is just for cov :D
@@ -253,13 +263,11 @@ def test_handle_webhook_callback_attribute_webhook_exception(db, mocker):
     assert 'Test exception' in error_message
 
 
-def test_handle_webhook_callback_org_setting_updated(db, mocker):
+def test_handle_webhook_callback_org_setting_updated(db, mock_publish_to_rabbitmq):
     """
     Test handle_webhook_callback for ORG_SETTING UPDATED action
     """
     workspace = Workspace.objects.get(id=1)
-
-    mock_async_task = mocker.patch('apps.fyle.queue.async_task')
 
     webhook_body = {
         'action': 'UPDATED',
@@ -276,8 +284,16 @@ def test_handle_webhook_callback_org_setting_updated(db, mocker):
 
     handle_webhook_callback(webhook_body, workspace.id)
 
-    mock_async_task.assert_called_once_with(
-        'apps.fyle.tasks.handle_org_setting_updated',
-        workspace.id,
-        webhook_body['data']
+    expected_payload = {
+        'workspace_id': workspace.id,
+        'action': WorkerActionEnum.HANDLE_ORG_SETTING_UPDATED.value,
+        'data': {
+            'workspace_id': workspace.id,
+            'org_settings': webhook_body['data']
+        }
+    }
+
+    mock_publish_to_rabbitmq.assert_called_once_with(
+        payload=expected_payload,
+        routing_key=RoutingKeyEnum.UTILITY.value
     )

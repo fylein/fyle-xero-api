@@ -16,9 +16,9 @@ from apps.mappings.models import TenantMapping
 from apps.tasks.enums import TaskLogStatusEnum, TaskLogTypeEnum
 from apps.tasks.models import TaskLog
 from apps.users.models import User
-from apps.workspaces.actions import export_to_xero
 from apps.workspaces.email import get_admin_name, get_errors, get_failed_task_logs_count, send_failure_notification_email
 from apps.workspaces.models import FyleCredential, Workspace, WorkspaceGeneralSettings, WorkspaceSchedule
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -31,6 +31,16 @@ def run_sync_schedule(workspace_id):
     :param workspace_id: workspace id
     :return: None
     """
+    logger.info(f"Running sync schedule for workspace {workspace_id}")
+
+    task_log_enqueued_count = TaskLog.objects.filter(
+        workspace_id=workspace_id, status__in=[TaskLogStatusEnum.IN_PROGRESS, TaskLogStatusEnum.ENQUEUED]
+    ).exclude(type__in=[TaskLogTypeEnum.FETCHING_EXPENSES, TaskLogTypeEnum.CREATING_PAYMENT]).count()
+
+    if task_log_enqueued_count > 0:
+        logger.info(f"Task log already enqueued for workspace {workspace_id} with count {task_log_enqueued_count}, skipping sync schedule")
+        return
+
     task_log, _ = TaskLog.objects.update_or_create(
         workspace_id=workspace_id,
         type=TaskLogTypeEnum.FETCHING_EXPENSES,
@@ -62,7 +72,17 @@ def run_sync_schedule(workspace_id):
         ).values_list('id', flat=True).distinct()
 
         if eligible_expense_group_ids.exists():
-            export_to_xero(workspace_id, expense_group_ids=list(eligible_expense_group_ids), triggered_by=ExpenseImportSourceEnum.BACKGROUND_SCHEDULE)
+            logger.info(f"Exporting expenses via RabbitMQ for workspace id {workspace_id} triggered by {ExpenseImportSourceEnum.BACKGROUND_SCHEDULE}")
+            payload = {
+                'workspace_id': workspace_id,
+                'action': WorkerActionEnum.BACKGROUND_SCHEDULE_EXPORT.value,
+                'data': {
+                    'workspace_id': workspace_id,
+                    'expense_group_ids': list(eligible_expense_group_ids),
+                    'triggered_by': ExpenseImportSourceEnum.BACKGROUND_SCHEDULE
+                }
+            }
+            publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.EXPORT_P1.value)
 
 
 def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
@@ -134,18 +154,19 @@ def async_add_admins_to_workspace(workspace_id: int, current_user_id: str):
         logger.exception("Error adding admins to workspace_id: %s | Error: %s", workspace_id, str(e))
 
 
-def async_update_workspace_name(workspace: Workspace, access_token: str):
+def update_workspace_name(workspace_id: int, access_token: str):
     try:
+        workspace = Workspace.objects.get(id=workspace_id)
         fyle_user = get_fyle_admin(access_token.split(' ')[1], None)
         org_name = fyle_user['data']['org']['name']
 
         workspace.name = org_name
         workspace.save()
     except InvalidTokenError:
-        logger.info("Invalid Token for Fyle in workspace_id: %s", workspace.id)
+        logger.info("Invalid Token for Fyle in workspace_id: %s", workspace_id)
 
     except Exception as e:
-        logger.exception("Error updating workspace name for workspace_id: %s | Error: %s", workspace.id, str(e))
+        logger.exception("Error updating workspace name for workspace_id: %s | Error: %s", workspace_id, str(e))
 
 
 def async_create_admin_subscriptions(workspace_id: int) -> None:

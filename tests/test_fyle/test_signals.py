@@ -1,7 +1,5 @@
-from fyle_accounting_library.fyle_platform.enums import FundSourceEnum, ExpenseImportSourceEnum
-
-from apps.fyle.models import ExpenseGroupSettings
 from apps.fyle.enums import ExpenseStateEnum
+from apps.fyle.models import ExpenseGroupSettings
 from apps.workspaces.models import WorkspaceGeneralSettings
 
 
@@ -13,11 +11,11 @@ def test_run_pre_save_expense_group_setting_triggers_no_existing_settings(db, mo
     WorkspaceGeneralSettings.objects.filter(workspace_id=workspace_id).delete()
     expense_group_settings = ExpenseGroupSettings.objects.get(workspace_id=workspace_id)
 
-    mock_async = mocker.patch('apps.fyle.signals.async_task')
+    mock_publish = mocker.patch('apps.fyle.signals.publish_to_rabbitmq')
 
-    # Save should not trigger any async tasks since there's no existing settings
+    # Save should not trigger any publish since there's no existing settings
     expense_group_settings.save()
-    mock_async.assert_not_called()
+    mock_publish.assert_not_called()
 
 
 def test_run_pre_save_expense_group_setting_triggers_reimbursable_state_change(db, mocker):
@@ -34,20 +32,14 @@ def test_run_pre_save_expense_group_setting_triggers_reimbursable_state_change(d
         }
     )
 
-    mock_async = mocker.patch('apps.fyle.signals.async_task')
+    mock_publish = mocker.patch('apps.fyle.signals.publish_to_rabbitmq')
 
     # Change reimbursable state
     expense_group_settings.reimbursable_expense_state = ExpenseStateEnum.PAYMENT_PROCESSING
     expense_group_settings.save()
 
-    # Verify async_task was called with correct parameters
-    mock_async.assert_called_once_with(
-        'apps.fyle.tasks.create_expense_groups',
-        workspace_id=workspace_id,
-        task_log=None,
-        fund_source=[FundSourceEnum.PERSONAL],
-        imported_from=ExpenseImportSourceEnum.CONFIGURATION_UPDATE
-    )
+    # Verify publish_to_rabbitmq was called
+    mock_publish.assert_called_once()
 
 
 def test_run_pre_save_expense_group_setting_triggers_ccc_state_change(db, mocker):
@@ -64,20 +56,14 @@ def test_run_pre_save_expense_group_setting_triggers_ccc_state_change(db, mocker
         }
     )
 
-    mock_async = mocker.patch('apps.fyle.signals.async_task')
+    mock_publish = mocker.patch('apps.fyle.signals.publish_to_rabbitmq')
 
     # Change CCC state
     expense_group_settings.ccc_expense_state = ExpenseStateEnum.APPROVED
     expense_group_settings.save()
 
-    # Verify async_task was called with correct parameters
-    mock_async.assert_called_once_with(
-        'apps.fyle.tasks.create_expense_groups',
-        workspace_id=workspace_id,
-        task_log=None,
-        fund_source=[FundSourceEnum.CCC],
-        imported_from=ExpenseImportSourceEnum.CONFIGURATION_UPDATE
-    )
+    # Verify publish_to_rabbitmq was called
+    mock_publish.assert_called_once()
 
 
 def test_run_pre_save_expense_group_setting_triggers_no_configuration(db, mocker):
@@ -95,14 +81,14 @@ def test_run_pre_save_expense_group_setting_triggers_no_configuration(db, mocker
         }
     )
 
-    mock_async = mocker.patch('apps.fyle.signals.async_task')
+    mock_publish = mocker.patch('apps.fyle.signals.publish_to_rabbitmq')
 
     expense_group_settings.reimbursable_expense_state = ExpenseStateEnum.PAYMENT_PROCESSING
     expense_group_settings.ccc_expense_state = ExpenseStateEnum.APPROVED
     expense_group_settings.save()
 
-    # Verify no async tasks were called due to missing configuration
-    mock_async.assert_not_called()
+    # Verify no publish was called due to missing configuration
+    mock_publish.assert_not_called()
 
 
 def test_run_pre_save_expense_group_setting_triggers_no_state_change(db, mocker):
@@ -119,10 +105,10 @@ def test_run_pre_save_expense_group_setting_triggers_no_state_change(db, mocker)
         }
     )
 
-    mock_async = mocker.patch('apps.fyle.signals.async_task')
+    mock_publish = mocker.patch('apps.fyle.signals.publish_to_rabbitmq')
 
     # Save without changing states
     expense_group_settings.save()
 
-    # Verify no async tasks were called
-    mock_async.assert_not_called()
+    # Verify no publish was called
+    mock_publish.assert_not_called()

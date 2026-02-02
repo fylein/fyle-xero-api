@@ -47,13 +47,15 @@ def test_tenant_mapping_view(api_client, test_connection, mocker):
     assert response.status_code == 404
 
 
-def test_auto_map_employee(api_client, test_connection):
+def test_auto_map_employee(api_client, test_connection, mocker):
     workspace_id = 1
 
     url = "/api/workspaces/{}/mappings/auto_map_employees/trigger/".format(workspace_id)
     api_client.credentials(
         HTTP_AUTHORIZATION="Bearer {}".format(test_connection.access_token)
     )
+
+    mocker.patch("apps.mappings.views.publish_to_rabbitmq")
 
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     general_settings.auto_map_employees = True

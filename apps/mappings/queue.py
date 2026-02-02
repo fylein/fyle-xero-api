@@ -2,11 +2,13 @@ from datetime import datetime
 
 from django_q.models import Schedule
 from fyle_accounting_mappings.models import MappingSetting
+
 from apps.fyle.enums import FyleAttributeEnum
 from apps.mappings.constants import SYNC_METHODS
+from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
 from fyle_integrations_imports.dataclasses import TaskSetting
 from fyle_integrations_imports.queues import chain_import_fields_to_fyle
-from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 
 def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: str):
@@ -31,7 +33,23 @@ def schedule_auto_map_employees(employee_mapping_preference: str, workspace_id: 
             schedule.delete()
 
 
-def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
+def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int) -> None:
+    """
+    Initiate the Import of dimensions to Fyle
+    :param workspace_id: Workspace Id
+    :return: None
+    """
+    payload = {
+        'workspace_id': workspace_id,
+        'action': WorkerActionEnum.IMPORT_DIMENSIONS_TO_FYLE.value,
+        'data': {
+            'workspace_id': workspace_id
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)
+
+
+def initiate_import_to_fyle(workspace_id: int):
     """
     Construct tasks and chain import fields to fyle
     :param workspace_id: Workspace Id
@@ -102,4 +120,4 @@ def construct_tasks_and_chain_import_fields_to_fyle(workspace_id: int):
                     }
                 )
 
-    chain_import_fields_to_fyle(workspace_id, task_settings)
+    chain_import_fields_to_fyle(workspace_id, task_settings, run_in_rabbitmq_worker=True)

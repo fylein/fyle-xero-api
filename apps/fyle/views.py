@@ -1,7 +1,7 @@
 import logging
 
+from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
-from django_q.tasks import async_task
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from rest_framework import generics
 from rest_framework.response import Response
@@ -16,6 +16,7 @@ from apps.fyle.serializers import ExpenseFieldSerializer, ExpenseGroupSerializer
 from apps.fyle.tasks import create_expense_groups, get_task_log_and_fund_source
 from apps.workspaces.models import FeatureConfig, FyleCredential, Workspace
 from fyle_xero_api.utils import LookupFieldMixin
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -89,7 +90,19 @@ class SyncFyleDimensionView(generics.ListCreateAPIView):
             logger.info(f"Skipping sync_dimensions for workspace {kwargs['workspace_id']} as webhook sync is enabled")
             return Response(status=status.HTTP_200_OK)
 
-        async_task('apps.fyle.tasks.check_interval_and_sync_dimension', kwargs['workspace_id'])
+        cache_key = f"sync_fyle_dimensions_{kwargs['workspace_id']}"
+        is_cached = cache.get(cache_key)
+
+        if not is_cached:
+            cache.set(cache_key, True, 300)
+            payload = {
+                'workspace_id': kwargs['workspace_id'],
+                'action': WorkerActionEnum.CHECK_INTERVAL_AND_SYNC_FYLE_DIMENSION.value,
+                'data': {
+                    'workspace_id': kwargs['workspace_id']
+                }
+            }
+            publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)
 
         return Response(status=status.HTTP_200_OK)
 
@@ -109,7 +122,19 @@ class RefreshFyleDimensionView(generics.ListCreateAPIView):
         Workspace.objects.get(id=kwargs['workspace_id'])
         FyleCredential.objects.get(workspace_id=kwargs['workspace_id'])
 
-        async_task('apps.fyle.tasks.sync_dimensions', kwargs['workspace_id'])
+        cache_key = f"sync_fyle_dimensions_{kwargs['workspace_id']}"
+        is_cached = cache.get(cache_key)
+
+        if not is_cached:
+            cache.set(cache_key, True, 300)
+            payload = {
+                'workspace_id': kwargs['workspace_id'],
+                'action': WorkerActionEnum.HANDLE_FYLE_REFRESH_DIMENSION.value,
+                'data': {
+                    'workspace_id': kwargs['workspace_id']
+                }
+            }
+            publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)
 
         return Response(status=status.HTTP_200_OK)
 

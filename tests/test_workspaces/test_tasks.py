@@ -15,11 +15,11 @@ from apps.workspaces.tasks import (
     async_add_admins_to_workspace,
     async_create_admin_subscriptions,
     async_update_fyle_credentials,
-    async_update_workspace_name,
     post_to_integration_settings,
     run_email_notification,
     run_sync_schedule,
     sync_org_settings,
+    update_workspace_name,
 )
 from tests.test_fyle.fixtures import data as fyle_data
 from tests.test_workspaces.fixtures import data
@@ -53,6 +53,7 @@ def test_run_sync_schedule(mocker, db):
         "fyle_integrations_platform_connector.apis.Expenses.get",
         return_value=data["expenses"],
     )
+    mocker.patch("apps.workspaces.tasks.publish_to_rabbitmq")
 
     run_sync_schedule(workspace_id)
 
@@ -69,6 +70,41 @@ def test_run_sync_schedule(mocker, db):
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
 
     assert task_log.status == "COMPLETE"
+
+
+def test_run_sync_schedule_with_enqueued_task_log(mocker, db):
+    """
+    Test run_sync_schedule when there are already enqueued or in-progress task logs
+    This should return early without creating new expense groups
+    """
+    workspace_id = 1
+
+    # Create an IN_PROGRESS task log (not FETCHING_EXPENSES type to trigger early return)
+    TaskLog.objects.create(
+        workspace_id=workspace_id,
+        type=TaskLogTypeEnum.CREATING_BILL,
+        status=TaskLogStatusEnum.IN_PROGRESS
+    )
+
+    mock_create_expense_groups = mocker.patch("apps.workspaces.tasks.create_expense_groups")
+
+    run_sync_schedule(workspace_id)
+
+    # create_expense_groups should NOT be called because we returned early
+    mock_create_expense_groups.assert_not_called()
+
+    # Clean up and test with ENQUEUED status
+    TaskLog.objects.filter(workspace_id=workspace_id, type=TaskLogTypeEnum.CREATING_BILL).delete()
+    TaskLog.objects.create(
+        workspace_id=workspace_id,
+        type=TaskLogTypeEnum.CREATING_BANK_TRANSACTION,
+        status=TaskLogStatusEnum.ENQUEUED
+    )
+
+    run_sync_schedule(workspace_id)
+
+    # create_expense_groups should still NOT be called
+    mock_create_expense_groups.assert_not_called()
 
 
 def test_async_update_fyle_credentials(db):
@@ -177,31 +213,29 @@ def test_async_add_admins_to_workspace_invalid_token(db, mocker):
 
 
 @pytest.mark.django_db()
-def test_async_update_workspace_name(mocker):
+def test_update_workspace_name(mocker):
     mocker.patch(
         'apps.workspaces.tasks.get_fyle_admin',
         return_value={'data': {'org': {'name': 'Test Org'}}}
     )
-    workspace = Workspace.objects.get(id=1)
-    async_update_workspace_name(workspace, 'Bearer access_token')
+    update_workspace_name(1, 'Bearer access_token')
 
     workspace = Workspace.objects.get(id=1)
     assert workspace.name == 'Test Org'
 
 
-def test_async_update_workspace_name_invalid_token(db, mocker):
+def test_update_workspace_name_invalid_token(db, mocker):
     mocker.patch(
         'apps.workspaces.tasks.get_fyle_admin',
         side_effect=InvalidTokenError('Invalid Token')
     )
-    workspace = Workspace.objects.get(id=1)
-    async_update_workspace_name(workspace, 'Bearer access_token')
+    update_workspace_name(1, 'Bearer access_token')
 
     mocker.patch(
         'apps.workspaces.tasks.get_fyle_admin',
         side_effect=Exception('General error')
     )
-    async_update_workspace_name(workspace, 'Bearer access_token')
+    update_workspace_name(1, 'Bearer access_token')
 
 
 def test_async_create_admin_subscriptions(db, mocker):

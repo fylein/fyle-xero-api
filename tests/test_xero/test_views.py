@@ -153,6 +153,7 @@ def test_get_xero_fields_view(api_client, test_connection):
 
 def test_post_sync_dimensions(mocker, api_client, test_connection):
     mocker.patch("apps.xero.utils.XeroConnector.sync_dimensions", return_value=None)
+    mocker.patch("apps.xero.views.publish_to_rabbitmq")
     workspace_id = 1
 
     access_token = test_connection.access_token
@@ -183,6 +184,7 @@ def test_post_sync_dimensions(mocker, api_client, test_connection):
 
 def test_post_refresh_dimensions(mocker, api_client, test_connection):
     mocker.patch("apps.xero.utils.XeroConnector.sync_dimensions", return_value=None)
+    mocker.patch("apps.xero.views.publish_to_rabbitmq")
     expense_field_mock = mocker.patch("apps.mappings.signals.ExpenseCustomField")
     expense_field_mock.return_value.sync_expense_attributes.return_value = []
 
