@@ -288,7 +288,8 @@ def test_handle_webhook_callback_org_setting_updated(db, mock_publish_to_rabbitm
         'workspace_id': workspace.id,
         'action': WorkerActionEnum.HANDLE_ORG_SETTING_UPDATED.value,
         'data': {
-            'data': webhook_body['data']
+            'workspace_id': workspace.id,
+            'org_settings': webhook_body['data']
         }
     }
 
