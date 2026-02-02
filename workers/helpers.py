@@ -62,7 +62,7 @@ ACTION_METHOD_MAP = {
     WorkerActionEnum.BACKGROUND_SCHEDULE_EXPORT: 'apps.workspaces.actions.export_to_xero',
     WorkerActionEnum.HANDLE_FYLE_REFRESH_DIMENSION: 'apps.fyle.tasks.sync_dimensions',
     WorkerActionEnum.HANDLE_XERO_REFRESH_DIMENSION: 'apps.xero.actions.refresh_xero_dimension',
-    WorkerActionEnum.IMPORT_DIMENSIONS_TO_FYLE: 'apps.mappings.queue.construct_tasks_and_chain_import_fields_to_fyle',
+    WorkerActionEnum.IMPORT_DIMENSIONS_TO_FYLE: 'apps.mappings.queue.initiate_import_to_fyle',
     WorkerActionEnum.EXPENSE_UPDATED_AFTER_APPROVAL: 'apps.fyle.tasks.update_non_exported_expenses',
     WorkerActionEnum.EXPENSE_ADDED_EJECTED_FROM_REPORT: 'apps.fyle.tasks.handle_expense_report_change',
     WorkerActionEnum.CHECK_INTERVAL_AND_SYNC_FYLE_DIMENSION: 'apps.fyle.tasks.check_interval_and_sync_dimension',
