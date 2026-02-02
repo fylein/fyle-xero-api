@@ -92,7 +92,8 @@ def handle_webhook_callback(body: dict, workspace_id: int) -> None:
             'workspace_id': workspace_id,
             'action': WorkerActionEnum.HANDLE_ORG_SETTING_UPDATED.value,
             'data': {
-                'data': data
+                'workspace_id': workspace_id,
+                'org_settings': data
             }
         }
         publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)

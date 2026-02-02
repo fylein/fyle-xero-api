@@ -6,6 +6,7 @@ from apps.fyle.queue import handle_webhook_callback
 from apps.workspaces.models import FeatureConfig, Workspace
 from apps.xero.queue import __create_chain_and_run
 from tests.test_fyle.fixtures import data
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum
 
 
 @pytest.fixture(autouse=True)
@@ -262,13 +263,11 @@ def test_handle_webhook_callback_attribute_webhook_exception(db, mocker):
     assert 'Test exception' in error_message
 
 
-def test_handle_webhook_callback_org_setting_updated(db, mocker):
+def test_handle_webhook_callback_org_setting_updated(db, mock_publish_to_rabbitmq):
     """
     Test handle_webhook_callback for ORG_SETTING UPDATED action
     """
     workspace = Workspace.objects.get(id=1)
-
-    mock_async_task = mocker.patch('apps.fyle.queue.async_task')
 
     webhook_body = {
         'action': 'UPDATED',
@@ -285,8 +284,15 @@ def test_handle_webhook_callback_org_setting_updated(db, mocker):
 
     handle_webhook_callback(webhook_body, workspace.id)
 
-    mock_async_task.assert_called_once_with(
-        'apps.fyle.tasks.handle_org_setting_updated',
-        workspace.id,
-        webhook_body['data']
+    expected_payload = {
+        'workspace_id': workspace.id,
+        'action': WorkerActionEnum.HANDLE_ORG_SETTING_UPDATED.value,
+        'data': {
+            'data': webhook_body['data']
+        }
+    }
+
+    mock_publish_to_rabbitmq.assert_called_once_with(
+        payload=expected_payload,
+        routing_key=RoutingKeyEnum.UTILITY.value
     )
