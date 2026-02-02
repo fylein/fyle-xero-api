@@ -220,3 +220,23 @@ def post_to_integration_settings(workspace_id: int, active: bool):
         post_request(url, payload, refresh_token)
     except Exception as error:
         logger.error(error)
+
+
+def sync_org_settings(workspace_id: int) -> None:
+    """
+    Fetch and store org settings for a workspace
+    :param workspace_id: Workspace ID
+    :return: None
+    """
+    try:
+        fyle_credential = FyleCredential.objects.get(workspace_id=workspace_id)
+        platform = PlatformConnector(fyle_credential)
+        org_settings = platform.org_settings.get()
+
+        workspace = Workspace.objects.get(id=workspace_id)
+        workspace.org_settings = {
+            'regional_settings': org_settings.get('regional_settings', {})
+        }
+        workspace.save(update_fields=['org_settings', 'updated_at'])
+    except Exception as e:
+        logger.error('Error fetching org settings for workspace %s: %s', workspace_id, str(e))

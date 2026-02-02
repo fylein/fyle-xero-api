@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.utils.module_loading import import_string
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_mappings.models import ExpenseAttribute, FyleSyncTimestamp
 from fyle_rest_auth.helpers import get_fyle_admin
@@ -84,6 +85,8 @@ def post_workspace(access_token, request):
             }
         }
         publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
+
+        import_string('apps.workspaces.tasks.sync_org_settings')(workspace_id=workspace.id)
 
     return workspace
 
