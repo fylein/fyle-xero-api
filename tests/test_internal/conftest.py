@@ -56,7 +56,6 @@ def create_expense_group_with_expenses(db, create_workspace_for_stuck_export):
         cost_center='Test Cost Center',
         purpose='Test expense',
         report_id='rp_stuck_report_1',
-        report_title='Stuck Test Report',
         spent_at=datetime.now(tz=timezone.utc),
         approved_at=datetime.now(tz=timezone.utc),
         expense_created_at=datetime.now(tz=timezone.utc),
