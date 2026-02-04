@@ -858,7 +858,7 @@ def check_xero_object_status(workspace_id) -> None:
             'workspace_id': workspace_id
         }
     }
-    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.EXPORT_P1.value)
 
 
 def trigger_check_xero_object_status(workspace_id):
@@ -924,7 +924,7 @@ def process_reimbursements(workspace_id) -> None:
             'workspace_id': workspace_id
         }
     }
-    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.EXPORT_P1.value)
 
 
 def trigger_process_reimbursements(workspace_id):
