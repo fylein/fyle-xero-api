@@ -19,6 +19,8 @@ from apps.workspaces.tasks import (
     run_email_notification,
     run_sync_schedule,
     sync_org_settings,
+    trigger_run_email_notification,
+    trigger_run_sync_schedule,
     update_workspace_name,
 )
 from tests.test_fyle.fixtures import data as fyle_data
@@ -45,6 +47,23 @@ def test_schedule_sync(db):
     assert ws_schedule.schedule is None
 
 
+def test_run_sync_schedule_publishes_to_rabbitmq(mocker, db):
+    """
+    Test that run_sync_schedule publishes to RabbitMQ correctly
+    """
+    workspace_id = 1
+    mock_publish = mocker.patch("apps.workspaces.tasks.publish_to_rabbitmq")
+
+    run_sync_schedule(workspace_id)
+
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args
+    payload = call_args[1]['payload']
+    assert payload['workspace_id'] == workspace_id
+    assert payload['action'] == 'EXPORT.P1.RUN_SYNC_SCHEDULE'
+    assert payload['data']['workspace_id'] == workspace_id
+
+
 def test_run_sync_schedule(mocker, db):
     workspace_id = 1
 
@@ -55,7 +74,7 @@ def test_run_sync_schedule(mocker, db):
     )
     mocker.patch("apps.workspaces.tasks.publish_to_rabbitmq")
 
-    run_sync_schedule(workspace_id)
+    trigger_run_sync_schedule(workspace_id)
 
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
 
@@ -65,7 +84,7 @@ def test_run_sync_schedule(mocker, db):
     general_settings.corporate_credit_card_expenses_object = "BANK TRANSACTION"
     general_settings.save()
 
-    run_sync_schedule(workspace_id)
+    trigger_run_sync_schedule(workspace_id)
 
     task_log = TaskLog.objects.filter(workspace_id=workspace_id).first()
 
@@ -88,7 +107,7 @@ def test_run_sync_schedule_with_enqueued_task_log(mocker, db):
 
     mock_create_expense_groups = mocker.patch("apps.workspaces.tasks.create_expense_groups")
 
-    run_sync_schedule(workspace_id)
+    trigger_run_sync_schedule(workspace_id)
 
     # create_expense_groups should NOT be called because we returned early
     mock_create_expense_groups.assert_not_called()
@@ -101,7 +120,7 @@ def test_run_sync_schedule_with_enqueued_task_log(mocker, db):
         status=TaskLogStatusEnum.ENQUEUED
     )
 
-    run_sync_schedule(workspace_id)
+    trigger_run_sync_schedule(workspace_id)
 
     # create_expense_groups should still NOT be called
     mock_create_expense_groups.assert_not_called()
@@ -116,6 +135,23 @@ def test_async_update_fyle_credentials(db):
     fyle_credentials = FyleCredential.objects.filter(workspace_id=workspace_id).first()
 
     assert fyle_credentials.refresh_token == refresh_token
+
+
+def test_run_email_notification_publishes_to_rabbitmq(mocker, db):
+    """
+    Test that run_email_notification publishes to RabbitMQ correctly
+    """
+    workspace_id = 1
+    mock_publish = mocker.patch("apps.workspaces.tasks.publish_to_rabbitmq")
+
+    run_email_notification(workspace_id)
+
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args
+    payload = call_args[1]['payload']
+    assert payload['workspace_id'] == workspace_id
+    assert payload['action'] == 'UTILITY.RUN_EMAIL_NOTIFICATION'
+    assert payload['data']['workspace_id'] == workspace_id
 
 
 def test_email_notification(db, mocker):
@@ -143,22 +179,22 @@ def test_email_notification(db, mocker):
     ws_schedule.save()
 
     # Check that email is not sent when error count is None and there are no failed task logs
-    run_email_notification(workspace_id)
+    trigger_run_email_notification(workspace_id)
 
     # Check that email is sent when there are failed task logs and error count is None
     ws_schedule.error_count = None
     ws_schedule.save()
-    run_email_notification(workspace_id)
+    trigger_run_email_notification(workspace_id)
 
     # Check that email is sent when there are failed task logs and error count is less than task_logs_count
     ws_schedule.error_count = 1
     ws_schedule.save()
-    run_email_notification(workspace_id)
+    trigger_run_email_notification(workspace_id)
 
     # Check that email is not sent when there are failed task logs but error count is greater than task_logs_count
     ws_schedule.error_count = 3
     ws_schedule.save()
-    run_email_notification(workspace_id)
+    trigger_run_email_notification(workspace_id)
 
     # Check that email is sent to admin name from ExpenseAttribute
     ExpenseAttribute.objects.create(
@@ -170,20 +206,20 @@ def test_email_notification(db, mocker):
     ws_schedule.emails_selected = ["anishkumar.s@fyle.in"]
     ws_schedule.additional_email_options = []
     ws_schedule.save()
-    run_email_notification(workspace_id)
+    trigger_run_email_notification(workspace_id)
 
     # Check that email is sent to name from additional_email_options
     ws_schedule.additional_email_options = [
         {"email": "anishkumar.s@fyle.in", "name": "Anish"}
     ]
     ws_schedule.save()
-    run_email_notification(workspace_id)
+    trigger_run_email_notification(workspace_id)
 
 
 def test_run_email_notification_with_invalid_workspace_id(db):
     workspace_id = None
     with pytest.raises(Exception):
-        run_email_notification(workspace_id)
+        trigger_run_email_notification(workspace_id)
 
 
 def test_async_add_admins_to_workspace(db, mocker):

@@ -8,11 +8,28 @@ from xerosdk.exceptions import UnsuccessfulAuthentication
 
 from apps.fyle.models import ExpenseGroup
 from apps.mappings.queue import schedule_auto_map_employees
-from apps.mappings.tasks import async_auto_map_employees, resolve_expense_attribute_errors
+from apps.mappings.tasks import async_auto_map_employees, resolve_expense_attribute_errors, trigger_async_auto_map_employees
 from apps.tasks.models import Error
 from apps.workspaces.models import WorkspaceGeneralSettings, XeroCredentials
 from tests.test_fyle.fixtures import data as fyle_data
 from tests.test_xero.fixtures import data as xero_data
+
+
+def test_async_auto_map_employees_publishes_to_rabbitmq(mocker, db):
+    """
+    Test that async_auto_map_employees publishes to RabbitMQ correctly
+    """
+    workspace_id = 1
+    mock_publish = mocker.patch("apps.mappings.tasks.publish_to_rabbitmq")
+
+    async_auto_map_employees(workspace_id)
+
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args
+    payload = call_args[1]['payload']
+    assert payload['workspace_id'] == workspace_id
+    assert payload['action'] == 'IMPORT.AUTO_MAP_EMPLOYEES'
+    assert payload['data']['workspace_id'] == workspace_id
 
 
 def test_async_auto_map_employees(mocker, db):
@@ -28,7 +45,7 @@ def test_async_auto_map_employees(mocker, db):
         return_value=fyle_data["get_all_employees"],
     )
 
-    async_auto_map_employees(workspace_id)
+    trigger_async_auto_map_employees(workspace_id)
     employee_mappings = EmployeeMapping.objects.filter(
         workspace_id=workspace_id
     ).count()
@@ -38,7 +55,7 @@ def test_async_auto_map_employees(mocker, db):
     general_settings.employee_field_mapping = "VENDOR"
     general_settings.save()
 
-    async_auto_map_employees(workspace_id)
+    trigger_async_auto_map_employees(workspace_id)
 
     employee_mappings = EmployeeMapping.objects.filter(
         workspace_id=workspace_id
@@ -49,20 +66,20 @@ def test_async_auto_map_employees(mocker, db):
         mock_call.side_effect = FyleInvalidTokenError(
             msg="Invalid Token for Fyle", response="Invalid Token for Fyle"
         )
-        async_auto_map_employees(workspace_id=workspace_id)
+        trigger_async_auto_map_employees(workspace_id=workspace_id)
 
         mock_call.side_effect = UnsuccessfulAuthentication(msg="Auth error")
-        async_auto_map_employees(workspace_id=workspace_id)
+        trigger_async_auto_map_employees(workspace_id=workspace_id)
 
         mock_call.side_effect = InternalServerError(
             msg="Internal server error while importing to Fyle"
         )
-        async_auto_map_employees(workspace_id=workspace_id)
+        trigger_async_auto_map_employees(workspace_id=workspace_id)
 
     qbo_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
     qbo_credentials.delete()
 
-    async_auto_map_employees(workspace_id)
+    trigger_async_auto_map_employees(workspace_id)
 
     employee_mappings = EmployeeMapping.objects.filter(
         workspace_id=workspace_id

@@ -39,6 +39,11 @@ class WorkerActionEnum(str, Enum):
     ADD_ADMINS_TO_WORKSPACE = 'UTILITY.ADD_ADMINS_TO_WORKSPACE'
     CREATE_MISSING_CURRENCY = 'IMPORT.CREATE_MISSING_CURRENCY'
     UPDATE_XERO_SHORT_CODE = 'IMPORT.UPDATE_XERO_SHORT_CODE'
+    RUN_SYNC_SCHEDULE = 'EXPORT.P1.RUN_SYNC_SCHEDULE'
+    RUN_EMAIL_NOTIFICATION = 'UTILITY.RUN_EMAIL_NOTIFICATION'
+    CREATE_PAYMENT = 'EXPORT.P1.CREATE_PAYMENT'
+    CHECK_XERO_OBJECT_STATUS = 'UTILITY.CHECK_XERO_OBJECT_STATUS'
+    PROCESS_REIMBURSEMENTS = 'UTILITY.PROCESS_REIMBURSEMENTS'
 
 
 QUEUE_BINDKEY_MAP = {
@@ -53,7 +58,7 @@ ACTION_METHOD_MAP = {
     WorkerActionEnum.DIRECT_EXPORT: 'apps.fyle.tasks.import_and_export_expenses',
     WorkerActionEnum.DASHBOARD_SYNC: 'apps.workspaces.actions.export_to_xero',
     WorkerActionEnum.DISABLE_ITEMS: 'fyle_integrations_imports.tasks.disable_items',
-    WorkerActionEnum.AUTO_MAP_EMPLOYEES: 'apps.mappings.tasks.async_auto_map_employees',
+    WorkerActionEnum.AUTO_MAP_EMPLOYEES: 'apps.mappings.tasks.trigger_async_auto_map_employees',
     WorkerActionEnum.CREATE_EXPENSE_GROUP: 'apps.fyle.tasks.create_expense_groups',
     WorkerActionEnum.EXPENSE_STATE_CHANGE: 'apps.fyle.tasks.import_and_export_expenses',
     WorkerActionEnum.UPDATE_WORKSPACE_NAME: 'apps.workspaces.tasks.update_workspace_name',
@@ -70,6 +75,11 @@ ACTION_METHOD_MAP = {
     WorkerActionEnum.CREATE_MISSING_CURRENCY: 'apps.xero.tasks.create_missing_currency',
     WorkerActionEnum.UPDATE_XERO_SHORT_CODE: 'apps.xero.tasks.update_xero_short_code',
     WorkerActionEnum.HANDLE_ORG_SETTING_UPDATED: 'apps.fyle.tasks.handle_org_setting_updated',
+    WorkerActionEnum.RUN_SYNC_SCHEDULE: 'apps.workspaces.tasks.trigger_run_sync_schedule',
+    WorkerActionEnum.RUN_EMAIL_NOTIFICATION: 'apps.workspaces.tasks.trigger_run_email_notification',
+    WorkerActionEnum.CREATE_PAYMENT: 'apps.xero.tasks.trigger_create_payment',
+    WorkerActionEnum.CHECK_XERO_OBJECT_STATUS: 'apps.xero.tasks.trigger_check_xero_object_status',
+    WorkerActionEnum.PROCESS_REIMBURSEMENTS: 'apps.xero.tasks.trigger_process_reimbursements',
 }
 
 

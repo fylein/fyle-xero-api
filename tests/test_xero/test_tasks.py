@@ -35,6 +35,9 @@ from apps.xero.tasks import (
     get_or_create_credit_card_contact,
     load_attachments,
     process_reimbursements,
+    trigger_check_xero_object_status,
+    trigger_create_payment,
+    trigger_process_reimbursements,
     update_xero_short_code,
 )
 from apps.xero.utils import XeroConnector
@@ -710,7 +713,7 @@ def test_create_payment(mocker, db):
     general_mappings.payment_account_id = "2"
     general_mappings.save()
 
-    create_payment(workspace_id)
+    trigger_create_payment(workspace_id)
 
     task_log = TaskLog.objects.filter(
         task_id="PAYMENT_{}".format(bill.expense_group.id)
@@ -725,7 +728,7 @@ def test_create_payment(mocker, db):
     xero_credentials.delete()
 
     try:
-        create_payment(workspace_id)
+        trigger_create_payment(workspace_id)
     except Exception:
         logger.info("Xero Account not connected")
 
@@ -762,7 +765,7 @@ def test_create_payment_exceptions(mocker, db):
         mock_call.side_effect = BulkError(
             msg="employess not found", response="mapping error"
         )
-        create_payment(workspace_id)
+        trigger_create_payment(workspace_id)
         task_log = TaskLog.objects.filter(
             workspace_id=workspace_id, detail="mapping error"
         ).first()
@@ -776,14 +779,14 @@ def test_create_payment_exceptions(mocker, db):
         updated_at = now - timedelta(days=10)
 
         task_log = TaskLog.objects.filter(task_id='PAYMENT_{}'.format(bill.expense_group.id)).update(updated_at=updated_at)
-        create_payment(workspace_id)
+        trigger_create_payment(workspace_id)
         task_log = TaskLog.objects.filter(
             workspace_id=workspace_id, detail="wrong parameter"
         ).first()
         assert task_log.status == "FAILED"
 
         mock_call.side_effect = Exception()
-        create_payment(workspace_id)
+        trigger_create_payment(workspace_id)
 
 
 def test_schedule_payment_creation(db):
@@ -806,6 +809,57 @@ def test_schedule_payment_creation(db):
     schedule = Schedule.objects.filter(func="apps.xero.tasks.create_payment").count()
 
     assert schedule == 0
+
+
+def test_create_payment_publishes_to_rabbitmq(mocker, db):
+    """
+    Test that create_payment publishes to RabbitMQ correctly
+    """
+    workspace_id = 1
+    mock_publish = mocker.patch("apps.xero.tasks.publish_to_rabbitmq")
+
+    create_payment(workspace_id)
+
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args
+    payload = call_args[1]['payload']
+    assert payload['workspace_id'] == workspace_id
+    assert payload['action'] == 'EXPORT.P1.CREATE_PAYMENT'
+    assert payload['data']['workspace_id'] == workspace_id
+
+
+def test_check_xero_object_status_publishes_to_rabbitmq(mocker, db):
+    """
+    Test that check_xero_object_status publishes to RabbitMQ correctly
+    """
+    workspace_id = 1
+    mock_publish = mocker.patch("apps.xero.tasks.publish_to_rabbitmq")
+
+    check_xero_object_status(workspace_id)
+
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args
+    payload = call_args[1]['payload']
+    assert payload['workspace_id'] == workspace_id
+    assert payload['action'] == 'UTILITY.CHECK_XERO_OBJECT_STATUS'
+    assert payload['data']['workspace_id'] == workspace_id
+
+
+def test_process_reimbursements_publishes_to_rabbitmq(mocker, db):
+    """
+    Test that process_reimbursements publishes to RabbitMQ correctly
+    """
+    workspace_id = 1
+    mock_publish = mocker.patch("apps.xero.tasks.publish_to_rabbitmq")
+
+    process_reimbursements(workspace_id)
+
+    mock_publish.assert_called_once()
+    call_args = mock_publish.call_args
+    payload = call_args[1]['payload']
+    assert payload['workspace_id'] == workspace_id
+    assert payload['action'] == 'UTILITY.PROCESS_REIMBURSEMENTS'
+    assert payload['data']['workspace_id'] == workspace_id
 
 
 def test_check_xero_object_status(mocker, db):
@@ -835,7 +889,7 @@ def test_check_xero_object_status(mocker, db):
     create_bill(expense_group.id, task_log.id, False, False)
     task_log = TaskLog.objects.get(id=task_log.id)
 
-    check_xero_object_status(workspace_id)
+    trigger_check_xero_object_status(workspace_id)
     bills = Bill.objects.filter(expense_group_id=expense_group.id)
 
     for bill in bills:
@@ -845,7 +899,7 @@ def test_check_xero_object_status(mocker, db):
     xero_credentials = XeroCredentials.objects.get(workspace_id=workspace_id)
     xero_credentials.delete()
 
-    check_xero_object_status(workspace_id)
+    trigger_check_xero_object_status(workspace_id)
 
 
 def test_schedule_reimbursements_sync(db):
@@ -902,7 +956,7 @@ def test_process_reimbursements(db, mocker):
     ).count()
     assert reimbursement_count == 4
 
-    process_reimbursements(workspace_id)
+    trigger_process_reimbursements(workspace_id)
 
     reimbursement = Reimbursement.objects.filter(workspace_id=workspace_id).count()
 
