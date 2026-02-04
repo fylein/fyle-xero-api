@@ -26,6 +26,7 @@ from apps.xero.models import BankTransaction, BankTransactionLineItem, Bill, Bil
 from apps.xero.utils import XeroConnector
 from fyle_xero_api.exceptions import BulkError
 from fyle_xero_api.logging_middleware import get_caller_info, get_logger
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -772,7 +773,28 @@ def validate_for_skipping_payment(bill: Bill, workspace_id: int):
     return False
 
 
-def create_payment(workspace_id):
+def create_payment(workspace_id) -> None:
+    """
+    Schedule create payment via RabbitMQ
+    :param workspace_id: workspace id
+    :return: None
+    """
+    payload = {
+        'workspace_id': workspace_id,
+        'action': WorkerActionEnum.CREATE_PAYMENT.value,
+        'data': {
+            'workspace_id': workspace_id
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.EXPORT_P1.value)
+
+
+def trigger_create_payment(workspace_id):
+    """
+    Trigger create payment
+    :param workspace_id: workspace id
+    :return: None
+    """
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
 
     platform = PlatformConnector(fyle_credentials)
@@ -823,7 +845,28 @@ def get_all_xero_bill_ids(xero_objects):
     return xero_objects_details
 
 
-def check_xero_object_status(workspace_id):
+def check_xero_object_status(workspace_id) -> None:
+    """
+    Schedule check xero object status via RabbitMQ
+    :param workspace_id: workspace id
+    :return: None
+    """
+    payload = {
+        'workspace_id': workspace_id,
+        'action': WorkerActionEnum.CHECK_XERO_OBJECT_STATUS.value,
+        'data': {
+            'workspace_id': workspace_id
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
+
+
+def trigger_check_xero_object_status(workspace_id):
+    """
+    Trigger check xero object status
+    :param workspace_id: workspace id
+    :return: None
+    """
     try:
         xero_credentials = XeroCredentials.get_active_xero_credentials(workspace_id)
 
@@ -868,7 +911,28 @@ def check_xero_object_status(workspace_id):
         invalidate_xero_credentials(workspace_id)
 
 
-def process_reimbursements(workspace_id):
+def process_reimbursements(workspace_id) -> None:
+    """
+    Schedule process reimbursements via RabbitMQ
+    :param workspace_id: workspace id
+    :return: None
+    """
+    payload = {
+        'workspace_id': workspace_id,
+        'action': WorkerActionEnum.PROCESS_REIMBURSEMENTS.value,
+        'data': {
+            'workspace_id': workspace_id
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
+
+
+def trigger_process_reimbursements(workspace_id):
+    """
+    Trigger process reimbursements
+    :param workspace_id: workspace id
+    :return: None
+    """
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
     try:
         platform = PlatformConnector(fyle_credentials=fyle_credentials)
