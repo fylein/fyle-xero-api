@@ -24,10 +24,25 @@ logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
 
-def run_sync_schedule(workspace_id):
+def run_sync_schedule(workspace_id) -> None:
     """
-    Run schedule
-    :param user: user email
+    Schedule run sync via RabbitMQ
+    :param workspace_id: workspace id
+    :return: None
+    """
+    payload = {
+        'workspace_id': workspace_id,
+        'action': WorkerActionEnum.RUN_SYNC_SCHEDULE.value,
+        'data': {
+            'workspace_id': workspace_id
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.EXPORT_P1.value)
+
+
+def trigger_run_sync_schedule(workspace_id):
+    """
+    Trigger run sync schedule
     :param workspace_id: workspace id
     :return: None
     """
@@ -94,7 +109,28 @@ def async_update_fyle_credentials(fyle_org_id: str, refresh_token: str):
         fyle_credentials.save()
 
 
-def run_email_notification(workspace_id):
+def run_email_notification(workspace_id) -> None:
+    """
+    Schedule run email notification via RabbitMQ
+    :param workspace_id: workspace id
+    :return: None
+    """
+    payload = {
+        'workspace_id': workspace_id,
+        'action': WorkerActionEnum.RUN_EMAIL_NOTIFICATION.value,
+        'data': {
+            'workspace_id': workspace_id
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.UTILITY.value)
+
+
+def trigger_run_email_notification(workspace_id):
+    """
+    Trigger run email notification
+    :param workspace_id: workspace id
+    :return: None
+    """
     ws_schedule = WorkspaceSchedule.objects.get(workspace_id=workspace_id, enabled=True)
     task_logs_count = get_failed_task_logs_count(workspace_id)
     workspace = Workspace.objects.get(id=workspace_id)
