@@ -1,6 +1,6 @@
 import logging
-from typing import List
 from datetime import datetime, timezone
+from typing import List
 
 from fyle_accounting_mappings.models import Mapping
 from fyle_integrations_platform_connector import PlatformConnector
@@ -10,6 +10,7 @@ from apps.mappings.exceptions import handle_import_exceptions
 from apps.tasks.models import Error
 from apps.workspaces.models import FyleCredential, WorkspaceGeneralSettings, XeroCredentials
 from apps.xero.utils import XeroConnector
+from workers.helpers import RoutingKeyEnum, WorkerActionEnum, publish_to_rabbitmq
 
 logger = logging.getLogger(__name__)
 logger.level = logging.INFO
@@ -43,8 +44,29 @@ def resolve_expense_attribute_errors(
             )
 
 
+def async_auto_map_employees(workspace_id: int) -> None:
+    """
+    Schedule async auto map employees via RabbitMQ
+    :param workspace_id: Workspace Id
+    :return: None
+    """
+    payload = {
+        'workspace_id': workspace_id,
+        'action': WorkerActionEnum.AUTO_MAP_EMPLOYEES.value,
+        'data': {
+            'workspace_id': workspace_id
+        }
+    }
+    publish_to_rabbitmq(payload=payload, routing_key=RoutingKeyEnum.IMPORT.value)
+
+
 @handle_import_exceptions(task_name="async auto map employees")
-def async_auto_map_employees(workspace_id: int):
+def trigger_async_auto_map_employees(workspace_id: int):
+    """
+    Trigger async auto map employees
+    :param workspace_id: Workspace Id
+    :return: None
+    """
     general_settings = WorkspaceGeneralSettings.objects.get(workspace_id=workspace_id)
     employee_mapping_preference = general_settings.auto_map_employees
     fyle_credentials = FyleCredential.objects.get(workspace_id=workspace_id)
