@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from django.db.models import F, Q
 from django_q.models import OrmQ, Schedule
+from fyle_accounting_library.fyle_platform.actions import reset_stuck_imports
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 
 from apps.fyle.actions import post_accounting_export_summary, update_failed_expenses
@@ -70,3 +71,5 @@ def re_export_stuck_exports():
                     export_to_xero(workspace_id, export_expense_group_ids, ExpenseImportSourceEnum.INTERNAL)
                 else:
                     logger.info('Skipping export for workspace %s since it has more than 200 expense groups', workspace_id)
+
+    reset_stuck_imports(prod_workspace_ids)
