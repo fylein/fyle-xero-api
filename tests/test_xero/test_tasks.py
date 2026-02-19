@@ -354,7 +354,7 @@ def test_create_bill_exceptions(db):
                         },
                         "Type": "SPEND",
                         "Reference": "E/2022/03/T/1",
-                        "Url": "None/app/admin/#/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn",
+                        "Url": "None/app/admin/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn",
                         "IsReconciled": False,
                         "Contact": {
                             "ContactID": "73e6b7fb-ba7e-4b0a-a08b-f971b8ebbed8",
@@ -638,7 +638,7 @@ def test_create_bank_transactions_exceptions(db):
                         },
                         "Type": "SPEND",
                         "Reference": "E/2022/03/T/1",
-                        "Url": "None/app/admin/#/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn",
+                        "Url": "None/app/admin/view_expense/txkImp4VID2Z?org_id=orhlmPm4H0wn",
                         "IsReconciled": False,
                         "Contact": {
                             "ContactID": "73e6b7fb-ba7e-4b0a-a08b-f971b8ebbed8",
