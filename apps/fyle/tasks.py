@@ -10,7 +10,6 @@ from django.utils.module_loading import import_string
 from fyle.platform.exceptions import InternalServerError
 from fyle.platform.exceptions import InvalidTokenError as FyleInvalidTokenError
 from fyle.platform.exceptions import RetryException
-from fyle_accounting_library.fyle_platform.branding import feature_configuration
 from fyle_accounting_library.fyle_platform.enums import ExpenseImportSourceEnum
 from fyle_accounting_library.fyle_platform.helpers import filter_expenses_based_on_state, get_expense_import_states
 from fyle_accounting_mappings.models import ExpenseAttribute, Mapping
@@ -357,8 +356,8 @@ def import_and_export_expenses(report_id: str, org_id: str, is_state_change_even
                 # Trigger export immediately for customers who have enabled real time export
                 is_real_time_export_enabled = WorkspaceSchedule.objects.filter(workspace_id=workspace.id, is_real_time_export_enabled=True).exists()
 
-                # Don't allow real time export if it's not supported for the branded app / setting not enabled
-                if not is_real_time_export_enabled or not feature_configuration.feature.real_time_export_1hr_orgs:
+                # Don't allow real time export if setting not enabled
+                if not is_real_time_export_enabled:
                     return
 
             logger.info(f'Exporting expenses for workspace {workspace.id} with expense group ids {expense_group_ids}, triggered by {imported_from}')
