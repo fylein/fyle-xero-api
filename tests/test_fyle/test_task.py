@@ -144,6 +144,47 @@ def test_import_and_export_expenses(db, mocker):
     assert mock_call.call_count == 0
 
 
+def test_import_and_export_expenses_state_change_real_time_export_disabled(db, mocker):
+    mocker.patch(
+        "fyle_integrations_platform_connector.apis.Expenses.get",
+        return_value=data["expenses_webhook"],
+    )
+    mock_export = mocker.patch('apps.fyle.tasks.export_to_xero')
+
+    workspace = Workspace.objects.get(fyle_org_id='orPJvXuoLqvJ')
+
+    expense = Expense.objects.create(
+        workspace_id=workspace.id,
+        expense_id='txTestRealTime',
+        employee_email='test@test.com',
+        category='Test',
+        amount=100,
+        currency='USD',
+        org_id='orPJvXuoLqvJ',
+        report_id='rpTestRT',
+        spent_at='2024-01-01T00:00:00Z',
+        expense_created_at='2024-01-01T00:00:00Z',
+        expense_updated_at='2024-01-01T00:00:00Z',
+        fund_source='PERSONAL'
+    )
+
+    expense_group = ExpenseGroup.objects.create(
+        workspace=workspace,
+        fund_source='PERSONAL',
+        description={},
+        exported_at=None
+    )
+    expense_group.expenses.add(expense)
+
+    import_and_export_expenses(
+        'rpTestRT', 'orPJvXuoLqvJ', True,
+        report_state='PAID',
+        imported_from=ExpenseImportSourceEnum.WEBHOOK
+    )
+
+    mock_export.assert_not_called()
+
+
 def test_update_non_exported_expenses(db, mocker, api_client, test_connection):
     expense = data['raw_expense']
     default_raw_expense = data['default_raw_expense']
